@@ -1,10 +1,11 @@
-from flask_restful import Resource, reqparse, abort
-from flask import request, current_app
+from flask_restful import Resource, abort
+from flask import request
 from flask_restful_swagger import swagger
 from storage.arangostore import ArangoStorageManager
 from storage.mongostore import MongoStorageManager
 from models.tenant import TenantModel
 from validator import TenantValidator
+from resources.base_resource import BaseResource
 
 storage = ArangoStorageManager()
 #storage = MongoStorageManager()
@@ -20,7 +21,7 @@ def abort_if_not_valid_tenant(tenant_json):
     if not validator.validate(tenant_json):
         abort(405, message="Tenant doesn't have a valid format".format(id))
 
-class Tenant(Resource):
+class Tenant(BaseResource):
     @swagger.operation(
         notes="Creates a new tenant",
         responseClass=TenantModel.__name__,
@@ -40,9 +41,9 @@ class Tenant(Resource):
         ],
     )
     def post(self):
-        tenant_json = request.get_json(force=True)
-        abort_if_not_valid_tenant(tenant_json)
-        tenant = storage.save_tenant(tenant_json)
+        response = super().get_response_body()
+        abort_if_not_valid_tenant(response)
+        tenant = storage.save_tenant(response)
         return tenant, 201
 
     @swagger.operation(
@@ -65,29 +66,33 @@ class Tenant(Resource):
         ],
     )
     def put(self):
-        tenant_json = request.get_json(force=True)
-        abort_if_not_valid_tenant(tenant_json)
-        tenant = storage.update_tenant(tenant_json)
+        response = super().get_response_body()
+        abort_if_not_valid_tenant(response)
+        tenant = storage.update_tenant(response)
         return tenant, 201
 
-    def options(self, **args):
-        return (
-            {"Allow": "PUT,POST"},
-            200,
-            {
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Methods": "PUT,POST",
-                "Access-Control-Allow-Headers": "Content-Type",
-            },
-        )
-
-class TenantDetail(Resource):
-    @swagger.operation(notes="get a tenant item by ID")
+class TenantDetail(BaseResource):
+    @swagger.operation(
+        notes="get a tenant item by ID",
+        responseClass=TenantModel.__name__,
+        responseMessages=[
+            {"code": 200, "message": "successful operation"},
+            {"code": 400, "message": "Invalid ID supplied"},
+            {"code": 404, "message": "Tenant not found"},
+        ],
+    )
     def get(self, id):
         tenant = abort_if_tenant_doesnt_exist(id)
         return tenant
 
-    @swagger.operation(notes="delete a tenant item by ID")
+    @swagger.operation(
+        notes="delete a tenant item by ID",
+        responseMessages=[
+            {"code": 204, "message": "successful operation"},
+            {"code": 400, "message": "Invalid ID supplied"},
+            {"code": 404, "message": "Tenant not found"},
+        ],
+    )
     def delete(self, id):
         tenant = abort_if_tenant_doesnt_exist(id)
         storage.delete_tenant(id)
