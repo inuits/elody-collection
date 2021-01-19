@@ -1,5 +1,6 @@
 from flask_restful import Resource, reqparse, abort
 from flask import request, current_app
+from flask_restful_swagger import swagger
 from storage.arangostore import ArangoStorageManager
 from storage.mongostore import MongoStorageManager
 from validator import TenantValidator
