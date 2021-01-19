@@ -70,6 +70,17 @@ class Tenant(Resource):
         tenant = storage.update_tenant(tenant_json)
         return tenant, 201
 
+    def options(self, **args):
+        return (
+            {"Allow": "PUT,POST"},
+            200,
+            {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "PUT,POST",
+                "Access-Control-Allow-Headers": "Content-Type",
+            },
+        )
+
 class TenantDetail(Resource):
     @swagger.operation(notes="get a tenant item by ID")
     def get(self, id):
