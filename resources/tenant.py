@@ -1,21 +1,11 @@
 from flask_restful import Resource, abort
 from flask import request
 from flask_restful_swagger import swagger
-from storage.arangostore import ArangoStorageManager
-from storage.mongostore import MongoStorageManager
 from models.tenant import TenantModel
 from validator import TenantValidator
 from resources.base_resource import BaseResource
 
-storage = ArangoStorageManager()
-#storage = MongoStorageManager()
 validator = TenantValidator()
-
-def abort_if_tenant_doesnt_exist(id):
-    tenant = storage.get_tenant_by_id(id)
-    if tenant is None:
-        abort(404, message="Tenant {} doesn't exist".format(id))
-    return tenant
 
 def abort_if_not_valid_tenant(tenant_json):
     if not validator.validate(tenant_json):
@@ -41,9 +31,9 @@ class Tenant(BaseResource):
         ],
     )
     def post(self):
-        response = super().get_response_body()
+        response = self.get_response_body()
         abort_if_not_valid_tenant(response)
-        tenant = storage.save_tenant(response)
+        tenant = self.storage.save_tenant(response)
         return tenant, 201
 
     @swagger.operation(
@@ -66,9 +56,9 @@ class Tenant(BaseResource):
         ],
     )
     def put(self):
-        response = super().get_response_body()
+        response = self.get_response_body()
         abort_if_not_valid_tenant(response)
-        tenant = storage.update_tenant(response)
+        tenant = self.storage.update_tenant(response)
         return tenant, 201
 
 class TenantDetail(BaseResource):
@@ -82,7 +72,7 @@ class TenantDetail(BaseResource):
         ],
     )
     def get(self, id):
-        tenant = abort_if_tenant_doesnt_exist(id)
+        tenant = self.abort_if_item_doesnt_exist('tenants', id)
         return tenant
 
     @swagger.operation(
@@ -94,7 +84,7 @@ class TenantDetail(BaseResource):
         ],
     )
     def delete(self, id):
-        tenant = abort_if_tenant_doesnt_exist(id)
-        storage.delete_tenant(id)
+        tenant = self.abort_if_item_doesnt_exist('tenants', id)
+        self.storage.delete_tenant(id)
         return 204
 

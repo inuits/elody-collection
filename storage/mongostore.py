@@ -27,4 +27,7 @@ class MongoStorageManager:
         self.tenants.delete_one({"_id": id})
 
     def get_tenant_by_id(self, id):
-        return self.tenants.find_one({"_id": id})
+        return self.get_item_from_collection_by_id('tenants', id)
+
+    def get_item_from_collection_by_id(self, collection, id):
+        return self.db[collection].find_one({"_id": id})

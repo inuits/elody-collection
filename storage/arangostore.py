@@ -31,8 +31,11 @@ class ArangoStorageManager:
         self.tenants[id].delete()        
 
     def get_tenant_by_id(self, id):
+        return self.get_item_from_collection_by_id('tenants', id)
+
+    def get_item_from_collection_by_id(self, collection, id):
         try:
-            tenant = self.tenants[id].getStore()
+            item = self.db[collection][id].getStore()
         except DocumentNotFoundError:
-            tenant = None
-        return tenant
+            item = None
+        return item
