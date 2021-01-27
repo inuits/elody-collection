@@ -31,9 +31,9 @@ class Tenant(BaseResource):
         ],
     )
     def post(self):
-        response = self.get_response_body()
-        abort_if_not_valid_tenant(response)
-        tenant = self.storage.save_tenant(response)
+        request = self.get_request_body()
+        abort_if_not_valid_tenant(request)
+        tenant = self.storage.save_tenant(request)
         return tenant, 201
 
     @swagger.operation(
@@ -56,9 +56,9 @@ class Tenant(BaseResource):
         ],
     )
     def put(self):
-        response = self.get_response_body()
-        abort_if_not_valid_tenant(response)
-        tenant = self.storage.update_tenant(response)
+        request = self.get_request_body()
+        abort_if_not_valid_tenant(request)
+        tenant = self.storage.update_tenant(request)
         return tenant, 201
 
 class TenantDetail(BaseResource):

@@ -17,18 +17,13 @@ class ArangoStorageManager:
         self.tenants = self.db['tenants']
 
     def save_tenant(self, tenant_json):
-        tenant = self.tenants.createDocument(tenant_json)
-        tenant.save()
-        return tenant.getStore()
+        return self.save_item_to_collection('tenants', tenant_json)
 
     def update_tenant(self, tenant_json):
-        tenant = self.tenants[tenant_json['_key']]
-        tenant.set(tenant_json)
-        tenant.patch()
-        return tenant.getStore()
+        return self.update_item_from_collection('tenants', tenant_json)
 
     def delete_tenant(self, id):
-        self.tenants[id].delete()        
+        self.delete_item_from_collection('tenants', id)
 
     def get_tenant_by_id(self, id):
         return self.get_item_from_collection_by_id('tenants', id)
@@ -39,3 +34,17 @@ class ArangoStorageManager:
         except DocumentNotFoundError:
             item = None
         return item
+
+    def save_item_to_collection(self, collection, content):
+        item = self.db[collection].createDocument(content)
+        item.save()
+        return item.getStore()
+
+    def update_item_from_collection(self, collection, content):
+        item = self.db[collection][content['_key']]
+        item.set(content)
+        item.patch()
+        return item.getStore()
+
+    def delete_item_from_collection(self, collection, id):
+        self.db[collection][id].delete()

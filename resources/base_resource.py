@@ -8,7 +8,7 @@ class BaseResource(Resource):
         self.storage = ArangoStorageManager()
         #self.storage = MongoStorageManager()
 
-    def get_response_body(self):
+    def get_request_body(self):
         return request.get_json(force=True)
 
     def abort_if_item_doesnt_exist(self, collection, id):

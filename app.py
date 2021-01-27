@@ -3,6 +3,7 @@ from flask_restful import Api
 from flask_restful_swagger import swagger
 from resources.tenant import Tenant, TenantDetail
 from resources.asset import Asset, AssetDetail
+from resources.mediafile import Mediafile, MediafileDetail
 
 
 app = Flask(__name__)
@@ -22,6 +23,9 @@ api.add_resource(Tenant, '/tenants')
 
 api.add_resource(AssetDetail, '/assets/<string:id>')
 api.add_resource(Asset, '/assets')
+
+api.add_resource(MediafileDetail, '/mediafiles/<string:id>')
+api.add_resource(Mediafile, '/mediafiles')
 
 if __name__ == '__main__':
     app.run(debug=True)
