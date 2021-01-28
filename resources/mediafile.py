@@ -1,21 +1,21 @@
 from flask_restful import Resource
 from resources.base_resource import BaseResource
 from flask_restful_swagger import swagger
-from models.asset import AssetModel
+from models.mediafile import MediafileModel
 
 import app
 
-class Asset(BaseResource):
+class Mediafile(BaseResource):
     @swagger.operation(
-        notes="Creates a new asset",
-        responseClass=AssetModel.__name__,
+        notes="Creates a new mediafile",
+        responseClass=MediafileModel.__name__,
         parameters=[
             {
                 "name": "body",
-                "description": "An asset item",
+                "description": "A mediafile item",
                 "required": True,
                 "allowMultiple": False,
-                "dataType": AssetModel.__name__,
+                "dataType": MediafileModel.__name__,
                 "paramType": "body",
             }
         ],
@@ -26,58 +26,58 @@ class Asset(BaseResource):
     )
     def post(self):
         request = self.get_request_body()
-        asset = self.storage.save_item_to_collection('assets', request)
-        return asset, 201
+        mediafile = self.storage.save_item_to_collection('mediafiles', request)
+        return mediafile, 201
 
     @swagger.operation(
-        notes="Updates an existing asset",
-        responseClass=AssetModel.__name__,
+        notes="Updates an existing mediafile",
+        responseClass=MediafileModel.__name__,
         parameters=[
             {
                 "name": "body",
-                "description": "An asset item",
+                "description": "A mediafile item",
                 "required": True,
                 "allowMultiple": False,
-                "dataType": AssetModel.__name__,
+                "dataType": MediafileModel.__name__,
                 "paramType": "body",
             }
         ],
         responseMessages=[
             {"code": 201, "message": "Created."},
-            {"code": 404, "message": "Asset not found"},
+            {"code": 404, "message": "Mediafile not found"},
             {"code": 405, "message": "Invalid input"},
         ],
     )
     def put(self):
         request = self.get_request_body()
-        asset = self.storage.update_item_from_collection('assets', request)
-        return asset, 201
+        mediafile = self.storage.update_item_from_collection('mediafiles', request)
+        return mediafile, 201
 
-class AssetDetail(BaseResource):
+class MediafileDetail(BaseResource):
     @swagger.operation(
-        notes="get a asset item by ID",
-        responseClass=AssetModel.__name__,
+        notes="get a mediafile item by ID",
+        responseClass=MediafileModel.__name__,
         responseMessages=[
             {"code": 200, "message": "successful operation"},
             {"code": 400, "message": "Invalid ID supplied"},
-            {"code": 404, "message": "Asset not found"},
+            {"code": 404, "message": "Mediafile not found"},
         ],
     )
     @app.oidc.accept_token(require_token=True, scopes_required=['openid'])
     def get(self, id):
-        asset = self.abort_if_item_doesnt_exist('assets', id)
-        return asset
+        mediafile = self.abort_if_item_doesnt_exist('mediafiles', id)
+        return mediafile
 
     @swagger.operation(
-        notes="delete a asset item by ID",
+        notes="delete a mediafile item by ID",
         responseMessages=[
             {"code": 204, "message": "successful operation"},
             {"code": 400, "message": "Invalid ID supplied"},
-            {"code": 404, "message": "Asset not found"},
+            {"code": 404, "message": "Mediafile not found"},
         ],
     )
     @app.oidc.accept_token(require_token=True, scopes_required=['openid'])
     def delete(self, id):
-        asset = self.abort_if_item_doesnt_exist('assets', id)
-        self.storage.delete_item_from_collection('assets', id)
+        mediafile = self.abort_if_item_doesnt_exist('mediafiles', id)
+        self.storage.delete_item_from_collection('mediafiles', id)
         return 204

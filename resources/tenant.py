@@ -5,6 +5,8 @@ from models.tenant import TenantModel
 from validator import TenantValidator
 from resources.base_resource import BaseResource
 
+import app
+
 validator = TenantValidator()
 
 def abort_if_not_valid_tenant(tenant_json):
@@ -71,6 +73,7 @@ class TenantDetail(BaseResource):
             {"code": 404, "message": "Tenant not found"},
         ],
     )
+    @app.oidc.accept_token(require_token=True, scopes_required=['openid'])
     def get(self, id):
         tenant = self.abort_if_item_doesnt_exist('tenants', id)
         return tenant
@@ -83,6 +86,7 @@ class TenantDetail(BaseResource):
             {"code": 404, "message": "Tenant not found"},
         ],
     )
+    @app.oidc.accept_token(require_token=True, scopes_required=['openid'])
     def delete(self, id):
         tenant = self.abort_if_item_doesnt_exist('tenants', id)
         self.storage.delete_tenant(id)
