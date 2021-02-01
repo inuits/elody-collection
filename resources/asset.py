@@ -2,6 +2,7 @@ from flask_restful import Resource
 from resources.base_resource import BaseResource
 from flask_restful_swagger import swagger
 from models.asset import AssetModel
+from flask import request
 
 import app
 
@@ -25,8 +26,16 @@ class Asset(BaseResource):
         ],
     )
     def post(self):
-        request = self.get_request_body()
-        asset = self.storage.save_item_to_collection('assets', request)
+        token = None
+        if 'Authorization' in request.headers and request.headers['Authorization'].startswith('Bearer '):
+            token = request.headers['Authorization'].split(None,1)[1].strip()
+        validity = app.oidc.validate_token(token)
+        if not validity:
+            response_body = {'error': 'invalid_token',
+                             'error_description': validity}
+            return response_body, 401, {'WWW-Authenticate': 'Bearer'}
+        request_body = self.get_request_body()
+        asset = self.storage.save_item_to_collection('assets', request_body)
         return asset, 201
 
     @swagger.operation(
