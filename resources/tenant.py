@@ -33,6 +33,7 @@ class Tenant(BaseResource):
         ],
     )
     def post(self):
+        self.authorize_request()
         request = self.get_request_body()
         abort_if_not_valid_tenant(request)
         tenant = self.storage.save_tenant(request)
@@ -58,6 +59,7 @@ class Tenant(BaseResource):
         ],
     )
     def put(self):
+        self.authorize_request()
         request = self.get_request_body()
         abort_if_not_valid_tenant(request)
         tenant = self.storage.update_tenant(request)

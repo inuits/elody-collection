@@ -25,6 +25,7 @@ class Mediafile(BaseResource):
         ],
     )
     def post(self):
+        self.authorize_request()
         request = self.get_request_body()
         mediafile = self.storage.save_item_to_collection('mediafiles', request)
         return mediafile, 201
@@ -49,6 +50,7 @@ class Mediafile(BaseResource):
         ],
     )
     def put(self):
+        self.authorize_request()
         request = self.get_request_body()
         mediafile = self.storage.update_item_from_collection('mediafiles', request)
         return mediafile, 201
