@@ -3,6 +3,14 @@ from flask_restful import Api
 from flask_restful_swagger import swagger
 from flask_oidc import OpenIDConnect
 
+import sentry_sdk
+from sentry_sdk.integrations.flask import FlaskIntegration
+
+#sentry_sdk.init(
+#    os.getenv('SENTRY_DSN'),
+#    integrations=[FlaskIntegration()]
+#)
+
 app = Flask(__name__)
 
 api = swagger.docs(
