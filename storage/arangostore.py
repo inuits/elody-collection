@@ -14,7 +14,6 @@ class ArangoStorageManager:
 
         self.conn = Connection(username=self.arango_username, password=self.arango_password)
         self.db = self.conn[self.arango_db_name]
-        self.tenants = self.db['tenants']
 
     def save_tenant(self, tenant_json):
         return self.save_item_to_collection('tenants', tenant_json)

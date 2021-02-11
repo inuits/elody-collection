@@ -12,22 +12,30 @@ class MongoStorageManager:
 
         self.client = MongoClient(self.mongo_host, self.mongo_port)
         self.db = self.client[self.mongo_db]
-        self.tenants = self.db.tenants
         
     def save_tenant(self, tenant_json):
-        tenant_id = self.tenants.insert_one(tenant_json).inserted_id
-        return self.get_tenant_by_id(tenant_id)
+        return self.save_item_to_collection('assets', tenant_json)
 
     def update_tenant(self, tenant_json):
-        id = tenant_json["_id"]
-        self.tenants.replace_one({"_id": id}, tenant_json)
-        return self.get_tenant_by_id(id)
+        return self.update_item_from_collection('tenants', tenant_json)
 
     def delete_tenant(self, id):
-        self.tenants.delete_one({"_id": id})
+        self.delete_item_from_collection('tenants', id)
 
     def get_tenant_by_id(self, id):
         return self.get_item_from_collection_by_id('tenants', id)
 
     def get_item_from_collection_by_id(self, collection, id):
         return self.db[collection].find_one({"_id": id})
+
+    def save_item_to_collection(self, collection, content):
+        item_id = self.db[collection].insert_one(content).inserted_id
+        return self.get_item_from_collection_by_id(collection, item_id)
+
+    def update_item_from_collection(self, collection, content):
+        id = content['_id']
+        self.db[collection].replace_one({"_id": id}, content)
+        return self.get_item_from_collection_by_id(collection, id)
+
+    def delete_item_from_collection(self, collection, id):
+        self.db[collection].delete_one({"_id": id})
