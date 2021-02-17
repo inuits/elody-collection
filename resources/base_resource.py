@@ -1,14 +1,14 @@
 from flask_restful import Resource, abort
 from flask import request
 from storage.arangostore import ArangoStorageManager
-#from storage.mongostore import MongoStorageManager
+from storage.mongostore import MongoStorageManager
+from storage.storagemanager import StorageManager
 
 import app
 
 class BaseResource(Resource):
     def __init__(self):
-        self.storage = ArangoStorageManager()
-        #self.storage = MongoStorageManager()
+        self.storage = StorageManager().get_db_engine()
 
     def get_request_body(self):
         return request.get_json(force=True)
