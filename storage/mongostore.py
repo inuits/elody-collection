@@ -1,6 +1,7 @@
 from pymongo import MongoClient
 import os
 from dotenv import load_dotenv
+from bson.objectid import ObjectId
 
 class MongoStorageManager:
     def __init__(self):
@@ -26,7 +27,7 @@ class MongoStorageManager:
         return self.get_item_from_collection_by_id('tenants', id)
 
     def get_item_from_collection_by_id(self, collection, id):
-        return self.db[collection].find_one({"_id": id})
+        return self._object_id_to_string(self.db[collection].find_one({"_id": ObjectId(id)}))
 
     def save_item_to_collection(self, collection, content):
         item_id = self.db[collection].insert_one(content).inserted_id
@@ -39,3 +40,7 @@ class MongoStorageManager:
 
     def delete_item_from_collection(self, collection, id):
         self.db[collection].delete_one({"_id": id})
+
+    def _object_id_to_string(self, document):
+        document['_id'] = str(document['_id'])
+        return document
