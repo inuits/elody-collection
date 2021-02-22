@@ -45,5 +45,11 @@ class ArangoStorageManager:
         item.save()
         return item.getStore()
 
+    def patch_item_from_collection(self, collection, content):
+        item = self.db[collection][content['_key']]
+        item.patch(content)
+        item.save()
+        return item.getStore()
+
     def delete_item_from_collection(self, collection, id):
         self.db[collection][id].delete()

@@ -55,6 +55,12 @@ class Asset(BaseResource):
         asset = self.storage.update_item_from_collection('assets', request)
         return asset, 201
 
+    def patch(self):
+        self.authorize_request()
+        request = self.get_request_body()
+        asset = self.storage.patch_item_from_collection('assets', request)
+        return asset, 201
+
 class AssetDetail(BaseResource):
     @swagger.operation(
         notes="get a asset item by ID",

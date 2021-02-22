@@ -39,6 +39,12 @@ class Tenant(BaseResource):
         tenant = self.storage.save_tenant(request)
         return tenant, 201
 
+    def patch(self):
+        self.authorize_request()
+        request = self.get_request_body()
+        asset = self.storage.patch_item_from_collection('assets', request)
+        return asset, 201
+
     @swagger.operation(
         notes="Updates an existing tenant",
         responseClass=TenantModel.__name__,

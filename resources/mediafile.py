@@ -30,6 +30,12 @@ class Mediafile(BaseResource):
         mediafile = self.storage.save_item_to_collection('mediafiles', request)
         return mediafile, 201
 
+    def patch(self):
+        self.authorize_request()
+        request = self.get_request_body()
+        asset = self.storage.patch_item_from_collection('assets', request)
+        return asset, 201
+
     @swagger.operation(
         notes="Updates an existing mediafile",
         responseClass=MediafileModel.__name__,

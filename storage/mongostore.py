@@ -27,7 +27,7 @@ class MongoStorageManager:
         return self.get_item_from_collection_by_id('tenants', id)
 
     def get_item_from_collection_by_id(self, collection, id):
-        return self._object_id_to_string(self.db[collection].find_one({"_id": ObjectId(id)}))
+        return self._object_id_to_string(self.db[collection].find_one({"_id": id}))
 
     def save_item_to_collection(self, collection, content):
         item_id = self.db[collection].insert_one(content).inserted_id
@@ -36,6 +36,11 @@ class MongoStorageManager:
     def update_item_from_collection(self, collection, content):
         id = content['_id']
         self.db[collection].replace_one({"_id": id}, content)
+        return self.get_item_from_collection_by_id(collection, id)
+
+    def patch_item_from_collection(self, collection, content):
+        id = content['_id']
+        self.db[collection].update_one({"_id": id}, {"$set": content})
         return self.get_item_from_collection_by_id(collection, id)
 
     def delete_item_from_collection(self, collection, id):
