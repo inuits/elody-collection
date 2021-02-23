@@ -2,6 +2,7 @@ from pyArango.connection import *
 from pyArango.theExceptions import *
 import os
 from dotenv import load_dotenv
+import uuid
 
 class ArangoStorageManager:
     def __init__(self):
@@ -35,6 +36,7 @@ class ArangoStorageManager:
         return item
 
     def save_item_to_collection(self, collection, content):
+        content['_key'] = str(uuid.uuid4())
         item = self.db[collection].createDocument(content)
         item.save()
         return item.getStore()

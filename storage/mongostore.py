@@ -1,7 +1,7 @@
 from pymongo import MongoClient
 import os
 from dotenv import load_dotenv
-from bson.objectid import ObjectId
+import uuid
 
 class MongoStorageManager:
     character_replace_map = {
@@ -37,7 +37,7 @@ class MongoStorageManager:
         return document
 
     def save_item_to_collection(self, collection, content):
-        content = self._prepare_mongo_document(content, False)
+        content = self._prepare_mongo_document(content, False, str(uuid.uuid4()))
         item_id = self.db[collection].insert_one(content).inserted_id
         return self.get_item_from_collection_by_id(collection, item_id)
 
@@ -56,7 +56,9 @@ class MongoStorageManager:
     def delete_item_from_collection(self, collection, id):
         self.db[collection].delete_one({"_id": id})
 
-    def _prepare_mongo_document(self, document, reversed):
+    def _prepare_mongo_document(self, document, reversed, id = None):
+        if id:
+            document['_id'] = id
         if 'data' in document:
             document['data'] = self._replace_dictionary_keys(document['data'], reversed)
         return document
