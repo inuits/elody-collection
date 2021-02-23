@@ -4,6 +4,10 @@ from dotenv import load_dotenv
 from bson.objectid import ObjectId
 
 class MongoStorageManager:
+    character_replace_map = {
+        '.': '='
+    }
+
     def __init__(self):
         load_dotenv('.env')
 
@@ -27,25 +31,51 @@ class MongoStorageManager:
         return self.get_item_from_collection_by_id('tenants', id)
 
     def get_item_from_collection_by_id(self, collection, id):
-        return self._object_id_to_string(self.db[collection].find_one({"_id": id}))
+        document = self.db[collection].find_one({"_id": id})
+        if document:
+            document = self._prepare_mongo_document(document, True)
+        return document
 
     def save_item_to_collection(self, collection, content):
+        content = self._prepare_mongo_document(content, False)
         item_id = self.db[collection].insert_one(content).inserted_id
         return self.get_item_from_collection_by_id(collection, item_id)
 
     def update_item_from_collection(self, collection, content):
         id = content['_id']
+        content = self._prepare_mongo_document(content, False)
         self.db[collection].replace_one({"_id": id}, content)
         return self.get_item_from_collection_by_id(collection, id)
 
     def patch_item_from_collection(self, collection, content):
         id = content['_id']
+        content = self._prepare_mongo_document(content, False)
         self.db[collection].update_one({"_id": id}, {"$set": content})
         return self.get_item_from_collection_by_id(collection, id)
 
     def delete_item_from_collection(self, collection, id):
         self.db[collection].delete_one({"_id": id})
 
-    def _object_id_to_string(self, document):
-        document['_id'] = str(document['_id'])
+    def _prepare_mongo_document(self, document, reversed):
+        if 'data' in document:
+            document['data'] = self._replace_dictionary_keys(document['data'], reversed)
         return document
+        
+    def _replace_dictionary_keys(self, data, reversed):
+        if type(data) is dict:
+            new_dict = dict()
+            for key, value in data.items():
+                new_value = value
+                if type(value) is list:
+                    new_value = list()
+                    for object in value:
+                        new_value.append(self._replace_dictionary_keys(object, reversed))
+                else:
+                    new_value = self._replace_dictionary_keys(value, reversed)
+                for original_char, replace_char in self.character_replace_map.items():
+                    if reversed:
+                        new_dict[key.replace(replace_char, original_char)] = new_value
+                    else:
+                        new_dict[key.replace(original_char, replace_char)] = new_value
+            return new_dict
+        return data
