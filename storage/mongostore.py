@@ -31,7 +31,11 @@ class MongoStorageManager:
         return self.get_item_from_collection_by_id('tenants', id)
 
     def get_item_from_collection_by_id(self, collection, id):
-        document = self.db[collection].find_one({"_id": id})
+        document = self.db[collection].find_one({
+            '$or': [
+                {"_id": id},
+                {"identifiers": id}]
+        })
         if document:
             document = self._prepare_mongo_document(document, True)
         return document

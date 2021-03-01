@@ -29,8 +29,13 @@ class ArangoStorageManager:
         return self.get_item_from_collection_by_id('tenants', id)
 
     def get_item_from_collection_by_id(self, collection, id):
+        item = None
         try:
-            item = self.db[collection][id].getStore()
+            aql = 'FOR a in assets FILTER @id IN a.identifiers OR a._key == @id RETURN a'
+            bind = {'id': id}
+            queryResult = self.db.AQLQuery(aql, rawResults=True, bindVars=bind)
+            if queryResult:
+                item = queryResult[0]
         except DocumentNotFoundError:
             item = None
         return item
