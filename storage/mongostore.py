@@ -31,11 +31,7 @@ class MongoStorageManager:
         return self.get_item_from_collection_by_id('tenants', id)
 
     def get_item_from_collection_by_id(self, collection, id):
-        document = self.db[collection].find_one({
-            '$or': [
-                {"_id": id},
-                {"identifiers": id}]
-        })
+        document = self.db[collection].find_one(self._get_id_query(id))
         if document:
             document = self._prepare_mongo_document(document, True)
         return document
@@ -47,16 +43,16 @@ class MongoStorageManager:
 
     def update_item_from_collection(self, collection, id, content):
         content = self._prepare_mongo_document(content, False)
-        self.db[collection].replace_one({"_id": id}, content)
+        self.db[collection].replace_one(self._get_id_query(id), content)
         return self.get_item_from_collection_by_id(collection, id)
 
     def patch_item_from_collection(self, collection, id, content):
         content = self._prepare_mongo_document(content, False)
-        self.db[collection].update_one({"_id": id}, {"$set": content})
+        self.db[collection].update_one(self._get_id_query(id), {"$set": content})
         return self.get_item_from_collection_by_id(collection, id)
 
     def delete_item_from_collection(self, collection, id):
-        self.db[collection].delete_one({"_id": id})
+        self.db[collection].delete_one(self._get_id_query(id))
 
     def _prepare_mongo_document(self, document, reversed, id = None):
         if id:
@@ -83,3 +79,10 @@ class MongoStorageManager:
                         new_dict[key.replace(original_char, replace_char)] = new_value
             return new_dict
         return data
+
+    def _get_id_query(self, id):
+        return {
+            '$or': [
+                {"_id": id},
+                {"identifiers": id}]
+        }

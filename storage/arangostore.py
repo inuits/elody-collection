@@ -29,13 +29,9 @@ class ArangoStorageManager:
         return self.get_item_from_collection_by_id('tenants', id)
 
     def get_item_from_collection_by_id(self, collection, id):
-        item = None
         try:
-            aql = 'FOR a in assets FILTER @id IN a.identifiers OR a._key == @id RETURN a'
-            bind = {'id': id}
-            queryResult = self.db.AQLQuery(aql, rawResults=True, bindVars=bind)
-            if queryResult:
-                item = queryResult[0]
+            key = self._get_key_for_id(collection, id)
+            item = self.db[collection][key].getStore()
         except DocumentNotFoundError:
             item = None
         return item
@@ -47,16 +43,28 @@ class ArangoStorageManager:
         return item.getStore()
 
     def update_item_from_collection(self, collection, id, content):
-        item = self.db[collection][id]
+        key = self._get_key_for_id(collection, id)
+        item = self.db[collection][key]
         item.set(content)
         item.save()
         return item.getStore()
 
     def patch_item_from_collection(self, collection, id, content):
-        item = self.db[collection][id]
+        key = self._get_key_for_id(collection, id)
+        item = self.db[collection][key]
         item.set(content)
         item.patch()
         return item.getStore()
 
     def delete_item_from_collection(self, collection, id):
-        self.db[collection][id].delete()
+        key = self._get_key_for_id(collection, id)
+        self.db[collection][key].delete()
+
+    def _get_key_for_id(self, collection, id):
+        key = None
+        aql = 'FOR c in @@collection FILTER @id IN c.identifiers OR c._key == @id RETURN c._key'
+        bind = {'id': id, '@collection': collection}
+        queryResult = self.db.AQLQuery(aql, rawResults=True, bindVars=bind)
+        if queryResult:
+            key = queryResult[0]
+        return key
