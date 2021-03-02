@@ -54,8 +54,8 @@ class ArangoStorageManager:
 
     def patch_item_from_collection(self, collection, id, content):
         item = self.db[collection][id]
-        item.patch(content)
-        item.save()
+        item.set(content)
+        item.patch()
         return item.getStore()
 
     def delete_item_from_collection(self, collection, id):
