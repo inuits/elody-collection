@@ -45,14 +45,12 @@ class MongoStorageManager:
         item_id = self.db[collection].insert_one(content).inserted_id
         return self.get_item_from_collection_by_id(collection, item_id)
 
-    def update_item_from_collection(self, collection, content):
-        id = content['_id']
+    def update_item_from_collection(self, collection, id, content):
         content = self._prepare_mongo_document(content, False)
         self.db[collection].replace_one({"_id": id}, content)
         return self.get_item_from_collection_by_id(collection, id)
 
-    def patch_item_from_collection(self, collection, content):
-        id = content['_id']
+    def patch_item_from_collection(self, collection, id, content):
         content = self._prepare_mongo_document(content, False)
         self.db[collection].update_one({"_id": id}, {"$set": content})
         return self.get_item_from_collection_by_id(collection, id)

@@ -30,10 +30,26 @@ class Mediafile(BaseResource):
         mediafile = self.storage.save_item_to_collection('mediafiles', request)
         return mediafile, 201
 
-    def patch(self):
+
+class MediafileDetail(BaseResource):
+    @swagger.operation(
+        notes="get a mediafile item by ID",
+        responseClass=MediafileModel.__name__,
+        responseMessages=[
+            {"code": 200, "message": "successful operation"},
+            {"code": 400, "message": "Invalid ID supplied"},
+            {"code": 404, "message": "Mediafile not found"},
+        ],
+    )
+    @app.oidc.accept_token(require_token=True, scopes_required=['openid'])
+    def get(self, id):
+        mediafile = self.abort_if_item_doesnt_exist('mediafiles', id)
+        return mediafile
+
+    def patch(self, id):
         self.authorize_request()
         request = self.get_request_body()
-        asset = self.storage.patch_item_from_collection('assets', request)
+        asset = self.storage.patch_item_from_collection('mediafiles', id, request)
         return asset, 201
 
     @swagger.operation(
@@ -55,26 +71,11 @@ class Mediafile(BaseResource):
             {"code": 405, "message": "Invalid input"},
         ],
     )
-    def put(self):
+    def put(self, id):
         self.authorize_request()
         request = self.get_request_body()
-        mediafile = self.storage.update_item_from_collection('mediafiles', request)
+        mediafile = self.storage.update_item_from_collection('mediafiles', id, request)
         return mediafile, 201
-
-class MediafileDetail(BaseResource):
-    @swagger.operation(
-        notes="get a mediafile item by ID",
-        responseClass=MediafileModel.__name__,
-        responseMessages=[
-            {"code": 200, "message": "successful operation"},
-            {"code": 400, "message": "Invalid ID supplied"},
-            {"code": 404, "message": "Mediafile not found"},
-        ],
-    )
-    @app.oidc.accept_token(require_token=True, scopes_required=['openid'])
-    def get(self, id):
-        mediafile = self.abort_if_item_doesnt_exist('mediafiles', id)
-        return mediafile
 
     @swagger.operation(
         notes="delete a mediafile item by ID",

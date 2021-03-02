@@ -19,8 +19,8 @@ class ArangoStorageManager:
     def save_tenant(self, tenant_json):
         return self.save_item_to_collection('tenants', tenant_json)
 
-    def update_tenant(self, tenant_json):
-        return self.update_item_from_collection('tenants', tenant_json)
+    def update_tenant(self, id, tenant_json):
+        return self.update_item_from_collection('tenants', id, tenant_json)
 
     def delete_tenant(self, id):
         self.delete_item_from_collection('tenants', id)
@@ -46,14 +46,14 @@ class ArangoStorageManager:
         item.save()
         return item.getStore()
 
-    def update_item_from_collection(self, collection, content):
-        item = self.db[collection][content['_key']]
+    def update_item_from_collection(self, collection, id, content):
+        item = self.db[collection][id]
         item.set(content)
         item.save()
         return item.getStore()
 
-    def patch_item_from_collection(self, collection, content):
-        item = self.db[collection][content['_key']]
+    def patch_item_from_collection(self, collection, id, content):
+        item = self.db[collection][id]
         item.patch(content)
         item.save()
         return item.getStore()
