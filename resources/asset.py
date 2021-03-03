@@ -90,3 +90,9 @@ class AssetDetail(BaseResource):
         asset = self.abort_if_item_doesnt_exist('assets', id)
         self.storage.delete_item_from_collection('assets', id)
         return 204
+
+class AssetMetadata(BaseResource):
+    @app.oidc.accept_token(require_token=True, scopes_required=['openid'])
+    def get(self, id):
+        metadata = self.storage.get_collection_item_metadata('assets', id)
+        return metadata
