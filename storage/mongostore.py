@@ -37,7 +37,11 @@ class MongoStorageManager:
         return document
 
     def get_collection_item_metadata(self, collection, id):
-        return []
+        metadata = []
+        document = self.db[collection].find_one(self._get_id_query(id), {'metadata': 1, '_id': 0})
+        if document and 'metadata' in document:
+            metadata = document['metadata']
+        return metadata
 
     def save_item_to_collection(self, collection, content):
         content = self._prepare_mongo_document(content, False, str(uuid.uuid4()))
@@ -86,6 +90,6 @@ class MongoStorageManager:
     def _get_id_query(self, id):
         return {
             '$or': [
-                {"_id": id},
-                {"identifiers": id}]
+                {'_id': id},
+                {'identifiers': id}]
         }

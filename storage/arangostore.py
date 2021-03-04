@@ -38,11 +38,9 @@ class ArangoStorageManager:
 
     def get_collection_item_metadata(self, collection, id):
         metadata = []
-        aql = 'FOR c in @@collection FILTER @id IN c.identifiers OR c._key == @id RETURN c.metadata'
-        bind = {'id': id, '@collection': collection}
-        queryResults = self.db.AQLQuery(aql, rawResults=True, bindVars=bind)
-        for queryResult in queryResults:
-            metadata.append(queryResult)
+        queryResults = self._execute_query(collection, id, 'metadata')
+        if queryResults:
+            metadata = queryResults[0]
         return metadata
 
     def save_item_to_collection(self, collection, content):
@@ -71,9 +69,12 @@ class ArangoStorageManager:
 
     def _get_key_for_id(self, collection, id):
         key = None
-        aql = 'FOR c in @@collection FILTER @id IN c.identifiers OR c._key == @id RETURN c._key'
-        bind = {'id': id, '@collection': collection}
-        queryResult = self.db.AQLQuery(aql, rawResults=True, bindVars=bind)
+        queryResult = self._execute_query(collection, id, '_key')
         if queryResult:
             key = queryResult[0]
         return key
+
+    def _execute_query(self, collection, id, field):
+        aql = 'FOR c in @@collection FILTER @id IN c.identifiers OR c._key == @id RETURN c.@field'
+        bind = {'id': id, '@collection': collection, 'field': field}
+        return self.db.AQLQuery(aql, rawResults=True, bindVars=bind)
