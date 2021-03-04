@@ -96,3 +96,9 @@ class AssetMetadata(BaseResource):
     def get(self, id):
         metadata = self.storage.get_collection_item_metadata('assets', id)
         return metadata
+
+class AssetMetadataKey(BaseResource):
+    @app.oidc.accept_token(require_token=True, scopes_required=['openid'])
+    def get(self, id, key):
+        metadata = self.storage.get_collection_item_metadata('assets', id)
+        return metadata

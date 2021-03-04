@@ -38,11 +38,26 @@ class ArangoStorageManager:
 
     def get_collection_item_metadata(self, collection, id):
         metadata = []
-        queryResults = self._execute_query(collection, id, 'metadata')
+        queryResults = self._get_field_for_id(collection, id, 'metadata')
         if queryResults:
             metadata = queryResults[0]
         return metadata
 
+    def get_collection_item_metadata_key(self, collection, id, key):
+        metadata = []
+        aql = '''
+FOR c IN @@collection
+    FILTER @id IN c.identifiers OR c._key == @id
+    FOR metadata IN c.metadata
+        FILTER metadata.key == @key
+        RETURN metadata
+'''
+        bind = {'@collection': collection, 'id': id, 'key': key}
+        queryResults = self._execute_query(aql, bind)
+        for queryResult in queryResults:
+            metadata.append(queryResult)
+        return metadata
+ 
     def save_item_to_collection(self, collection, content):
         content['_key'] = str(uuid.uuid4())
         item = self.db[collection].createDocument(content)
@@ -69,12 +84,15 @@ class ArangoStorageManager:
 
     def _get_key_for_id(self, collection, id):
         key = None
-        queryResult = self._execute_query(collection, id, '_key')
+        queryResult = self._get_field_for_id(collection, id, '_key')
         if queryResult:
             key = queryResult[0]
         return key
 
-    def _execute_query(self, collection, id, field):
+    def _get_field_for_id(self, collection, id, field):
         aql = 'FOR c in @@collection FILTER @id IN c.identifiers OR c._key == @id RETURN c.@field'
         bind = {'id': id, '@collection': collection, 'field': field}
-        return self.db.AQLQuery(aql, rawResults=True, bindVars=bind)
+        return self._execute_query(aql, bind)
+
+    def _execute_query(self, aql, bindVars):
+        return self.db.AQLQuery(aql, rawResults=True, bindVars=bindVars)

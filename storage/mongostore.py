@@ -43,6 +43,14 @@ class MongoStorageManager:
             metadata = document['metadata']
         return metadata
 
+    def get_collection_item_metadata_key(self, collection, id, key):
+        metadata = []
+        all_metadata = self.get_collection_item_metadata(collection, id)
+        for metadata_object in all_metadata:
+            if metadata_object['key'] == key:
+                metadata.append(metadata_object)
+        return metadata
+
     def save_item_to_collection(self, collection, content):
         content = self._prepare_mongo_document(content, False, str(uuid.uuid4()))
         item_id = self.db[collection].insert_one(content).inserted_id
