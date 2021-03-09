@@ -1,3 +1,3 @@
-class AssetModel:
+class EntityModel:
     def __init__(self):
         pass

@@ -1,21 +1,21 @@
 from flask_restful import Resource
 from resources.base_resource import BaseResource
 from flask_restful_swagger import swagger
-from models.asset import AssetModel
+from models.entity import EntityModel
 
 import app
 
-class Asset(BaseResource):
+class Entity(BaseResource):
     @swagger.operation(
-        notes="Creates a new asset",
-        responseClass=AssetModel.__name__,
+        notes="Creates a new entity",
+        responseClass=EntityModel.__name__,
         parameters=[
             {
                 "name": "body",
-                "description": "An asset item",
+                "description": "An entity item",
                 "required": True,
                 "allowMultiple": False,
-                "dataType": AssetModel.__name__,
+                "dataType": EntityModel.__name__,
                 "paramType": "body",
             }
         ],
@@ -27,78 +27,78 @@ class Asset(BaseResource):
     def post(self):
         self.authorize_request()
         request_body = self.get_request_body()
-        asset = self.storage.save_item_to_collection('assets', request_body)
-        return asset, 201
+        entity = self.storage.save_item_to_collection('entities', request_body)
+        return entity, 201
 
 
-class AssetDetail(BaseResource):
+class EntityDetail(BaseResource):
     @swagger.operation(
-        notes="get a asset item by ID",
-        responseClass=AssetModel.__name__,
+        notes="get a entity item by ID",
+        responseClass=EntityModel.__name__,
         responseMessages=[
             {"code": 200, "message": "successful operation"},
             {"code": 400, "message": "Invalid ID supplied"},
-            {"code": 404, "message": "Asset not found"},
+            {"code": 404, "message": "Entity not found"},
         ],
     )
     @app.oidc.accept_token(require_token=True, scopes_required=['openid'])
     def get(self, id):
-        asset = self.abort_if_item_doesnt_exist('assets', id)
-        return asset
+        entity = self.abort_if_item_doesnt_exist('entities', id)
+        return entity
 
     @swagger.operation(
-        notes="Updates an existing asset",
-        responseClass=AssetModel.__name__,
+        notes="Updates an existing entity",
+        responseClass=EntityModel.__name__,
         parameters=[
             {
                 "name": "body",
-                "description": "An asset item",
+                "description": "An entity item",
                 "required": True,
                 "allowMultiple": False,
-                "dataType": AssetModel.__name__,
+                "dataType": EntityModel.__name__,
                 "paramType": "body",
             }
         ],
         responseMessages=[
             {"code": 201, "message": "Created."},
-            {"code": 404, "message": "Asset not found"},
+            {"code": 404, "message": "Entity not found"},
             {"code": 405, "message": "Invalid input"},
         ],
     )
     def put(self, id):
         self.authorize_request()
         request = self.get_request_body()
-        asset = self.storage.update_item_from_collection('assets', id, request)
-        return asset, 201
+        entity = self.storage.update_item_from_collection('entities', id, request)
+        return entity, 201
 
     def patch(self, id):
         self.authorize_request()
         request = self.get_request_body()
-        asset = self.storage.patch_item_from_collection('assets', id, request)
-        return asset, 201
+        entity = self.storage.patch_item_from_collection('entities', id, request)
+        return entity, 201
 
     @swagger.operation(
-        notes="delete a asset item by ID",
+        notes="delete a entity item by ID",
         responseMessages=[
             {"code": 204, "message": "successful operation"},
             {"code": 400, "message": "Invalid ID supplied"},
-            {"code": 404, "message": "Asset not found"},
+            {"code": 404, "message": "Entity not found"},
         ],
     )
     @app.oidc.accept_token(require_token=True, scopes_required=['openid'])
     def delete(self, id):
-        asset = self.abort_if_item_doesnt_exist('assets', id)
-        self.storage.delete_item_from_collection('assets', id)
+        entity = self.abort_if_item_doesnt_exist('entities', id)
+        self.storage.delete_item_from_collection('entities', id)
         return 204
 
-class AssetMetadata(BaseResource):
+class EntityMetadata(BaseResource):
     @app.oidc.accept_token(require_token=True, scopes_required=['openid'])
     def get(self, id):
-        metadata = self.storage.get_collection_item_metadata('assets', id)
+        metadata = self.storage.get_collection_item_metadata('entities', id)
         return metadata
 
-class AssetMetadataKey(BaseResource):
+class EntityMetadataKey(BaseResource):
     @app.oidc.accept_token(require_token=True, scopes_required=['openid'])
     def get(self, id, key):
-        metadata = self.storage.get_collection_item_metadata('assets', id)
+        metadata = self.storage.get_collection_item_metadata('entities', id)
         return metadata
