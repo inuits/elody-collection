@@ -13,7 +13,7 @@ class ArangoStorageManager:
         self.arango_password = os.getenv('ARANGO_DB_PASSWORD')
         self.arango_db_name = os.getenv('ARANGO_DB_NAME')
 
-        self.conn = Connection(username=self.arango_username, password=self.arango_password)
+        self.conn = Connection(arangoURL='http://' + self.arango_host + ':8529', username=self.arango_username, password=self.arango_password)
         self.db = self.conn[self.arango_db_name]
 
     def save_tenant(self, tenant_json):
