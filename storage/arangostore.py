@@ -14,7 +14,7 @@ class ArangoStorageManager:
         self.arango_db_name = os.getenv('ARANGO_DB_NAME')
 
         self.conn = Connection(arangoURL='http://' + self.arango_host + ':8529', username=self.arango_username, password=self.arango_password)
-        self.db = self.conn[self.arango_db_name]
+        self.db = self._create_database_if_not_exists(self.arango_db_name)
 
     def save_tenant(self, tenant_json):
         return self.save_item_to_collection('tenants', tenant_json)
@@ -96,3 +96,9 @@ FOR c IN @@collection
 
     def _execute_query(self, aql, bindVars):
         return self.db.AQLQuery(aql, rawResults=True, bindVars=bindVars)
+
+    def _create_database_if_not_exists(self, arango_db_name):
+        if not self.conn.hasDatabase(arango_db_name):
+            return self.conn.createDatabase(arango_db_name)
+        else:
+            return self.conn[arango_db_name]
