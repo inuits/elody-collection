@@ -30,6 +30,11 @@ class Entity(BaseResource):
         entity = self.storage.save_item_to_collection('entities', request_body)
         return entity, 201
 
+    @app.oidc.accept_token(require_token=True, scopes_required=['openid'])
+    def get(self):
+        entities = self.storage.get_items_from_collection('entities')
+        return entities
+
 
 class EntityDetail(BaseResource):
     @swagger.operation(
