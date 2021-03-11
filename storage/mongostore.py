@@ -30,6 +30,12 @@ class MongoStorageManager:
     def get_tenant_by_id(self, id):
         return self.get_item_from_collection_by_id('tenants', id)
 
+    def get_items_from_collection(self, collection):
+        all_documents = list()
+        for document in self.db[collection].find():
+            all_documents.append(self._prepare_mongo_document(document, True))
+        return all_documents
+
     def get_item_from_collection_by_id(self, collection, id):
         document = self.db[collection].find_one(self._get_id_query(id))
         if document:

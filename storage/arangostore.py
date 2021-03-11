@@ -28,6 +28,12 @@ class ArangoStorageManager:
     def get_tenant_by_id(self, id):
         return self.get_item_from_collection_by_id('tenants', id)
 
+    def get_items_from_collection(self, collection):
+        all_documents = list()
+        for document in self.db[collection].fetchAll():
+            all_documents.append(document.getStore())
+        return all_documents
+
     def get_item_from_collection_by_id(self, collection, id):
         try:
             key = self._get_key_for_id(collection, id)
