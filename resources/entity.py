@@ -32,7 +32,15 @@ class Entity(BaseResource):
 
     @app.oidc.accept_token(require_token=True, scopes_required=['openid'])
     def get(self):
-        entities = self.storage.get_items_from_collection('entities')
+        skip = int(request.args.get('skip', 0))
+        limit = int(request.args.get('limit', 20))
+        entities = self.storage.get_items_from_collection('entities', skip, limit)
+        count = entities['count']
+        entities['limit'] = limit
+        if skip + limit < count:
+            entities['next'] = '/{}?skip={}&limit={}'.format('entities', skip + limit, limit)
+        if skip - limit >= 0:
+            entities['previous'] = '/{}?skip={}&limit={}'.format('entities', skip - limit, limit)
         return entities
 
 
@@ -48,7 +56,7 @@ class EntityDetail(BaseResource):
     )
     @app.oidc.accept_token(require_token=True, scopes_required=['openid'])
     def get(self, id):
-        entity = self.abort_if_item_doesnt_exist('entities', id)
+        entity = self.abort_if_item_doesnt_exist('entities', id, )
         return entity
 
     @swagger.operation(
