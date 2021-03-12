@@ -2,6 +2,7 @@ from flask_restful import Resource
 from resources.base_resource import BaseResource
 from flask_restful_swagger import swagger
 from models.entity import EntityModel
+from flask import request
 
 import app
 
