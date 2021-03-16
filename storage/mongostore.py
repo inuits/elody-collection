@@ -60,6 +60,12 @@ class MongoStorageManager:
                 metadata.append(metadata_object)
         return metadata
 
+    def get_collection_item_mediafiles(self, collection, id):
+        mediafiles = []
+        for mediafile in self.db['mediafiles'].find({collection: id}):
+            mediafiles.append(mediafile)
+        return mediafiles
+
     def save_item_to_collection(self, collection, content):
         content = self._prepare_mongo_document(content, False, str(uuid.uuid4()))
         item_id = self.db[collection].insert_one(content).inserted_id

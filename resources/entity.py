@@ -116,3 +116,10 @@ class EntityMetadataKey(BaseResource):
     def get(self, id, key):
         metadata = self.storage.get_collection_item_metadata('entities', id)
         return metadata
+
+class EntityMediafiles(BaseResource):
+    @app.oidc.accept_token(require_token=True, scopes_required=['openid'])
+    def get(self, id):
+        mediafiles = self.storage.get_collection_item_mediafiles('entities', id)
+        return mediafiles
+    

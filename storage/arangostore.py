@@ -66,6 +66,9 @@ FOR c IN @@collection
         for queryResult in queryResults:
             metadata.append(queryResult)
         return metadata
+
+    def get_collection_item_mediafiles(self, collection, id):
+        return []
  
     def save_item_to_collection(self, collection, content):
         content['_key'] = str(uuid.uuid4())

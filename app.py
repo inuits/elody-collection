@@ -39,12 +39,13 @@ app.config.update({
 oidc = OpenIDConnect(app)
 
 from resources.tenant import Tenant, TenantDetail
-from resources.entity import Entity, EntityDetail, EntityMetadata, EntityMetadataKey
+from resources.entity import Entity, EntityDetail, EntityMetadata, EntityMetadataKey, EntityMediafiles
 from resources.mediafile import Mediafile, MediafileDetail
 
 api.add_resource(TenantDetail, '/tenants/<string:id>')
 api.add_resource(Tenant, '/tenants')
 
+api.add_resource(EntityMediafiles, '/entities/<string:id>/mediafiles')
 api.add_resource(EntityMetadataKey, '/entities/<string:id>/metadata/<string:key>')
 api.add_resource(EntityMetadata, '/entities/<string:id>/metadata')
 api.add_resource(EntityDetail, '/entities/<string:id>')
