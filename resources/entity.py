@@ -122,4 +122,10 @@ class EntityMediafiles(BaseResource):
     def get(self, id):
         mediafiles = self.storage.get_collection_item_mediafiles('entities', id)
         return mediafiles
-    
+
+    def post(self, id):
+        self.authorize_request()
+        request_body = self.get_request_body()
+        mediafile_id = request_body['_id']
+        mediafile = self.storage.add_mediafile_to_entity('entities', id, mediafile_id)
+        return mediafile, 201

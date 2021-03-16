@@ -69,6 +69,9 @@ FOR c IN @@collection
 
     def get_collection_item_mediafiles(self, collection, id):
         return []
+
+    def add_mediafile_to_entity(self, collection, id, mediafile_id):
+        return []
  
     def save_item_to_collection(self, collection, content):
         content['_key'] = str(uuid.uuid4())

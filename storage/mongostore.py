@@ -66,6 +66,15 @@ class MongoStorageManager:
             mediafiles.append(mediafile)
         return mediafiles
 
+    def add_mediafile_to_entity(self, collection, id, mediafile_id):
+        mediafile = None
+        identifiers = self.db[collection].find_one(self._get_id_query(id), {'identifiers': 1})
+        if identifiers and 'identifiers' in identifiers:
+            identifiers = identifiers['identifiers']
+            self.db['mediafiles'].update_one(self._get_id_query(mediafile_id), {'$set': {'entities': identifiers}})
+            mediafile = self.db['mediafiles'].find_one(self._get_id_query(mediafile_id))
+        return mediafile
+
     def save_item_to_collection(self, collection, content):
         content = self._prepare_mongo_document(content, False, str(uuid.uuid4()))
         item_id = self.db[collection].insert_one(content).inserted_id
