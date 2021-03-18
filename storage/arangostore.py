@@ -12,6 +12,10 @@ class ArangoStorageManager:
         self.arango_username = os.getenv('ARANGO_DB_USERNAME')
         self.arango_password = os.getenv('ARANGO_DB_PASSWORD')
         self.arango_db_name = os.getenv('ARANGO_DB_NAME')
+        self.entity_collection_name = os.getenv('ENTITY_COLLECTION', 'entities')
+        self.mediafile_collection_name = os.getenv('MEDIAFILE_COLLECTION', 'mediafiles')
+        self.mediafile_edge_name = os.getenv('MEDIAFILE_EDGE', 'hasMediafile')
+        self.default_graph_name = os.getenv('DEFAULT_GRAPH', 'assets')
 
         self.conn = Connection(arangoURL='http://' + self.arango_host + ':8529', username=self.arango_username, password=self.arango_password)
         self.db = self._create_database_if_not_exists(self.arango_db_name)
@@ -26,7 +30,7 @@ class ArangoStorageManager:
         self.delete_item_from_collection('tenants', id)
 
     def get_tenant_by_id(self, id):
-        return self.get_item_from_collection_by_id('tenants', id)
+        return self.get_item_from_collection_by_id('tenants', id).getStore()
 
     def get_items_from_collection(self, collection, skip=0, limit=20):
         items = dict()
@@ -40,7 +44,7 @@ class ArangoStorageManager:
     def get_item_from_collection_by_id(self, collection, id):
         try:
             key = self._get_key_for_id(collection, id)
-            item = self.db[collection][key].getStore()
+            item = self.db[collection][key]
         except DocumentNotFoundError:
             item = None
         return item
@@ -68,10 +72,22 @@ FOR c IN @@collection
         return metadata
 
     def get_collection_item_mediafiles(self, collection, id):
-        return []
+        entity = self.get_item_from_collection_by_id(collection, id)
+        mediafiles = []
+        for edge in entity.getOutEdges(self.db[self.mediafile_edge_name]):
+            mediafiles.append(self.db.fetchDocument(edge['_to']).getStore())
+        return mediafiles
 
     def add_mediafile_to_entity(self, collection, id, mediafile_id):
-        return []
+        entity = self.get_item_from_collection_by_id(collection, id)
+        if entity:
+            self.db.graphs[self.default_graph_name].createEdge(
+                self.mediafile_edge_name,
+                entity['_id'],
+                mediafile_id,
+                {}
+            )
+        return self.db.fetchDocument(mediafile_id).getStore()
  
     def save_item_to_collection(self, collection, content):
         content['_key'] = str(uuid.uuid4())
