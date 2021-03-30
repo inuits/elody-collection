@@ -4,39 +4,44 @@ import os
 from dotenv import load_dotenv
 import uuid
 
+
 class ArangoStorageManager:
     def __init__(self):
-        self.arango_host = os.getenv('ARANGO_DB_HOST')
-        self.arango_username = os.getenv('ARANGO_DB_USERNAME')
-        self.arango_password = os.getenv('ARANGO_DB_PASSWORD')
-        self.arango_db_name = os.getenv('ARANGO_DB_NAME')
-        self.entity_collection_name = os.getenv('ENTITY_COLLECTION', 'entities')
-        self.mediafile_collection_name = os.getenv('MEDIAFILE_COLLECTION', 'mediafiles')
-        self.mediafile_edge_name = os.getenv('MEDIAFILE_EDGE', 'hasMediafile')
-        self.default_graph_name = os.getenv('DEFAULT_GRAPH', 'assets')
+        self.arango_host = os.getenv("ARANGO_DB_HOST")
+        self.arango_username = os.getenv("ARANGO_DB_USERNAME")
+        self.arango_password = os.getenv("ARANGO_DB_PASSWORD")
+        self.arango_db_name = os.getenv("ARANGO_DB_NAME")
+        self.entity_collection_name = os.getenv("ENTITY_COLLECTION", "entities")
+        self.mediafile_collection_name = os.getenv("MEDIAFILE_COLLECTION", "mediafiles")
+        self.mediafile_edge_name = os.getenv("MEDIAFILE_EDGE", "hasMediafile")
+        self.default_graph_name = os.getenv("DEFAULT_GRAPH", "assets")
 
-        self.conn = Connection(arangoURL='http://' + self.arango_host + ':8529', username=self.arango_username, password=self.arango_password)
+        self.conn = Connection(
+            arangoURL="http://" + self.arango_host + ":8529",
+            username=self.arango_username,
+            password=self.arango_password,
+        )
         self.db = self._create_database_if_not_exists(self.arango_db_name)
 
     def save_tenant(self, tenant_json):
-        return self.save_item_to_collection('tenants', tenant_json)
+        return self.save_item_to_collection("tenants", tenant_json)
 
     def update_tenant(self, id, tenant_json):
-        return self.update_item_from_collection('tenants', id, tenant_json)
+        return self.update_item_from_collection("tenants", id, tenant_json)
 
     def delete_tenant(self, id):
-        self.delete_item_from_collection('tenants', id)
+        self.delete_item_from_collection("tenants", id)
 
     def get_tenant_by_id(self, id):
-        return self.get_item_from_collection_by_id('tenants', id)
+        return self.get_item_from_collection_by_id("tenants", id)
 
     def get_items_from_collection(self, collection, skip=0, limit=20):
         items = dict()
         count = self.db[collection].count()
-        items['count'] = count
-        items['results'] = list()
+        items["count"] = count
+        items["results"] = list()
         for document in self.db[collection].fetchAll(skip=skip, limit=limit):
-            items['results'].append(document.getStore())
+            items["results"].append(document.getStore())
         return items
 
     def get_item_from_collection_by_id(self, collection, id):
@@ -55,21 +60,21 @@ class ArangoStorageManager:
 
     def get_collection_item_metadata(self, collection, id):
         metadata = []
-        queryResults = self._get_field_for_id(collection, id, 'metadata')
+        queryResults = self._get_field_for_id(collection, id, "metadata")
         if queryResults:
             metadata = queryResults[0]
         return metadata
 
     def get_collection_item_metadata_key(self, collection, id, key):
         metadata = []
-        aql = '''
+        aql = """
 FOR c IN @@collection
     FILTER @id IN c.identifiers OR c._key == @id
     FOR metadata IN c.metadata
         FILTER metadata.key == @key
         RETURN metadata
-'''
-        bind = {'@collection': collection, 'id': id, 'key': key}
+"""
+        bind = {"@collection": collection, "id": id, "key": key}
         queryResults = self._execute_query(aql, bind)
         for queryResult in queryResults:
             metadata.append(queryResult)
@@ -79,22 +84,19 @@ FOR c IN @@collection
         entity = self.get_raw_item_from_collection_by_id(collection, id)
         mediafiles = []
         for edge in entity.getOutEdges(self.db[self.mediafile_edge_name]):
-            mediafiles.append(self.db.fetchDocument(edge['_to']).getStore())
+            mediafiles.append(self.db.fetchDocument(edge["_to"]).getStore())
         return mediafiles
 
     def add_mediafile_to_entity(self, collection, id, mediafile_id):
         entity = self.get_raw_item_from_collection_by_id(collection, id)
         if entity:
             self.db.graphs[self.default_graph_name].createEdge(
-                self.mediafile_edge_name,
-                entity['_id'],
-                mediafile_id,
-                {}
+                self.mediafile_edge_name, entity["_id"], mediafile_id, {}
             )
         return self.db.fetchDocument(mediafile_id).getStore()
- 
+
     def save_item_to_collection(self, collection, content):
-        content['_key'] = str(uuid.uuid4())
+        content["_key"] = str(uuid.uuid4())
         item = self.db[collection].createDocument(content)
         item.save()
         return item.getStore()
@@ -119,14 +121,14 @@ FOR c IN @@collection
 
     def _get_key_for_id(self, collection, id):
         key = None
-        queryResult = self._get_field_for_id(collection, id, '_key')
+        queryResult = self._get_field_for_id(collection, id, "_key")
         if queryResult:
             key = queryResult[0]
         return key
 
     def _get_field_for_id(self, collection, id, field):
-        aql = 'FOR c in @@collection FILTER @id IN c.identifiers OR c._key == @id RETURN c.@field'
-        bind = {'id': id, '@collection': collection, 'field': field}
+        aql = "FOR c in @@collection FILTER @id IN c.identifiers OR c._key == @id RETURN c.@field"
+        bind = {"id": id, "@collection": collection, "field": field}
         return self._execute_query(aql, bind)
 
     def _execute_query(self, aql, bindVars):

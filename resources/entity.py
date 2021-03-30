@@ -6,6 +6,7 @@ from flask import request
 
 import app
 
+
 class Entity(BaseResource):
     @swagger.operation(
         notes="Creates a new entity",
@@ -28,20 +29,24 @@ class Entity(BaseResource):
     def post(self):
         self.authorize_request()
         request_body = self.get_request_body()
-        entity = self.storage.save_item_to_collection('entities', request_body)
+        entity = self.storage.save_item_to_collection("entities", request_body)
         return entity, 201
 
-    @app.oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @app.oidc.accept_token(require_token=True, scopes_required=["openid"])
     def get(self):
-        skip = int(request.args.get('skip', 0))
-        limit = int(request.args.get('limit', 20))
-        entities = self.storage.get_items_from_collection('entities', skip, limit)
-        count = entities['count']
-        entities['limit'] = limit
+        skip = int(request.args.get("skip", 0))
+        limit = int(request.args.get("limit", 20))
+        entities = self.storage.get_items_from_collection("entities", skip, limit)
+        count = entities["count"]
+        entities["limit"] = limit
         if skip + limit < count:
-            entities['next'] = '/{}?skip={}&limit={}'.format('entities', skip + limit, limit)
+            entities["next"] = "/{}?skip={}&limit={}".format(
+                "entities", skip + limit, limit
+            )
         if skip - limit >= 0:
-            entities['previous'] = '/{}?skip={}&limit={}'.format('entities', skip - limit, limit)
+            entities["previous"] = "/{}?skip={}&limit={}".format(
+                "entities", skip - limit, limit
+            )
         return entities
 
 
@@ -55,9 +60,12 @@ class EntityDetail(BaseResource):
             {"code": 404, "message": "Entity not found"},
         ],
     )
-    @app.oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @app.oidc.accept_token(require_token=True, scopes_required=["openid"])
     def get(self, id):
-        entity = self.abort_if_item_doesnt_exist('entities', id, )
+        entity = self.abort_if_item_doesnt_exist(
+            "entities",
+            id,
+        )
         return entity
 
     @swagger.operation(
@@ -82,13 +90,13 @@ class EntityDetail(BaseResource):
     def put(self, id):
         self.authorize_request()
         request = self.get_request_body()
-        entity = self.storage.update_item_from_collection('entities', id, request)
+        entity = self.storage.update_item_from_collection("entities", id, request)
         return entity, 201
 
     def patch(self, id):
         self.authorize_request()
         request = self.get_request_body()
-        entity = self.storage.patch_item_from_collection('entities', id, request)
+        entity = self.storage.patch_item_from_collection("entities", id, request)
         return entity, 201
 
     @swagger.operation(
@@ -99,33 +107,36 @@ class EntityDetail(BaseResource):
             {"code": 404, "message": "Entity not found"},
         ],
     )
-    @app.oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @app.oidc.accept_token(require_token=True, scopes_required=["openid"])
     def delete(self, id):
-        entity = self.abort_if_item_doesnt_exist('entities', id)
-        self.storage.delete_item_from_collection('entities', id)
+        entity = self.abort_if_item_doesnt_exist("entities", id)
+        self.storage.delete_item_from_collection("entities", id)
         return 204
 
+
 class EntityMetadata(BaseResource):
-    @app.oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @app.oidc.accept_token(require_token=True, scopes_required=["openid"])
     def get(self, id):
-        metadata = self.storage.get_collection_item_metadata('entities', id)
+        metadata = self.storage.get_collection_item_metadata("entities", id)
         return metadata
+
 
 class EntityMetadataKey(BaseResource):
-    @app.oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @app.oidc.accept_token(require_token=True, scopes_required=["openid"])
     def get(self, id, key):
-        metadata = self.storage.get_collection_item_metadata('entities', id)
+        metadata = self.storage.get_collection_item_metadata("entities", id)
         return metadata
 
+
 class EntityMediafiles(BaseResource):
-    @app.oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @app.oidc.accept_token(require_token=True, scopes_required=["openid"])
     def get(self, id):
-        mediafiles = self.storage.get_collection_item_mediafiles('entities', id)
+        mediafiles = self.storage.get_collection_item_mediafiles("entities", id)
         return mediafiles
 
     def post(self, id):
         self.authorize_request()
         request_body = self.get_request_body()
-        mediafile_id = request_body['_id']
-        mediafile = self.storage.add_mediafile_to_entity('entities', id, mediafile_id)
+        mediafile_id = request_body["_id"]
+        mediafile = self.storage.add_mediafile_to_entity("entities", id, mediafile_id)
         return mediafile, 201

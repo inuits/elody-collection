@@ -3,38 +3,37 @@ import os
 from dotenv import load_dotenv
 import uuid
 
+
 class MongoStorageManager:
-    character_replace_map = {
-        '.': '='
-    }
+    character_replace_map = {".": "="}
 
     def __init__(self):
-        self.mongo_host = os.getenv('MONGO_DB_HOST')
-        self.mongo_port = int(os.getenv('MONGO_DB_PORT'))
-        self.mongo_db = os.getenv('MONGO_DB_NAME')
+        self.mongo_host = os.getenv("MONGO_DB_HOST")
+        self.mongo_port = int(os.getenv("MONGO_DB_PORT"))
+        self.mongo_db = os.getenv("MONGO_DB_NAME")
 
         self.client = MongoClient(self.mongo_host, self.mongo_port)
         self.db = self.client[self.mongo_db]
-        
+
     def save_tenant(self, tenant_json):
-        return self.save_item_to_collection('assets', tenant_json)
+        return self.save_item_to_collection("assets", tenant_json)
 
     def update_tenant(self, tenant_json):
-        return self.update_item_from_collection('tenants', tenant_json)
+        return self.update_item_from_collection("tenants", tenant_json)
 
     def delete_tenant(self, id):
-        self.delete_item_from_collection('tenants', id)
+        self.delete_item_from_collection("tenants", id)
 
     def get_tenant_by_id(self, id):
-        return self.get_item_from_collection_by_id('tenants', id)
+        return self.get_item_from_collection_by_id("tenants", id)
 
     def get_items_from_collection(self, collection, skip=0, limit=20):
         items = dict()
         count = self.db[collection].count_documents({})
-        items['count'] = count
-        items['results'] = list()
+        items["count"] = count
+        items["results"] = list()
         for document in self.db[collection].find(skip=skip, limit=limit):
-            items['results'].append(self._prepare_mongo_document(document, True))
+            items["results"].append(self._prepare_mongo_document(document, True))
         return items
 
     def get_item_from_collection_by_id(self, collection, id):
@@ -45,32 +44,38 @@ class MongoStorageManager:
 
     def get_collection_item_metadata(self, collection, id):
         metadata = []
-        document = self.db[collection].find_one(self._get_id_query(id), {'metadata': 1, '_id': 0})
-        if document and 'metadata' in document:
-            metadata = document['metadata']
+        document = self.db[collection].find_one(
+            self._get_id_query(id), {"metadata": 1, "_id": 0}
+        )
+        if document and "metadata" in document:
+            metadata = document["metadata"]
         return metadata
 
     def get_collection_item_metadata_key(self, collection, id, key):
         metadata = []
         all_metadata = self.get_collection_item_metadata(collection, id)
         for metadata_object in all_metadata:
-            if metadata_object['key'] == key:
+            if metadata_object["key"] == key:
                 metadata.append(metadata_object)
         return metadata
 
     def get_collection_item_mediafiles(self, collection, id):
         mediafiles = []
-        for mediafile in self.db['mediafiles'].find({collection: id}):
+        for mediafile in self.db["mediafiles"].find({collection: id}):
             mediafiles.append(mediafile)
         return mediafiles
 
     def add_mediafile_to_entity(self, collection, id, mediafile_id):
         mediafile = None
-        identifiers = self.db[collection].find_one(self._get_id_query(id), {'identifiers': 1})
-        if identifiers and 'identifiers' in identifiers:
-            identifiers = identifiers['identifiers']
-            self.db['mediafiles'].update_one(self._get_id_query(mediafile_id), {'$set': {'entities': identifiers}})
-            mediafile = self.db['mediafiles'].find_one(self._get_id_query(mediafile_id))
+        identifiers = self.db[collection].find_one(
+            self._get_id_query(id), {"identifiers": 1}
+        )
+        if identifiers and "identifiers" in identifiers:
+            identifiers = identifiers["identifiers"]
+            self.db["mediafiles"].update_one(
+                self._get_id_query(mediafile_id), {"$set": {"entities": identifiers}}
+            )
+            mediafile = self.db["mediafiles"].find_one(self._get_id_query(mediafile_id))
         return mediafile
 
     def save_item_to_collection(self, collection, content):
@@ -91,13 +96,13 @@ class MongoStorageManager:
     def delete_item_from_collection(self, collection, id):
         self.db[collection].delete_one(self._get_id_query(id))
 
-    def _prepare_mongo_document(self, document, reversed, id = None):
+    def _prepare_mongo_document(self, document, reversed, id=None):
         if id:
-            document['_id'] = id
-        if 'data' in document:
-            document['data'] = self._replace_dictionary_keys(document['data'], reversed)
+            document["_id"] = id
+        if "data" in document:
+            document["data"] = self._replace_dictionary_keys(document["data"], reversed)
         return document
-        
+
     def _replace_dictionary_keys(self, data, reversed):
         if type(data) is dict:
             new_dict = dict()
@@ -106,7 +111,9 @@ class MongoStorageManager:
                 if type(value) is list:
                     new_value = list()
                     for object in value:
-                        new_value.append(self._replace_dictionary_keys(object, reversed))
+                        new_value.append(
+                            self._replace_dictionary_keys(object, reversed)
+                        )
                 else:
                     new_value = self._replace_dictionary_keys(value, reversed)
                 for original_char, replace_char in self.character_replace_map.items():
@@ -118,8 +125,4 @@ class MongoStorageManager:
         return data
 
     def _get_id_query(self, id):
-        return {
-            '$or': [
-                {'_id': id},
-                {'identifiers': id}]
-        }
+        return {"$or": [{"_id": id}, {"identifiers": id}]}

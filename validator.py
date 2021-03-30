@@ -8,7 +8,7 @@ tenant_schema = {
         "_from": {"type": "string"},
         "_to": {"type": "string"},
         "@context": {"type": ["object", "string", "array", "null"]},
-        "@type": {"type" : "string"},
+        "@type": {"type": "string"},
         "security": {
             "type": "object",
             "properties": {
@@ -16,18 +16,19 @@ tenant_schema = {
                 "@type": {"type": "string"},
                 "list": {
                     "type": "array",
-                }
-            }
+                },
+            },
         },
         "data": {
             "type": "object",
             "properties": {
                 "@context": {"type": ["object", "string", "array", "null"]},
                 "@type": {"type": "string"},
-            }
-        }
-    }
+            },
+        },
+    },
 }
+
 
 class TenantValidator:
     def validate(self, tenant_json):

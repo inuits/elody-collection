@@ -6,6 +6,7 @@ from storage.storagemanager import StorageManager
 
 import app
 
+
 class BaseResource(Resource):
     def __init__(self):
         self.storage = StorageManager().get_db_engine()
@@ -16,15 +17,19 @@ class BaseResource(Resource):
     def abort_if_item_doesnt_exist(self, collection, id):
         item = self.storage.get_item_from_collection_by_id(collection, id)
         if item is None:
-            abort(404, message="Item {} doesn't exist in collection {}".format(id, collection))
+            abort(
+                404,
+                message="Item {} doesn't exist in collection {}".format(id, collection),
+            )
         return item
 
     def authorize_request(self):
         token = None
-        if 'Authorization' in request.headers and request.headers['Authorization'].startswith('Bearer '):
-            token = request.headers['Authorization'].split(None,1)[1].strip()
+        if "Authorization" in request.headers and request.headers[
+            "Authorization"
+        ].startswith("Bearer "):
+            token = request.headers["Authorization"].split(None, 1)[1].strip()
         validity = app.oidc.validate_token(token)
         if not validity:
-            response_body = {'error': 'invalid_token',
-                             'error_description': validity}
+            response_body = {"error": "invalid_token", "error_description": validity}
             abort(404, message=response_body)

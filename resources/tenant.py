@@ -9,9 +9,11 @@ import app
 
 validator = TenantValidator()
 
+
 def abort_if_not_valid_tenant(tenant_json):
     if not validator.validate(tenant_json):
         abort(405, message="Tenant doesn't have a valid format".format(id))
+
 
 class Tenant(BaseResource):
     @swagger.operation(
@@ -39,6 +41,7 @@ class Tenant(BaseResource):
         tenant = self.storage.save_tenant(request)
         return tenant, 201
 
+
 class TenantDetail(BaseResource):
     @swagger.operation(
         notes="get a tenant item by ID",
@@ -49,15 +52,15 @@ class TenantDetail(BaseResource):
             {"code": 404, "message": "Tenant not found"},
         ],
     )
-    @app.oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @app.oidc.accept_token(require_token=True, scopes_required=["openid"])
     def get(self, id):
-        tenant = self.abort_if_item_doesnt_exist('tenants', id)
+        tenant = self.abort_if_item_doesnt_exist("tenants", id)
         return tenant
 
     def patch(self, id):
         self.authorize_request()
         request = self.get_request_body()
-        asset = self.storage.patch_item_from_collection('tenants', id, request)
+        asset = self.storage.patch_item_from_collection("tenants", id, request)
         return asset, 201
 
     @swagger.operation(
@@ -94,9 +97,8 @@ class TenantDetail(BaseResource):
             {"code": 404, "message": "Tenant not found"},
         ],
     )
-    @app.oidc.accept_token(require_token=True, scopes_required=['openid'])
+    @app.oidc.accept_token(require_token=True, scopes_required=["openid"])
     def delete(self, id):
-        tenant = self.abort_if_item_doesnt_exist('tenants', id)
+        tenant = self.abort_if_item_doesnt_exist("tenants", id)
         self.storage.delete_tenant(id)
         return 204
-
