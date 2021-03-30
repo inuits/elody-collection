@@ -9,8 +9,6 @@ class MongoStorageManager:
     }
 
     def __init__(self):
-        load_dotenv('.env')
-
         self.mongo_host = os.getenv('MONGO_DB_HOST')
         self.mongo_port = int(os.getenv('MONGO_DB_PORT'))
         self.mongo_db = os.getenv('MONGO_DB_NAME')

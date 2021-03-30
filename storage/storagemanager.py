@@ -10,8 +10,6 @@ db_engines = {
 
 class StorageManager:
     def __init__(self):
-        load_dotenv('.env')
-
         self.storage_engine = os.getenv('DB_ENGINE')
 
     def get_db_engine(self):

@@ -1,4 +1,5 @@
 from pyArango.connection import *
+from pyArango.graph import *
 from pyArango.theExceptions import *
 import os
 from dotenv import load_dotenv
@@ -6,8 +7,6 @@ import uuid
 
 class ArangoStorageManager:
     def __init__(self):
-        load_dotenv('.env')
-
         self.arango_host = os.getenv('ARANGO_DB_HOST')
         self.arango_username = os.getenv('ARANGO_DB_USERNAME')
         self.arango_password = os.getenv('ARANGO_DB_PASSWORD')
