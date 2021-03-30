@@ -1,5 +1,4 @@
 from pyArango.connection import *
-from pyArango.graph import *
 from pyArango.theExceptions import *
 import os
 from dotenv import load_dotenv
@@ -29,7 +28,7 @@ class ArangoStorageManager:
         self.delete_item_from_collection('tenants', id)
 
     def get_tenant_by_id(self, id):
-        return self.get_item_from_collection_by_id('tenants', id).getStore()
+        return self.get_item_from_collection_by_id('tenants', id)
 
     def get_items_from_collection(self, collection, skip=0, limit=20):
         items = dict()
@@ -41,6 +40,12 @@ class ArangoStorageManager:
         return items
 
     def get_item_from_collection_by_id(self, collection, id):
+        item = self.get_raw_item_from_collection_by_id(collection, id)
+        if item:
+            item = item.getStore()
+        return item
+
+    def get_raw_item_from_collection_by_id(self, collection, id):
         try:
             key = self._get_key_for_id(collection, id)
             item = self.db[collection][key]
@@ -71,14 +76,14 @@ FOR c IN @@collection
         return metadata
 
     def get_collection_item_mediafiles(self, collection, id):
-        entity = self.get_item_from_collection_by_id(collection, id)
+        entity = self.get_raw_item_from_collection_by_id(collection, id)
         mediafiles = []
         for edge in entity.getOutEdges(self.db[self.mediafile_edge_name]):
             mediafiles.append(self.db.fetchDocument(edge['_to']).getStore())
         return mediafiles
 
     def add_mediafile_to_entity(self, collection, id, mediafile_id):
-        entity = self.get_item_from_collection_by_id(collection, id)
+        entity = self.get_raw_item_from_collection_by_id(collection, id)
         if entity:
             self.db.graphs[self.default_graph_name].createEdge(
                 self.mediafile_edge_name,
