@@ -119,6 +119,11 @@ FOR c IN @@collection
         item.save()
         return item.getStore()
 
+    def update_collection_item_metadata(self, collection, id, content):
+        patch_data = {"metadata": content}
+        item = self.patch_item_from_collection(collection, id, patch_data)
+        return item["metadata"]
+
     def patch_item_from_collection(self, collection, id, content):
         key = self._get_key_for_id(collection, id)
         item = self.db[collection][key]

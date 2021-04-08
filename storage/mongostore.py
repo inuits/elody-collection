@@ -94,6 +94,11 @@ class MongoStorageManager:
         self.db[collection].replace_one(self._get_id_query(id), content)
         return self.get_item_from_collection_by_id(collection, id)
 
+    def update_collection_item_metadata(self, collection, id, content):
+        patch_data = {"metadata": content}
+        item = self.patch_item_from_collection(collection, id, patch_data)
+        return item["metadata"]
+
     def patch_item_from_collection(self, collection, id, content):
         content = self._prepare_mongo_document(content, False)
         self.db[collection].update_one(self._get_id_query(id), {"$set": content})

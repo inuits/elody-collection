@@ -126,6 +126,12 @@ class EntityMetadata(BaseResource):
         metadata = self.storage.add_collection_item_metadata("entities", id, request)
         return metadata
 
+    def put(self, id):
+        self.authorize_request()
+        request = self.get_request_body()
+        metadata = self.storage.update_collection_item_metadata("entities", id, request)
+        return metadata
+
 
 class EntityMetadataKey(BaseResource):
     @app.oidc.accept_token(require_token=True, scopes_required=["openid"])
