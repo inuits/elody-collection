@@ -1,0 +1,846 @@
+openapi: 3.0.1
+info:
+  title: DAMS Collection API
+  description: An API for interactings with the DAMS
+  contact:
+    email: booster@inuits.eu
+  version: 0.0.1
+externalDocs:
+  description: Find out more about DAMS
+  url: https://docs.inuits.io/dams/collection-api
+servers:
+- url: https://dams.inuits.io/collection/apiv4
+- url: http://dams.inuits.io/collection/api/v4
+tags:
+- name: "tenant"
+  description: "Tenants in DAMS"
+- name: "entity"
+  description: "Entities in DAMS"
+- name: "mediafile"
+  description: "Mediafiles in DAMS"
+paths:
+  /tenants:
+    post:
+      tags:
+      - "tenant"
+      summary: "Add a new tenant"
+      operationId: "addTenant"
+      requestBody:
+        description: "Tenant object that needs to be added"
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/tenant'
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tenant'
+        "400":
+          description: "Invalid request"
+        "405":                                                                  
+          description: "Invalid input"
+  /tenants/{tenantId}:
+    put:
+      tags:
+      - "tenant"
+      summary: "Update an existing tenant"
+      operationId: "updateTenant"
+      parameters:
+      - name: tenantId
+        in: path
+        description: Tenant id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        description: "Tenant object that needs to be updated"
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/tenant'
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tenant'
+        "400":
+          description: "Invalid request"
+        "404":
+          description: "Tenant not found"
+        "405":                                                                  
+          description: "Invalid input"
+    patch:
+      tags:
+      - "tenant"
+      summary: "Patch an existing tenant"
+      operationId: "patchTenant"
+      parameters:
+      - name: tenantId
+        in: path
+        description: Tenant id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        description: "Tenant object that needs to be patched"
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/tenant'
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tenant'
+        "400":
+          description: "Invalid request"
+        "404":
+          description: "Tenant not found"
+        "405":                                                                  
+          description: "Invalid input"
+    get:
+      tags:
+      - "tenant"
+      summary: "Get specific tenant"
+      description: "Get specific tenant for a specific ID"
+      operationId: "getTenantId"
+      parameters:
+      - name: tenantId
+        in: path
+        description: Tenant id
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tenant'
+        "400":
+          description: "Invalid request"
+        "404":
+          description: "Tenant not found"
+    delete:
+      tags:
+      - "tenant"
+      summary: Delete specific tenant
+      description: Delete tenant with a specific ID
+      operationId: "deleteTenantId"
+      parameters:
+      - name: tenantId
+        in: path
+        description: Tenant id
+        required: true
+        schema:
+          type: string
+      responses:
+        "400":
+          description: "Invalid request"
+        "404":
+          description: "Tenant not found"
+  /entities:
+    post:
+      tags:
+      - "entity"
+      summary: "Add a new entity"
+      operationId: "addEntity"
+      requestBody:
+        description: "Entity object that needs to be added"
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/entity'
+      responses:
+        "400":
+          description: "Invalid request"
+        "405":                                                                  
+          description: "Invalid input"
+  /entities/{entityId}:
+    put:
+      tags:
+      - "entity"
+      summary: "Update an existing entity"
+      operationId: "updateEntity"
+      parameters:
+      - name: entityId
+        in: path
+        description: Entity id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        description: "Entity object that needs to be updated"
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/entity'
+      responses:
+        "400":
+          description: "Invalid request"
+        "404":
+          description: "Entity not found"
+        "405":                                                                  
+          description: "Invalid input"
+    patch:
+      tags:
+      - "entity"
+      summary: "Patch an existing entity"
+      operationId: "patchEntity"
+      parameters:
+      - name: entityId
+        in: path
+        description: Entity id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        description: "Entity object that needs to be patched"
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/entity'
+      responses:
+        "400":
+          description: "Invalid request"
+        "404":
+          description: "Entity not found"
+        "405":                                                                  
+          description: "Invalid input"
+    get:
+      tags:
+      - "entity"
+      summary: "Get specific entity"
+      description: "Get specific entity for a specific ID"
+      operationId: "getEntityId"
+      parameters:
+      - name: entityId
+        in: path
+        description: Entity id
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/entity'
+        "400":
+          description: "Invalid ID supplied"
+        "404":
+          description: "Entity not found"
+    delete:
+      tags:
+      - "entity"
+      summary: Delete specific entity
+      description: Delete entity with a specific ID
+      operationId: "deleteEntityId"
+      parameters:
+      - name: entityId
+        in: path
+        description: Entity id
+        required: true
+        schema:
+          type: string
+      responses:
+        "400":
+          description: "Invalid request"
+        "404":
+          description: "Entity not found"
+  /entities/{entityId}/metadata:
+    get:
+      tags:
+      - "entity"
+      summary: "Get specific entity metadata"
+      description: "Get specific entity metadata for a specific ID"
+      operationId: getEntityIdMetadata
+      parameters:
+      - name: entityId
+        in: path
+        description: Entity id
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/metadata'
+        "400":
+          description: "Invalid ID supplied"
+        "404":
+          description: "Entity not found"
+    post:
+      tags:
+      - "entity"
+      summary: "Add entity metadata"
+      description: "Add entity metadata for a specific ID"
+      operationId: addEntityIdMetadata
+      parameters:
+      - name: entityId
+        in: path
+        description: Entity id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        description: "Metadata object that needs to be added"
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/metadata'
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/metadata'
+        "400":
+          description: "Invalid ID supplied"
+        "404":
+          description: "Entity not found"
+    put:
+      tags:
+      - "entity"
+      summary: "Update entity metadata"
+      description: "Update entity metadata for a specific ID"
+      operationId: updateEntityIdMetadata
+      parameters:
+      - name: entityId
+        in: path
+        description: Entity id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        description: "Metadata object that needs to be updated"
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/metadata'
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/metadata'
+        "400":
+          description: "Invalid ID supplied"
+        "404":
+          description: "Entity not found"
+  /entities/{entityId}/metadata/{key}:
+    get:
+      tags:
+      - "entity"
+      summary: "Get a specific entity metadata field"
+      description: "Get specific entity metadata for a specific entity ID"
+      operationId: getEntityIdMetadataField
+      parameters:
+      - name: entityId
+        in: path
+        description: Entity id
+        required: true
+        schema:
+          type: string
+      - name: key
+        in: path
+        description: Metadata key
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/metadata'
+        "400":
+          description: "Invalid ID supplied"
+        "404":
+          description: "Entity not found"
+    delete:
+      tags:
+      - "entity"
+      summary: "Delete a specific entity metadata field"
+      description: "Delete a specific entity metadata field for a specific ID"
+      operationId: deleteEntityIdMetadata
+      parameters:
+      - name: entityId
+        in: path
+        description: Entity id
+        required: true
+        schema:
+          type: string
+      - name: key
+        in: path
+        description: Metadata key
+        required: true
+        schema:
+          type: string
+      responses:
+        "400":
+          description: "Invalid ID supplied"
+        "404":
+          description: "Entity not found"
+  /entities/{entityId}/mediafiles:
+    get:
+      tags:
+      - "entity"
+      summary: "Get specific asstet mediafiles"
+      description: "Get specific entity mediafiles for a specific ID"
+      operationId: getEntityIdMediafiles
+      parameters:
+      - name: entityId
+        in: path
+        description: Entity id
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/mediafile'
+        "400":
+          description: "Invalid ID supplied"
+        "404":
+          description: "Entity not found"
+    post:
+      tags:
+      - "entity"
+      summary: "Add asstet mediafiles"
+      description: "Add entity mediafiles for a specific ID"
+      operationId: addEntityIdMediafiles
+      parameters:
+      - name: entityId
+        in: path
+        description: Entity id
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: string
+                format: uri
+        "400":
+          description: "Invalid ID supplied"
+        "404":
+          description: "Entity not found"
+  /entities/{entityId}/security:
+    get:
+      tags:
+      - "entity"
+      summary: "Get specific entity security context"
+      description: "Get specific entity security context for a specific ID"
+      operationId: getEntityIdSecurity
+      parameters:
+      - name: entityId
+        in: path
+        description: Entity id
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/security'
+        "400":
+          description: "Invalid ID supplied"
+        "404":
+          description: "Entity not found"
+    post:
+      tags:
+      - "entity"
+      summary: "Add specific entity security context"
+      description: "Add specific entity security context for a specific ID"
+      operationId: addEntityIdSecurity
+      parameters:
+      - name: entityId
+        in: path
+        description: Entity id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        description: "Security context that needs to be patched"
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/security'
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/security'
+        "400":
+          description: "Invalid ID supplied"
+        "404":
+          description: "Entity not found"
+  /entities/{entityId}/locations:
+    get:
+      tags:
+      - "entity"
+      summary: "Get specific entity location"
+      description: "Get specific entity location for a specific ID"
+      operationId: getEntityIdLocation
+      parameters:
+      - name: entityId
+        in: path
+        description: Entity id
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Location'
+        "400":
+          description: "Invalid ID supplied"
+        "404":
+          description: "Entity not found"
+    post:
+      tags:
+      - "entity"
+      summary: "Add specific entity location"
+      description: "Add specific entity location for a specific ID"
+      operationId: addEntityIdLocation
+      parameters:
+      - name: entityId
+        in: path
+        description: Entity id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        description: "Location that needs to be patched"
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Location'
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/security'
+        "400":
+          description: "Invalid ID supplied"
+        "404":
+          description: "Entity not found"
+  /entities/{entityId}/relations:
+    get:
+      tags:
+      - "entity"
+      summary: "Get specific entity relations"
+      description: "Get specific entity relations for a specific ID"
+      operationId: getEntityIdRelations
+      parameters:
+      - name: entityId
+        in: path
+        description: Entity id
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+        "400":
+          description: "Invalid ID supplied"
+        "404":
+          description: "Entity not found"
+    post:
+      tags:
+      - "entity"
+      summary: "Add specific entity relation"
+      description: "Add specific entity relation for a specific ID"
+      operationId: addEntityIdRelation
+      parameters:
+      - name: entityId
+        in: path
+        description: Entity id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        description: "Relation that needs to be patched"
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+        "400":
+          description: "Invalid ID supplied"
+        "404":
+          description: "Entity not found"
+  /mediafiles:
+    post:
+      tags:
+      - "mediafile"
+      summary: "Add a new mediafile"
+      operationId: "addMediafile"
+      requestBody:
+        description: "Mediafile object that needs to be added"
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/mediafile'
+      responses:
+        "400":
+          description: "Invalid request"
+        "405":
+          description: "Invalid input"
+  /mediafiles/{mediafileId}:
+    put:
+      tags:
+      - "mediafile"
+      summary: "Update an existing mediafile"
+      operationId: "updateMediafile"
+      parameters:
+      - name: mediafileId
+        in: path
+        description: Mediafile id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        description: "Mediafile object that needs to be updated"
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/mediafile'
+      responses:
+        "400":
+          description: "Invalid request"
+        "404":
+          description: "Mediafile not found"
+        "405":
+          description: "Validation exception"
+    patch:
+      tags:
+      - "mediafile"
+      summary: "Patch an existing mediafile"
+      operationId: "patchMediafile"
+      parameters:
+      - name: mediafileId
+        in: path
+        description: Mediafile id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        description: "Mediafile object that needs to be patched"
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/mediafile'
+      responses:
+        "400":
+          description: "Invalid request"
+        "404":
+          description: "Mediafile not found"
+        "405":
+          description: "Validation exception"
+  
+    get:
+      tags:
+      - "mediafile"
+      summary: Get specific mediafile
+      description: Get specific mediafile for a specific ID
+      operationId: getMediafileId
+      parameters:
+      - name: mediafileId
+        in: path
+        description: Mediafile id
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/mediafile'
+        400:
+          description: "Invalid ID supplied"
+        404:
+          description: "Mediafile not found"
+    delete:
+      tags:
+      - "mediafile"
+      summary: Delete specific mediafile
+      description: Delete mediafile with a specific ID
+      operationId: "deleteMediafileId"
+      parameters:
+      - name: mediafileId
+        in: path
+        description: Mediafile id
+        required: true
+        schema:
+          type: string
+      responses:
+        "400":
+          description: "Invalid request"
+        "404":
+          description: "Mediafile not found"
+
+
+components:
+  schemas:
+    tenant:
+      type: object
+      description: "Tenant object"
+      properties:
+        metadata:
+          type: array
+          items:
+            $ref: '#/components/schemas/metadata'
+        location:
+          $ref: "#/components/schemas/Location"
+        
+          
+    entity:
+      type: object
+      description: "Entity object"
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+        indexes:
+          type: array
+          items:
+            type: string
+        security:
+          type: array
+          items:
+            $ref: '#/components/schemas/security'
+        metadata:
+          type: array
+          items:
+            $ref: '#/components/schemas/metadata'
+        location:
+          $ref: "#/components/schemas/Location"
+        data:
+          type: object
+          description: "Original entity data"
+
+    mediafile:
+      type: object
+      description: "Mediafile object"
+      properties:
+        location:
+          type: string
+          format: uri
+        metadata:
+          type: array
+          items:
+            $ref: '#/components/schemas/metadata'
+          
+    metadata:
+      type: object
+      description: "Metadata object"
+      properties:
+        key:
+          type: string
+          description: metadata label
+        value:
+          type: string
+          description: metadata value
+        language:
+          type: string
+          description: language of the metadata
+    
+    security:
+      type: object
+      description: "Security info"
+
+    Geometry:
+      type: object
+      description: GeoJSon geometry
+      required:
+        - type
+      externalDocs:
+        url: http://geojson.org/geojson-spec.html#geometry-objects
+      properties:
+        type:
+          type: string
+          enum:
+            - Point
+          description: the geometry type
+        
+    Location:
+      type: object
+      description: GeoJSon geometry
+      externalDocs:
+        url: http://geojson.org/geojson-spec.html#id2
+      allOf:
+        - $ref: "#/components/schemas/Geometry"
+        - properties:
+            coordinates:
+              type: array
+              items:
+                type: number
+                format: float
+
