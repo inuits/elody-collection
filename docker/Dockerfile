@@ -12,6 +12,10 @@ ENTRYPOINT ["/entrypoint.sh"]
 ### Development stage
 FROM base-stage AS development-stage
 
+ARG APP_ENV
+
+ENV APP_ENV=${APP_ENV}
+
 RUN pip install -r requirements.txt
 
 ### Build stage
