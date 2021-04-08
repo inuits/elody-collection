@@ -119,6 +119,20 @@ FOR c IN @@collection
         key = self._get_key_for_id(collection, id)
         self.db[collection][key].delete()
 
+    def delete_collection_item_metadata_key(self, collection, id, key):
+        aql = """
+FOR c IN @@collection
+    FILTER @id IN c.identifiers OR c._key == @id
+    LET filteredMetadata = (
+        FOR metadata IN c.metadata
+            FILTER metadata.key != @key
+            RETURN metadata
+    )
+    UPDATE c WITH {metadata: filteredMetadata} IN @@collection
+"""
+        bind = {"@collection": collection, "id": id, "key": key}
+        queryResults = self._execute_query(aql, bind)
+
     def _get_key_for_id(self, collection, id):
         key = None
         queryResult = self._get_field_for_id(collection, id, "_key")

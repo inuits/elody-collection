@@ -96,6 +96,14 @@ class MongoStorageManager:
     def delete_item_from_collection(self, collection, id):
         self.db[collection].delete_one(self._get_id_query(id))
 
+    def delete_collection_item_metadata_key(self, collection, id, key):
+        patch_data = {"metadata": []}
+        all_metadata = self.get_collection_item_metadata(collection, id)
+        for metadata_object in all_metadata:
+            if metadata_object["key"] != key:
+                patch_data["metadata"].append(metadata_object)
+        self.patch_item_from_collection(collection, id, patch_data)
+
     def _prepare_mongo_document(self, document, reversed, id=None):
         if id:
             document["_id"] = id

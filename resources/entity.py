@@ -127,6 +127,11 @@ class EntityMetadataKey(BaseResource):
         metadata = self.storage.get_collection_item_metadata("entities", id)
         return metadata
 
+    @app.oidc.accept_token(require_token=True, scopes_required=["openid"])
+    def delete(self, id, key):
+        self.storage.delete_collection_item_metadata_key("entities", id, key)
+        return 204
+
 
 class EntityMediafiles(BaseResource):
     @app.oidc.accept_token(require_token=True, scopes_required=["openid"])
