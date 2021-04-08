@@ -111,7 +111,7 @@ class EntityDetail(BaseResource):
     def delete(self, id):
         entity = self.abort_if_item_doesnt_exist("entities", id)
         self.storage.delete_item_from_collection("entities", id)
-        return 204
+        return "", 204
 
 
 class EntityMetadata(BaseResource):
@@ -120,17 +120,23 @@ class EntityMetadata(BaseResource):
         metadata = self.storage.get_collection_item_metadata("entities", id)
         return metadata
 
+    def post(self, id):
+        self.authorize_request()
+        request = self.get_request_body()
+        metadata = self.storage.add_collection_item_metadata("entities", id, request)
+        return metadata
+
 
 class EntityMetadataKey(BaseResource):
     @app.oidc.accept_token(require_token=True, scopes_required=["openid"])
     def get(self, id, key):
-        metadata = self.storage.get_collection_item_metadata("entities", id)
+        metadata = self.storage.get_collection_item_metadata_key("entities", id, key)
         return metadata
 
     @app.oidc.accept_token(require_token=True, scopes_required=["openid"])
     def delete(self, id, key):
         self.storage.delete_collection_item_metadata_key("entities", id, key)
-        return 204
+        return "", 204
 
 
 class EntityMediafiles(BaseResource):

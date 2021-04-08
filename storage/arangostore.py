@@ -95,6 +95,17 @@ FOR c IN @@collection
             )
         return self.db.fetchDocument(mediafile_id).getStore()
 
+    def add_collection_item_metadata(self, collection, id, content):
+        aql = """
+FOR c IN @@collection
+    FILTER @id IN c.identifiers OR c._key == @id
+    LET newMetadata = PUSH(c.metadata, @metadata, true)
+    UPDATE c WITH {metadata: newMetadata} IN @@collection
+"""
+        bind = {"@collection": collection, "id": id, "metadata": content}
+        self._execute_query(aql, bind)
+        return content
+
     def save_item_to_collection(self, collection, content):
         content["_key"] = str(uuid.uuid4())
         item = self.db[collection].createDocument(content)
