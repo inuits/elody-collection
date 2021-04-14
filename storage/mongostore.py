@@ -15,18 +15,6 @@ class MongoStorageManager:
         self.client = MongoClient(self.mongo_host, self.mongo_port)
         self.db = self.client[self.mongo_db]
 
-    def save_tenant(self, tenant_json):
-        return self.save_item_to_collection("assets", tenant_json)
-
-    def update_tenant(self, tenant_json):
-        return self.update_item_from_collection("tenants", tenant_json)
-
-    def delete_tenant(self, id):
-        self.delete_item_from_collection("tenants", id)
-
-    def get_tenant_by_id(self, id):
-        return self.get_item_from_collection_by_id("tenants", id)
-
     def get_items_from_collection(self, collection, skip=0, limit=20):
         items = dict()
         count = self.db[collection].count_documents({})

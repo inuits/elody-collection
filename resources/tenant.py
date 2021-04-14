@@ -38,7 +38,7 @@ class Tenant(BaseResource):
         self.authorize_request()
         request = self.get_request_body()
         abort_if_not_valid_tenant(request)
-        tenant = self.storage.save_tenant(request)
+        tenant = self.storage.save_item_to_collection("tenants", request)
         return tenant, 201
 
 
@@ -86,7 +86,7 @@ class TenantDetail(BaseResource):
         self.authorize_request()
         request = self.get_request_body()
         abort_if_not_valid_tenant(request)
-        tenant = self.storage.update_tenant(id, request)
+        tenant = self.storage.update_item_from_collection("tenants", id, request)
         return tenant, 201
 
     @swagger.operation(
@@ -100,5 +100,5 @@ class TenantDetail(BaseResource):
     @app.oidc.accept_token(require_token=True, scopes_required=["openid"])
     def delete(self, id):
         tenant = self.abort_if_item_doesnt_exist("tenants", id)
-        self.storage.delete_tenant(id)
-        return 204
+        self.storage.delete_item_from_collection("tenants", id)
+        return "", 204
