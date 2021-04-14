@@ -25,7 +25,9 @@ class Mediafile(BaseResource):
             {"code": 405, "message": "Invalid input"},
         ],
     )
-    @app.oidc.accept_token(require_token=True, scopes_required=["openid"])
+    @app.oidc.accept_token(
+        require_token=BaseResource.token_required, scopes_required=["openid"]
+    )
     def post(self):
         request = self.get_request_body()
         mediafile = self.storage.save_item_to_collection("mediafiles", request)
@@ -42,12 +44,16 @@ class MediafileDetail(BaseResource):
             {"code": 404, "message": "Mediafile not found"},
         ],
     )
-    @app.oidc.accept_token(require_token=True, scopes_required=["openid"])
+    @app.oidc.accept_token(
+        require_token=BaseResource.token_required, scopes_required=["openid"]
+    )
     def get(self, id):
         mediafile = self.abort_if_item_doesnt_exist("mediafiles", id)
         return mediafile
 
-    @app.oidc.accept_token(require_token=True, scopes_required=["openid"])
+    @app.oidc.accept_token(
+        require_token=BaseResource.token_required, scopes_required=["openid"]
+    )
     def patch(self, id):
         request = self.get_request_body()
         asset = self.storage.patch_item_from_collection("mediafiles", id, request)
@@ -72,7 +78,9 @@ class MediafileDetail(BaseResource):
             {"code": 405, "message": "Invalid input"},
         ],
     )
-    @app.oidc.accept_token(require_token=True, scopes_required=["openid"])
+    @app.oidc.accept_token(
+        require_token=BaseResource.token_required, scopes_required=["openid"]
+    )
     def put(self, id):
         request = self.get_request_body()
         mediafile = self.storage.update_item_from_collection("mediafiles", id, request)
@@ -86,7 +94,9 @@ class MediafileDetail(BaseResource):
             {"code": 404, "message": "Mediafile not found"},
         ],
     )
-    @app.oidc.accept_token(require_token=True, scopes_required=["openid"])
+    @app.oidc.accept_token(
+        require_token=BaseResource.token_required, scopes_required=["openid"]
+    )
     def delete(self, id):
         mediafile = self.abort_if_item_doesnt_exist("mediafiles", id)
         self.storage.delete_item_from_collection("mediafiles", id)

@@ -26,13 +26,17 @@ class Entity(BaseResource):
             {"code": 405, "message": "Invalid input"},
         ],
     )
-    @app.oidc.accept_token(require_token=True, scopes_required=["openid"])
+    @app.oidc.accept_token(
+        require_token=BaseResource.token_required, scopes_required=["openid"]
+    )
     def post(self):
         request_body = self.get_request_body()
         entity = self.storage.save_item_to_collection("entities", request_body)
         return entity, 201
 
-    @app.oidc.accept_token(require_token=True, scopes_required=["openid"])
+    @app.oidc.accept_token(
+        require_token=BaseResource.token_required, scopes_required=["openid"]
+    )
     def get(self):
         skip = int(request.args.get("skip", 0))
         limit = int(request.args.get("limit", 20))
@@ -60,7 +64,9 @@ class EntityDetail(BaseResource):
             {"code": 404, "message": "Entity not found"},
         ],
     )
-    @app.oidc.accept_token(require_token=True, scopes_required=["openid"])
+    @app.oidc.accept_token(
+        require_token=BaseResource.token_required, scopes_required=["openid"]
+    )
     def get(self, id):
         entity = self.abort_if_item_doesnt_exist(
             "entities",
@@ -87,13 +93,17 @@ class EntityDetail(BaseResource):
             {"code": 405, "message": "Invalid input"},
         ],
     )
-    @app.oidc.accept_token(require_token=True, scopes_required=["openid"])
+    @app.oidc.accept_token(
+        require_token=BaseResource.token_required, scopes_required=["openid"]
+    )
     def put(self, id):
         request = self.get_request_body()
         entity = self.storage.update_item_from_collection("entities", id, request)
         return entity, 201
 
-    @app.oidc.accept_token(require_token=True, scopes_required=["openid"])
+    @app.oidc.accept_token(
+        require_token=BaseResource.token_required, scopes_required=["openid"]
+    )
     def patch(self, id):
         request = self.get_request_body()
         entity = self.storage.patch_item_from_collection("entities", id, request)
@@ -107,7 +117,9 @@ class EntityDetail(BaseResource):
             {"code": 404, "message": "Entity not found"},
         ],
     )
-    @app.oidc.accept_token(require_token=True, scopes_required=["openid"])
+    @app.oidc.accept_token(
+        require_token=BaseResource.token_required, scopes_required=["openid"]
+    )
     def delete(self, id):
         entity = self.abort_if_item_doesnt_exist("entities", id)
         self.storage.delete_item_from_collection("entities", id)
@@ -115,18 +127,24 @@ class EntityDetail(BaseResource):
 
 
 class EntityMetadata(BaseResource):
-    @app.oidc.accept_token(require_token=True, scopes_required=["openid"])
+    @app.oidc.accept_token(
+        require_token=BaseResource.token_required, scopes_required=["openid"]
+    )
     def get(self, id):
         metadata = self.storage.get_collection_item_metadata("entities", id)
         return metadata
 
-    @app.oidc.accept_token(require_token=True, scopes_required=["openid"])
+    @app.oidc.accept_token(
+        require_token=BaseResource.token_required, scopes_required=["openid"]
+    )
     def post(self, id):
         request = self.get_request_body()
         metadata = self.storage.add_collection_item_metadata("entities", id, request)
         return metadata
 
-    @app.oidc.accept_token(require_token=True, scopes_required=["openid"])
+    @app.oidc.accept_token(
+        require_token=BaseResource.token_required, scopes_required=["openid"]
+    )
     def put(self, id):
         request = self.get_request_body()
         metadata = self.storage.update_collection_item_metadata("entities", id, request)
@@ -134,24 +152,32 @@ class EntityMetadata(BaseResource):
 
 
 class EntityMetadataKey(BaseResource):
-    @app.oidc.accept_token(require_token=True, scopes_required=["openid"])
+    @app.oidc.accept_token(
+        require_token=BaseResource.token_required, scopes_required=["openid"]
+    )
     def get(self, id, key):
         metadata = self.storage.get_collection_item_metadata_key("entities", id, key)
         return metadata
 
-    @app.oidc.accept_token(require_token=True, scopes_required=["openid"])
+    @app.oidc.accept_token(
+        require_token=BaseResource.token_required, scopes_required=["openid"]
+    )
     def delete(self, id, key):
         self.storage.delete_collection_item_metadata_key("entities", id, key)
         return "", 204
 
 
 class EntityMediafiles(BaseResource):
-    @app.oidc.accept_token(require_token=True, scopes_required=["openid"])
+    @app.oidc.accept_token(
+        require_token=BaseResource.token_required, scopes_required=["openid"]
+    )
     def get(self, id):
         mediafiles = self.storage.get_collection_item_mediafiles("entities", id)
         return mediafiles
 
-    @app.oidc.accept_token(require_token=True, scopes_required=["openid"])
+    @app.oidc.accept_token(
+        require_token=BaseResource.token_required, scopes_required=["openid"]
+    )
     def post(self, id):
         request_body = self.get_request_body()
         mediafile_id = request_body["_id"]
