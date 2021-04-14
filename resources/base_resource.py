@@ -15,7 +15,13 @@ class BaseResource(Resource):
         self.storage = StorageManager().get_db_engine()
 
     def get_request_body(self):
-        return request.get_json()
+        request_body = request.get_json()
+        if request_body is None:
+            abort(
+                405,
+                message="Invalid input",
+            )
+        return request_body
 
     def abort_if_item_doesnt_exist(self, collection, id):
         item = self.storage.get_item_from_collection_by_id(collection, id)
