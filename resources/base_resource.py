@@ -12,7 +12,7 @@ class BaseResource(Resource):
         self.storage = StorageManager().get_db_engine()
 
     def get_request_body(self):
-        return request.get_json(force=True)
+        return request.get_json()
 
     def abort_if_item_doesnt_exist(self, collection, id):
         item = self.storage.get_item_from_collection_by_id(collection, id)
@@ -22,14 +22,3 @@ class BaseResource(Resource):
                 message="Item {} doesn't exist in collection {}".format(id, collection),
             )
         return item
-
-    def authorize_request(self):
-        token = None
-        if "Authorization" in request.headers and request.headers[
-            "Authorization"
-        ].startswith("Bearer "):
-            token = request.headers["Authorization"].split(None, 1)[1].strip()
-        validity = app.oidc.validate_token(token)
-        if not validity:
-            response_body = {"error": "invalid_token", "error_description": validity}
-            abort(404, message=response_body)

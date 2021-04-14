@@ -26,8 +26,8 @@ class Entity(BaseResource):
             {"code": 405, "message": "Invalid input"},
         ],
     )
+    @app.oidc.accept_token(require_token=True, scopes_required=["openid"])
     def post(self):
-        self.authorize_request()
         request_body = self.get_request_body()
         entity = self.storage.save_item_to_collection("entities", request_body)
         return entity, 201
@@ -87,14 +87,14 @@ class EntityDetail(BaseResource):
             {"code": 405, "message": "Invalid input"},
         ],
     )
+    @app.oidc.accept_token(require_token=True, scopes_required=["openid"])
     def put(self, id):
-        self.authorize_request()
         request = self.get_request_body()
         entity = self.storage.update_item_from_collection("entities", id, request)
         return entity, 201
 
+    @app.oidc.accept_token(require_token=True, scopes_required=["openid"])
     def patch(self, id):
-        self.authorize_request()
         request = self.get_request_body()
         entity = self.storage.patch_item_from_collection("entities", id, request)
         return entity, 201
@@ -120,14 +120,14 @@ class EntityMetadata(BaseResource):
         metadata = self.storage.get_collection_item_metadata("entities", id)
         return metadata
 
+    @app.oidc.accept_token(require_token=True, scopes_required=["openid"])
     def post(self, id):
-        self.authorize_request()
         request = self.get_request_body()
         metadata = self.storage.add_collection_item_metadata("entities", id, request)
         return metadata
 
+    @app.oidc.accept_token(require_token=True, scopes_required=["openid"])
     def put(self, id):
-        self.authorize_request()
         request = self.get_request_body()
         metadata = self.storage.update_collection_item_metadata("entities", id, request)
         return metadata
@@ -151,8 +151,8 @@ class EntityMediafiles(BaseResource):
         mediafiles = self.storage.get_collection_item_mediafiles("entities", id)
         return mediafiles
 
+    @app.oidc.accept_token(require_token=True, scopes_required=["openid"])
     def post(self, id):
-        self.authorize_request()
         request_body = self.get_request_body()
         mediafile_id = request_body["_id"]
         mediafile = self.storage.add_mediafile_to_entity("entities", id, mediafile_id)

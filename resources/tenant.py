@@ -34,8 +34,8 @@ class Tenant(BaseResource):
             {"code": 405, "message": "Invalid input"},
         ],
     )
+    @app.oidc.accept_token(require_token=True, scopes_required=["openid"])
     def post(self):
-        self.authorize_request()
         request = self.get_request_body()
         abort_if_not_valid_tenant(request)
         tenant = self.storage.save_item_to_collection("tenants", request)
@@ -57,8 +57,8 @@ class TenantDetail(BaseResource):
         tenant = self.abort_if_item_doesnt_exist("tenants", id)
         return tenant
 
+    @app.oidc.accept_token(require_token=True, scopes_required=["openid"])
     def patch(self, id):
-        self.authorize_request()
         request = self.get_request_body()
         asset = self.storage.patch_item_from_collection("tenants", id, request)
         return asset, 201
@@ -82,8 +82,8 @@ class TenantDetail(BaseResource):
             {"code": 405, "message": "Invalid input"},
         ],
     )
+    @app.oidc.accept_token(require_token=True, scopes_required=["openid"])
     def put(self, id):
-        self.authorize_request()
         request = self.get_request_body()
         abort_if_not_valid_tenant(request)
         tenant = self.storage.update_item_from_collection("tenants", id, request)
