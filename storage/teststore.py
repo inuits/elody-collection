@@ -26,6 +26,13 @@ class TestStorageManager:
         self.collections[collection][id] = content
         return self.collections[collection][id]
 
+    def patch_item_from_collection(self, collection, id, content):
+        entity = self.collections[collection][id]
+        for key in content:
+            if key in entity:
+                entity[key] = content[key]
+        return entity
+
     def delete_item_from_collection(self, collection, id):
         self.collections[collection].pop(id, None)
 

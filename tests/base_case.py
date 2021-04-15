@@ -6,10 +6,10 @@ from storage.storagemanager import StorageManager
 
 
 class BaseCase(unittest.TestCase):
-    asset = json.dumps(
+    entity = json.dumps(
         {
             "identifiers": ["12345", "abcde"],
-            "type": "asset",
+            "type": "entity",
             "metadata": [
                 {"key": "title", "value": "Een schilderij", "lang": "nl"},
                 {"key": "title", "value": "A painting", "lang": "en"},
@@ -36,10 +36,10 @@ class BaseCase(unittest.TestCase):
     def tearDown(self):
         self.storage.drop_all_collections()
 
-    def create_asset(self):
+    def create_entity(self):
         return self.app.post(
-            "/entities", headers={"Content-Type": "application/json"}, data=self.asset
+            "/entities", headers={"Content-Type": "application/json"}, data=self.entity
         )
 
-    def create_asset_get_id(self):
-        return self.create_asset().json["_id"]
+    def create_entity_get_id(self):
+        return self.create_entity().json["_id"]
