@@ -1,5 +1,6 @@
 from flask_restful import Resource, abort
 from flask import request
+from werkzeug.exceptions import BadRequest
 from storage.arangostore import ArangoStorageManager
 from storage.mongostore import MongoStorageManager
 from storage.storagemanager import StorageManager
@@ -15,8 +16,13 @@ class BaseResource(Resource):
         self.storage = StorageManager().get_db_engine()
 
     def get_request_body(self):
-        request_body = request.get_json()
-        if request_body is None:
+        invalid_input = False
+        try:
+            request_body = request.get_json()
+            invalid_input = request_body is None
+        except BadRequest:
+            invalid_input = True
+        if invalid_input:
             abort(
                 405,
                 message="Invalid input",

@@ -47,9 +47,9 @@ class Entity(BaseResource):
             entities["next"] = "/{}?skip={}&limit={}".format(
                 "entities", skip + limit, limit
             )
-        if skip - limit >= 0:
+        if skip > 0:
             entities["previous"] = "/{}?skip={}&limit={}".format(
-                "entities", skip - limit, limit
+                "entities", max(0, skip - limit), limit
             )
         return entities
 
