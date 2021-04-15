@@ -16,6 +16,17 @@ class TestStorageManager:
     def get_item_from_collection_by_id(self, collection, id):
         return self.collections[collection].get(id, None)
 
+    def get_collection_item_metadata(self, collection, id):
+        return self.collections[collection][id]["metadata"]
+
+    def get_collection_item_metadata_key(self, collection, id, key):
+        return list(
+            filter(
+                lambda elem: elem["key"] == key,
+                self.get_collection_item_metadata(collection, id),
+            )
+        )
+
     def save_item_to_collection(self, collection, content):
         id = str(uuid.uuid4())
         content["_id"] = id

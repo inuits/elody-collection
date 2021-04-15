@@ -136,6 +136,33 @@ class EntityTest(BaseCase):
             self.assertEqual(ids[i + skip], entity["_id"])
         self.assertEqual(200, response.status_code)
 
+    def test_successful_entity_metadata_get(self):
+        _id = self.create_entity_get_id()
+
+        response = self.app.get(
+            "/entities/{}/metadata".format(_id),
+            headers={"Content-Type": "application/json"},
+        )
+
+        self.assertEqual(4, len(response.json))
+        self.assertEqual(str, type(response.json[0]["value"]))
+        self.assertEqual("Een schilderij", response.json[0]["value"])
+        self.assertEqual(200, response.status_code)
+
+    def test_successful_entity_metadata_key_get(self):
+        _id = self.create_entity_get_id()
+
+        response = self.app.get(
+            "/entities/{}/metadata/title".format(_id),
+            headers={"Content-Type": "application/json"},
+        )
+
+        print(response.json)
+        self.assertEqual(2, len(response.json))
+        self.assertEqual(str, type(response.json[0]["value"]))
+        self.assertEqual("Een schilderij", response.json[0]["value"])
+        self.assertEqual(200, response.status_code)
+
     def test_successful_entity_put(self):
         _id = self.create_entity_get_id()
 
