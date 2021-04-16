@@ -6,26 +6,6 @@ from storage.storagemanager import StorageManager
 
 
 class BaseCase(unittest.TestCase):
-    entity = json.dumps(
-        {
-            "identifiers": ["12345", "abcde"],
-            "type": "entity",
-            "metadata": [
-                {"key": "title", "value": "Een schilderij", "lang": "nl"},
-                {"key": "title", "value": "A painting", "lang": "en"},
-                {
-                    "key": "description",
-                    "value": "Beschrijving van een schilderij",
-                    "lang": "nl",
-                },
-                {
-                    "key": "description",
-                    "value": "Description of a painting",
-                    "lang": "en",
-                },
-            ],
-        }
-    )
 
     def setUp(self):
         app.testing = True
@@ -36,10 +16,12 @@ class BaseCase(unittest.TestCase):
     def tearDown(self):
         self.storage.drop_all_collections()
 
-    def create_entity(self):
-        return self.app.post(
-            "/entities", headers={"Content-Type": "application/json"}, data=self.entity
-        )
+    def invalid_input(self, response):
+        self.assertEqual(str, type(response.json["message"]))
+        self.assertEqual("Invalid input", response.json["message"])
+        self.assertEqual(405, response.status_code)
 
-    def create_entity_get_id(self):
-        return self.create_entity().json["_id"]
+    def not_found(self, response):
+        self.assertEqual(1, len(response.json))
+        self.assertEqual(str, type(response.json["message"]))
+        self.assertEqual(404, response.status_code)
