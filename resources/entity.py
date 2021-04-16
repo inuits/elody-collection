@@ -34,6 +34,14 @@ class Entity(BaseResource):
         entity = self.storage.save_item_to_collection("entities", request_body)
         return entity, 201
 
+    @swagger.operation(
+        notes="Get tenants",
+        responseMessages=[
+            {"code": 200, "message": "successful operation"},
+            {"code": 400, "message": "Invalid ID supplied"},
+            {"code": 404, "message": "Entity not found"},
+        ],
+    )
     @app.oidc.accept_token(
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )
@@ -101,6 +109,14 @@ class EntityDetail(BaseResource):
         entity = self.storage.update_item_from_collection("entities", id, request)
         return entity, 201
 
+    @swagger.operation(
+        notes="Patch an existing entity",
+        responseMessages=[
+            {"code": 201, "message": "Created."},
+            {"code": 404, "message": "Entity not found"},
+            {"code": 405, "message": "Invalid input"},
+        ],
+    )
     @app.oidc.accept_token(
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )
@@ -127,6 +143,14 @@ class EntityDetail(BaseResource):
 
 
 class EntityMetadata(BaseResource):
+    @swagger.operation(
+        notes="Get specific entity metadata for a specific ID",
+        responseMessages=[
+            {"code": 200, "message": "successful operation"},
+            {"code": 400, "message": "Invalid ID supplied"},
+            {"code": 404, "message": "Entity not found"},
+        ],
+    )
     @app.oidc.accept_token(
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )
@@ -134,24 +158,48 @@ class EntityMetadata(BaseResource):
         metadata = self.storage.get_collection_item_metadata("entities", id)
         return metadata
 
+    @swagger.operation(
+        notes="Add entity metadata for a specific ID",
+        responseMessages=[
+            {"code": 201, "message": "successful operation"},
+            {"code": 400, "message": "Invalid ID supplied"},
+            {"code": 404, "message": "Entity not found"},
+        ],
+    )
     @app.oidc.accept_token(
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )
     def post(self, id):
         request = self.get_request_body()
         metadata = self.storage.add_collection_item_metadata("entities", id, request)
-        return metadata
+        return metadata, 201
 
+    @swagger.operation(
+        notes="Update entity metadata for a specific ID",
+        responseMessages=[
+            {"code": 201, "message": "successful operation"},
+            {"code": 400, "message": "Invalid ID supplied"},
+            {"code": 404, "message": "Entity not found"},
+        ],
+    )
     @app.oidc.accept_token(
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )
     def put(self, id):
         request = self.get_request_body()
         metadata = self.storage.update_collection_item_metadata("entities", id, request)
-        return metadata
+        return metadata, 201
 
 
 class EntityMetadataKey(BaseResource):
+    @swagger.operation(
+        notes="Get specific entity metadata for a specific entity ID",
+        responseMessages=[
+            {"code": 200, "message": "successful operation"},
+            {"code": 400, "message": "Invalid ID supplied"},
+            {"code": 404, "message": "Entity not found"},
+        ],
+    )
     @app.oidc.accept_token(
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )
@@ -159,6 +207,14 @@ class EntityMetadataKey(BaseResource):
         metadata = self.storage.get_collection_item_metadata_key("entities", id, key)
         return metadata
 
+    @swagger.operation(
+        notes="Delete a specific entity metadata field for a specific ID",
+        responseMessages=[
+            {"code": 204, "message": "successful operation"},
+            {"code": 400, "message": "Invalid ID supplied"},
+            {"code": 404, "message": "Entity not found"},
+        ],
+    )
     @app.oidc.accept_token(
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )
@@ -168,6 +224,14 @@ class EntityMetadataKey(BaseResource):
 
 
 class EntityMediafiles(BaseResource):
+    @swagger.operation(
+        notes="Get specific entity metadata for a specific entity ID",
+        responseMessages=[
+            {"code": 200, "message": "successful operation"},
+            {"code": 400, "message": "Invalid ID supplied"},
+            {"code": 404, "message": "Entity not found"},
+        ],
+    )
     @app.oidc.accept_token(
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )
@@ -175,6 +239,14 @@ class EntityMediafiles(BaseResource):
         mediafiles = self.storage.get_collection_item_mediafiles("entities", id)
         return mediafiles
 
+    @swagger.operation(
+        notes="Add entity mediafiles for a specific ID",
+        responseMessages=[
+            {"code": 204, "message": "successful operation"},
+            {"code": 400, "message": "Invalid ID supplied"},
+            {"code": 404, "message": "Entity not found"},
+        ],
+    )
     @app.oidc.accept_token(
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )
