@@ -1,7 +1,7 @@
 import uuid
 
 
-class TestStorageManager:
+class MemoryStorageManager:
     collections = {"entities": {}, "tenants": {}, "mediafiles": {}}
 
     def get_items_from_collection(self, collection, skip=0, limit=20):

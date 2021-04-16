@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 from storage.arangostore import ArangoStorageManager
 from storage.mongostore import MongoStorageManager
-from storage.teststore import TestStorageManager
+from storage.memorystore import MemoryStorageManager
 
 
 class StorageManager:
@@ -14,5 +14,5 @@ class StorageManager:
             return MongoStorageManager()
         elif self.storage_engine == "arango":
             return ArangoStorageManager()
-        elif self.storage_engine == "test":
-            return TestStorageManager()
+        elif self.storage_engine == "memory":
+            return MemoryStorageManager()
