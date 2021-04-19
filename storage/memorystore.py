@@ -17,15 +17,19 @@ class MemoryStorageManager:
         return self.collections[collection].get(id, None)
 
     def get_collection_item_metadata(self, collection, id):
-        return self.collections[collection][id]["metadata"]
+        if id in self.collections[collection]:
+            return self.collections[collection][id]["metadata"]
+        return None
 
     def get_collection_item_metadata_key(self, collection, id, key):
-        return list(
-            filter(
-                lambda elem: elem["key"] == key,
-                self.get_collection_item_metadata(collection, id),
+        if id in self.collections[collection]:
+            return list(
+                filter(
+                    lambda elem: elem["key"] == key,
+                    self.get_collection_item_metadata(collection, id),
+                )
             )
-        )
+        return None
 
     def save_item_to_collection(self, collection, content):
         id = str(uuid.uuid4())
@@ -34,15 +38,19 @@ class MemoryStorageManager:
         return self.collections[collection][id]
 
     def update_item_from_collection(self, collection, id, content):
-        self.collections[collection][id] = content
-        return self.collections[collection][id]
+        if id in self.collections[collection]:
+            self.collections[collection][id] = content
+            return self.collections[collection][id]
+        return None
 
     def patch_item_from_collection(self, collection, id, content):
-        entity = self.collections[collection][id]
-        for key in content:
-            if key in entity:
-                entity[key] = content[key]
-        return entity
+        if id in self.collections[collection]:
+            entity = self.collections[collection][id]
+            for key in content:
+                if key in entity:
+                    entity[key] = content[key]
+            return entity
+        return None
 
     def delete_item_from_collection(self, collection, id):
         self.collections[collection].pop(id, None)

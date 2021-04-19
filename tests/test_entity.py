@@ -70,11 +70,17 @@ class EntityTest(BaseCase):
     def test_successful_entity_list_get(self):
         self.entity_list(2, 20, 0)
 
-    def test_successful_entity_list_get_pagination(self):
+    def test_successful_entity_list_first_entities(self):
         self.entity_list(40, 20, 0)
 
-    def test_successful_entity_list_get_pagination_query_params(self):
+    def test_successful_entity_list_middle_entities(self):
         self.entity_list(40, 15, 10)
+
+    def test_successful_entity_list_last_entities(self):
+        self.entity_list(40, 10, 30)
+
+    def test_successful_entity_list_no_entities(self):
+        self.entity_list(0, 20, 0)
 
     def test_successful_entity_metadata_get(self):
         _id = self.create_entity_get_id()
@@ -89,6 +95,14 @@ class EntityTest(BaseCase):
         self.assertEqual("Een schilderij", response.json[0]["value"])
         self.assertEqual(200, response.status_code)
 
+    def test_non_existant_entity_metadata_get(self):
+        response = self.app.get(
+            "/entities/non-existant-id/metadata",
+            headers={"Content-Type": "application/json"},
+        )
+
+        self.not_found(response)
+
     def test_successful_entity_metadata_key_get(self):
         _id = self.create_entity_get_id()
 
@@ -101,6 +115,14 @@ class EntityTest(BaseCase):
         self.assertEqual(str, type(response.json[0]["value"]))
         self.assertEqual("Een schilderij", response.json[0]["value"])
         self.assertEqual(200, response.status_code)
+
+    def test_non_existant_entity_metadata_key_get(self):
+        response = self.app.get(
+            "/entities/non-existant-id/metadata/title",
+            headers={"Content-Type": "application/json"},
+        )
+
+        self.not_found(response)
 
     def test_successful_entity_put(self):
         response = self.create_entity()
@@ -127,6 +149,24 @@ class EntityTest(BaseCase):
         self.valid_entity(response.json, 1, 1)
         self.assertEqual(201, response.status_code)
 
+    def test_non_existant_entity_put(self):
+        update = json.dumps(
+            {
+                "_id": "non-existant-id",
+                "identifiers": ["2021"],
+                "type": "entity",
+                "metadata": [{"key": "title", "value": "Een schilderij", "lang": "nl"}],
+            }
+        )
+
+        response = self.app.put(
+            "/entities/non-existant-id",
+            headers={"Content-Type": "application/json"},
+            data=update,
+        )
+
+        self.not_found(response)
+
     def test_successful_entity_patch(self):
         response = self.create_entity()
         _id = response.json["_id"]
@@ -149,6 +189,21 @@ class EntityTest(BaseCase):
         self.valid_entity(response.json, 2, 1)
         self.assertEqual(201, response.status_code)
 
+    def test_non_existant_entity_patch(self):
+        update = json.dumps(
+            {
+                "metadata": [{"key": "title", "value": "Een schilderij", "lang": "nl"}],
+            }
+        )
+
+        response = self.app.patch(
+            "/entities/non-existant-id",
+            headers={"Content-Type": "application/json"},
+            data=update,
+        )
+
+        self.not_found(response)
+
     def test_successful_entity_delete(self):
         _id = self.create_entity_get_id()
 
@@ -158,6 +213,13 @@ class EntityTest(BaseCase):
 
         self.assertFalse(response.data)
         self.assertEqual(204, response.status_code)
+
+    def test_non_existant_entity_delete(self):
+        response = self.app.delete(
+            "/entities/non-existant-id", headers={"Content-Type": "application/json"}
+        )
+
+        self.not_found(response)
 
     def create_entity(self):
         return self.app.post(
@@ -182,7 +244,8 @@ class EntityTest(BaseCase):
             ids.append(self.create_entity_get_id())
 
         response = self.app.get(
-            "/entities?skip={}&limit={}".format(skip, limit), headers={"Content-Type": "application/json"}
+            "/entities?skip={}&limit={}".format(skip, limit),
+            headers={"Content-Type": "application/json"},
         )
 
         self.assertEqual(count, response.json["count"])
