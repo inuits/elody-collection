@@ -76,7 +76,6 @@ class MemoryStorageManager:
                 )
             )
 
-
     def drop_collection(self, collection):
         self.collections[collection].clear()
 
