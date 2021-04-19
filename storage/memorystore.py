@@ -31,6 +31,12 @@ class MemoryStorageManager:
             )
         return None
 
+    def add_collection_item_metadata(self, collection, id, content):
+        if id in self.collections[collection]:
+            self.collections[collection][id]["metadata"].append(content)
+            return content
+        return None
+
     def save_item_to_collection(self, collection, content):
         id = str(uuid.uuid4())
         content["_id"] = id
@@ -41,6 +47,12 @@ class MemoryStorageManager:
         if id in self.collections[collection]:
             self.collections[collection][id] = content
             return self.collections[collection][id]
+        return None
+
+    def update_collection_item_metadata(self, collection, id, content):
+        if id in self.collections[collection]:
+            self.collections[collection][id]["metadata"] = content
+            return content
         return None
 
     def patch_item_from_collection(self, collection, id, content):
@@ -54,6 +66,16 @@ class MemoryStorageManager:
 
     def delete_item_from_collection(self, collection, id):
         self.collections[collection].pop(id, None)
+
+    def delete_collection_item_metadata_key(self, collection, id, key):
+        if id in self.collections[collection]:
+            self.collections[collection][id]["metadata"] = list(
+                filter(
+                    lambda elem: elem["key"] != key,
+                    self.get_collection_item_metadata(collection, id),
+                )
+            )
+
 
     def drop_collection(self, collection):
         self.collections[collection].clear()
