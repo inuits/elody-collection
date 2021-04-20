@@ -31,10 +31,30 @@ class MemoryStorageManager:
             )
         return None
 
+    def get_collection_item_mediafiles(self, collection, id):
+        if id in self.collections[collection]:
+            return list(
+                filter(
+                    lambda elem: id in elem[collection],
+                    self.collections["mediafiles"].values(),
+                )
+            )
+        return None
+
     def add_collection_item_metadata(self, collection, id, content):
         if id in self.collections[collection]:
             self.collections[collection][id]["metadata"].append(content)
             return content
+        return None
+
+    def add_mediafile_to_entity(self, collection, id, mediafile_id):
+        mediafile = None
+        if id in self.collections[collection]:
+            identifiers = self.collections[collection][id]["identifiers"]
+            if self.collections[collection][id]["_id"] not in identifiers:
+                identifiers.append(self.collections[collection][id]["_id"])
+            self.collections["mediafiles"][mediafile_id][collection] = identifiers
+            return self.collections["mediafiles"][mediafile_id]
         return None
 
     def save_item_to_collection(self, collection, content):

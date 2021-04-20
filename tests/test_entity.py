@@ -5,26 +5,6 @@ from tests.base_case import BaseCase
 
 
 class EntityTest(BaseCase):
-    entity = json.dumps(
-        {
-            "identifiers": ["12345", "abcde"],
-            "type": "entity",
-            "metadata": [
-                {"key": "title", "value": "Een schilderij", "lang": "nl"},
-                {"key": "title", "value": "A painting", "lang": "en"},
-                {
-                    "key": "description",
-                    "value": "Beschrijving van een schilderij",
-                    "lang": "nl",
-                },
-                {
-                    "key": "description",
-                    "value": "Description of a painting",
-                    "lang": "en",
-                },
-            ],
-        }
-    )
 
     def test_successful_entity_create(self):
         response = self.create_entity()
@@ -345,13 +325,79 @@ class EntityTest(BaseCase):
 
         self.not_found(response)
 
-    def create_entity(self):
-        return self.app.post(
-            "/entities", headers={"Content-Type": "application/json"}, data=self.entity
+    def test_add_mediafile_to_entity(self):
+        mediafile = self.create_mediafile()
+        _id = self.create_entity_get_id()
+
+        response = self.app.post(
+            "/entities/{}/mediafiles".format(_id),
+            headers={"Content-Type": "application/json"},
+            data=json.dumps(mediafile.json),
         )
 
-    def create_entity_get_id(self):
-        return self.create_entity().json["_id"]
+        self.valid_mediafile(response.json)
+        self.assertEqual(201, response.status_code)
+
+    def test_add_mediafile_to_non_existant_entity(self):
+        mediafile = self.create_mediafile()
+
+        response = self.app.post(
+            "/entities/non-existant-id/mediafiles",
+            headers={"Content-Type": "application/json"},
+            data=json.dumps(mediafile.json),
+        )
+
+        self.not_found(response)
+
+    def test_get_mediafile_from_entity(self):
+        mediafile = self.create_mediafile()
+        _id = self.create_entity_get_id()
+
+        response = self.app.post(
+            "/entities/{}/mediafiles".format(_id),
+            headers={"Content-Type": "application/json"},
+            data=json.dumps(mediafile.json),
+        )
+
+        response = self.app.get(
+            "/entities/{}/mediafiles".format(_id),
+            headers={"Content-Type": "application/json"},
+        )
+
+        for mediafile in response.json:
+            self.valid_mediafile(mediafile)
+        self.assertEqual(200, response.status_code)
+
+    def test_get_multiple_mediafile_from_entity(self):
+        _id = self.create_entity_get_id()
+        mediafile_count = 5
+
+        for i in range(mediafile_count):
+            mediafile = self.create_mediafile()
+
+            response = self.app.post(
+                "/entities/{}/mediafiles".format(_id),
+                headers={"Content-Type": "application/json"},
+                data=json.dumps(mediafile.json),
+            )
+
+        response = self.app.get(
+            "/entities/{}/mediafiles".format(_id),
+            headers={"Content-Type": "application/json"},
+        )
+
+        self.assertEqual(mediafile_count, len(response.json))
+        for mediafile in response.json:
+            self.valid_mediafile(mediafile)
+        self.assertEqual(200, response.status_code)
+
+    def test_get_mediafile_from_non_existant_entity(self):
+        response = self.app.get(
+            "/entities/non-existant-id/mediafiles",
+            headers={"Content-Type": "application/json"},
+        )
+
+        self.not_found(response)
 
     def valid_entity(self, entity, identifier_count, metadata_count):
         self.assertEqual(str, type(entity["_id"]))
@@ -361,6 +407,12 @@ class EntityTest(BaseCase):
         self.assertEqual("Een schilderij", entity["metadata"][0]["value"])
         self.assertEqual(identifier_count, len(entity["identifiers"]))
         self.assertEqual(metadata_count, len(entity["metadata"]))
+
+    def valid_mediafile(self, mediafile):
+        self.assertEqual(str, type(mediafile["_id"]))
+        self.assertEqual(str, type(mediafile["location"]))
+        self.assertEqual(list, type(mediafile["entities"]))
+        self.assertEqual(3, len(mediafile["entities"]))
 
     def entity_list(self, count, limit, skip):
         ids = list()
