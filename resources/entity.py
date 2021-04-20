@@ -264,6 +264,10 @@ class EntityMediafiles(BaseResource):
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )
     def get(self, id):
+        self.abort_if_item_doesnt_exist(
+            "entities",
+            id,
+        )
         mediafiles = self.storage.get_collection_item_mediafiles("entities", id)
         return mediafiles
 
@@ -279,6 +283,10 @@ class EntityMediafiles(BaseResource):
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )
     def post(self, id):
+        self.abort_if_item_doesnt_exist(
+            "entities",
+            id,
+        )
         request_body = self.get_request_body()
         mediafile_id = request_body["_id"]
         mediafile = self.storage.add_mediafile_to_entity("entities", id, mediafile_id)
