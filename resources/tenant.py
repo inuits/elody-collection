@@ -61,6 +61,14 @@ class TenantDetail(BaseResource):
         tenant = self.abort_if_item_doesnt_exist("tenants", id)
         return tenant
 
+    @swagger.operation(
+        notes="Patch an existing tenant",
+        responseMessages=[
+            {"code": 201, "message": "Created."},
+            {"code": 404, "message": "Tenant not found"},
+            {"code": 405, "message": "Invalid input"},
+        ],
+    )
     @app.oidc.accept_token(
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )

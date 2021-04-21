@@ -51,6 +51,14 @@ class MediafileDetail(BaseResource):
         mediafile = self.abort_if_item_doesnt_exist("mediafiles", id)
         return mediafile
 
+    @swagger.operation(
+        notes="Patch an existing mediafile",
+        responseMessages=[
+            {"code": 201, "message": "Created."},
+            {"code": 404, "message": "Mediafile not found"},
+            {"code": 405, "message": "Invalid input"},
+        ],
+    )
     @app.oidc.accept_token(
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )
