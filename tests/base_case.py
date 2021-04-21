@@ -28,9 +28,7 @@ class BaseCase(unittest.TestCase):
     )
 
     mediafile = json.dumps(
-        {
-            "location": "http://dams-storage.inuits.io/download/test.jpg"
-        }
+        {"location": "http://dams-storage.inuits.io/download/test.jpg"}
     )
 
     def setUp(self):
@@ -52,8 +50,17 @@ class BaseCase(unittest.TestCase):
 
     def create_mediafile(self):
         return self.app.post(
-            "/mediafiles", headers={"Content-Type": "application/json"}, data=self.mediafile
+            "/mediafiles",
+            headers={"Content-Type": "application/json"},
+            data=self.mediafile,
         )
+
+    def create_mediafile_get_id(self):
+        return self.create_mediafile().json["_id"]
+
+    def valid_mediafile(self, mediafile):
+        self.assertEqual(str, type(mediafile["_id"]))
+        self.assertEqual(str, type(mediafile["location"]))
 
     def invalid_input(self, response):
         self.assertEqual(str, type(response.json["message"]))

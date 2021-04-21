@@ -5,7 +5,6 @@ from tests.base_case import BaseCase
 
 
 class EntityTest(BaseCase):
-
     def test_successful_entity_create(self):
         response = self.create_entity()
 
@@ -336,6 +335,8 @@ class EntityTest(BaseCase):
         )
 
         self.valid_mediafile(response.json)
+        self.assertEqual(list, type(response.json["entities"]))
+        self.assertEqual(3, len(response.json["entities"]))
         self.assertEqual(201, response.status_code)
 
     def test_add_mediafile_to_non_existant_entity(self):
@@ -366,6 +367,8 @@ class EntityTest(BaseCase):
 
         for mediafile in response.json:
             self.valid_mediafile(mediafile)
+            self.assertEqual(list, type(mediafile["entities"]))
+            self.assertEqual(3, len(mediafile["entities"]))
         self.assertEqual(200, response.status_code)
 
     def test_get_multiple_mediafile_from_entity(self):
@@ -389,6 +392,8 @@ class EntityTest(BaseCase):
         self.assertEqual(mediafile_count, len(response.json))
         for mediafile in response.json:
             self.valid_mediafile(mediafile)
+            self.assertEqual(list, type(mediafile["entities"]))
+            self.assertEqual(3, len(mediafile["entities"]))
         self.assertEqual(200, response.status_code)
 
     def test_get_mediafile_from_non_existant_entity(self):
@@ -407,12 +412,6 @@ class EntityTest(BaseCase):
         self.assertEqual("Een schilderij", entity["metadata"][0]["value"])
         self.assertEqual(identifier_count, len(entity["identifiers"]))
         self.assertEqual(metadata_count, len(entity["metadata"]))
-
-    def valid_mediafile(self, mediafile):
-        self.assertEqual(str, type(mediafile["_id"]))
-        self.assertEqual(str, type(mediafile["location"]))
-        self.assertEqual(list, type(mediafile["entities"]))
-        self.assertEqual(3, len(mediafile["entities"]))
 
     def entity_list(self, count, limit, skip):
         ids = list()

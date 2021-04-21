@@ -77,11 +77,10 @@ class MemoryStorageManager:
 
     def patch_item_from_collection(self, collection, id, content):
         if id in self.collections[collection]:
-            entity = self.collections[collection][id]
+            item = self.collections[collection][id]
             for key in content:
-                if key in entity:
-                    entity[key] = content[key]
-            return entity
+                item[key] = content[key]
+            return item
         return None
 
     def delete_item_from_collection(self, collection, id):
