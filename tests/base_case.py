@@ -28,7 +28,19 @@ class BaseCase(unittest.TestCase):
     )
 
     mediafile = json.dumps(
-        {"location": "http://dams-storage.inuits.io/download/test.jpg"}
+        {
+            "identifiers": ["12345", "abcde"],
+            "type": "mediafile",
+            "location": "http://dams-storage.inuits.io/download/test.jpg",
+        }
+    )
+
+    tenant = json.dumps(
+        {
+            "identifiers": ["12345", "abcde"],
+            "type": "tenant",
+            "name": "Een museum",
+        }
     )
 
     def setUp(self):
@@ -58,9 +70,28 @@ class BaseCase(unittest.TestCase):
     def create_mediafile_get_id(self):
         return self.create_mediafile().json["_id"]
 
+    def create_tenant(self):
+        return self.app.post(
+            "/tenants",
+            headers={"Content-Type": "application/json"},
+            data=self.tenant,
+        )
+
+    def create_tenant_get_id(self):
+        return self.create_tenant().json["_id"]
+
     def valid_mediafile(self, mediafile):
         self.assertEqual(str, type(mediafile["_id"]))
         self.assertEqual(str, type(mediafile["location"]))
+        self.assertEqual(str, type(mediafile["type"]))
+        self.assertEqual("mediafile", mediafile["type"])
+
+    def valid_tenant(self, tenant):
+        self.assertEqual(str, type(tenant["_id"]))
+        self.assertEqual(str, type(tenant["name"]))
+        self.assertEqual("Een museum", tenant["name"])
+        self.assertEqual(str, type(tenant["type"]))
+        self.assertEqual("tenant", tenant["type"])
 
     def invalid_input(self, response):
         self.assertEqual(str, type(response.json["message"]))

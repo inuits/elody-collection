@@ -52,6 +52,8 @@ class EntityTest(BaseCase):
         update = json.dumps(
             {
                 "_id": _id,
+                "identifiers": ["12345", "abcde"],
+                "type": "mediafile",
                 "location": "http://dams-storage.inuits.io/download/test.jpg",
                 "format": "jpg",
             }
@@ -64,7 +66,7 @@ class EntityTest(BaseCase):
         )
 
         self.valid_mediafile(response.json)
-        self.assertEqual(3, len(response.json))
+        self.assertEqual(5, len(response.json))
         self.assertEqual(str, type(response.json["format"]))
         self.assertEqual("jpg", response.json["format"])
         self.assertEqual(201, response.status_code)
@@ -101,9 +103,8 @@ class EntityTest(BaseCase):
             data=update,
         )
 
-        print(response.json)
         self.valid_mediafile(response.json)
-        self.assertEqual(3, len(response.json))
+        self.assertEqual(5, len(response.json))
         self.assertEqual(str, type(response.json["format"]))
         self.assertEqual("jpg", response.json["format"])
         self.assertEqual(201, response.status_code)
