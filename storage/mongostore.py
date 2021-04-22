@@ -106,6 +106,8 @@ class MongoStorageManager:
     def _prepare_mongo_document(self, document, reversed, id=None):
         if id:
             document["_id"] = id
+            if "identifiers" in document:
+                document["identifiers"].insert(0, id)
         if "data" in document:
             document["data"] = self._replace_dictionary_keys(document["data"], reversed)
         return document

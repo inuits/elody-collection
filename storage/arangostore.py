@@ -96,7 +96,10 @@ FOR c IN @@collection
         return content
 
     def save_item_to_collection(self, collection, content):
-        content["_key"] = str(uuid.uuid4())
+        _id = str(uuid.uuid4())
+        content["_key"] = _id
+        if "identifiers" in content:
+            content["identifiers"].insert(0, _id)
         item = self.db[collection].createDocument(content)
         item.save()
         return item.getStore()
