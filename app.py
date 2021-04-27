@@ -48,12 +48,14 @@ from resources.entity import (
     EntityMetadata,
     EntityMetadataKey,
     EntityMediafiles,
+    EntityMediafilesCreate,
 )
 from resources.mediafile import Mediafile, MediafileDetail
 
 api.add_resource(TenantDetail, "/tenants/<string:id>")
 api.add_resource(Tenant, "/tenants")
 
+api.add_resource(EntityMediafilesCreate, "/entities/<string:id>/mediafiles/create")
 api.add_resource(EntityMediafiles, "/entities/<string:id>/mediafiles")
 api.add_resource(EntityMetadataKey, "/entities/<string:id>/metadata/<string:key>")
 api.add_resource(EntityMetadata, "/entities/<string:id>/metadata")

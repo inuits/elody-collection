@@ -69,6 +69,39 @@ class EntityTest(BaseCase):
 
         self.invalid_input(response)
 
+    def test_successful_entity_mediafile_create(self):
+        _id = self.create_entity_get_id()
+
+        response = self.app.post(
+            "/entities/{}/mediafiles/create".format(_id),
+            headers={"Content-Type": "application/json"},
+        )
+
+        self.assertEqual(str, type(response.json))
+        self.assertTrue(
+            response.json.startswith("https://dams-storage-api.inuits.io/upload/")
+        )
+        self.assertEqual(78, len(response.json))
+        self.assertEqual(201, response.status_code)
+
+        response = self.app.get(
+            "/entities/{}/mediafiles".format(_id),
+            headers={"Content-Type": "application/json"},
+        )
+
+        self.assertEqual(1, len(response.json))
+        for mediafile in response.json:
+            self.assertEqual(list, type(mediafile["entities"]))
+            self.assertEqual(3, len(mediafile["entities"]))
+
+    def test_create_mediafile_from_non_existant_entity(self):
+        response = self.app.post(
+            "/entities/non-existant-id/mediafiles/create",
+            headers={"Content-Type": "application/json"},
+        )
+
+        self.not_found(response)
+
     def test_successful_entity_get(self):
         _id = self.create_entity_get_id()
 

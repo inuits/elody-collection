@@ -14,6 +14,7 @@ class BaseResource(Resource):
 
     def __init__(self):
         self.storage = StorageManager().get_db_engine()
+        self.storage_api_url = os.getenv("STORAGE_API_URL", "http://localhost:8001")
 
     def get_request_body(self):
         invalid_input = False
