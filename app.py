@@ -8,13 +8,10 @@ from flask_swagger_ui import get_swaggerui_blueprint
 import sentry_sdk
 from sentry_sdk.integrations.flask import FlaskIntegration
 
-SWAGGER_URL = '/api/docs'  # URL for exposing Swagger UI (without trailing '/')
-API_URL = '/spec/dams-api.yaml'  # Our API url (can of course be a local resource)
+SWAGGER_URL = "/api/docs"  # URL for exposing Swagger UI (without trailing '/')
+API_URL = "/spec/dams-api.yaml"  # Our API url (can of course be a local resource)
 
-swaggerui_blueprint = get_swaggerui_blueprint(
-    SWAGGER_URL, 
-    API_URL
-)
+swaggerui_blueprint = get_swaggerui_blueprint(SWAGGER_URL, API_URL)
 
 # sentry_sdk.init(
 #    os.getenv('SENTRY_DSN'),
@@ -78,6 +75,7 @@ api.add_resource(MediafileDetail, "/mediafiles/<string:id>")
 api.add_resource(Mediafile, "/mediafiles")
 
 api.add_resource(Spec, "/spec/<string:spec>")
+
 
 if __name__ == "__main__":
     app.run(debug=True)
