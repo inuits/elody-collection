@@ -3,9 +3,18 @@ from flask import Flask
 from flask_restful import Api
 from flask_restful_swagger import swagger
 from flask_oidc import OpenIDConnect
+from flask_swagger_ui import get_swaggerui_blueprint
 
 import sentry_sdk
 from sentry_sdk.integrations.flask import FlaskIntegration
+
+SWAGGER_URL = '/api/docs'  # URL for exposing Swagger UI (without trailing '/')
+API_URL = '/spec/dams-api.yaml'  # Our API url (can of course be a local resource)
+
+swaggerui_blueprint = get_swaggerui_blueprint(
+    SWAGGER_URL, 
+    API_URL
+)
 
 # sentry_sdk.init(
 #    os.getenv('SENTRY_DSN'),
@@ -41,6 +50,8 @@ app.config.update(
 
 oidc = OpenIDConnect(app)
 
+app.register_blueprint(swaggerui_blueprint)
+
 from resources.tenant import Tenant, TenantDetail
 from resources.entity import (
     Entity,
@@ -51,6 +62,7 @@ from resources.entity import (
     EntityMediafilesCreate,
 )
 from resources.mediafile import Mediafile, MediafileDetail
+from resources.spec import Spec
 
 api.add_resource(TenantDetail, "/tenants/<string:id>")
 api.add_resource(Tenant, "/tenants")
@@ -64,6 +76,8 @@ api.add_resource(Entity, "/entities")
 
 api.add_resource(MediafileDetail, "/mediafiles/<string:id>")
 api.add_resource(Mediafile, "/mediafiles")
+
+api.add_resource(Spec, "/spec/<string:spec>")
 
 if __name__ == "__main__":
     app.run(debug=True)

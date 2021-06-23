@@ -9,8 +9,7 @@ externalDocs:
   description: Find out more about DAMS
   url: https://docs.inuits.io/dams/collection-api
 servers:
-- url: https://dams.inuits.io/collection/apiv4
-- url: http://dams.inuits.io/collection/api/v4
+- url: /
 tags:
 - name: "tenant"
   description: "Tenants in DAMS"
@@ -168,6 +167,34 @@ paths:
           description: "Invalid request"
         "405":                                                                  
           description: "Invalid input"
+    get:
+      tags:
+      - "entity"
+      summary: "Get entity list"
+      description: "Get specific entity for a specific ID"
+      operationId: "getEntities"
+      parameters:
+      - name: skip
+        in: query
+        description: Skip number of entities
+        required: false
+        schema:
+          type: integer
+      - name: limit
+        in: query
+        description: Limit number of entities
+        required: false
+        schema:
+          type: integer
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/entity'
   /entities/{entityId}:
     put:
       tags:
@@ -461,174 +488,174 @@ paths:
           description: "Invalid ID supplied"
         "404":
           description: "Entity not found"
-  /entities/{entityId}/security:
-    get:
-      tags:
-      - "entity"
-      summary: "Get specific entity security context"
-      description: "Get specific entity security context for a specific ID"
-      operationId: getEntityIdSecurity
-      parameters:
-      - name: entityId
-        in: path
-        description: Entity id
-        required: true
-        schema:
-          type: string
-      responses:
-        "200":
-          description: successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/security'
-        "400":
-          description: "Invalid ID supplied"
-        "404":
-          description: "Entity not found"
-    post:
-      tags:
-      - "entity"
-      summary: "Add specific entity security context"
-      description: "Add specific entity security context for a specific ID"
-      operationId: addEntityIdSecurity
-      parameters:
-      - name: entityId
-        in: path
-        description: Entity id
-        required: true
-        schema:
-          type: string
-      requestBody:
-        description: "Security context that needs to be patched"
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/security'
-      responses:
-        "200":
-          description: successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/security'
-        "400":
-          description: "Invalid ID supplied"
-        "404":
-          description: "Entity not found"
-  /entities/{entityId}/locations:
-    get:
-      tags:
-      - "entity"
-      summary: "Get specific entity location"
-      description: "Get specific entity location for a specific ID"
-      operationId: getEntityIdLocation
-      parameters:
-      - name: entityId
-        in: path
-        description: Entity id
-        required: true
-        schema:
-          type: string
-      responses:
-        "200":
-          description: successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Location'
-        "400":
-          description: "Invalid ID supplied"
-        "404":
-          description: "Entity not found"
-    post:
-      tags:
-      - "entity"
-      summary: "Add specific entity location"
-      description: "Add specific entity location for a specific ID"
-      operationId: addEntityIdLocation
-      parameters:
-      - name: entityId
-        in: path
-        description: Entity id
-        required: true
-        schema:
-          type: string
-      requestBody:
-        description: "Location that needs to be patched"
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Location'
-      responses:
-        "200":
-          description: successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/security'
-        "400":
-          description: "Invalid ID supplied"
-        "404":
-          description: "Entity not found"
-  /entities/{entityId}/relations:
-    get:
-      tags:
-      - "entity"
-      summary: "Get specific entity relations"
-      description: "Get specific entity relations for a specific ID"
-      operationId: getEntityIdRelations
-      parameters:
-      - name: entityId
-        in: path
-        description: Entity id
-        required: true
-        schema:
-          type: string
-      responses:
-        "200":
-          description: successful operation
-          content:
-            application/json:
-              schema:
-                type: object
-        "400":
-          description: "Invalid ID supplied"
-        "404":
-          description: "Entity not found"
-    post:
-      tags:
-      - "entity"
-      summary: "Add specific entity relation"
-      description: "Add specific entity relation for a specific ID"
-      operationId: addEntityIdRelation
-      parameters:
-      - name: entityId
-        in: path
-        description: Entity id
-        required: true
-        schema:
-          type: string
-      requestBody:
-        description: "Relation that needs to be patched"
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-      responses:
-        "200":
-          description: successful operation
-          content:
-            application/json:
-              schema:
-                type: object
-        "400":
-          description: "Invalid ID supplied"
-        "404":
-          description: "Entity not found"
+#  /entities/{entityId}/security:
+#    get:
+#      tags:
+#      - "entity"
+#      summary: "Get specific entity security context"
+#      description: "Get specific entity security context for a specific ID"
+#      operationId: getEntityIdSecurity
+#      parameters:
+#      - name: entityId
+#        in: path
+#        description: Entity id
+#        required: true
+#        schema:
+#          type: string
+#      responses:
+#        "200":
+#          description: successful operation
+#          content:
+#            application/json:
+#              schema:
+#                $ref: '#/components/schemas/security'
+#        "400":
+#          description: "Invalid ID supplied"
+#        "404":
+#          description: "Entity not found"
+#    post:
+#      tags:
+#      - "entity"
+#      summary: "Add specific entity security context"
+#      description: "Add specific entity security context for a specific ID"
+#      operationId: addEntityIdSecurity
+#      parameters:
+#      - name: entityId
+#        in: path
+#        description: Entity id
+#        required: true
+#        schema:
+#          type: string
+#      requestBody:
+#        description: "Security context that needs to be patched"
+#        required: true
+#        content:
+#          application/json:
+#            schema:
+#              $ref: '#/components/schemas/security'
+#      responses:
+#        "200":
+#          description: successful operation
+#          content:
+#            application/json:
+#              schema:
+#                $ref: '#/components/schemas/security'
+#        "400":
+#          description: "Invalid ID supplied"
+#        "404":
+#          description: "Entity not found"
+#  /entities/{entityId}/locations:
+#    get:
+#      tags:
+#      - "entity"
+#      summary: "Get specific entity location"
+#      description: "Get specific entity location for a specific ID"
+#      operationId: getEntityIdLocation
+#      parameters:
+#      - name: entityId
+#        in: path
+#        description: Entity id
+#        required: true
+#        schema:
+#          type: string
+#      responses:
+#        "200":
+#          description: successful operation
+#          content:
+#            application/json:
+#              schema:
+#                $ref: '#/components/schemas/Location'
+#        "400":
+#          description: "Invalid ID supplied"
+#        "404":
+#          description: "Entity not found"
+#    post:
+#      tags:
+#      - "entity"
+#      summary: "Add specific entity location"
+#      description: "Add specific entity location for a specific ID"
+#      operationId: addEntityIdLocation
+#      parameters:
+#      - name: entityId
+#        in: path
+#        description: Entity id
+#        required: true
+#        schema:
+#          type: string
+#      requestBody:
+#        description: "Location that needs to be patched"
+#        required: true
+#        content:
+#          application/json:
+#            schema:
+#              $ref: '#/components/schemas/Location'
+#      responses:
+#        "200":
+#          description: successful operation
+#          content:
+#            application/json:
+#              schema:
+#                $ref: '#/components/schemas/security'
+#        "400":
+#          description: "Invalid ID supplied"
+#        "404":
+#          description: "Entity not found"
+#  /entities/{entityId}/relations:
+#    get:
+#      tags:
+#      - "entity"
+#      summary: "Get specific entity relations"
+#      description: "Get specific entity relations for a specific ID"
+#      operationId: getEntityIdRelations
+#      parameters:
+#      - name: entityId
+#        in: path
+#        description: Entity id
+#        required: true
+#        schema:
+#          type: string
+#      responses:
+#        "200":
+#          description: successful operation
+#          content:
+#            application/json:
+#              schema:
+#                type: object
+#        "400":
+#          description: "Invalid ID supplied"
+#        "404":
+#          description: "Entity not found"
+#    post:
+#      tags:
+#      - "entity"
+#      summary: "Add specific entity relation"
+#      description: "Add specific entity relation for a specific ID"
+#      operationId: addEntityIdRelation
+#      parameters:
+#      - name: entityId
+#        in: path
+#        description: Entity id
+#        required: true
+#        schema:
+#          type: string
+#      requestBody:
+#        description: "Relation that needs to be patched"
+#        required: true
+#        content:
+#          application/json:
+#            schema:
+#              type: object
+#      responses:
+#        "200":
+#          description: successful operation
+#          content:
+#            application/json:
+#              schema:
+#                type: object
+#        "400":
+#          description: "Invalid ID supplied"
+#        "404":
+#          description: "Entity not found"
   /mediafiles:
     post:
       tags:
@@ -768,20 +795,20 @@ components:
           format: uuid
         type:
           type: string
-        indexes:
+        identifiers:
           type: array
           items:
             type: string
-        security:
-          type: array
-          items:
-            $ref: '#/components/schemas/security'
+#        security:
+#          type: array
+#          items:
+#            $ref: '#/components/schemas/security'
         metadata:
           type: array
           items:
             $ref: '#/components/schemas/metadata'
-        location:
-          $ref: "#/components/schemas/Location"
+#        location:
+#          $ref: "#/components/schemas/Location"
         data:
           type: object
           description: "Original entity data"
@@ -793,10 +820,14 @@ components:
         location:
           type: string
           format: uri
-        metadata:
+        entities:
           type: array
           items:
-            $ref: '#/components/schemas/metadata'
+            type: string
+#        metadata:
+#          type: array
+#          items:
+#            $ref: '#/components/schemas/metadata'
           
     metadata:
       type: object
