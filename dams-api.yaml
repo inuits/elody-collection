@@ -440,7 +440,7 @@ paths:
     get:
       tags:
       - "entity"
-      summary: "Get specific asstet mediafiles"
+      summary: "Get specific asset mediafiles"
       description: "Get specific entity mediafiles for a specific ID"
       operationId: getEntityIdMediafiles
       parameters:
@@ -466,9 +466,35 @@ paths:
     post:
       tags:
       - "entity"
-      summary: "Add asstet mediafiles"
+      summary: "Add asset mediafiles"
       description: "Add entity mediafiles for a specific ID"
       operationId: addEntityIdMediafiles
+      parameters:
+      - name: entityId
+        in: path
+        description: Entity id
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: string
+                format: uri
+        "400":
+          description: "Invalid ID supplied"
+        "404":
+          description: "Entity not found"
+  /entities/{entityId}/mediafiles/create:
+    post:
+      tags:
+      - "entity"
+      summary: "Create asset mediafile"
+      description: "Create entity mediafiles for a specific ID"
+      operationId: createEntityIdMediafiles
       parameters:
       - name: entityId
         in: path
