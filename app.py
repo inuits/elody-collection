@@ -4,6 +4,9 @@ from flask_restful import Api
 from flask_restful_swagger import swagger
 from flask_oidc import OpenIDConnect
 from flask_swagger_ui import get_swaggerui_blueprint
+from flask_rabmq import RabbitMQ
+import logging
+
 
 import sentry_sdk
 from sentry_sdk.integrations.flask import FlaskIntegration
@@ -32,6 +35,9 @@ api = swagger.docs(
 
 app.config.update(
     {
+        "RABMQ_RABBITMQ_URL": os.getenv("RABMQ_RABBITMQ_URL", "amqp://rabbit:5672"),
+        "RABMQ_SEND_EXCHANGE_NAME": os.getenv("RABMQ_SEND_EXCHANGE_NAME", "dams"),
+        "RABMQ_SEND_EXCHANGE_TYPE": "topic",
         "SECRET_KEY": "SomethingNotEntirelySecret",
         "TESTING": True,
         "DEBUG": True,
@@ -44,6 +50,18 @@ app.config.update(
         "OIDC_INTROSPECTION_AUTH_METHOD": "client_secret_post",
     }
 )
+
+logging.basicConfig(
+    format="%(asctime)s %(process)d,%(threadName)s %(filename)s:%(lineno)d [%(levelname)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+    level=logging.INFO,
+)
+
+logger = logging.getLogger(__name__)
+
+ramq = RabbitMQ()
+ramq.init_app(app=app)
+ramq.run_consumer()
 
 oidc = OpenIDConnect(app)
 
@@ -60,6 +78,7 @@ from resources.entity import (
 )
 from resources.mediafile import Mediafile, MediafileDetail
 from resources.spec import Spec
+from resources.importer import ImporterStart
 
 api.add_resource(TenantDetail, "/tenants/<string:id>")
 api.add_resource(Tenant, "/tenants")
@@ -75,6 +94,7 @@ api.add_resource(MediafileDetail, "/mediafiles/<string:id>")
 api.add_resource(Mediafile, "/mediafiles")
 
 api.add_resource(Spec, "/spec/<string:spec>")
+api.add_resource(ImporterStart, "/importer/start")
 
 
 if __name__ == "__main__":
