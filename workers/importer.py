@@ -1,7 +1,6 @@
 import os, glob
 import pandas as pd
 import requests
-import uuid
 
 
 class Importer:

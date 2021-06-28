@@ -2,6 +2,8 @@ from resources.base_resource import BaseResource
 import json
 from workers.importer import Importer
 from storage.storagemanager import StorageManager
+import os
+import uuid
 
 import app
 
@@ -19,10 +21,18 @@ def csv_import(body):
 
 
 class ImporterStart(BaseResource):
+    def __init__(self):
+        super().__init__()
+        self.upload_folder = os.getenv("UPLOAD_FOLDER", "/mnt/media-import")
+
     @app.oidc.accept_token(
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )
     def post(self):
-        message = {"message_id": 1, "data": {"upload_folder": "/app/import"}}
+        message_id = str(uuid.uuid4())
+        message = {
+            "message_id": message_id,
+            "data": {"upload_folder": self.upload_folder},
+        }
         app.ramq.send(message, routing_key="dams.import_start", exchange_name="dams")
         return message
