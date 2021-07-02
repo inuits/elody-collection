@@ -1,4 +1,5 @@
-import os, glob
+import glob
+import os
 import pandas as pd
 import requests
 
@@ -9,7 +10,7 @@ class Importer:
         self.storage = storage
 
     def import_from_csv(self, path):
-        all_csv_files = [i for i in glob.glob(path + "/*.csv")]
+        all_csv_files = [i for i in glob.glob(os.path.join(path, '') + "**/*.csv", recursive=True)]
         combined_csv = pd.concat([pd.read_csv(f) for f in all_csv_files])
         for index, row in combined_csv.iterrows():
             file_name = row["Bestandsnaam"]
