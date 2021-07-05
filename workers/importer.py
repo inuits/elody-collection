@@ -10,10 +10,15 @@ class Importer:
         self.storage = storage
 
     def import_from_csv(self, path):
-        all_csv_files = [i for i in glob.glob(os.path.join(path, '') + "**/*.csv", recursive=True)]
+        path = os.path.join(path, '')
+        all_csv_files = [i for i in glob.glob(path + "**/*.csv", recursive=True)]
         combined_csv = pd.concat([pd.read_csv(f) for f in all_csv_files])
         for index, row in combined_csv.iterrows():
-            file_name = row["Bestandsnaam"]
+            if pd.isna(row["Padnaam"]):
+                file_name = sorted(glob.glob(path + "**/" + row["Bestandsnaam"], recursive=True))[0]
+            else:
+                # FIXME: this will eventually need to be changed to point to our mount point
+                file_name = row["Padnaam"]
             object_id = row["Objectnummer"]
             mediafile = self.create_mediafile(object_id, file_name)
             upload_location = "{}/upload/{}".format(self.storage_api_url, file_name)
