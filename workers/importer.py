@@ -7,6 +7,7 @@ import requests
 class Importer:
     def __init__(self, storage):
         self.storage_api_url = os.getenv("STORAGE_API_URL", "http://localhost:8001")
+        self.mount_point = os.getenv("MOUNT_POINT", "")
         self.storage = storage
 
     def import_from_csv(self, path):
@@ -19,8 +20,11 @@ class Importer:
             elif pd.isna(row["Padnaam"]):
                 file_path = sorted(glob.glob(path + "**/" + row["Bestandsnaam"], recursive=True))[0]
             else:
-                # FIXME: this will eventually need to be changed to point to our mount point
-                file_path = row["Padnaam"]
+                if ':' in row["Padnaam"]:
+                    file_path = str.replace(row["Padnaam"][3:], '\\', '/')
+                else:
+                    file_path = row["Padnaam"]
+                file_path = self.mount_point + file_path
             file_name = os.path.basename(file_path)
             object_id = row["Objectnummer"]
             mediafile = self.create_mediafile(object_id, file_name)
