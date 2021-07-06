@@ -38,9 +38,18 @@ class Importer:
         requests.post(upload_location, files=files)
 
     def create_mediafile(self, object_id, file_name):
+        if not self.entity_exists(object_id):
+            content = {"identifiers": object_id}
+            self.storage.save_item_to_collection("entities", content)
         location = {
             "location": "{}/download/{}".format(self.storage_api_url, file_name)
         }
         mediafile = self.storage.save_item_to_collection("mediafiles", location)
         self.storage.add_mediafile_to_entity("entities", object_id, mediafile["_id"])
         return mediafile
+
+    def entity_exists(self, entity_id):
+        item = self.storage.get_item_from_collection_by_id("entities", entity_id)
+        if item is None:
+            return False
+        return True
