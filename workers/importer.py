@@ -11,17 +11,19 @@ class Importer:
         self.storage = storage
 
     def import_from_csv(self, path):
-        path = os.path.join(path, '')
+        path = os.path.join(path, "")
         all_csv_files = [i for i in glob.glob(path + "**/*.csv", recursive=True)]
         combined_csv = pd.concat([pd.read_csv(f) for f in all_csv_files])
         for index, row in combined_csv.iterrows():
             if pd.isna(row["Padnaam"]) and pd.isna(row["Bestandsnaam"]):
                 continue
             elif pd.isna(row["Padnaam"]):
-                file_path = sorted(glob.glob(path + "**/" + row["Bestandsnaam"], recursive=True))[0]
+                file_path = sorted(
+                    glob.glob(path + "**/" + row["Bestandsnaam"], recursive=True)
+                )[0]
             else:
-                if ':' in row["Padnaam"]:
-                    file_path = str.replace(row["Padnaam"][3:], '\\', '/')
+                if ":" in row["Padnaam"]:
+                    file_path = str.replace(row["Padnaam"][3:], "\\", "/")
                 else:
                     file_path = row["Padnaam"]
                 file_path = self.mount_point + file_path
