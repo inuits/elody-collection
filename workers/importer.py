@@ -14,7 +14,9 @@ class Importer:
         all_csv_files = [i for i in glob.glob(path + "**/*.csv", recursive=True)]
         combined_csv = pd.concat([pd.read_csv(f) for f in all_csv_files])
         for index, row in combined_csv.iterrows():
-            if pd.isna(row["Padnaam"]):
+            if pd.isna(row["Padnaam"]) and pd.isna(row["Bestandsnaam"]):
+                continue
+            elif pd.isna(row["Padnaam"]):
                 file_path = sorted(glob.glob(path + "**/" + row["Bestandsnaam"], recursive=True))[0]
             else:
                 # FIXME: this will eventually need to be changed to point to our mount point
