@@ -15,17 +15,18 @@ class Importer:
         combined_csv = pd.concat([pd.read_csv(f) for f in all_csv_files])
         for index, row in combined_csv.iterrows():
             if pd.isna(row["Padnaam"]):
-                file_name = sorted(glob.glob(path + "**/" + row["Bestandsnaam"], recursive=True))[0]
+                file_path = sorted(glob.glob(path + "**/" + row["Bestandsnaam"], recursive=True))[0]
             else:
                 # FIXME: this will eventually need to be changed to point to our mount point
-                file_name = row["Padnaam"]
+                file_path = row["Padnaam"]
+            file_name = os.path.basename(file_path)
             object_id = row["Objectnummer"]
             mediafile = self.create_mediafile(object_id, file_name)
             upload_location = "{}/upload/{}".format(self.storage_api_url, file_name)
-            self.upload_file(upload_location, "{}/{}".format(path, file_name))
+            self.upload_file(upload_location, file_path)
 
-    def upload_file(self, upload_location, filename):
-        files = {"file": open(filename, "rb")}
+    def upload_file(self, upload_location, file_path):
+        files = {"file": open(file_path, "rb")}
         requests.post(upload_location, files=files)
 
     def create_mediafile(self, object_id, file_name):
