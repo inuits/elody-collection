@@ -35,6 +35,9 @@ class Importer:
             file_name = os.path.basename(file_path)
             object_id = row["Objectnummer"]
             mediafile = self.create_mediafile(object_id, file_name)
+            metadata = self.add_metadata_to_entity(
+                object_id, row["Rechtenstatus"], row["Copyright"]
+            )
             upload_location = "{}/upload/{}".format(self.storage_api_url, file_name)
             self.upload_file(upload_location, file_path)
 
@@ -57,3 +60,27 @@ class Importer:
                 "entities", object_id, mediafile["_id"]
             )
         return mediafile
+
+    def add_metadata_to_entity(self, object_id, copyright_status, copyright_holder):
+        rights = self.storage.get_collection_item_metadata_key(
+            "entities", object_id, "rights"
+        )
+        copyright = self.storage.get_collection_item_metadata_key(
+            "entities", object_id, "copyright"
+        )
+        new_metadata = []
+        if (not pd.isna(copyright_status)) and (len(rights) != 0):
+            new_metadata.append({"key": "rights", "value": copyright_status})
+        if (not pd.isna(copyright_holder)) and (len(copyright) != 00):
+            new_metadata.append({"key": "copyright", "value": copyright_holder})
+        all_metadata = self.storage.get_collection_item_metadata("entities", object_id)
+        if len(all_metadata) != 0:
+            all_metadata = all_metadata + new_metadata
+            ret_metadata = self.storage.update_collection_item_metadata(
+                "entities", object_id, all_metadata
+            )
+        else:
+            ret_metadata = self.storage.add_collection_item_metadata(
+                "entities", object_id, new_metadata
+            )
+        return ret_metadata
