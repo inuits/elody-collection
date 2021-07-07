@@ -48,7 +48,6 @@ class MemoryStorageManager:
         return None
 
     def add_mediafile_to_entity(self, collection, id, mediafile_id):
-        mediafile = None
         if id in self.collections[collection]:
             identifiers = self.collections[collection][id]["identifiers"]
             if self.collections[collection][id]["_id"] not in identifiers:
