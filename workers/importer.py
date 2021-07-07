@@ -13,7 +13,12 @@ class Importer:
     def import_from_csv(self, path):
         path = os.path.join(path, "")
         all_csv_files = [i for i in glob.glob(path + "**/*.csv", recursive=True)]
-        combined_csv = pd.concat([pd.read_csv(f) for f in all_csv_files])
+        dataframes = []
+        for f in all_csv_files:
+            df = pd.read_csv(f)
+            df.columns = df.columns.str.capitalize()
+            dataframes.append(df)
+        combined_csv = pd.concat(dataframes)
         for index, row in combined_csv.iterrows():
             if pd.isna(row["Padnaam"]) and pd.isna(row["Bestandsnaam"]):
                 continue
