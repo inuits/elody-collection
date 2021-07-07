@@ -1,0 +1,20 @@
+# UserRequest is an input tye that sets the object to be included in the request when saving a user in a mutation
+# only provide the name and email the rest will be handled by the main endpoint
+input  UserRequest {
+    name: String
+    email: String
+}
+
+# Job input type
+# All fields denoted with ! are required when making any request
+input JobRequest {
+    start_date: String!
+    end_date: String!
+    owner: String
+    status: JobStatus
+    asset: String
+    mediafile_id: String
+    mediafile: String
+    job_type: String!
+    job_info: String!
+}
