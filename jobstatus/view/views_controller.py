@@ -12,21 +12,21 @@ from schema.root import schema
 
 
 # Set a simple and sample REST entry pont
-@jobs.route('/')
+@jobs.route("/")
 def index():
-    server_name = 'Jobs-status API'
-    return {'message': f'Welcome {server_name}'}  # return a simple welcome object
+    server_name = "Jobs-status API"
+    return {"message": f"Welcome {server_name}"}  # return a simple welcome object
 
 
 # set the graphQL test server  - this is only for testing only, in production this access to this  endpoint will be
 # restricted. alternatively disable this endpoint to access the api via postman.
-@jobs.route('/jobs-status', methods=['GET'])
+@jobs.route("/jobs-status", methods=["GET"])
 def jobs_test_server():
     return PLAYGROUND_HTML, 200
 
 
 # Main GraphQL Server
-@jobs.route('/jobs-status', methods=['POST'])
+@jobs.route("/jobs-status", methods=["POST"])
 def jobs_graphql_server():
     """
 
@@ -36,10 +36,7 @@ def jobs_graphql_server():
     data = request.get_json()
     # set the schema and data fetching mechanism.
     success, result = graphql_sync(
-        schema,
-        data,
-        context_value=request,
-        debug=jobs.debug
+        schema, data, context_value=request, debug=jobs.debug
     )
     # set the status code in which 200 represents success and 200 a failed request.
     status_code = 200 if success else 400

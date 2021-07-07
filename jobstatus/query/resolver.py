@@ -35,10 +35,7 @@ def get_all_jobs(obj, info):
 
 def test_server_access(obj, info):
     """ Test endpoint for sample success response"""
-    return {
-        'message': 'Welcome To Job-Status System',
-        'status': True
-    }
+    return {"message": "Welcome To Job-Status System", "status": True}
 
 
 def welcome(obj, info, name):
@@ -79,8 +76,12 @@ def login_user(obj, info, email):
     try:
 
         user = User.query.filter_by(email=email).one_or_none()
-        response = {'token': create_access_token(identity=user.u_id), 'message': 'Access Granted', 'status': True}
+        response = {
+            "token": create_access_token(identity=user.u_id),
+            "message": "Access Granted",
+            "status": True,
+        }
     except BaseException as ex:
-        response = {'message': 'access denied', 'status': False, 'error': [ex]}
+        response = {"message": "access denied", "status": False, "error": [ex]}
 
     return response

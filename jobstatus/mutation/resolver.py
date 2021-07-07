@@ -4,13 +4,14 @@ from configuration.config import entity
 from mutation.root_mutation import MutationResolver
 from flask_jwt_extended import jwt_required
 
+
 @convert_kwargs_to_snake_case
 @jwt_required()
 def save_job(obj, info, job):
-    """ saves a job post :
-        :param job:
-        :param obj
-        :param info are internally connected to internal ariadne module which process requests bases on these two values.
+    """saves a job post :
+    :param job:
+    :param obj
+    :param info are internally connected to internal ariadne module which process requests bases on these two values.
     """
     return MutationResolver.save_job(job)
 
@@ -28,9 +29,9 @@ def save_user(obj, info, user):
 
 @convert_kwargs_to_snake_case
 def initialize_tables(obj, info):
-    """"
+    """ "
     Initialize all tables using SQLAlchemy ORM
-     """
+    """
     entity.create_all()
     entity.session.commit()
-    return {"message": "tables initialized", 'status': True}
+    return {"message": "tables initialized", "status": True}

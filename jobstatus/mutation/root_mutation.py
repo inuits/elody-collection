@@ -13,7 +13,7 @@ class MutationResolver:
 
     @classmethod
     def save_job(cls, job):
-        """ Saves A Job into Jobs model.
+        """Saves A Job into Jobs model.
 
         :param job this is an object of Job model
         """
@@ -27,16 +27,25 @@ class MutationResolver:
                 asset=job["asset"],
                 job_id=uuid.uuid4(),
                 # this is an optional field as such it might be empty
-                mediafile_id=job["mediafile_id"] if job["mediafile_id"] is not None else None,
+                mediafile_id=job["mediafile_id"]
+                if job["mediafile_id"] is not None
+                else None,
                 job_type=job["job_type"],
                 status=job["status"],
                 job_info=job["job_info"],
             )
             entity.session.add(init_job)
             entity.session.commit()
-            response = {'message': f'saved {job["job_info"]}, uuid: {init_job.job_id}', 'status': True}
+            response = {
+                "message": f'saved {job["job_info"]}, uuid: {init_job.job_id}',
+                "status": True,
+            }
         except BaseException as error:
-            response = {'message': f'Saving {job["job_info"]} failed', 'error': [error], 'status': False}
+            response = {
+                "message": f'Saving {job["job_info"]} failed',
+                "error": [error],
+                "status": False,
+            }
 
         return response
 
@@ -49,10 +58,12 @@ class MutationResolver:
         """
         try:
             # initiate and save User
-            entity.session.add(User(name=user['name'], u_id=uuid.uuid4(), email=user['email']))
+            entity.session.add(
+                User(name=user["name"], u_id=uuid.uuid4(), email=user["email"])
+            )
             entity.session.commit()
-            response = {'message': f'{user["name"]}, saved successfully'}
+            response = {"message": f'{user["name"]}, saved successfully'}
         except BaseException as error:
-            response = {'message': f'User not saved', 'error': [error]}
+            response = {"message": f"User not saved", "error": [error]}
         return response
         # entity.session.commit()

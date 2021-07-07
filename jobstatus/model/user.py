@@ -16,13 +16,16 @@ class User(user.Model):
 
     There is a one to many relationship between User model and Jobs Model.
     """
-    __tablename__ = 'User'
-    __bind_key__ = 'JOB_DB'  # maps this table to job_status database
+
+    __tablename__ = "User"
+    __bind_key__ = "JOB_DB"  # maps this table to job_status database
     user_id = user.Column(user.Integer, primary_key=True)
     name = user.Column(user.String(120))
     u_id = user.Column(user.String(250), nullable=False)
     email = user.Column(user.String(255), nullable=False)
-    job = user.relationship('Job', backref='job_owner', lazy=True)  # one to many relationship mapped to Job model
+    job = user.relationship(
+        "Job", backref="job_owner", lazy=True
+    )  # one to many relationship mapped to Job model
 
 
 # ________________________________________________ADDITIONAL-JWT-SETTINGS_______________________________________________________________________
@@ -67,4 +70,4 @@ def my_expired_token_callback(jwt_header, jwt_payload):
     @param jwt_payload:
     @return:
     """
-    return {'message': jwt_payload, 'success': False}, 401
+    return {"message": jwt_payload, "success": False}, 401

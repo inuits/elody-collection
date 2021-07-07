@@ -8,7 +8,8 @@ from query.endpoint import custom_query
 schema = make_executable_schema(
     # gets all schema definitions from the current folder and any other subsequent folders 'controller'
     # regardless where they are defined this method will fetch ans combine them all in one place.
-    load_schema_from_path('./'),
+    load_schema_from_path("./"),
     # Loads schema definition objects
-    custom_query, custom_mutation
+    custom_query,
+    custom_mutation,
 )
