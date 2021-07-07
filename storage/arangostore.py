@@ -23,7 +23,6 @@ class ArangoStorageManager:
         )
         self.db = self._create_database_if_not_exists(self.arango_db_name)
 
-
     def get_items_from_collection(self, collection, skip=0, limit=20):
         items = dict()
         count = self.db[collection].count()
@@ -78,10 +77,11 @@ FOR c IN @@collection
 
     def add_mediafile_to_entity(self, collection, id, mediafile_id):
         entity = self.get_raw_item_from_collection_by_id(collection, id)
-        if entity:
-            self.db.graphs[self.default_graph_name].createEdge(
-                self.mediafile_edge_name, entity["_id"], mediafile_id, {}
-            )
+        if not entity:
+            return None
+        self.db.graphs[self.default_graph_name].createEdge(
+            self.mediafile_edge_name, entity["_id"], mediafile_id, {}
+        )
         return self.db.fetchDocument(mediafile_id).getStore()
 
     def add_collection_item_metadata(self, collection, id, content):
