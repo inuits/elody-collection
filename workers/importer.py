@@ -62,6 +62,8 @@ class Importer:
         return mediafile
 
     def add_metadata_to_entity(self, object_id, copyright_status, copyright_holder):
+        if pd.isna(copyright_status) and pd.isna(copyright_holder):
+            return None
         rights = self.storage.get_collection_item_metadata_key(
             "entities", object_id, "rights"
         )
