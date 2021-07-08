@@ -70,6 +70,8 @@ class Importer:
         copyright = self.storage.get_collection_item_metadata_key(
             "entities", object_id, "copyright"
         )
+        if len(rights) != 0 and len(copyright) != 0:
+            return None
         new_metadata = []
         if (not pd.isna(copyright_status)) and (len(rights) == 0):
             new_metadata.append({"key": "rights", "value": copyright_status})
