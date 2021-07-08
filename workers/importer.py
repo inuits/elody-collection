@@ -27,7 +27,7 @@ class Importer:
                     glob.glob(path + "**/" + row["Bestandsnaam"], recursive=True)
                 )[0]
             else:
-                if ":" in row["Padnaam"]:
+                if row["Padnaam"][1] == ":":
                     file_path = str.replace(row["Padnaam"][3:], "\\", "/")
                 else:
                     file_path = row["Padnaam"]
