@@ -50,16 +50,16 @@ class Importer:
             "location": "{}/download/{}".format(self.storage_api_url, file_name)
         }
         mediafile = self.storage.save_item_to_collection("mediafiles", location)
-        mediafile = self.storage.add_mediafile_to_entity(
+        ret = self.storage.add_mediafile_to_entity(
             "entities", object_id, mediafile["_id"]
         )
-        if not mediafile:
+        if not ret:
             content = {"identifiers": object_id, "type": "asset"}
             self.storage.save_item_to_collection("entities", content)
-            mediafile = self.storage.add_mediafile_to_entity(
+            ret = self.storage.add_mediafile_to_entity(
                 "entities", object_id, mediafile["_id"]
             )
-        return mediafile
+        return ret
 
     def add_metadata_to_entity(self, object_id, copyright_status, copyright_holder):
         if pd.isna(copyright_status) and pd.isna(copyright_holder):
