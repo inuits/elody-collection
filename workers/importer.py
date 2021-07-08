@@ -71,9 +71,9 @@ class Importer:
             "entities", object_id, "copyright"
         )
         new_metadata = []
-        if (not pd.isna(copyright_status)) and (len(rights) != 0):
+        if (not pd.isna(copyright_status)) and (len(rights) == 0):
             new_metadata.append({"key": "rights", "value": copyright_status})
-        if (not pd.isna(copyright_holder)) and (len(copyright) != 0):
+        if (not pd.isna(copyright_holder)) and (len(copyright) == 0):
             new_metadata.append({"key": "copyright", "value": copyright_holder})
         all_metadata = self.storage.get_collection_item_metadata("entities", object_id)
         if len(all_metadata) != 0:
