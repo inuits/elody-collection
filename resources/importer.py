@@ -30,10 +30,11 @@ class ImporterStart(BaseResource):
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )
     def post(self):
+        request_body = self.get_request_body()
         message_id = str(uuid.uuid4())
         message = {
             "message_id": message_id,
-            "data": {"upload_folder": self.upload_folder},
+            "data": {"upload_folder": os.path.join(self.upload_folder, request_body["upload_folder"])},
         }
         app.ramq.send(message, routing_key="dams.import_start", exchange_name="dams")
         return message
