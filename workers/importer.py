@@ -7,7 +7,7 @@ import requests
 class Importer:
     def __init__(self, storage):
         self.storage_api_url = os.getenv("STORAGE_API_URL", "http://localhost:8001")
-        self.mount_point = os.getenv("MOUNT_POINT", "")
+        self.mount_point = os.getenv("UPLOAD_FOLDER", "")
         self.storage = storage
 
     def import_from_csv(self, path):
