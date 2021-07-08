@@ -1,3 +1,4 @@
+from flask import jsonify
 from resources.base_resource import BaseResource
 import json
 from workers.importer import Importer
@@ -36,3 +37,13 @@ class ImporterStart(BaseResource):
         }
         app.ramq.send(message, routing_key="dams.import_start", exchange_name="dams")
         return message
+
+    @app.oidc.accept_token(
+        require_token=BaseResource.token_required, scopes_required=["openid"]
+    )
+    def get(self):
+        directories = [
+            str(x[0]).removeprefix(self.upload_folder)
+            for x in os.walk(self.upload_folder)
+        ]
+        return jsonify(directories)
