@@ -61,30 +61,17 @@ class Importer:
             )
         return ret
 
-    def add_metadata_to_entity(self, object_id, copyright_status, copyright_holder):
-        if pd.isna(copyright_status) and pd.isna(copyright_holder):
+    def add_metadata_to_entity(self, object_id, rights, copyright):
+        if pd.isna(rights) and pd.isna(copyright):
             return None
-        rights = self.storage.get_collection_item_metadata_key(
-            "entities", object_id, "rights"
-        )
-        copyright = self.storage.get_collection_item_metadata_key(
-            "entities", object_id, "copyright"
-        )
-        if len(rights) != 0 and len(copyright) != 0:
-            return None
-        new_metadata = []
-        if (not pd.isna(copyright_status)) and (len(rights) == 0):
-            new_metadata.append({"key": "rights", "value": copyright_status})
-        if (not pd.isna(copyright_holder)) and (len(copyright) == 0):
-            new_metadata.append({"key": "copyright", "value": copyright_holder})
-        all_metadata = self.storage.get_collection_item_metadata("entities", object_id)
-        if len(all_metadata) != 0:
-            all_metadata = all_metadata + new_metadata
-            ret_metadata = self.storage.update_collection_item_metadata(
-                "entities", object_id, all_metadata
-            )
-        else:
-            ret_metadata = self.storage.add_collection_item_metadata(
-                "entities", object_id, new_metadata
-            )
-        return ret_metadata
+        if not pd.isna(rights):
+            rights_obj = {"key": "rights", "value": rights}
+            metadata = self.storage.update_collection_item_metadata_key("entities", object_id, "rights", rights_obj)
+            if not metadata:
+                metadata = self.storage.add_collection_item_metadata("entities", object_id, rights_obj)
+        if not pd.isna(copyright):
+            copyright_obj = {"key": "copyright", "value": copyright}
+            metadata = self.storage.update_collection_item_metadata_key("entities", object_id, "copyright", copyright_obj)
+            if not metadata:
+                metadata = self.storage.add_collection_item_metadata("entities", object_id, copyright_obj)
+        return metadata
