@@ -74,14 +74,6 @@ class MemoryStorageManager:
             return content
         return None
 
-    def update_collection_item_metadata_key(self, collection, id, key, content):
-        if id in self.collections[collection]:
-            for index, item in enumerate(self.collections[collection][id]["metadata"]):
-                if item["key"] == key:
-                    self.collections[collection][id]["metadata"][index] = content
-                    return self.collections[collection][id]["metadata"]
-        return None
-
     def patch_item_from_collection(self, collection, id, content):
         if id in self.collections[collection]:
             item = self.collections[collection][id]

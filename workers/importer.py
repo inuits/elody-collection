@@ -64,14 +64,20 @@ class Importer:
     def add_metadata_to_entity(self, object_id, rights, copyright):
         if pd.isna(rights) and pd.isna(copyright):
             return None
+        new_metadata = []
         if not pd.isna(rights):
-            rights_obj = {"key": "rights", "value": rights}
-            metadata = self.storage.update_collection_item_metadata_key("entities", object_id, "rights", rights_obj)
-            if not metadata:
-                metadata = self.storage.add_collection_item_metadata("entities", object_id, rights_obj)
+            new_metadata.append({"key": "rights", "value": rights})
         if not pd.isna(copyright):
-            copyright_obj = {"key": "copyright", "value": copyright}
-            metadata = self.storage.update_collection_item_metadata_key("entities", object_id, "copyright", copyright_obj)
-            if not metadata:
-                metadata = self.storage.add_collection_item_metadata("entities", object_id, copyright_obj)
-        return metadata
+            new_metadata.append({"key": "copyright", "value": copyright})
+        all_metadata = self.storage.get_collection_item_metadata("entities", object_id)
+        if all(elem in all_metadata for elem in new_metadata):
+            return all_metadata
+        for index, data in enumerate(all_metadata):
+            if ("key", "copyright") in data.items() and not pd.isna(copyright):
+                all_metadata[index] = new_metadata.pop()
+            if ("key", "rights") in data.items() and not pd.isna(rights):
+                all_metadata[index] = new_metadata.pop()
+        if new_metadata:
+            all_metadata = all_metadata + new_metadata
+        ret_metadata = self.storage.update_collection_item_metadata("entities", object_id, all_metadata)
+        return ret_metadata
