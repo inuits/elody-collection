@@ -87,6 +87,21 @@ class MongoStorageManager:
         item = self.patch_item_from_collection(collection, id, patch_data)
         return item["metadata"]
 
+    def update_collection_item_metadata_key(self, collection, id, key, content):
+        patch_data = {"metadata": []}
+        all_metadata = self.get_collection_item_metadata(collection, id)
+        found = False
+        for metadata_object in all_metadata:
+            if metadata_object["key"] == key:
+                patch_data["metadata"].append(content)
+                found = True
+            else:
+                patch_data["metadata"].append(metadata_object)
+        if not found:
+            return None
+        item = self.patch_item_from_collection(collection, id, patch_data)
+        return item["metadata"]
+
     def patch_item_from_collection(self, collection, id, content):
         content = self._prepare_mongo_document(content, False)
         self.db[collection].update_one(self._get_id_query(id), {"$set": content})
