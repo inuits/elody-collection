@@ -10,6 +10,11 @@ class Importer:
         self.mount_point = os.getenv("UPLOAD_FOLDER", "")
         self.storage = storage
 
+    def validate_csv(self, df):
+        return "Objectnummer" in df.columns and (
+            "Bestandsnaam" in df.columns or "Padnaam" in df.columns
+        )
+
     def import_from_csv(self, path):
         path = os.path.join(path, "")
         all_csv_files = [i for i in glob.glob(path + "**/*.csv", recursive=True)]
@@ -17,10 +22,14 @@ class Importer:
         for f in all_csv_files:
             df = pd.read_csv(f)
             df.columns = df.columns.str.capitalize()
+            if not self.validate_csv(df):
+                continue
             dataframes.append(df)
         combined_csv = pd.concat(dataframes)
         for index, row in combined_csv.iterrows():
-            if pd.isna(row["Padnaam"]) and pd.isna(row["Bestandsnaam"]):
+            if pd.isna(row["Objectnummer"]) or (
+                pd.isna(row["Padnaam"]) and pd.isna(row["Bestandsnaam"])
+            ):
                 continue
             elif pd.isna(row["Padnaam"]):
                 file_path = sorted(
