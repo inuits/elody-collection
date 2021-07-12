@@ -19,6 +19,8 @@ class Job(data.Document):
     job_info = data.StringField()
     owner = data.StringField()
     media_file = data.DocumentField(MediaFile)
-    status = data.EnumField(StringField(), "queued", "in-progress,", "finished", "queued")
+    status = data.EnumField(
+        StringField(), "queued", "in-progress,", "finished", "queued"
+    )
     user = data.StringField()
     asset = data.DocumentField(Asset, required=False)

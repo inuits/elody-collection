@@ -5,6 +5,7 @@ from app.model import Job
 
 # Temporal HTTP endpoints - browser version
 
+
 @app.route("/job/<id>", methods=["GET", "POST"])
 def job_status_api(id):
     return Job.query.filter(Job.asset == id)
