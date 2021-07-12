@@ -58,6 +58,12 @@ class ImporterStart(BaseResource):
         app.ramq.send(message, routing_key="dams.import_start", exchange_name="dams")
         return message
 
+
+class ImporterDirectories(BaseResource):
+    def __init__(self):
+        super().__init__()
+        self.upload_folder = os.getenv("UPLOAD_FOLDER", "/mnt/media-import")
+
     @app.oidc.accept_token(
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )

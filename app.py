@@ -75,7 +75,7 @@ from resources.entity import (
 )
 from resources.mediafile import Mediafile, MediafileDetail
 from resources.spec import Spec
-from resources.importer import ImporterStart
+from resources.importer import ImporterStart, ImporterDirectories
 
 api.add_resource(TenantDetail, "/tenants/<string:id>")
 api.add_resource(Tenant, "/tenants")
@@ -92,6 +92,7 @@ api.add_resource(Mediafile, "/mediafiles")
 
 api.add_resource(Spec, "/spec/<string:spec>")
 api.add_resource(ImporterStart, "/importer/start")
+api.add_resource(ImporterDirectories, "/importer/directories")
 
 if __name__ == "__main__":
     app.run(debug=True)

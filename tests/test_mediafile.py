@@ -4,7 +4,7 @@ import json
 from tests.base_case import BaseCase
 
 
-class EntityTest(BaseCase):
+class MediafileTest(BaseCase):
     def test_successful_mediafile_create(self):
         response = self.create_mediafile()
 
