@@ -1,7 +1,5 @@
-# Job-status App entry Point
-
-from configuration.config import jobs
-from view import views_controller
+from app.config import app as main
+import app.views
 
 if __name__ == "__main__":
-    jobs.run()
+    main.run(debug=True)

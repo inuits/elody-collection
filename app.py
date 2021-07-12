@@ -1,15 +1,12 @@
+import logging
 import os
+
 from flask import Flask
+from flask_oidc import OpenIDConnect
+from flask_rabmq import RabbitMQ
 from flask_restful import Api
 from flask_restful_swagger import swagger
-from flask_oidc import OpenIDConnect
 from flask_swagger_ui import get_swaggerui_blueprint
-from flask_rabmq import RabbitMQ
-import logging
-
-
-import sentry_sdk
-from sentry_sdk.integrations.flask import FlaskIntegration
 
 SWAGGER_URL = "/api/docs"  # URL for exposing Swagger UI (without trailing '/')
 API_URL = "/spec/dams-api.yaml"  # Our API url (can of course be a local resource)
@@ -35,7 +32,7 @@ api = swagger.docs(
 
 app.config.update(
     {
-        "RABMQ_RABBITMQ_URL": os.getenv("RABMQ_RABBITMQ_URL", "amqp://rabbit:5672"),
+        "RABMQ_RABBITMQ_URL": os.getenv("RABMQ_RABBITMQ_URL", "amqp://localhost:5672"),
         "RABMQ_SEND_EXCHANGE_NAME": os.getenv("RABMQ_SEND_EXCHANGE_NAME", "dams"),
         "RABMQ_SEND_EXCHANGE_TYPE": "topic",
         "SECRET_KEY": "SomethingNotEntirelySecret",
@@ -95,7 +92,6 @@ api.add_resource(Mediafile, "/mediafiles")
 
 api.add_resource(Spec, "/spec/<string:spec>")
 api.add_resource(ImporterStart, "/importer/start")
-
 
 if __name__ == "__main__":
     app.run(debug=True)

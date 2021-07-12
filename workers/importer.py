@@ -79,5 +79,7 @@ class Importer:
                 all_metadata[index] = new_metadata.pop()
         if new_metadata:
             all_metadata = all_metadata + new_metadata
-        ret_metadata = self.storage.update_collection_item_metadata("entities", object_id, all_metadata)
+        ret_metadata = self.storage.update_collection_item_metadata(
+            "entities", object_id, all_metadata
+        )
         return ret_metadata

@@ -34,7 +34,11 @@ class ImporterStart(BaseResource):
         message_id = str(uuid.uuid4())
         message = {
             "message_id": message_id,
-            "data": {"upload_folder": os.path.join(self.upload_folder, request_body["upload_folder"])},
+            "data": {
+                "upload_folder": os.path.join(
+                    self.upload_folder, request_body["upload_folder"]
+                )
+            },
         }
         app.ramq.send(message, routing_key="dams.import_start", exchange_name="dams")
         return message
