@@ -1,4 +1,6 @@
-from flask import jsonify
+from flask import jsonify, g
+
+from jobstatus.app.model import Job
 from resources.base_resource import BaseResource
 import json
 from workers.importer import Importer
@@ -40,6 +42,19 @@ class ImporterStart(BaseResource):
                 )
             },
         }
+        """DEVELOPED BY SK ----- START"""
+        user = json.dumps(g.oidc_token_info["sub"])
+        job = Job(
+            user=user.name,
+            job_info="",
+            status="queued",
+            mediafile_id=message_id,
+            mediafile=os.path.join(self.upload_folder, request_body["upload_folder"]),
+        )
+
+        job.save()
+
+        """" DEVELPED BY SK --- END"""
         app.ramq.send(message, routing_key="dams.import_start", exchange_name="dams")
         return message
 

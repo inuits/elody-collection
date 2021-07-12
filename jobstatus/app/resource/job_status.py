@@ -15,7 +15,7 @@ from app.resource.upload_image import FileUpload
 
 @jwt_required()
 # @oidc.accept_token(require_token=True, scopes_required=['openid'])
-@doc(description="Get All Jobs")
+@doc(description="Get All Jobs given the auth token.")
 class Jobs(Resource):
     def get(self):
         try:
@@ -31,7 +31,8 @@ class Jobs(Resource):
         return response
 
 
-@oidc.accept_token(require_token=True, scopes_required=["openid"])
+@jwt_required()
+# @oidc.accept_token(require_token=True, scopes_required=["openid"])
 class GetJobById(Resource):
     def get(self, job_id):
         try:
@@ -44,7 +45,9 @@ class GetJobById(Resource):
         return response
 
 
-@oidc.accept_token(require_token=True, scopes_required=["openid"])
+@jwt_required()
+
+# @oidc.accept_token(require_token=True, scopes_required=["openid"])
 class PostJobs(Resource):
     def put(self, job):
         try:
@@ -72,9 +75,11 @@ parser = reqparse.RequestParser()
 
 # Jobs
 #
-class JobsByUser(Resource):
-    def get(self, user):
-        return Job.query.filter(Job.asset == user)
+
+
+class JobsByAsset(Resource):
+    def get(self, asset):
+        return Job.query.filter(Job.asset == assest)
 
     def post(self):
         parser.add_argument(
@@ -86,10 +91,3 @@ class JobsByUser(Resource):
         args = parser.parse_args()
         message = FileUpload.post(args)
         return message
-
-
-##
-## Actually setup the Api resource routing here
-##
-api.add_resource(JobsByUser, "/jobs")
-api.add_resource(GetJobById, "/jobs/<job_id>")

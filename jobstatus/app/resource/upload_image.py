@@ -13,8 +13,9 @@ from app.model import Job
 @jwt_required()
 # @oidc.accept_token(require_token=True, scopes_required=['openid'])
 
-
 class FileUpload(Resource):
+    """" Create Jobs for Multiple or single uploads"""
+
     def post(self, job):
         media_id = str(uuid.uuid4())
         rename = lambda a: [e.filename == f'{e}_{media_id.split("-")[0]}' for e in a]
