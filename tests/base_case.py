@@ -2,7 +2,24 @@ import unittest
 import json
 
 from app import app
+from resources import importer
 from storage.storagemanager import StorageManager
+from unittest.mock import patch
+
+
+def mocked_send(
+    body,
+    routing_key,
+    exchange_name=None,
+    exchange_type=None,
+    headers=None,
+    log_flag=None,
+):
+    """
+    if routing_key == "dams.import_start":
+        importer.csv_import(body)
+    """
+    return
 
 
 class BaseCase(unittest.TestCase):
@@ -48,9 +65,13 @@ class BaseCase(unittest.TestCase):
 
         self.app = app.test_client()
         self.storage = StorageManager().get_db_engine()
+        self.patcher = patch("app.ramq")
+        self.mocked_ramq = self.patcher.start()
+        self.mocked_ramq.send = mocked_send
 
     def tearDown(self):
         self.storage.drop_all_collections()
+        self.patcher.stop()
 
     def create_entity(self):
         return self.app.post(
