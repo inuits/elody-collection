@@ -92,7 +92,7 @@ api.add_resource(Mediafile, "/mediafiles")
 
 api.add_resource(Spec, "/spec/<string:spec>")
 api.add_resource(ImporterStart, "/importer/start")
-api.add_resource(ImporterDirectories, "importer/directories")
+api.add_resource(ImporterDirectories, "/importer/directories")
 
 if __name__ == "__main__":
     app.run(debug=True)
