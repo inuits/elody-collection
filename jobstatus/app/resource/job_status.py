@@ -22,26 +22,26 @@ class Jobs(Resource):
 
             jobs = Job.query.filter(Job.user == current_user.name).first()
             response = {
-                "message": f"fetching all jobs for {current_user.name}",
-                "jobs": jobs,
-            }, 201
+                           "message": f"fetching all jobs for {current_user.name}",
+                           "jobs": jobs,
+                       }, 201
         except BadRequest:
+            response = {}
 
-            return response
+        return response
 
 
- @oidc.accept_token(require_token=True, scopes_required=['openid'])
+@oidc.accept_token(require_token=True, scopes_required=['openid'])
 class GetJobById(Resource):
     def get(self, job_id):
         try:
             response = {
-                "job": Job.query.filter(Job.job_id == job_id).first(),
-                "message": f"Job Status for job ID  : {job_id} retrieved",
-            }, 201
+                           "job": Job.query.filter(Job.job_id == job_id).first(),
+                           "message": f"Job Status for job ID  : {job_id} retrieved",
+                       }, 201
         except BadRequest:
             response = {"message": "Invalid Job ID", "status": 404}, 404
         return response
-
 
 
 @oidc.accept_token(require_token=True, scopes_required=['openid'])
@@ -58,7 +58,7 @@ class JobStatusByUser(Resource):
     def get(self):
         # Set the response code to 201 and return custom headers
         user = g.oidc_token_info['sub']
-        return Job.query.filter(Job.job.user==user.name)
+        return Job.query.filter(Job.job.user == user.name)
 
 
 def abort_if_doesnt_exist(job_id):
@@ -70,16 +70,13 @@ def abort_if_doesnt_exist(job_id):
 parser = reqparse.RequestParser()
 
 
-
-
-# TodoList
-# shows a list of all todos, and lets you POST to add new tasks
+# Jobs
+#
 class JobsByUser(Resource):
     def get(self, user):
         return Job.query.filter(Job.asset == user)
 
     def post(self):
-
         parser.add_argument(
             "file", type=werkzeug.FileStorage, location="files", action="append"
         )

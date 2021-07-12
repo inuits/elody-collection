@@ -71,7 +71,7 @@ app.config.update(
 
 oidc = OpenIDConnect(app)
 # Set Flask-Restful API
-api = Api(app)
+# api = Api(app)
 # Set Database ORM
 database = MongoAlchemy(app)
 # Set RabitMQ

@@ -2,6 +2,7 @@ import os
 from app.config import app
 from app.model import Job
 
+
 # Temporal HTTP endpoints - browser version
 
 @app.route("/job/<id>", methods=["GET", "POST"])
