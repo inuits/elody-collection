@@ -1,6 +1,5 @@
 import json
 import os
-from unittest.mock import patch
 
 from tests.base_case import BaseCase
 
@@ -31,6 +30,23 @@ class ImporterTest(BaseCase):
         self.assertEqual(200, response.status_code)
         return response
 
+    def validate_db_response(self, endpoint, expected_count):
+        response = self.get_from_db(endpoint)
+        self.assertTrue(response.json["count"] == expected_count)
+        self.assertTrue(len(response.json["results"]) == response.json["count"])
+        for obj in response.json["results"]:
+            self.validate_object(endpoint[1:], obj)
+
+    def validate_object(self, type, obj):
+        if type == "entities":
+            self.valid_entity(obj)
+        elif type == "mediafiles":
+            self.valid_mediafile(obj)
+
+    def valid_entity(self, entity):
+        self.assertEqual(str, type(entity["_id"]))
+        self.assertEqual(str, type(entity["type"]))
+
     def test_get_directories(self):
         response = self.get_from_db("/importer/directories")
         self.assertEqual(list, type(response.json))
@@ -42,30 +58,18 @@ class ImporterTest(BaseCase):
             ],
         )
 
-    def test_import_no_csv(self):
+    def test_import_bad_files(self):
         self.import_csv("empty")
-        response = self.get_from_db("/entities")
-        self.assertFalse(response.json["count"])
-        self.assertFalse(response.json["results"])
-
-    def test_import_malformed_columns(self):
+        self.validate_db_response("/entities", 0)
+        self.validate_db_response("/mediafiles", 0)
         self.import_csv("malformed_columns")
-        response = self.get_from_db("/entities")
-        self.assertFalse(response.json["count"])
-        self.assertFalse(response.json["results"])
-
-    def test_import_malformed_rows(self):
+        self.validate_db_response("/entities", 0)
+        self.validate_db_response("/mediafiles", 0)
         self.import_csv("malformed_rows")
-        response = self.get_from_db("/entities")
-        self.assertFalse(response.json["count"])
-        self.assertFalse(response.json["results"])
+        self.validate_db_response("/entities", 0)
+        self.validate_db_response("/mediafiles", 0)
 
-    @patch("workers.importer.Importer.upload_file")
-    def test_import_colums_not_capitalized(self, mocked_upload_file):
+    def test_import_csv_columns_casing(self):
         self.import_csv("column_casing")
-        response = self.get_from_db("/entities")
-        self.assertTrue(response.json["count"] == 2)
-        self.assertTrue(response.json["results"])
-        response = self.get_from_db("/mediafiles")
-        self.assertTrue(response.json["count"] == 1)
-        self.assertTrue(response.json["results"])
+        self.validate_db_response("/entities", 2)
+        self.validate_db_response("/mediafiles", 2)

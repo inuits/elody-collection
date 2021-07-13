@@ -67,14 +67,15 @@ class BaseCase(unittest.TestCase):
         self.patcher = patch("app.ramq")
         self.mocked_ramq = self.patcher.start()
         self.mocked_ramq.send = mocked_send
+        self.patcher2 = patch("workers.importer.Importer.upload_file")
+        self.mocked_importer = self.patcher2.start()
         self.upload_folder = os.path.join(
             os.path.dirname(os.path.abspath(__file__)), "csv"
         )
         os.environ["UPLOAD_FOLDER"] = self.upload_folder
-
-    def tearDown(self):
-        self.storage.drop_all_collections()
-        self.patcher.stop()
+        self.addCleanup(self.storage.drop_all_collections)
+        self.addCleanup(self.patcher.stop)
+        self.addCleanup(self.patcher2.stop)
 
     def create_entity(self):
         return self.app.post(

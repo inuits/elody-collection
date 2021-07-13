@@ -1,4 +1,3 @@
-import unittest
 import json
 
 from tests.base_case import BaseCase
