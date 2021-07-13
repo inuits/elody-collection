@@ -90,7 +90,7 @@ api.add_resource(Entity, "/entities")
 api.add_resource(MediafileDetail, "/mediafiles/<string:id>")
 api.add_resource(Mediafile, "/mediafiles")
 
-api.add_resource(Spec, "/spec/<string:spec>")
+api.add_resource(Spec, "/spec/dams-api.yaml")
 api.add_resource(ImporterStart, "/importer/start")
 api.add_resource(ImporterDirectories, "/importer/directories")
 

@@ -6,5 +6,5 @@ import app
 
 
 class Spec(BaseResource):
-    def get(self, spec):
-        return send_from_directory("", spec)
+    def get(self):
+        return send_from_directory("", "dams-api.yaml")

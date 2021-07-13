@@ -17,6 +17,8 @@ tags:
   description: "Entities in DAMS"
 - name: "mediafile"
   description: "Mediafiles in DAMS"
+- name: "importer"
+  description: "Importer module in DAMS"
 paths:
   /tenants:
     post:
@@ -796,7 +798,43 @@ paths:
           description: "Invalid request"
         "404":
           description: "Mediafile not found"
-
+  /importer/start:
+    post:
+      tags:
+      - "importer"
+      summary: "Start import job"
+      operationId: "startImport"
+      requestBody:
+        description: "Mediafile object that needs to be added"
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                upload_folder:
+                  type: string
+                  description: Location to import from
+      responses:
+        "400":
+          description: "Invalid request"
+        "405":
+          description: "Invalid input"
+  /importer/directories:
+    get:
+      tags:
+      - "importer"
+      summary: "List possible directories to import from"
+      operationId: "importDirectoryList"
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
 
 components:
   schemas:
