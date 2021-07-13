@@ -5,12 +5,10 @@ from tests.base_case import BaseCase
 
 
 class ImporterTest(BaseCase):
-    upload_folder = os.getenv("UPLOAD_FOLDER", "/mnt/media-import")
-
-    def import_csv(self, path):
+    def import_csv(self, folder):
         upload_data = json.dumps(
             {
-                "upload_folder": path,
+                "upload_folder": folder,
             }
         )
         response = self.app.post(
@@ -20,7 +18,7 @@ class ImporterTest(BaseCase):
         )
         self.assertEqual(
             response.json["data"]["upload_folder"],
-            os.path.join(self.upload_folder, path),
+            os.path.join(self.upload_folder, folder),
         )
 
     def get_from_db(self, endpoint):
@@ -42,14 +40,14 @@ class ImporterTest(BaseCase):
         )
 
     def test_import_no_csv(self):
-        self.import_csv("Empty")
+        self.import_csv("empty")
         response = self.get_from_db("/entities")
         self.assertEqual(200, response.status_code)
         self.assertFalse(response.json["count"])
         self.assertFalse(response.json["results"])
 
-    def test_import_malformed_csv(self):
-        self.import_csv("Industrie Museum")
+    def test_import_malformed_columns(self):
+        self.import_csv("malformed_columns")
         response = self.get_from_db("/entities")
         self.assertEqual(200, response.status_code)
         self.assertFalse(response.json["count"])

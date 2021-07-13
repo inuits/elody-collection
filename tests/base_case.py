@@ -1,5 +1,6 @@
-import unittest
 import json
+import os
+import unittest
 
 from app import app
 from resources import importer
@@ -66,6 +67,10 @@ class BaseCase(unittest.TestCase):
         self.patcher = patch("app.ramq")
         self.mocked_ramq = self.patcher.start()
         self.mocked_ramq.send = mocked_send
+        self.upload_folder = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "csv"
+        )
+        os.environ["UPLOAD_FOLDER"] = self.upload_folder
 
     def tearDown(self):
         self.storage.drop_all_collections()
