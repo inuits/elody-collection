@@ -9,7 +9,7 @@ from flask_restful_swagger import swagger
 from flask_swagger_ui import get_swaggerui_blueprint
 
 SWAGGER_URL = "/api/docs"  # URL for exposing Swagger UI (without trailing '/')
-API_URL = "/spec/dams-api.yaml"  # Our API url (can of course be a local resource)
+API_URL = "/spec/dams-collection-api.json"  # Our API url (can of course be a local resource)
 
 swaggerui_blueprint = get_swaggerui_blueprint(SWAGGER_URL, API_URL)
 
@@ -90,7 +90,7 @@ api.add_resource(Entity, "/entities")
 api.add_resource(MediafileDetail, "/mediafiles/<string:id>")
 api.add_resource(Mediafile, "/mediafiles")
 
-api.add_resource(Spec, "/spec/dams-api.yaml")
+api.add_resource(Spec, "/spec/dams-collection-api.json")
 api.add_resource(ImporterStart, "/importer/start")
 api.add_resource(ImporterDirectories, "/importer/directories")
 
