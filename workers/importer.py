@@ -81,15 +81,16 @@ class Importer:
         if not pd.isna(copyright):
             new_metadata.append({"key": "copyright", "value": copyright})
         all_metadata = self.storage.get_collection_item_metadata("entities", object_id)
-        if all(elem in all_metadata for elem in new_metadata):
-            return all_metadata
-        for index, data in enumerate(all_metadata):
-            if ("key", "copyright") in data.items() and not pd.isna(copyright):
-                all_metadata[index] = new_metadata.pop()
-            if ("key", "rights") in data.items() and not pd.isna(rights):
-                all_metadata[index] = new_metadata.pop()
+        if all_metadata:
+            if all(elem in all_metadata for elem in new_metadata):
+                return all_metadata
+            for index, data in enumerate(all_metadata):
+                if ("key", "copyright") in data.items() and not pd.isna(copyright):
+                    all_metadata[index] = new_metadata.pop()
+                if ("key", "rights") in data.items() and not pd.isna(rights):
+                    all_metadata[index] = new_metadata.pop()
         if new_metadata:
-            all_metadata = all_metadata + new_metadata
+            all_metadata = all_metadata + new_metadata if all_metadata else new_metadata
         ret_metadata = self.storage.update_collection_item_metadata(
             "entities", object_id, all_metadata
         )
