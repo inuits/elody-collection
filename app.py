@@ -65,7 +65,7 @@ from resources.entity import (
     EntityMediafilesCreate,
 )
 from resources.mediafile import Mediafile, MediafileDetail
-from resources.spec import Spec
+from resources.spec import OpenAPISpec, AsyncAPISpec
 from resources.importer import ImporterStart, ImporterDirectories
 
 api.add_resource(TenantDetail, "/tenants/<string:id>")
@@ -81,7 +81,8 @@ api.add_resource(Entity, "/entities")
 api.add_resource(MediafileDetail, "/mediafiles/<string:id>")
 api.add_resource(Mediafile, "/mediafiles")
 
-api.add_resource(Spec, "/spec/dams-collection-api.json")
+api.add_resource(OpenAPISpec, "/spec/dams-collection-api.json")
+api.add_resource(AsyncAPISpec, "/spec/dams-collection-api-events.html")
 api.add_resource(ImporterStart, "/importer/start")
 api.add_resource(ImporterDirectories, "/importer/directories")
 
