@@ -32,8 +32,8 @@ class ImporterTest(BaseCase):
 
     def validate_db_response(self, endpoint, expected_count):
         response = self.get_from_db(endpoint)
-        self.assertTrue(response.json["count"] == expected_count)
-        self.assertTrue(len(response.json["results"]) == response.json["count"])
+        self.assertEqual(response.json["count"], expected_count)
+        self.assertEqual(len(response.json["results"]), response.json["count"])
         for obj in response.json["results"]:
             self.validate_object(endpoint[1:], obj)
 
@@ -73,3 +73,13 @@ class ImporterTest(BaseCase):
         self.import_csv("column_casing")
         self.validate_db_response("/entities", 2)
         self.validate_db_response("/mediafiles", 2)
+
+    def test_import_csv_path_types(self):
+        self.import_csv("path_types")
+        self.validate_db_response("/entities", 2)
+        self.validate_db_response("/mediafiles", 2)
+
+    def test_import_csv_metadata(self):
+        self.import_csv("metadata")
+        self.validate_db_response("/entities", 4)
+        self.validate_db_response("/mediafiles", 6)
