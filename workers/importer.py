@@ -57,10 +57,11 @@ class Importer:
         requests.post(upload_location, files=files)
 
     def create_mediafile(self, object_id, file_name):
-        location = {
-            "location": "{}/download/{}".format(self.storage_api_url, file_name)
+        data = {
+            "type": "mediafile",
+            "location": "{}/download/{}".format(self.storage_api_url, file_name),
         }
-        mediafile = self.storage.save_item_to_collection("mediafiles", location)
+        mediafile = self.storage.save_item_to_collection("mediafiles", data)
         ret = self.storage.add_mediafile_to_entity(
             "entities", object_id, mediafile["_id"]
         )
