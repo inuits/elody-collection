@@ -25,6 +25,8 @@ class Importer:
             if not self.validate_csv(df):
                 continue
             dataframes.append(df)
+        if not dataframes:
+            return
         combined_csv = pd.concat(dataframes)
         for index, row in combined_csv.iterrows():
             if pd.isna(row["Objectnummer"]) or (
