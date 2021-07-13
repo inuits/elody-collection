@@ -1,14 +1,12 @@
-from flask import jsonify, g
-
-from jobstatus.app.model import Job
-from resources.base_resource import BaseResource
-import json
-from workers.importer import Importer
-from storage.storagemanager import StorageManager
+import app
 import os
 import uuid
 
-import app
+from flask import jsonify, g
+# from jobstatus.app.model import Job
+from resources.base_resource import BaseResource
+from storage.storagemanager import StorageManager
+from workers.importer import Importer
 
 
 storage = StorageManager().get_db_engine()
@@ -17,8 +15,7 @@ importer = Importer(storage)
 
 @app.ramq.queue(exchange_name="dams", routing_key="dams.import_start")
 def csv_import(body):
-    body_dict = json.loads(body)
-    upload_folder = body_dict["data"]["upload_folder"]
+    upload_folder = body["data"]["upload_folder"]
     importer.import_from_csv(upload_folder)
     return True
 
@@ -42,7 +39,8 @@ class ImporterStart(BaseResource):
                 )
             },
         }
-        """DEVELOPED BY SK ----- START"""
+
+        """
         user = json.dumps(g.oidc_token_info["sub"])
         job = Job(
             user=user.name,
@@ -53,8 +51,8 @@ class ImporterStart(BaseResource):
         )
 
         job.save()
+        """
 
-        """" DEVELPED BY SK --- END"""
         app.ramq.send(message, routing_key="dams.import_start", exchange_name="dams")
         return message
 

@@ -15,10 +15,8 @@ def mocked_send(
     headers=None,
     log_flag=None,
 ):
-    """
     if routing_key == "dams.import_start":
         importer.csv_import(body)
-    """
     return
 
 
