@@ -5,7 +5,6 @@ from flask import Flask
 from flask_oidc import OpenIDConnect
 from flask_rabmq import RabbitMQ
 from flask_restful import Api
-from flask_restful_swagger import swagger
 from flask_swagger_ui import get_swaggerui_blueprint
 
 SWAGGER_URL = "/api/docs"  # URL for exposing Swagger UI (without trailing '/')
@@ -20,15 +19,7 @@ swaggerui_blueprint = get_swaggerui_blueprint(SWAGGER_URL, API_URL)
 
 app = Flask(__name__)
 
-api = swagger.docs(
-    Api(app),
-    apiVersion="0.1",
-    basePath="http://localhost:8000",
-    resourcePath="/",
-    produces=["application/json", "text/html"],
-    api_spec_url="/api/spec",
-    description="The DAMS collection API",
-)
+api = Api(app)
 
 app.config.update(
     {

@@ -13,7 +13,6 @@ Flask==1.1.2
 flask-oidc==1.4.0
 flask-rabmq==0.0.21
 Flask-RESTful==0.3.8
-flask-restful-swagger==0.20.2
 flask-swagger-ui==3.36.0
 future==0.18.2
 gunicorn==20.0.4

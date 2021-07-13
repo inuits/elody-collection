@@ -1,6 +1,5 @@
 from flask_restful import Resource, abort
 from flask import request
-from flask_restful_swagger import swagger
 from models.tenant import TenantModel
 from validator import TenantValidator
 from resources.base_resource import BaseResource
@@ -16,24 +15,6 @@ def abort_if_not_valid_tenant(tenant_json):
 
 
 class Tenant(BaseResource):
-    @swagger.operation(
-        notes="Creates a new tenant",
-        responseClass=TenantModel.__name__,
-        parameters=[
-            {
-                "name": "body",
-                "description": "A tenant item",
-                "required": True,
-                "allowMultiple": False,
-                "dataType": TenantModel.__name__,
-                "paramType": "body",
-            }
-        ],
-        responseMessages=[
-            {"code": 201, "message": "Created."},
-            {"code": 405, "message": "Invalid input"},
-        ],
-    )
     @app.oidc.accept_token(
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )
@@ -45,15 +26,6 @@ class Tenant(BaseResource):
 
 
 class TenantDetail(BaseResource):
-    @swagger.operation(
-        notes="get a tenant item by ID",
-        responseClass=TenantModel.__name__,
-        responseMessages=[
-            {"code": 200, "message": "successful operation"},
-            {"code": 400, "message": "Invalid ID supplied"},
-            {"code": 404, "message": "Tenant not found"},
-        ],
-    )
     @app.oidc.accept_token(
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )
@@ -61,14 +33,6 @@ class TenantDetail(BaseResource):
         tenant = self.abort_if_item_doesnt_exist("tenants", id)
         return tenant
 
-    @swagger.operation(
-        notes="Patch an existing tenant",
-        responseMessages=[
-            {"code": 201, "message": "Created."},
-            {"code": 404, "message": "Tenant not found"},
-            {"code": 405, "message": "Invalid input"},
-        ],
-    )
     @app.oidc.accept_token(
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )
@@ -78,25 +42,6 @@ class TenantDetail(BaseResource):
         asset = self.storage.patch_item_from_collection("tenants", id, request)
         return asset, 201
 
-    @swagger.operation(
-        notes="Updates an existing tenant",
-        responseClass=TenantModel.__name__,
-        parameters=[
-            {
-                "name": "body",
-                "description": "A tenant item",
-                "required": True,
-                "allowMultiple": False,
-                "dataType": TenantModel.__name__,
-                "paramType": "body",
-            }
-        ],
-        responseMessages=[
-            {"code": 201, "message": "Created."},
-            {"code": 404, "message": "Tenant not found"},
-            {"code": 405, "message": "Invalid input"},
-        ],
-    )
     @app.oidc.accept_token(
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )
@@ -107,14 +52,6 @@ class TenantDetail(BaseResource):
         tenant = self.storage.update_item_from_collection("tenants", id, request)
         return tenant, 201
 
-    @swagger.operation(
-        notes="delete a tenant item by ID",
-        responseMessages=[
-            {"code": 204, "message": "successful operation"},
-            {"code": 400, "message": "Invalid ID supplied"},
-            {"code": 404, "message": "Tenant not found"},
-        ],
-    )
     @app.oidc.accept_token(
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )
