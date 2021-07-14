@@ -14,15 +14,19 @@ class MemoryStorageManager:
         return items
 
     def get_item_from_collection_by_id(self, collection, id):
-        return self.collections[collection].get(id, None)
+        main_id = self._get_collection_item_main_id_by_identifier(collection, id)
+        if main_id:
+            return self.collections[collection].get(main_id, None)
+        return None
 
     def get_collection_item_metadata(self, collection, id):
-        if id in self.collections[collection]:
-            return self.collections[collection][id]["metadata"]
+        collection_item = self.get_item_from_collection_by_id(collection, id)
+        if collection_item and "metadata" in collection_item:
+            return collection_item["metadata"]
         return None
 
     def get_collection_item_metadata_key(self, collection, id, key):
-        if id in self.collections[collection]:
+        if self.get_item_from_collection_by_id(collection, id):
             return list(
                 filter(
                     lambda elem: elem["key"] == key,
@@ -32,7 +36,7 @@ class MemoryStorageManager:
         return None
 
     def get_collection_item_mediafiles(self, collection, id):
-        if id in self.collections[collection]:
+        if self.get_item_from_collection_by_id(collection, id):
             return list(
                 filter(
                     lambda elem: id in elem[collection],
@@ -42,8 +46,9 @@ class MemoryStorageManager:
         return None
 
     def add_collection_item_metadata(self, collection, id, content):
-        if id in self.collections[collection]:
-            self.collections[collection][id]["metadata"].append(content)
+        main_id = self._get_collection_item_main_id_by_identifier(collection, id)
+        if main_id:
+            self.collections[collection][main_id]["metadata"].append(content)
             return content
         return None
 
@@ -64,34 +69,39 @@ class MemoryStorageManager:
         return self.collections[collection][id]
 
     def update_item_from_collection(self, collection, id, content):
-        if id in self.collections[collection]:
-            self.collections[collection][id] = content
-            return self.collections[collection][id]
+        main_id = self._get_collection_item_main_id_by_identifier(collection, id)
+        if main_id:
+            self.collections[collection][main_id] = content
+            return self.collections[collection][main_id]
         return None
 
     def update_collection_item_metadata(self, collection, id, content):
-        if id in self.collections[collection]:
-            self.collections[collection][id]["metadata"] = content
+        main_id = self._get_collection_item_main_id_by_identifier(collection, id)
+        if main_id:
+            self.collections[collection][main_id]["metadata"] = content
             return content
         return None
 
     def patch_item_from_collection(self, collection, id, content):
-        if id in self.collections[collection]:
-            item = self.collections[collection][id]
+        main_id = self._get_collection_item_main_id_by_identifier(collection, id)
+        if main_id:
+            item = self.collections[collection][main_id]
             for key in content:
                 item[key] = content[key]
             return item
         return None
 
     def delete_item_from_collection(self, collection, id):
-        self.collections[collection].pop(id, None)
+        main_id = self._get_collection_item_main_id_by_identifier(collection, id)
+        self.collections[collection].pop(main_id, None)
 
     def delete_collection_item_metadata_key(self, collection, id, key):
-        if id in self.collections[collection]:
-            self.collections[collection][id]["metadata"] = list(
+        main_id = self._get_collection_item_main_id_by_identifier(collection, id)
+        if main_id:
+            self.collections[collection][main_id]["metadata"] = list(
                 filter(
                     lambda elem: elem["key"] != key,
-                    self.get_collection_item_metadata(collection, id),
+                    self.get_collection_item_metadata(collection, main_id),
                 )
             )
 
@@ -103,7 +113,16 @@ class MemoryStorageManager:
             self.drop_collection(collection)
 
     def _get_collection_item_by_id(self, collection, id):
+        main_id = self._get_collection_item_main_id_by_identifier(collection, id)
+        if main_id:
+            return self.collections[collection][main_id]
+        return None
+
+    def _get_collection_item_main_id_by_identifier(self, collection, id):
         for collection_item in self.collections[collection].values():
-            if (id in collection_item["identifiers"] or collection_item["_id"] == id):
-                return collection_item
-        return None 
+            if (
+                "identifiers" in collection_item
+                and id in collection_item["identifiers"]
+            ) or collection_item["_id"] == id:
+                return collection_item["_id"]
+        return None
