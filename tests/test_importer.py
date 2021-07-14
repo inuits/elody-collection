@@ -39,13 +39,23 @@ class ImporterTest(BaseCase):
 
     def validate_object(self, type, obj):
         if type == "entities":
-            self.valid_entity(obj)
+            self.validate_entity(obj)
         elif type == "mediafiles":
             self.valid_mediafile(obj)
 
-    def valid_entity(self, entity):
+    def validate_entity(self, entity):
         self.assertEqual(str, type(entity["_id"]))
         self.assertEqual(str, type(entity["type"]))
+        if "metadata" in entity:
+            self.validate_metadata(entity["metadata"])
+
+    def validate_metadata(self, metadata):
+        self.assertEqual(list, type(metadata))
+        for elem in metadata:
+            if ("key", "rights") in elem.items():
+                self.assertEqual(str, type(elem["value"]))
+            elif ("key", "copyright") in elem.items():
+                self.assertEqual(str, type(elem["value"]))
 
     def test_get_directories(self):
         response = self.get_from_db("/importer/directories")
