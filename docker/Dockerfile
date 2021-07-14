@@ -5,6 +5,8 @@ RUN adduser --no-create-home --disabled-password --home /app --shell /bin/ash ap
 WORKDIR /app
 
 COPY docker/entrypoint*.sh /
+COPY docker/run-tests.sh /
+COPY docker/test-coverage.sh /
 COPY requirements.txt ./
 
 ENTRYPOINT ["/entrypoint.sh"]
