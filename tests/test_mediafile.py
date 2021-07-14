@@ -139,3 +139,39 @@ class MediafileTest(BaseCase):
         )
 
         self.not_found(response)
+
+    def test_successful_mediafile_list_get(self):
+        self.mediafile_list(2, 20, 0)
+
+    def test_successful_mediafile_list_first_mediafiles(self):
+        self.mediafile_list(40, 20, 0)
+
+    def test_successful_mediafile_list_middle_mediafiles(self):
+        self.mediafile_list(40, 15, 10)
+
+    def test_successful_mediafile_list_last_mediafiles(self):
+        self.mediafile_list(40, 10, 30)
+
+    def test_successful_mediafile_list_no_mediafiles(self):
+        self.mediafile_list(0, 20, 0)
+
+    def mediafile_list(self, count, limit, skip):
+        ids = list()
+        for i in range(count):
+            ids.append(self.create_mediafile_get_id())
+
+        response = self.app.get(
+            "/mediafiles?skip={}&limit={}".format(skip, limit),
+            headers={"Content-Type": "application/json"},
+        )
+
+        self.assertEqual(count, response.json["count"])
+        self.assertEqual(limit, response.json["limit"])
+        self.assertEqual(min(count, limit), len(response.json["results"]))
+        self.assertEqual(skip + limit < count, "next" in response.json)
+        self.assertEqual(skip > 0, "previous" in response.json)
+        for i in range(min(count, limit)):
+            mediafile = response.json["results"][i]
+            self.assertEqual(ids[i + skip], mediafile["_id"])
+            self.valid_mediafile(mediafile)
+        self.assertEqual(200, response.status_code)
