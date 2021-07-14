@@ -48,10 +48,11 @@ class MemoryStorageManager:
         return None
 
     def add_mediafile_to_entity(self, collection, id, mediafile_id):
-        if id in self.collections[collection]:
-            identifiers = self.collections[collection][id]["identifiers"]
-            if self.collections[collection][id]["_id"] not in identifiers:
-                identifiers.append(self.collections[collection][id]["_id"])
+        collection_item = self._get_collection_item_by_id(collection, id)
+        if collection_item:
+            identifiers = collection_item["identifiers"]
+            if collection_item["_id"] not in identifiers:
+                identifiers.append(collection_item["_id"])
             self.collections["mediafiles"][mediafile_id][collection] = identifiers
             return self.collections["mediafiles"][mediafile_id]
         return None
@@ -100,3 +101,9 @@ class MemoryStorageManager:
     def drop_all_collections(self):
         for collection in self.collections:
             self.drop_collection(collection)
+
+    def _get_collection_item_by_id(self, collection, id):
+        for collection_item in self.collections[collection].values():
+            if (id in collection_item["identifiers"] or collection_item["_id"] == id):
+                return collection_item
+        return None 

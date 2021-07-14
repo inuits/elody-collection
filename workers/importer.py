@@ -66,7 +66,7 @@ class Importer:
             "entities", object_id, mediafile["_id"]
         )
         if not ret:
-            content = {"identifiers": object_id, "type": "asset"}
+            content = {"identifiers": [object_id], "type": "asset"}
             self.storage.save_item_to_collection("entities", content)
             ret = self.storage.add_mediafile_to_entity(
                 "entities", object_id, mediafile["_id"]
