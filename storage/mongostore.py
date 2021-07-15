@@ -3,17 +3,18 @@ import uuid
 
 from pymongo import MongoClient
 
+mongo_host = os.getenv("MONGO_DB_HOST", "mongo")
+mongo_port = int(os.getenv("MONGO_DB_PORT", 27017))
+mongo_db = os.getenv("MONGO_DB_NAME", "dams")
+
+client = MongoClient(mongo_host, mongo_port)
+
 
 class MongoStorageManager:
     character_replace_map = {".": "="}
 
     def __init__(self):
-        self.mongo_host = os.getenv("MONGO_DB_HOST", "mongo")
-        self.mongo_port = int(os.getenv("MONGO_DB_PORT", 27017))
-        self.mongo_db = os.getenv("MONGO_DB_NAME", "dams")
-
-        self.client = MongoClient(self.mongo_host, self.mongo_port)
-        self.db = self.client[self.mongo_db]
+        self.db = client[mongo_db]
 
     def get_items_from_collection(self, collection, skip=0, limit=20):
         items = dict()

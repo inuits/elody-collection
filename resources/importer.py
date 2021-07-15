@@ -5,12 +5,10 @@ import uuid
 from flask import jsonify, g
 # from jobstatus.app.model import Job
 from resources.base_resource import BaseResource
-from storage.storagemanager import StorageManager
 from workers.importer import Importer
 
 
-storage = StorageManager().get_db_engine()
-importer = Importer(storage)
+importer = None
 
 
 @app.ramq.queue(exchange_name="dams", routing_key="dams.import_start")
@@ -24,6 +22,8 @@ class ImporterStart(BaseResource):
     def __init__(self):
         super().__init__()
         self.upload_folder = os.getenv("UPLOAD_FOLDER", "/mnt/media-import")
+        global importer
+        importer = Importer(self.storage)
 
     @app.oidc.accept_token(
         require_token=BaseResource.token_required, scopes_required=["openid"]
