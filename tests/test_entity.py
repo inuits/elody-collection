@@ -436,6 +436,30 @@ class EntityTest(BaseCase):
 
         self.not_found(response)
 
+    def test_add_entity_with_data(self):
+        response = self.create_entity()
+        updated_entity = response.json
+        updated_entity["data"] = {"MensgemaaktObject.dimensie": [
+                {
+                    "@type":"Dimensie",
+                    "Dimensie.beschrijving":"Dimensie van geheel",
+                    "Dimensie.type":"hoogte",
+                    "Dimensie.waarde":"8",
+                    "Dimensie.eenheid":"cm"
+                },
+            ]}
+
+        response = self.app.put(
+            "/entities/{}".format(updated_entity["_id"]),
+            headers={"Content-Type": "application/json"},
+            data=json.dumps(updated_entity),
+        )
+
+        self.valid_entity(response.json, 3, 4)
+        self.assertEqual(dict, type(response.json["data"]))
+        self.assertTrue("MensgemaaktObject.dimensie" in response.json["data"].keys())
+        self.assertEqual(201, response.status_code)
+
     def valid_entity(self, entity, identifier_count, metadata_count):
         self.assertEqual(str, type(entity["_id"]))
         self.assertEqual(str, type(entity["metadata"][0]["value"]))
