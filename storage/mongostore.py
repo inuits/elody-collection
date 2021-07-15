@@ -103,6 +103,9 @@ class MongoStorageManager:
                 patch_data["metadata"].append(metadata_object)
         self.patch_item_from_collection(collection, id, patch_data)
 
+    def drop_all_collections(self):
+        return
+
     def _prepare_mongo_document(self, document, reversed, id=None):
         if id:
             document["_id"] = id
