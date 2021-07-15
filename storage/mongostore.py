@@ -1,16 +1,16 @@
-from pymongo import MongoClient
 import os
-from dotenv import load_dotenv
 import uuid
+
+from pymongo import MongoClient
 
 
 class MongoStorageManager:
     character_replace_map = {".": "="}
 
     def __init__(self):
-        self.mongo_host = os.getenv("MONGO_DB_HOST")
-        self.mongo_port = int(os.getenv("MONGO_DB_PORT"))
-        self.mongo_db = os.getenv("MONGO_DB_NAME")
+        self.mongo_host = os.getenv("MONGO_DB_HOST", "mongo")
+        self.mongo_port = int(os.getenv("MONGO_DB_PORT", 27017))
+        self.mongo_db = os.getenv("MONGO_DB_NAME", "dams")
 
         self.client = MongoClient(self.mongo_host, self.mongo_port)
         self.db = self.client[self.mongo_db]
