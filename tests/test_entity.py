@@ -439,15 +439,17 @@ class EntityTest(BaseCase):
     def test_add_entity_with_data(self):
         response = self.create_entity()
         updated_entity = response.json
-        updated_entity["data"] = {"MensgemaaktObject.dimensie": [
+        updated_entity["data"] = {
+            "MensgemaaktObject.dimensie": [
                 {
-                    "@type":"Dimensie",
-                    "Dimensie.beschrijving":"Dimensie van geheel",
-                    "Dimensie.type":"hoogte",
-                    "Dimensie.waarde":"8",
-                    "Dimensie.eenheid":"cm"
+                    "@type": "Dimensie",
+                    "Dimensie.beschrijving": "Dimensie van geheel",
+                    "Dimensie.type": "hoogte",
+                    "Dimensie.waarde": "8",
+                    "Dimensie.eenheid": "cm",
                 },
-            ]}
+            ]
+        }
 
         response = self.app.put(
             "/entities/{}".format(updated_entity["_id"]),

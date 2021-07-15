@@ -70,7 +70,9 @@ class BaseCase(unittest.TestCase):
         self.mocked_rabbitmq.send = mocked_send
         self.importer_patcher = patch("workers.importer.Importer.upload_file")
         self.mocked_importer = self.importer_patcher.start()
-        self.mongodb_patcher = patch("storage.mongostore.client", new_callable=mongomock.MongoClient)
+        self.mongodb_patcher = patch(
+            "storage.mongostore.client", new_callable=mongomock.MongoClient
+        )
         self.mocked_mongodb = self.mongodb_patcher.start()
         self.upload_folder = os.path.join(
             os.path.dirname(os.path.abspath(__file__)), "csv"

@@ -9,7 +9,7 @@ class MemoryStorageManager:
         count = len(self.collections[collection])
         items["count"] = count
         items["results"] = list(self.collections[collection].values())[
-            skip: skip + limit
+            skip : skip + limit
         ]
         return items
 
