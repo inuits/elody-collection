@@ -56,9 +56,9 @@ class TenantTest(BaseCase):
         self.valid_tenant(response.json)
         self.assertEqual(200, response.status_code)
 
-    def test_non_existant_tenant_get(self):
+    def test_non_existent_tenant_get(self):
         response = self.app.get(
-            "/tenants/non-existant-id", headers={"Content-Type": "application/json"}
+            "/tenants/non-existent-id", headers={"Content-Type": "application/json"}
         )
 
         self.not_found(response)
@@ -88,10 +88,10 @@ class TenantTest(BaseCase):
         self.assertEqual("Gent", response.json["city"])
         self.assertEqual(201, response.status_code)
 
-    def test_non_existant_tenant_put(self):
+    def test_non_existent_tenant_put(self):
         update = json.dumps(
             {
-                "_id": "non-existant-id",
+                "_id": "non-existent-id",
                 "identifiers": ["12345", "abcde"],
                 "type": "tenant",
                 "name": "Een museum",
@@ -100,7 +100,7 @@ class TenantTest(BaseCase):
         )
 
         response = self.app.put(
-            "/tenants/non-existant-id",
+            "/tenants/non-existent-id",
             headers={"Content-Type": "application/json"},
             data=update,
         )
@@ -128,7 +128,7 @@ class TenantTest(BaseCase):
         self.assertEqual("Gent", response.json["city"])
         self.assertEqual(201, response.status_code)
 
-    def test_non_existant_tenant_patch(self):
+    def test_non_existent_tenant_patch(self):
         update = json.dumps(
             {
                 "city": "Gent",
@@ -136,7 +136,7 @@ class TenantTest(BaseCase):
         )
 
         response = self.app.patch(
-            "/tenants/non-existant-id",
+            "/tenants/non-existent-id",
             headers={"Content-Type": "application/json"},
             data=update,
         )
@@ -153,9 +153,9 @@ class TenantTest(BaseCase):
         self.assertFalse(response.data)
         self.assertEqual(204, response.status_code)
 
-    def test_non_existant_tenant_delete(self):
+    def test_non_existent_tenant_delete(self):
         response = self.app.delete(
-            "/tenants/non-existant-id", headers={"Content-Type": "application/json"}
+            "/tenants/non-existent-id", headers={"Content-Type": "application/json"}
         )
 
         self.not_found(response)

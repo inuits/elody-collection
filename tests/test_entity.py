@@ -33,7 +33,7 @@ class EntityTest(BaseCase):
         self.assertEqual("schilderij", response.json["value"])
         self.assertEqual(201, response.status_code)
 
-    def test_non_existant_entity_metadata_create(self):
+    def test_non_existent_entity_metadata_create(self):
         metadata = json.dumps(
             {
                 "key": "type",
@@ -43,7 +43,7 @@ class EntityTest(BaseCase):
         )
 
         response = self.app.post(
-            "/entities/non-existant-id/metadata",
+            "/entities/non-existent-id/metadata",
             headers={"content-type": "application/json"},
             data=metadata,
         )
@@ -93,9 +93,9 @@ class EntityTest(BaseCase):
             self.assertEqual(list, type(mediafile["entities"]))
             self.assertEqual(3, len(mediafile["entities"]))
 
-    def test_create_mediafile_from_non_existant_entity(self):
+    def test_create_mediafile_from_non_existent_entity(self):
         response = self.app.post(
-            "/entities/non-existant-id/mediafiles/create",
+            "/entities/non-existent-id/mediafiles/create",
             headers={"Content-Type": "application/json"},
         )
 
@@ -111,9 +111,9 @@ class EntityTest(BaseCase):
         self.valid_entity(response.json, 3, 4)
         self.assertEqual(200, response.status_code)
 
-    def test_non_existant_entity_get(self):
+    def test_non_existent_entity_get(self):
         response = self.app.get(
-            "/entities/non-existant-id", headers={"Content-Type": "application/json"}
+            "/entities/non-existent-id", headers={"Content-Type": "application/json"}
         )
 
         self.not_found(response)
@@ -146,9 +146,9 @@ class EntityTest(BaseCase):
         self.assertEqual("Een schilderij", response.json[0]["value"])
         self.assertEqual(200, response.status_code)
 
-    def test_non_existant_entity_metadata_get(self):
+    def test_non_existent_entity_metadata_get(self):
         response = self.app.get(
-            "/entities/non-existant-id/metadata",
+            "/entities/non-existent-id/metadata",
             headers={"Content-Type": "application/json"},
         )
 
@@ -167,9 +167,9 @@ class EntityTest(BaseCase):
         self.assertEqual("Een schilderij", response.json[0]["value"])
         self.assertEqual(200, response.status_code)
 
-    def test_non_existant_entity_metadata_key_get(self):
+    def test_non_existent_entity_metadata_key_get(self):
         response = self.app.get(
-            "/entities/non-existant-id/metadata/title",
+            "/entities/non-existent-id/metadata/title",
             headers={"Content-Type": "application/json"},
         )
 
@@ -200,10 +200,10 @@ class EntityTest(BaseCase):
         self.valid_entity(response.json, 1, 1)
         self.assertEqual(201, response.status_code)
 
-    def test_non_existant_entity_put(self):
+    def test_non_existent_entity_put(self):
         update = json.dumps(
             {
-                "_id": "non-existant-id",
+                "_id": "non-existent-id",
                 "identifiers": ["2021"],
                 "type": "entity",
                 "metadata": [{"key": "title", "value": "Een schilderij", "lang": "nl"}],
@@ -211,7 +211,7 @@ class EntityTest(BaseCase):
         )
 
         response = self.app.put(
-            "/entities/non-existant-id",
+            "/entities/non-existent-id",
             headers={"Content-Type": "application/json"},
             data=update,
         )
@@ -247,7 +247,7 @@ class EntityTest(BaseCase):
         self.assertEqual("schilderij", response.json[0]["value"])
         self.assertEqual(201, response.status_code)
 
-    def test_non_existant_entity_metadata_put(self):
+    def test_non_existent_entity_metadata_put(self):
         metadata = json.dumps(
             [
                 {
@@ -264,7 +264,7 @@ class EntityTest(BaseCase):
         )
 
         response = self.app.put(
-            "/entities/non-existant-id/metadata",
+            "/entities/non-existent-id/metadata",
             headers={"content-type": "application/json"},
             data=metadata,
         )
@@ -293,7 +293,7 @@ class EntityTest(BaseCase):
         self.valid_entity(response.json, 3, 1)
         self.assertEqual(201, response.status_code)
 
-    def test_non_existant_entity_patch(self):
+    def test_non_existent_entity_patch(self):
         update = json.dumps(
             {
                 "metadata": [{"key": "title", "value": "Een schilderij", "lang": "nl"}],
@@ -301,7 +301,7 @@ class EntityTest(BaseCase):
         )
 
         response = self.app.patch(
-            "/entities/non-existant-id",
+            "/entities/non-existent-id",
             headers={"Content-Type": "application/json"},
             data=update,
         )
@@ -318,9 +318,9 @@ class EntityTest(BaseCase):
         self.assertFalse(response.data)
         self.assertEqual(204, response.status_code)
 
-    def test_non_existant_entity_delete(self):
+    def test_non_existent_entity_delete(self):
         response = self.app.delete(
-            "/entities/non-existant-id", headers={"Content-Type": "application/json"}
+            "/entities/non-existent-id", headers={"Content-Type": "application/json"}
         )
 
         self.not_found(response)
@@ -348,9 +348,9 @@ class EntityTest(BaseCase):
         self.assertEqual("description", response.json[0]["key"])
         self.assertEqual(200, response.status_code)
 
-    def test_non_existant_entity_metadata_key_delete(self):
+    def test_non_existent_entity_metadata_key_delete(self):
         response = self.app.delete(
-            "/entities/non-existant-id/metadata/title",
+            "/entities/non-existent-id/metadata/title",
             headers={"Content-Type": "application/json"},
         )
 
@@ -371,11 +371,11 @@ class EntityTest(BaseCase):
         self.assertEqual(3, len(response.json["entities"]))
         self.assertEqual(201, response.status_code)
 
-    def test_add_mediafile_to_non_existant_entity(self):
+    def test_add_mediafile_to_non_existent_entity(self):
         mediafile = self.create_mediafile()
 
         response = self.app.post(
-            "/entities/non-existant-id/mediafiles",
+            "/entities/non-existent-id/mediafiles",
             headers={"Content-Type": "application/json"},
             data=json.dumps(mediafile.json),
         )
@@ -428,9 +428,9 @@ class EntityTest(BaseCase):
             self.assertEqual(3, len(mediafile["entities"]))
         self.assertEqual(200, response.status_code)
 
-    def test_get_mediafile_from_non_existant_entity(self):
+    def test_get_mediafile_from_non_existent_entity(self):
         response = self.app.get(
-            "/entities/non-existant-id/mediafiles",
+            "/entities/non-existent-id/mediafiles",
             headers={"Content-Type": "application/json"},
         )
 

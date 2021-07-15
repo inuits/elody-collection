@@ -38,9 +38,9 @@ class MediafileTest(BaseCase):
         self.valid_mediafile(response.json)
         self.assertEqual(200, response.status_code)
 
-    def test_non_existant_mediafile_get(self):
+    def test_non_existent_mediafile_get(self):
         response = self.app.get(
-            "/mediafiles/non-existant-id", headers={"Content-Type": "application/json"}
+            "/mediafiles/non-existent-id", headers={"Content-Type": "application/json"}
         )
 
         self.not_found(response)
@@ -70,17 +70,17 @@ class MediafileTest(BaseCase):
         self.assertEqual("jpg", response.json["format"])
         self.assertEqual(201, response.status_code)
 
-    def test_non_existant_mediafile_put(self):
+    def test_non_existent_mediafile_put(self):
         update = json.dumps(
             {
-                "_id": "non-existant-id",
+                "_id": "non-existent-id",
                 "location": "http://dams-storage.inuits.io/download/test.jpg",
                 "format": "jpg",
             }
         )
 
         response = self.app.put(
-            "/mediafiles/non-existant-id",
+            "/mediafiles/non-existent-id",
             headers={"Content-Type": "application/json"},
             data=update,
         )
@@ -108,7 +108,7 @@ class MediafileTest(BaseCase):
         self.assertEqual("jpg", response.json["format"])
         self.assertEqual(201, response.status_code)
 
-    def test_non_existant_mediafile_patch(self):
+    def test_non_existent_mediafile_patch(self):
         update = json.dumps(
             {
                 "format": "jpg",
@@ -116,7 +116,7 @@ class MediafileTest(BaseCase):
         )
 
         response = self.app.patch(
-            "/mediafiles/non-existant-id",
+            "/mediafiles/non-existent-id",
             headers={"Content-Type": "application/json"},
             data=update,
         )
@@ -133,9 +133,9 @@ class MediafileTest(BaseCase):
         self.assertFalse(response.data)
         self.assertEqual(204, response.status_code)
 
-    def test_non_existant_mediafile_delete(self):
+    def test_non_existent_mediafile_delete(self):
         response = self.app.delete(
-            "/mediafiles/non-existant-id", headers={"Content-Type": "application/json"}
+            "/mediafiles/non-existent-id", headers={"Content-Type": "application/json"}
         )
 
         self.not_found(response)
