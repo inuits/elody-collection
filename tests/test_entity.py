@@ -7,7 +7,7 @@ class EntityTest(BaseCase):
     def test_successful_entity_create(self):
         response = self.create_entity()
 
-        self.valid_entity(response.json, 2, 4)
+        self.valid_entity(response.json, 3, 4)
         self.assertEqual(201, response.status_code)
 
     def test_successful_entity_metadata_create(self):
@@ -108,7 +108,7 @@ class EntityTest(BaseCase):
             "/entities/{}".format(_id), headers={"Content-Type": "application/json"}
         )
 
-        self.valid_entity(response.json, 2, 4)
+        self.valid_entity(response.json, 3, 4)
         self.assertEqual(200, response.status_code)
 
     def test_non_existant_entity_get(self):
@@ -179,7 +179,7 @@ class EntityTest(BaseCase):
         response = self.create_entity()
         _id = response.json["_id"]
 
-        self.valid_entity(response.json, 2, 4)
+        self.valid_entity(response.json, 3, 4)
         self.assertEqual(201, response.status_code)
 
         update = json.dumps(
@@ -275,7 +275,7 @@ class EntityTest(BaseCase):
         response = self.create_entity()
         _id = response.json["_id"]
 
-        self.valid_entity(response.json, 2, 4)
+        self.valid_entity(response.json, 3, 4)
         self.assertEqual(201, response.status_code)
 
         update = json.dumps(
@@ -290,7 +290,7 @@ class EntityTest(BaseCase):
             data=update,
         )
 
-        self.valid_entity(response.json, 2, 1)
+        self.valid_entity(response.json, 3, 1)
         self.assertEqual(201, response.status_code)
 
     def test_non_existant_entity_patch(self):
@@ -463,5 +463,5 @@ class EntityTest(BaseCase):
         for i in range(min(count, limit)):
             entity = response.json["results"][i]
             self.assertEqual(ids[i + skip], entity["_id"])
-            self.valid_entity(entity, 2, 4)
+            self.valid_entity(entity, 3, 4)
         self.assertEqual(200, response.status_code)
