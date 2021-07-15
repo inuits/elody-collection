@@ -1,12 +1,9 @@
-from flask_restful import Resource, abort
-from flask import request
-from werkzeug.exceptions import BadRequest
-from storage.arangostore import ArangoStorageManager
-from storage.mongostore import MongoStorageManager
-from storage.storagemanager import StorageManager
 import os
 
-import app
+from flask_restful import Resource, abort
+from flask import request
+from storage.storagemanager import StorageManager
+from werkzeug.exceptions import BadRequest
 
 
 class BaseResource(Resource):

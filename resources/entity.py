@@ -1,9 +1,7 @@
-from flask_restful import Resource
-from resources.base_resource import BaseResource
-from models.entity import EntityModel
-from flask import request
-
 import app
+
+from flask import request
+from resources.base_resource import BaseResource
 
 
 class Entity(BaseResource):

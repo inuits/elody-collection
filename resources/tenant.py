@@ -1,10 +1,9 @@
-from flask_restful import Resource, abort
-from flask import request
-from models.tenant import TenantModel
-from validator import TenantValidator
-from resources.base_resource import BaseResource
-
 import app
+
+from flask_restful import Resource, abort
+from resources.base_resource import BaseResource
+from validator import TenantValidator
+
 
 validator = TenantValidator()
 

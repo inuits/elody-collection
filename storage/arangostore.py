@@ -1,8 +1,7 @@
+import os
+
 from pyArango.connection import *
 from pyArango.theExceptions import *
-import os
-from dotenv import load_dotenv
-import uuid
 
 
 class ArangoStorageManager:
