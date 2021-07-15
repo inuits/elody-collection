@@ -140,6 +140,9 @@ FOR c IN @@collection
         bind = {"@collection": collection, "id": id, "key": key}
         queryResults = self._execute_query(aql, bind)
 
+    def drop_all_collections(self):
+        return
+
     def _get_key_for_id(self, collection, id):
         key = None
         queryResult = self._get_field_for_id(collection, id, "_key")
