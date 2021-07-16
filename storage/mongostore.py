@@ -141,4 +141,6 @@ class MongoStorageManager:
         return {"$or": [{"_id": id}, {"identifiers": id}]}
 
     def get_jobs_from_collection(self, collection, target):
-        return self.db[collection].find({"$or": [{"_id": target}, {"asset": target}, {"user": target}]})
+        return self.db[collection].find(
+            {"$or": [{"_id": target}, {"asset": target}, {"user": target}, {"signature": target}]}
+        )
