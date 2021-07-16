@@ -1,13 +1,11 @@
 import logging
 import os
 
-from flask import Flask, request
+from flask import Flask
 from flask_oidc import OpenIDConnect
 from flask_rabmq import RabbitMQ
-from flask_restful import Api, Resource
+from flask_restful import Api
 from flask_swagger_ui import get_swaggerui_blueprint
-
-from resources.spec import OpenAPISpec
 
 SWAGGER_URL = "/api/docs"  # URL for exposing Swagger UI (without trailing '/')
 API_URL = (
@@ -33,7 +31,7 @@ app.config.update(
         "SECRET_KEY": "SomethingNotEntirelySecret",
         "TESTING": True,
         "DEBUG": True,
-        "OIDC_CLIENT_SECRETS": "secrets.json",
+        "OIDC_CLIENT_SECRETS": "client_secrets.json",
         "OIDC_ID_TOKEN_COOKIE_SECURE": False,
         "OIDC_REQUIRE_VERIFIED_EMAIL": False,
         "OIDC_USER_INFO_ENABLED": True,
@@ -101,6 +99,5 @@ api.add_resource(JobStatusById, "/jobs/<string:job_id>")
 api.add_resource(JobStatusByUser, "/jobs")
 api.add_resource(JobStatusByAsset, "/jobs/<asset>")
 
-# api.add_resource(Data, '/<id>')
 if __name__ == "__main__":
     app.run(debug=True)
