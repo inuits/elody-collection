@@ -59,7 +59,7 @@ def job_status(body):
     data = json.loads(body)
 
     # fetch job from collection
-    job = storage_manager().get_jobs_from_collection("jobs", "job_id", data["job_id"])
+    job = storage_manager().get_jobs_from_collection("jobs", data["job_id"])
 
     # process multiple jobs
     if data["job_type"] == "multiple":
