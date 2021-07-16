@@ -1058,35 +1058,9 @@
       }
     },
     "/jobs": {
-       "post": {
-          "tags": [
-            "jobs"
-          ],
-          "summary": "Upload new File",
-          "operationId": "uploadFile",
-          "requestBody": {
-            "description": "upload file, for multiple uploads use a list [{file_name:file_to_be_upload}]",
-            "required": true,
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/uploadfile"
-                }
-              }
-            }
-          },
-          "responses": {
-            "400": {
-              "description": "Invalid request"
-            },
-            "405": {
-              "description": "Invalid input"
-            }
-          }
-        },
       "get": {
         "tags": ["jobs"],
-        "summary": "Get Jobs By User - By default it gets the logged in User details",
+        "summary": "Get Jobs By User",
         "operationId": "getJobsByUser",
         "responses": {
           "200": {
@@ -1105,6 +1079,69 @@
         }
       }
     },
+    "/jobs/upload/single": {
+        "post": {
+          "tags": [
+            "jobs"
+          ],
+          "summary": "Upload Single File",
+          "operationId": "uploadSingleFile",
+          "consumes": "multipart/form-data",
+          "parameters": [{
+            "required": "true",
+            "in": "formData",
+            "name": "file_name",
+            "type": "file",
+            "description": "The File to upload"
+          }],
+          "responses": {
+            "200": {
+              "description": "Successful upload"
+            },
+            "400": {
+              "description": "Invalid request"
+            },
+            "405": {
+              "description": "Invalid input"
+            }
+          }
+        }
+    },
+    "/jobs/upload/multiple": {
+       "post": {
+          "tags": [
+            "jobs"
+          ],
+          "summary": "Upload Multiple files",
+          "operationId": "uploadMultipleFiles",
+          "requestBody": {
+            "description": "upload Upload multiple files",
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/uploadMultipleFiles"
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Successful operation"
+            },
+            "400": {
+              "description": "Invalid request"
+            },
+            "405": {
+              "description": "Invalid input"
+            }
+          }
+        }
+    },
+
 
     "/importer/start": {
       "post": {
@@ -1167,9 +1204,18 @@
   },
   "components": {
     "schemas": {
-      "uploadfile": {
+      "Singlefile": {
         "type": "object",
-        "description": "upload file, for multiple uploads use a list [{file_name:file_to_be_upload}]",
+        "description": "upload single file",
+        "properties": {
+          "file_name": {
+            "type": "string"
+          }
+        }
+      },
+      "MultipleFiles": {
+        "type": "object",
+        "description": "upload Multiple files",
         "properties": {
           "file_name": {
             "type": "string"
@@ -1192,7 +1238,7 @@
             "enum": [
               "Finished", "In-progress","Queued", "Failed"
             ],
-            "description": "the geometry type"
+            "description": "Job Status Enum Type"
           },
            "asset": {
             "type": "string"
