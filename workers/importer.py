@@ -72,7 +72,9 @@ class Importer:
             if row["Padnaam"][1] == ":":
                 file_path = str.replace(row["Padnaam"][3:], "\\", "/")
             else:
-                file_path = row["Padnaam"]
+                file_path = (
+                    row["Padnaam"][1:] if row["Padnaam"][0] == "/" else row["Padnaam"]
+                )
             file_path = os.path.join(self.mount_point, file_path)
         return file_path
 

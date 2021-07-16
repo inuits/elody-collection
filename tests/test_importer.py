@@ -85,7 +85,7 @@ class ImporterTest(BaseCase):
         self.run_test("column_casing", 2, 2)
 
     def test_import_csv_path_types(self):
-        self.run_test("path_types", 2, 2)
+        self.run_test("path_types", 3, 3)
 
     def test_import_csv_metadata(self):
         self.run_test("metadata", 4, 7)
