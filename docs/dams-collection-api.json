@@ -1087,13 +1087,27 @@
           "summary": "Upload Single File",
           "operationId": "uploadSingleFile",
           "consumes": "multipart/form-data",
-          "parameters": [{
-            "required": "true",
-            "in": "formData",
-            "name": "file_name",
-            "type": "file",
-            "description": "The File to upload"
-          }],
+          "requestBody": {
+            "content": {
+              "multipart/form-data": {
+                "schema": {
+                  "type": "object",
+                  "required": "true",
+                  "properties": {
+                    "asset": {
+                      "type": "string",
+                      "format": "binary",
+                      "description": "File to upload"
+                    },
+                    "info": {
+                      "type": "string",
+                      "description": "job information"
+                    }
+                  }
+                }
+              }
+            }
+          },
           "responses": {
             "200": {
               "description": "Successful upload"
@@ -1114,15 +1128,22 @@
           ],
           "summary": "Upload Multiple files",
           "operationId": "uploadMultipleFiles",
-          "requestBody": {
-            "description": "upload Upload multiple files",
-            "required": true,
+        "requestBody": {
             "content": {
-              "application/json": {
+              "multipart/form-data": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/uploadMultipleFiles"
+                  "type": "object",
+                  "required": "true",
+                  "properties": {
+                    "asset": {
+                      "required": "true",
+                      "type": "array",
+                      "format": "binary"
+                    },
+                    "info": {
+                      "type": "string",
+                      "description": "job information"
+                    }
                   }
                 }
               }
@@ -1218,7 +1239,7 @@
         "description": "upload Multiple files",
         "properties": {
           "file_name": {
-            "type": "string"
+            "type": "formData"
           }
         }
       },
