@@ -1,6 +1,7 @@
 import os
 import uuid
 
+from bson import ObjectId
 from pymongo import MongoClient
 
 mongo_host = os.getenv("MONGO_DB_HOST", "mongo")
@@ -138,4 +139,7 @@ class MongoStorageManager:
         return data
 
     def _get_id_query(self, id):
-        return {"$or": [{"_id": id}, {"identifiers": id}]}
+        return {"$or": [{"_id": id}, {"identifiers": id}, {"asset": id}, {"user": id}]}
+
+    def get_jobs_from_collection(self, collection, option, target):
+        return self.db[collection].find(self._get_id_query(target))

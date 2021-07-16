@@ -33,6 +33,10 @@
     {
       "name": "importer",
       "description": "Importer module in DAMS"
+    },
+     {
+      "name": "jobs",
+      "description": "Job Status module in DAMS"
     }
   ],
   "paths": {
@@ -976,6 +980,132 @@
         }
       }
     },
+
+    "/jobs/{job_id}": {
+      "get": {
+        "tags": ["jobs"],
+        "summary": "Get Jobs By Job ID",
+        "operationId": "getJobsById",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "description": "Job id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                    "$ref": "#/components/schemas/jobs"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid Job ID "
+          },
+          "404": {
+            "description": "Job Not Found"
+          }
+        }
+      }
+
+    },
+    "/jobs/{asset}": {
+      "get": {
+        "tags": ["jobs"],
+        "summary": "Get Jobs By Asset",
+        "operationId": "getJobsByAsset",
+        "parameters": [
+          {
+            "name": "asset",
+            "in": "path",
+            "description": "Job Asset",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/jobs"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid Asset "
+          },
+          "404": {
+            "description": "Job Not Found"
+          }
+        }
+      }
+    },
+    "/jobs": {
+       "post": {
+          "tags": [
+            "jobs"
+          ],
+          "summary": "Upload new File",
+          "operationId": "uploadFile",
+          "requestBody": {
+            "description": "upload file, for multiple uploads use a list [{file_name:file_to_be_upload}]",
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/uploadfile"
+                }
+              }
+            }
+          },
+          "responses": {
+            "400": {
+              "description": "Invalid request"
+            },
+            "405": {
+              "description": "Invalid input"
+            }
+          }
+        },
+      "get": {
+        "tags": ["jobs"],
+        "summary": "Get Jobs By User - By default it gets the logged in User details",
+        "operationId": "getJobsByUser",
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/jobs"
+                  }
+                }
+              }
+            }
+          },"400": {"description": "Invalid Job Request"}, "405": {"description": "Invalid Input"}
+        }
+      }
+    },
+
     "/importer/start": {
       "post": {
         "tags": [
@@ -1037,6 +1167,44 @@
   },
   "components": {
     "schemas": {
+      "uploadfile": {
+        "type": "object",
+        "description": "upload file, for multiple uploads use a list [{file_name:file_to_be_upload}]",
+        "properties": {
+          "file_name": {
+            "type": "string"
+          }
+        }
+      },
+      "jobs": {
+        "type":  "object",
+        "description": "Job status",
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+         "mediafile_id": {
+           "type": "string"
+         },
+          "status": {
+            "type": "string",
+            "enum": [
+              "Finished", "In-progress","Queued", "Failed"
+            ],
+            "description": "the geometry type"
+          },
+           "asset": {
+            "type": "string"
+          },
+           "job_info": {
+            "type": "string"
+          },
+           "job_type": {
+            "type": "string"
+          }
+        }
+      },
       "tenant": {
         "type": "object",
         "description": "Tenant object",
