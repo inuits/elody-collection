@@ -10,68 +10,10 @@ class Importer:
         self.mount_point = os.getenv("UPLOAD_FOLDER", "")
         self.storage = storage
 
-    def validate_csv(self, df):
-        return "Objectnummer" in df.columns and (
-            "Bestandsnaam" in df.columns or "Padnaam" in df.columns
-        )
-
-    def import_from_csv(self, path):
-        path = os.path.join(path, "")
-        all_csv_files = [i for i in glob.glob(path + "**/*.csv", recursive=True)]
-        dataframes = []
-        for f in all_csv_files:
-            df = pd.read_csv(f)
-            df.columns = df.columns.str.capitalize()
-            if not self.validate_csv(df):
-                continue
-            dataframes.append(df)
-        if not dataframes:
-            return
-        combined_csv = pd.concat(dataframes)
-        for index, row in combined_csv.iterrows():
-            if pd.isna(row["Objectnummer"]) or (
-                pd.isna(row["Padnaam"]) and pd.isna(row["Bestandsnaam"])
-            ):
-                continue
-            elif pd.isna(row["Padnaam"]):
-                file_path = sorted(
-                    glob.glob(path + "**/" + row["Bestandsnaam"], recursive=True)
-                )[0]
-            else:
-                if row["Padnaam"][1] == ":":
-                    file_path = str.replace(row["Padnaam"][3:], "\\", "/")
-                else:
-                    file_path = row["Padnaam"]
-                file_path = os.path.join(self.mount_point, file_path)
-            file_name = os.path.basename(file_path)
-            object_id = row["Objectnummer"]
-            mediafile = self.create_mediafile(object_id, file_name)
-            metadata = self.add_metadata_to_entity(
-                object_id, row["Rechtenstatus"], row["Copyright"]
-            )
-            upload_location = "{}/upload/{}".format(self.storage_api_url, file_name)
-            self.upload_file(upload_location, file_path)
-
-    def upload_file(self, upload_location, file_path):
+    def upload_file(self, file_name, file_path):
+        upload_location = "{}/upload/{}".format(self.storage_api_url, file_name)
         files = {"file": open(file_path, "rb")}
         requests.post(upload_location, files=files)
-
-    def create_mediafile(self, object_id, file_name):
-        data = {
-            "type": "mediafile",
-            "location": "{}/download/{}".format(self.storage_api_url, file_name),
-        }
-        mediafile = self.storage.save_item_to_collection("mediafiles", data)
-        ret = self.storage.add_mediafile_to_entity(
-            "entities", object_id, mediafile["_id"]
-        )
-        if not ret:
-            content = {"identifiers": [object_id], "type": "asset"}
-            self.storage.save_item_to_collection("entities", content)
-            ret = self.storage.add_mediafile_to_entity(
-                "entities", object_id, mediafile["_id"]
-            )
-        return ret
 
     def add_metadata_to_entity(self, object_id, rights, copyright):
         if pd.isna(rights) and pd.isna(copyright):
@@ -96,3 +38,77 @@ class Importer:
             "entities", object_id, all_metadata
         )
         return ret_metadata
+
+    def create_mediafile(self, object_id, file_name):
+        data = {
+            "type": "mediafile",
+            "location": "{}/download/{}".format(self.storage_api_url, file_name),
+        }
+        mediafile = self.storage.save_item_to_collection("mediafiles", data)
+        ret = self.storage.add_mediafile_to_entity(
+            "entities", object_id, mediafile["_id"]
+        )
+        if not ret:
+            content = {"identifiers": [object_id], "type": "asset"}
+            self.storage.save_item_to_collection("entities", content)
+            ret = self.storage.add_mediafile_to_entity(
+                "entities", object_id, mediafile["_id"]
+            )
+        return ret
+
+    def write_to_db(self, object_id, file_name, file_path, row):
+        mediafile = self.create_mediafile(object_id, file_name)
+        metadata = self.add_metadata_to_entity(
+            object_id, row["Rechtenstatus"], row["Copyright"]
+        )
+        self.upload_file(file_name, file_path)
+
+    def parse_path(self, path, row):
+        if pd.isna(row["Padnaam"]):
+            file_path = sorted(
+                glob.glob(path + "**/" + row["Bestandsnaam"], recursive=True)
+            )[0]
+        else:
+            if row["Padnaam"][1] == ":":
+                file_path = str.replace(row["Padnaam"][3:], "\\", "/")
+            else:
+                file_path = row["Padnaam"]
+            file_path = os.path.join(self.mount_point, file_path)
+        return file_path
+
+    def is_malformed_row(self, row):
+        return pd.isna(row["Objectnummer"]) or (
+            pd.isna(row["Padnaam"]) and pd.isna(row["Bestandsnaam"])
+        )
+
+    def parse_rows(self, path, combined_csv):
+        for index, row in combined_csv.iterrows():
+            if self.is_malformed_row(row):
+                continue
+            file_path = self.parse_path(path, row)
+            file_name = os.path.basename(file_path)
+            object_id = row["Objectnummer"]
+            self.write_to_db(object_id, file_name, file_path, row)
+
+    def validate_csv(self, df):
+        return "Objectnummer" in df.columns and (
+            "Bestandsnaam" in df.columns or "Padnaam" in df.columns
+        )
+
+    def read_csv(self, all_csv_files):
+        dataframes = []
+        for f in all_csv_files:
+            df = pd.read_csv(f)
+            df.columns = df.columns.str.capitalize()
+            if not self.validate_csv(df):
+                continue
+            dataframes.append(df)
+        return dataframes
+
+    def import_from_csv(self, path):
+        path = os.path.join(path, "")
+        all_csv_files = [i for i in glob.glob(path + "**/*.csv", recursive=True)]
+        if not (dataframes := self.read_csv(all_csv_files)):
+            return
+        combined_csv = pd.concat(dataframes)
+        self.parse_rows(path, combined_csv)
