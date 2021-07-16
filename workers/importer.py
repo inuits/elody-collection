@@ -57,11 +57,11 @@ class Importer:
         return ret
 
     def write_to_db(self, object_id, file_name, file_path, row):
+        self.upload_file(file_name, file_path)
         mediafile = self.create_mediafile(object_id, file_name)
         metadata = self.add_metadata_to_entity(
             object_id, row["Rechtenstatus"], row["Copyright"]
         )
-        self.upload_file(file_name, file_path)
 
     def parse_path(self, path, row):
         if pd.isna(row["Padnaam"]):
