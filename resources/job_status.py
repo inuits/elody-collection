@@ -1,13 +1,10 @@
-import json
-import os
-
-from bson.json_util import dumps
-from flask import g, request
-from flask_restful import Resource
-from werkzeug.exceptions import abort, BadRequest
 import app
+
+from flask import request
+from flask_restful import Resource
 from resources.base_resource import BaseResource
 from storage.storagemanager import MongoStorageManager as storage
+from werkzeug.exceptions import abort
 from workers.jobs import CreateJobs
 
 

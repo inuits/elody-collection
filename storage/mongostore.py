@@ -1,7 +1,6 @@
 import os
 import uuid
 
-from bson import ObjectId
 from pymongo import MongoClient
 
 mongo_host = os.getenv("MONGO_DB_HOST", "mongo")

@@ -1,9 +1,8 @@
+import app
 import json
 import os
-
 import requests
 
-import app
 from storage.storagemanager import MongoStorageManager as storage_manager
 
 storage_api = os.getenv("STORAGE_API_URL", "http://localhost:8001")

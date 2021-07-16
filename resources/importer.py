@@ -2,9 +2,7 @@ import app
 import os
 import uuid
 
-from flask import jsonify, g
-
-# from jobstatus.app.model import Job
+from flask import jsonify
 from resources.base_resource import BaseResource
 from storage.storagemanager import StorageManager
 from workers.importer import Importer
