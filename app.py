@@ -63,8 +63,10 @@ from resources.entity import (
 from resources.importer import ImporterStart, ImporterDirectories
 from resources.job_status import (
     JobStatusById,
-    JobStatusByAsset,
-    JobStatusByUser, JobUploadSingleItem, JobUploadMultipleItem,
+    JobStatusByUser,
+    JobUploadSingleItem,
+    JobUploadMultipleItem,
+    JobsByAsset,
 )
 from resources.mediafile import Mediafile, MediafileDetail
 from resources.spec import OpenAPISpec, AsyncAPISpec
@@ -83,9 +85,9 @@ api.add_resource(ImporterDirectories, "/importer/directories")
 
 api.add_resource(JobStatusById, "/jobs/<string:job_id>")
 api.add_resource(JobStatusByUser, "/jobs")
-api.add_resource(JobStatusByAsset, "/jobs/<asset>")
-api.add_resource(JobUploadSingleItem, '/jobs/upload/single')
-api.add_resource(JobUploadMultipleItem, '/jobs/upload/multiple')
+api.add_resource(JobsByAsset, "/jobs/<asset>")
+api.add_resource(JobUploadSingleItem, "/jobs/upload/single")
+api.add_resource(JobUploadMultipleItem, "/jobs/upload/multiple")
 
 api.add_resource(MediafileDetail, "/mediafiles/<string:id>")
 api.add_resource(Mediafile, "/mediafiles")
