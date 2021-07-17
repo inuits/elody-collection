@@ -86,7 +86,7 @@ def job_status(body):
     else:
         # process single jobs
         save_file = process_data(mount_point + data["asset"])
-        job["status"] = "Finished" if save_file.status_code is 201 else "Failed"
+        job["status"] = "Finished" if save_file.status_code == 201 else "Failed"
     # Update Job Status
     data_fetcher.patch_item_from_collection("jobs", job["job_id"], job)
     return True
