@@ -10,30 +10,35 @@ class Importer:
         self.mount_point = os.getenv("UPLOAD_FOLDER", "")
         self.storage = storage
 
-    def upload_file(self, file_name, file_path):
-        upload_location = "{}/upload/{}".format(self.storage_api_url, file_name)
-        files = {"file": open(file_path, "rb")}
-        requests.post(upload_location, files=files)
+    def metadata_up_to_date(self, new_metadata, all_metadata):
+        return all(elem in all_metadata for elem in new_metadata)
 
-    def add_metadata_to_entity(self, object_id, rights, copyright):
-        if pd.isna(rights) and pd.isna(copyright):
-            return None
+    def get_new_metadata(self, rights, copyright):
         new_metadata = []
         if not pd.isna(rights):
             new_metadata.append({"key": "rights", "value": rights})
         if not pd.isna(copyright):
             new_metadata.append({"key": "copyright", "value": copyright})
-        all_metadata = self.storage.get_collection_item_metadata("entities", object_id)
-        if all_metadata:
-            if all(elem in all_metadata for elem in new_metadata):
+        return new_metadata
+
+    def no_metadata_available(self, rights, copyright):
+        return pd.isna(rights) and pd.isna(copyright)
+
+    def add_metadata_to_entity(self, object_id, rights, copyright):
+        if self.no_metadata_available(rights, copyright):
+            return None
+        new_metadata = self.get_new_metadata(rights, copyright)
+        if not (all_metadata := self.storage.get_collection_item_metadata("entities", object_id)):
+            all_metadata = new_metadata
+        else:
+            if self.metadata_up_to_date(new_metadata, all_metadata):
                 return all_metadata
             for index, data in enumerate(all_metadata):
                 if ("key", "copyright") in data.items() and not pd.isna(copyright):
                     all_metadata[index] = new_metadata.pop()
                 if ("key", "rights") in data.items() and not pd.isna(rights):
                     all_metadata[index] = new_metadata.pop()
-        if new_metadata:
-            all_metadata = all_metadata + new_metadata if all_metadata else new_metadata
+            all_metadata = all_metadata + new_metadata
         ret_metadata = self.storage.update_collection_item_metadata(
             "entities", object_id, all_metadata
         )
@@ -55,6 +60,11 @@ class Importer:
                 "entities", object_id, mediafile["_id"]
             )
         return ret
+
+    def upload_file(self, file_name, file_path):
+        upload_location = "{}/upload/{}".format(self.storage_api_url, file_name)
+        files = {"file": open(file_path, "rb")}
+        requests.post(upload_location, files=files)
 
     def write_to_db(self, object_id, file_name, file_path, row):
         self.upload_file(file_name, file_path)
