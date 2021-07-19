@@ -1,4 +1,3 @@
-
 import app
 
 import hashlib
@@ -13,8 +12,8 @@ storage_api = os.getenv("STORAGE_API_URL", "http://localhost:8001")
 
 
 @app.ramq.queue(
-    exchange_name=os.getenv("EXCHANGE_NAME", 'dams'),
-    routing_key=os.getenv("ROUTING_KEY", 'dams.job_status'),
+    exchange_name=os.getenv("EXCHANGE_NAME", "dams"),
+    routing_key=os.getenv("ROUTING_KEY", "dams.job_status"),
 )
 def job_status(body):
     data = json.loads(body)
