@@ -1,5 +1,4 @@
 import werkzeug.datastructures
-from flask_restful import reqparse
 
 import app
 
@@ -162,9 +161,15 @@ class EntityMediafiles(BaseResource):
             id,
         )
         # grab request data ---
-        req = reqparse.RequestParser()
-        # extract filename and extension  - this can be used to generate mediafile
-        filename_ext = self.get_filename(req)
+        self.req.add_argument(
+            "filename",
+            required=False,
+            type=werkzeug.datastructures.FileStorage,
+            help="filename to be uploaded",
+        )
+        parse_args = self.req.parse_args()
+        file_name = parse_args.get("filename").filename
+        file_ext = file_name.split(".")[1]
 
         request_body = self.get_request_body()
         mediafile_id = request_body["_id"]
