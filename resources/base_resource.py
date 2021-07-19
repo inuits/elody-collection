@@ -17,7 +17,11 @@ class BaseResource(Resource):
     def get_upload_source(self):
         # may be subject to changes
         config = self.storage.get_items_from_collection("config")
-        return config["upload_source"] if config else os.getenv("UPLOAD_SOURCE", "/mnt/media-import")
+        return (
+            config["upload_source"]
+            if config["count"]
+            else os.getenv("UPLOAD_SOURCE", "/mnt/media-import")
+        )
 
     def get_request_body(self):
         invalid_input = False
