@@ -91,6 +91,7 @@ class JobUploadSingleItem(BaseResource, CreateJobs):
         self.job_type = "single"
         return self.create_single_job()
 
+
 # Upload multiple files
 class JobUploadMultipleItem(BaseResource, CreateJobs):
     """ Upload Multiple files"""
@@ -106,10 +107,10 @@ class JobUploadMultipleItem(BaseResource, CreateJobs):
             location="files",
             required=True,
             help="Files required",
-            action="append",
+            action="append",  # grabs multiple files
         )
         parse.add_argument("info", required=True)
         self.job = parse.parse_args()
         self.job_type = "multiple"
         self.user = g.oidc_token_info["email"]
-        return self.create_multiple_job()
+        return self.create_multiple_jobs()
