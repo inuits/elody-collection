@@ -160,15 +160,6 @@ class EntityMediafiles(BaseResource):
             id,
         )
         # grab request data ---
-        self.req.add_argument(
-            "filename",
-            required=False,
-            type=werkzeug.datastructures.FileStorage,
-            help="filename to be uploaded",
-        )
-        parse_args = self.req.parse_args()
-        file_name = parse_args.get("filename").filename
-        file_ext = file_name.split(".")[1]
 
         request_body = self.get_request_body()
         mediafile_id = request_body["_id"]
@@ -186,12 +177,23 @@ class EntityMediafilesCreate(BaseResource):
             "entities",
             id,
         )
-        mediafile = self.storage.save_item_to_collection("mediafiles", dict())
+        self.req.add_argument(
+            "filename",
+            required=False,
+            type=werkzeug.datastructures.FileStorage,
+            help="filename to be uploaded",
+        )
+        parse_args = self.req.parse_args()
+        file_name = parse_args.get("filename").filename
+        file_ext = file_name.split(".")[1]
+        media_file = {"filename": file_name, "file_extension": file_ext}
+        mediafile = self.storage.save_item_to_collection("mediafiles", media_file)
         mediafile_id = mediafile["_id"]
         upload_location = "{}/upload/{}".format(self.storage_api_url, mediafile_id)
         location = {
             "location": "{}/download/{}".format(self.storage_api_url, mediafile_id)
         }
+
         self.storage.patch_item_from_collection("mediafiles", mediafile_id, location)
         self.storage.add_mediafile_to_entity("entities", id, mediafile_id)
         return upload_location, 201
