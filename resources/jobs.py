@@ -27,7 +27,7 @@ def job_status(body):
     if data["job_type"] == "multiple":
         for data in data["data"]:
             save = process_data(mount_point + data["job_folder"])
-            job["status"] = "Finished" if save.status_code is 201 else "Failed"
+            job["status"] = "Finished" if save.status_code == 201 else "Failed"
     else:
         # process single jobs
         save_file = process_data(mount_point + data["asset"])
