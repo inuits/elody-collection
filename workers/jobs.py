@@ -80,8 +80,8 @@ def job_status(body):
     data_fetcher.patch_item_from_collection("jobs", job["job_id"], job)
     # process multiple jobs
     if data["job_type"] == "multiple":
-        for data in data:
-            save = process_data(mount_point + data["asset"])
+        for data in data['data']:
+            save = process_data(mount_point + data["job_folder"])
             job["status"] = "Finished" if save.status_code is 201 else "Failed"
     else:
         # process single jobs
