@@ -1,5 +1,3 @@
-from app import app
-
 from flask_restful import Resource, abort, reqparse
 from flask import request, g
 
@@ -68,7 +66,9 @@ class BaseResource(Resource):
     def create_single_job(self):
         """ creates  single job """
         parsed = self.req.parse_args(self)
-        data_fetch = self.get_job_by_signature(generate_file_signature(parsed.get('asset')))
+        data_fetch = self.get_job_by_signature(
+            generate_file_signature(parsed.get("asset"))
+        )
         message_id = str(uuid.uuid4())
         m_message = {
             "data": {
@@ -87,11 +87,7 @@ class BaseResource(Resource):
             abort(409, message=f'File {self.job.get("asset").filename} exists')
 
         m_message["message_id"] = message_id
-        app.ramq.send(
-            m_message,
-            exchange_name=os.getenv("EXCHANGE_NAME", "dams"),
-            routing_key=os.getenv("ROUTING_KEY", "dams.job_status"),
-        )
+
         return m_message, 201
 
     def create_multiple_jobs(self):
@@ -116,9 +112,4 @@ class BaseResource(Resource):
         else:
             save = self.storage.save_item_to_collection("jobs", job)
             message["message_id"] = save["_id"]
-            app.ramq.send(
-                message,
-                exchange_name=os.getenv("EXCHANGE_NAME", "dams"),
-                routing_key=os.getenv("ROUTING_KEY", "dams.job_status"),
-            )
             return message, 201
