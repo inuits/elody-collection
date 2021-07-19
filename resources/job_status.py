@@ -1,6 +1,5 @@
 import app
 
-from flask_restful import reqparse
 from resources.base_resource import BaseResource
 
 import werkzeug.datastructures
