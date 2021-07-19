@@ -774,7 +774,21 @@
         "summary": "Create asset mediafile",
         "description": "Create entity mediafiles for a specific ID",
         "operationId": "createEntityIdMediafiles",
-
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "filename": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
         "parameters": [
           {
             "name": "entityId",
