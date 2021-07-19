@@ -1,6 +1,5 @@
 import app
 
-from flask import g
 from flask_restful import reqparse
 from resources.base_resource import BaseResource
 from resources.jobs import generate_file_signature
