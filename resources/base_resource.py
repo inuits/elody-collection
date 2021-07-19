@@ -1,13 +1,12 @@
-import os
-import uuid
+from app import app
 
-import werkzeug
 from flask_restful import Resource, abort, reqparse
 from flask import request, g
 
-from app import app
+import os
 from resources.jobs import generate_file_signature
 from storage.storagemanager import StorageManager
+import uuid
 from werkzeug.exceptions import BadRequest
 
 
