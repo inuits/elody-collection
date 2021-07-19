@@ -19,7 +19,7 @@ class ImporterTest(BaseCase):
         self.assertEqual(200, response.status_code)
         self.assertEqual(
             response.json["data"]["upload_folder"],
-            os.path.join(self.upload_folder, folder),
+            os.path.join(self.upload_source, folder),
         )
 
     def get_from_db(self, endpoint):
@@ -69,8 +69,8 @@ class ImporterTest(BaseCase):
         self.assertEqual(
             response.json,
             [
-                str(x[0]).removeprefix(self.upload_folder)
-                for x in os.walk(self.upload_folder)
+                str(x[0]).removeprefix(self.upload_source)
+                for x in os.walk(self.upload_source)
             ],
         )
 

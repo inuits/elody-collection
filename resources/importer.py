@@ -19,9 +19,8 @@ def csv_import(body):
 class ImporterStart(BaseResource):
     def __init__(self):
         super().__init__()
-        self.upload_folder = os.getenv("UPLOAD_FOLDER", "/mnt/media-import")
         global importer
-        importer = Importer(self.storage, self.storage_api_url)
+        importer = Importer(self.storage, self.storage_api_url, self.upload_source)
 
     @app.oidc.accept_token(
         require_token=BaseResource.token_required, scopes_required=["openid"]
@@ -33,7 +32,7 @@ class ImporterStart(BaseResource):
             "message_id": message_id,
             "data": {
                 "upload_folder": os.path.join(
-                    self.upload_folder, request_body["upload_folder"]
+                    self.upload_source, request_body["upload_folder"]
                 )
             },
         }
@@ -43,16 +42,12 @@ class ImporterStart(BaseResource):
 
 
 class ImporterDirectories(BaseResource):
-    def __init__(self):
-        super().__init__()
-        self.upload_folder = os.getenv("UPLOAD_FOLDER", "/mnt/media-import")
-
     @app.oidc.accept_token(
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )
     def get(self):
         directories = [
-            str(x[0]).removeprefix(self.upload_folder)
-            for x in os.walk(self.upload_folder)
+            str(x[0]).removeprefix(self.upload_source)
+            for x in os.walk(self.upload_source)
         ]
         return jsonify(directories)

@@ -12,6 +12,12 @@ class BaseResource(Resource):
     def __init__(self):
         self.storage = StorageManager().get_db_engine()
         self.storage_api_url = os.getenv("STORAGE_API_URL", "http://localhost:8001")
+        self.upload_source = self.get_upload_source()
+
+    def get_upload_source(self):
+        # may be subject to changes
+        config = self.storage.get_items_from_collection("config")
+        return config["upload_source"] if config else os.getenv("UPLOAD_SOURCE", "/mnt/media-import")
 
     def get_request_body(self):
         invalid_input = False

@@ -74,10 +74,10 @@ class BaseCase(unittest.TestCase):
             "storage.mongostore.client", new_callable=mongomock.MongoClient
         )
         self.mocked_mongodb = self.mongodb_patcher.start()
-        self.upload_folder = os.path.join(
+        self.upload_source = os.path.join(
             os.path.dirname(os.path.abspath(__file__)), "csv"
         )
-        os.environ["UPLOAD_FOLDER"] = self.upload_folder
+        os.environ["UPLOAD_SOURCE"] = self.upload_source
         self.addCleanup(self.storage.drop_all_collections)
         self.addCleanup(self.rabbitmq_patcher.stop)
         self.addCleanup(self.importer_patcher.stop)
