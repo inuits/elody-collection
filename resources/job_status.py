@@ -2,7 +2,6 @@ import app
 
 from flask_restful import reqparse
 from resources.base_resource import BaseResource
-from resources.jobs import generate_file_signature
 
 import werkzeug.datastructures
 
@@ -40,18 +39,15 @@ class JobUploadSingleItem(BaseResource):
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )
     def post(self):
-        parse = reqparse.RequestParser()
-        parse.add_argument(
+        self.req.add_argument(
             "asset",
             type=werkzeug.datastructures.FileStorage,
             location="files",
             help="Image is required",
             required=True,
         )
-        parse.add_argument("info", required=True, help="File Information")
-        self.req = parse.parse_args()
-        signature = generate_file_signature(self.req.get("asset"))
-        return self.create_single_job(signature)
+        self.req.add_argument("info", required=True, help="File Information")
+        return self.create_single_job()
 
 
 # Upload multiple files
@@ -62,8 +58,7 @@ class JobUploadMultipleItem(BaseResource):
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )
     def post(self):
-        parse = reqparse.RequestParser()
-        parse.add_argument(
+        self.req.add_argument(
             "asset",
             type=werkzeug.datastructures.FileStorage,
             location="files",
@@ -71,6 +66,5 @@ class JobUploadMultipleItem(BaseResource):
             help="Files required",
             action="append",  # grabs multiple files
         )
-        parse.add_argument("info", required=True)
-        self.req = parse.parse_args()
+        self.req.add_argument("info", required=True)
         return self.create_multiple_jobs()
