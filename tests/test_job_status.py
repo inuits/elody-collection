@@ -1,7 +1,5 @@
 import json
-import unittest
 
-from app import app
 from tests.base_case import BaseCase
 
 
