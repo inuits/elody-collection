@@ -21,7 +21,7 @@ class ImporterStart(BaseResource):
         super().__init__()
         self.upload_folder = os.getenv("UPLOAD_FOLDER", "/mnt/media-import")
         global importer
-        importer = Importer(self.storage)
+        importer = Importer(self.storage, self.storage_api_url)
 
     @app.oidc.accept_token(
         require_token=BaseResource.token_required, scopes_required=["openid"]

@@ -5,10 +5,10 @@ import requests
 
 
 class Importer:
-    def __init__(self, storage):
-        self.storage_api_url = os.getenv("STORAGE_API_URL", "http://localhost:8001")
+    def __init__(self, storage, storage_api_url):
         self.mount_point = os.getenv("UPLOAD_FOLDER", "")
         self.storage = storage
+        self.storage_api_url = storage_api_url
 
     def metadata_up_to_date(self, new_metadata, all_metadata):
         return all(elem in all_metadata for elem in new_metadata)
