@@ -1,7 +1,12 @@
 import os
+import uuid
 
-from flask_restful import Resource, abort
-from flask import request
+import werkzeug
+from flask_restful import Resource, abort, reqparse
+from flask import request, g
+
+from app import app
+from resources.jobs import generate_file_signature
 from storage.storagemanager import StorageManager
 from werkzeug.exceptions import BadRequest
 
@@ -13,6 +18,7 @@ class BaseResource(Resource):
         self.storage = StorageManager().get_db_engine()
         self.storage_api_url = os.getenv("STORAGE_API_URL", "http://localhost:8001")
         self.upload_source = self.get_upload_source()
+        self.req = reqparse.RequestParser
 
     def get_upload_source(self):
         # may be subject to changes
@@ -45,3 +51,75 @@ class BaseResource(Resource):
                 message="Item {} doesn't exist in collection {}".format(id, collection),
             )
         return item
+
+    def get_job_by_signature(self, signature):
+        """ This method is necessary for reuse in some parts of job creation """
+        return self.db["jobs"].find_one({"signature": signature})
+
+    def prepare_job_data(self, job_type):
+        parse_data = self.req.parse_args(self)
+        job_data = {
+            "job_info": parse_data.get("info"),
+            "job_type": job_type,
+            "user": g.oidc_token_info["email"],
+            "status": "Queued",
+        }
+        return job_data
+
+    def create_single_job(self):
+        """ creates  single job """
+        parsed = self.req.parse_args(self)
+        data_fetch = self.get_job_by_signature(generate_file_signature(parsed.get('asset')))
+        message_id = str(uuid.uuid4())
+        m_message = {
+            "data": {
+                "job_folder": os.path.join(
+                    self.location, self.job.get("asset").filename
+                )
+            },
+            "asset": parsed.get("asset").filename,
+        }
+        if data_fetch is None:
+            save_job = self.storage.save_item_to_collection(
+                "jobs", self.prepare_job_data(job_type="single")
+            )
+            m_message["job_id"] = save_job["_id"]
+        else:
+            abort(409, message=f'File {self.job.get("asset").filename} exists')
+
+        m_message["message_id"] = message_id
+        app.ramq.send(
+            m_message,
+            exchange_name=os.getenv("EXCHANGE_NAME", "dams"),
+            routing_key=os.getenv("ROUTING_KEY", "dams.job_status"),
+        )
+        return m_message, 201
+
+    def create_multiple_jobs(self):
+        job = self.prepare_job_data(job_type="multiple")
+        parse_data = self.req.parse_args(self)
+        message = {}
+        file_errors = list()
+        asset = list()
+        for item in parse_data.get("asset"):
+            signature = generate_file_signature(item)
+            data = self.get_job_by_signature(signature)
+            if data is None:
+                job_folder = os.path.join(self.location, item.filename)
+                asset.append({"job_folder": job_folder})
+            else:
+                file_errors.append({"file_name": item.filename, "state": "file exists"})
+        message["asset"] = asset
+        job["asset"] = asset
+        if len(file_errors) > 0:
+            message["file_states"] = file_errors
+            return message, 409
+        else:
+            save = self.storage.save_item_to_collection("jobs", job)
+            message["message_id"] = save["_id"]
+            app.ramq.send(
+                message,
+                exchange_name=os.getenv("EXCHANGE_NAME", "dams"),
+                routing_key=os.getenv("ROUTING_KEY", "dams.job_status"),
+            )
+            return message, 201
