@@ -1,8 +1,9 @@
+import hashlib
+
 from flask_restful import Resource, abort, reqparse
 from flask import request, g
 
 import os
-from resources.jobs import generate_file_signature
 from storage.storagemanager import StorageManager
 import uuid
 from werkzeug.exceptions import BadRequest
@@ -97,7 +98,7 @@ class BaseResource(Resource):
         file_errors = list()
         asset = list()
         for item in parse_data.get("asset"):
-            signature = generate_file_signature(item)
+            signature = self.generate_file_signature(item)
             data = self.get_job_by_signature(signature)
             if data is None:
                 job_folder = os.path.join(self.location, item.filename)
@@ -113,3 +114,13 @@ class BaseResource(Resource):
             save = self.storage.save_item_to_collection("jobs", job)
             message["message_id"] = save["_id"]
             return message, 201
+
+    @staticmethod
+    def generate_file_signature(file):
+        obj = hashlib.md5()
+        size = 128 * obj.block_size
+        parts = file.read(size)
+        while parts:
+            obj.update(parts)
+            parts = file.read(size)
+        return obj.hexdigest()
