@@ -2,9 +2,10 @@ import json
 import unittest
 
 from app import app
+from tests.base_case import BaseCase
 
 
-class JobStatusTest(unittest.TestCase):
+class JobStatusTest(BaseCase):
     content_type = headers = {"Content-Type": "application/json"}
     single_upload = json.dumps(
         {
@@ -27,7 +28,7 @@ class JobStatusTest(unittest.TestCase):
         }
     )
 
-    single_asset = json.dumps({"file_name": "/images/file.png"})
+    single_asset = json.dumps({"file_name": "file.png"})
     multiple_asset = json.dumps(
         [
             {"file_name": "/images/file.png"},
@@ -39,10 +40,8 @@ class JobStatusTest(unittest.TestCase):
     )
 
     def __init__(self):
+
         super().__init__()
-        app.Testing = True
-        self.app = app
-        self.app.test_client()
         self.insert_single_id = ""
         self.insert_multiple_id = ""
 
@@ -53,14 +52,14 @@ class JobStatusTest(unittest.TestCase):
         self.assertEqual(404, res.status_code)
         self.assertEqual(1, len(res.json))
 
-    def test_upload_single(self):
-        res = self.app(f"/jobs", data=self.single_upload)
+    def test_upload_single_file(self):
+        res = self.app(f"/jobs/upload/single", data=self.single_upload)
         self.insert_single_id = res.json("_id")
         self.assertEqual(201, res.status_code)
         self.assertEqual(str, res.json["message"])
 
     def test_upload_multiple(self):
-        res = self.app(f"/jobs", data=self.multiple_upload)
+        res = self.app(f"/jobs/upload/multiple", data=self.multiple_upload)
         self.assertEqual(201, res.status_code)
 
     # Test Job not Found given an arbitrary job ID
@@ -79,7 +78,7 @@ class JobStatusTest(unittest.TestCase):
     def get_job_by_asset(self, asset):
         asset = "single" if isinstance(asset, list) else "multiple"
         res = self.app.get(
-            f'/jobs/{self.single_asset if asset is "single" else self.multiple_asset}/{asset}',
+            f'/jobs/{self.single_asset if asset == "single" else self.multiple_asset}/{asset}',
             headers=self.content_type,
         )
         return res.json()
