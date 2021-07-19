@@ -1,9 +1,8 @@
-import werkzeug.datastructures
-
 import app
 
 from flask import request
 from resources.base_resource import BaseResource
+import werkzeug.datastructures
 
 
 class Entity(BaseResource):
