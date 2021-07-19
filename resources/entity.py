@@ -197,3 +197,21 @@ class EntityMediafilesCreate(BaseResource):
         self.storage.patch_item_from_collection("mediafiles", mediafile_id, location)
         self.storage.add_mediafile_to_entity("entities", id, mediafile_id)
         return upload_location, 201
+
+
+class EntityRelationships(BaseResource):
+    @app.oidc.accept_token(
+        require_token=BaseResource.token_required, scopes_required=["openId"]
+    )
+    def get(self, entity_id):
+        self.abort_if_item_doesnt_exist("entities", entity_id)
+        return self.storage.get_entity_relationships("entities", entity_id)
+
+    def post(self, relations):
+        pass
+
+    def put(self, relations):
+        pass
+
+    def patch(self, relations):
+        pass
