@@ -1,3 +1,5 @@
+import os
+
 import app
 
 from resources.base_resource import BaseResource
@@ -46,7 +48,13 @@ class JobUploadSingleItem(BaseResource):
             required=True,
         )
         self.req.add_argument("info", required=True, help="File Information")
-        return self.create_single_job()
+        message = self.create_single_job()
+        app.ramq.send(
+            message,
+            exchange_name=os.getenv("EXCHANGE_NAME", "dams"),
+            routing_key=os.getenv("ROUTING_KEY", "dams.job_status"),
+        )
+        return message
 
 
 # Upload multiple files
@@ -66,4 +74,10 @@ class JobUploadMultipleItem(BaseResource):
             action="append",  # grabs multiple files
         )
         self.req.add_argument("info", required=True)
-        return self.create_multiple_jobs()
+        message = self.create_multiple_jobs()
+        app.ramq.send(
+            message,
+            exchange_name=os.getenv("EXCHANGE_NAME", "dams"),
+            routing_key=os.getenv("ROUTING_KEY", "dams.job_status"),
+        )
+        return message
