@@ -28,7 +28,8 @@ class Importer:
         if self.no_metadata_available(rights, copyright):
             return None
         new_metadata = self.get_new_metadata(rights, copyright)
-        if not (all_metadata := self.storage.get_collection_item_metadata("entities", object_id)):
+        all_metadata = self.storage.get_collection_item_metadata("entities", object_id)
+        if not all_metadata:
             all_metadata = new_metadata
         else:
             if self.metadata_up_to_date(new_metadata, all_metadata):
@@ -39,10 +40,9 @@ class Importer:
                 if ("key", "rights") in data.items() and not pd.isna(rights):
                     all_metadata[index] = new_metadata.pop()
             all_metadata = all_metadata + new_metadata
-        ret_metadata = self.storage.update_collection_item_metadata(
+        return self.storage.update_collection_item_metadata(
             "entities", object_id, all_metadata
         )
-        return ret_metadata
 
     def create_mediafile(self, object_id, file_name):
         data = {
