@@ -774,6 +774,7 @@
         "summary": "Create asset mediafile",
         "description": "Create entity mediafiles for a specific ID",
         "operationId": "createEntityIdMediafiles",
+
         "parameters": [
           {
             "name": "entityId",
@@ -784,6 +785,7 @@
               "type": "string"
             }
           }
+
         ],
         "responses": {
           "200": {
@@ -1075,7 +1077,7 @@
                 }
               }
             }
-          },"400": {"description": "Invalid Job Request"}, "405": {"description": "Invalid Input"}
+          },"400": {"description": "Invalid Job Request"}, "404": {"description": "Invalid Input"}
         }
       }
     },
@@ -1088,11 +1090,12 @@
           "operationId": "uploadSingleFile",
           "consumes": "multipart/form-data",
           "requestBody": {
+            "required": true,
             "content": {
               "multipart/form-data": {
                 "schema": {
                   "type": "object",
-                  "required": "true",
+
                   "properties": {
                     "asset": {
                       "type": "string",
@@ -1115,8 +1118,8 @@
             "400": {
               "description": "Invalid request"
             },
-            "405": {
-              "description": "Invalid input"
+            "404": {
+              "description": "Not Found"
             }
           }
         }
@@ -1129,11 +1132,11 @@
           "summary": "Upload Multiple files",
           "operationId": "uploadMultipleFiles",
         "requestBody": {
+          "required": true,
             "content": {
               "multipart/form-data": {
                 "schema": {
                   "type": "object",
-                  "required": "true",
                   "properties": {
                     "asset": {
                       "required": "true",
@@ -1154,10 +1157,10 @@
               "description": "Successful operation"
             },
             "400": {
-              "description": "Invalid request"
+              "description": "Bad request"
             },
-            "405": {
-              "description": "Invalid input"
+            "404": {
+              "description": "Not found"
             }
           }
         }
