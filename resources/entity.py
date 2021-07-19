@@ -1,7 +1,11 @@
+import werkzeug.datastructures
+from flask_restful import reqparse
+
 import app
 
 from flask import request
 from resources.base_resource import BaseResource
+from resources.extend_resources import get_filename
 
 
 class Entity(BaseResource):
@@ -158,8 +162,14 @@ class EntityMediafiles(BaseResource):
             "entities",
             id,
         )
+        # grab request data ---
+        req = reqparse.RequestParser()
+        # extract filename and extension  - this can be used to generate mediafile
+        filename_ext = get_filename(req)
+
         request_body = self.get_request_body()
         mediafile_id = request_body["_id"]
+
         mediafile = self.storage.add_mediafile_to_entity("entities", id, mediafile_id)
         return mediafile, 201
 
