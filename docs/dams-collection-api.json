@@ -37,6 +37,10 @@
      {
       "name": "jobs",
       "description": "Job Status module in DAMS"
+    },
+     {
+      "name": "relationships",
+      "description": "Entity Relationships module in DAMS"
     }
   ],
   "paths": {
@@ -822,10 +826,42 @@
         }
       }
     },
+    "/entities/{entityId}/relations": {
+      "get": {"tags": ["entity"],
+        "summary": "Get Relationships between entities",
+        "operationId": "getRelationsById",
+        "description": "Get  relations given a specific Entity ID",
+        "parameters": {
+          "name": "entityId",
+          "in": "path",
+          "description": "Entity ID",
+          "schema": {
+            "type": "string"
+          }
+        }
+      },
+      "post": {"tags": ["entity"],
+        "summary": "Add entity relationships",
+        "operationId": "postEntityRelations",
+        "requestBody": {
+          "description": "Entity Relationship Payload",
+          "require": true,
+          "content": {
+            "application/json": {
+              "type": "array",
+              "schema": {
+                "$ref":  "#/components/schemas/relations"
+              }
+            }
+          }
+        }
+      }
+
+    },
     "/mediafiles": {
       "post": {
         "tags": [
-          "mediafile"
+          "relationships"
         ],
         "summary": "Add a new mediafile",
         "operationId": "addMediafile",
@@ -1242,6 +1278,10 @@
   },
   "components": {
     "schemas": {
+      "relations": {
+        "type": "object",
+        "description": "Entity Relationship data object"
+      },
       "Singlefile": {
         "type": "object",
         "description": "upload single file",
