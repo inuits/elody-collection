@@ -68,7 +68,7 @@ class BaseResource(Resource):
         """ creates  single job """
         parsed = self.req.parse_args(self)
         data_fetch = self.get_job_by_signature(
-            self.generate_file_signature(parsed.get("asset"))
+            self.generate_file_signature(parsed.get("asset").filename)
         )
         message_id = str(uuid.uuid4())
         m_message = {
