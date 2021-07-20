@@ -827,7 +827,7 @@
       }
     },
     "/entities/{entityId}/relations": {
-      "get": {"tags": ["entity"],
+      "get": {"tags": ["relationships"],
         "summary": "Get Relationships between entities",
         "operationId": "getRelationsById",
         "description": "Get  relations given a specific Entity ID",
@@ -854,7 +854,7 @@
           }
         }
       },
-      "post": {"tags": ["entity"],
+      "post": {"tags": ["relationships"],
         "summary": "Add entity relationships",
         "operationId": "postEntityRelations",
         "requestBody": {
