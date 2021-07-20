@@ -883,7 +883,7 @@
     "/mediafiles": {
       "post": {
         "tags": [
-          "relationships"
+          "mediafile"
         ],
         "summary": "Add a new mediafile",
         "operationId": "addMediafile",
