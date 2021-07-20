@@ -52,7 +52,7 @@ class BaseResource(Resource):
 
     def get_job_by_signature(self, signature):
         """ This method is necessary for reuse in some parts of job creation """
-        return self.db["jobs"].find_one({"signature": signature})
+        return self.storage.get_jobs_from_collection('jobs', signature)
 
     def prepare_job_data(self, job_type):
         parse_data = self.req.parse_args(self)
@@ -64,20 +64,20 @@ class BaseResource(Resource):
         }
         return job_data
 
-    def create_single_job(self):
+    def create_single_job(self, file):
         """ creates  single job """
-        parsed = self.req.parse_args(self)
         data_fetch = self.get_job_by_signature(
-            self.generate_file_signature(parsed.get("asset").filename)
+            self.generate_file_signature(file)
         )
         message_id = str(uuid.uuid4())
+        file.sa
         m_message = {
             "data": {
                 "job_folder": os.path.join(
-                    self.location, self.job.get("asset").filename
+                    self.upload_source, file.filename
                 )
             },
-            "asset": parsed.get("asset").filename,
+            "asset": file.filename,
         }
         if data_fetch is None:
             save_job = self.storage.save_item_to_collection(
@@ -85,7 +85,7 @@ class BaseResource(Resource):
             )
             m_message["job_id"] = save_job["_id"]
         else:
-            abort(409, message=f'File {self.job.get("asset").filename} exists')
+            abort(409, message=f'File {file.filename} exists')
 
         m_message["message_id"] = message_id
 
@@ -117,10 +117,12 @@ class BaseResource(Resource):
 
     @staticmethod
     def generate_file_signature(file):
+        path = os.path.join(os.getenv("UPLOAD_SOURCE", "/mnt/media-import"), file)
         obj = hashlib.md5()
         size = 128 * obj.block_size
-        parts = file.read(size)
-        while parts:
-            obj.update(parts)
+        if file:
             parts = file.read(size)
+            while parts:
+                obj.update(parts)
+                parts = file.read(size)
         return obj.hexdigest()
