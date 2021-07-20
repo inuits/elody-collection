@@ -189,7 +189,7 @@ class EntityMediafilesCreate(BaseResource):
 
         parse_args = self.req.parse_args()
         file_name = parse_args.get('filename').filename
-        media_file = {"filename": file_name, "file_extension": file_name}
+        media_file = {"filename": file_name, "file_extension": file_name.split('.')[1]}
         mediafile = self.storage.save_item_to_collection("mediafiles", media_file)
         mediafile_id = mediafile["_id"]
         upload_location = "{}/upload/{}".format(self.storage_api_url, mediafile_id)
