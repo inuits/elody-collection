@@ -16,7 +16,7 @@ class BaseResource(Resource):
         self.storage = StorageManager().get_db_engine()
         self.storage_api_url = os.getenv("STORAGE_API_URL", "http://localhost:8001")
         self.upload_source = self.get_upload_source()
-        self.req = reqparse.RequestParser
+        self.req = reqparse.RequestParser()
 
     def get_upload_source(self):
         # may be subject to changes
@@ -68,7 +68,7 @@ class BaseResource(Resource):
         """ creates  single job """
         parsed = self.req.parse_args(self)
         data_fetch = self.get_job_by_signature(
-            generate_file_signature(parsed.get("asset"))
+            self.generate_file_signature(parsed.get("asset"))
         )
         message_id = str(uuid.uuid4())
         m_message = {
