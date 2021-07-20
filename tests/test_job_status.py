@@ -37,9 +37,8 @@ class JobStatusTest(BaseCase):
         ]
     )
 
-    def __init__(self):
-
-        super().__init__()
+    def setUp(self):
+        super().setUp()
         self.insert_single_id = ""
         self.insert_multiple_id = ""
 
