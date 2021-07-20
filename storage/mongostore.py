@@ -153,4 +153,9 @@ class MongoStorageManager:
         )
 
     def get_entity_relationships(self, collection, e_id):
-        return self.db[collection].find({"relation": e_id})
+        relations = list()
+        relation = self.db[collection].find({"relation": e_id})
+        if relation:
+            for item in relation:
+                relations.append(item)
+        return relations
