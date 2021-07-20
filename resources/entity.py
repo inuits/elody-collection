@@ -179,17 +179,17 @@ class EntityMediafilesCreate(BaseResource):
             "entities",
             id,
         )
-        req = reqparse.RequestParser()
-        req.add_argument(
+        self.req.add_argument(
             "filename",
+            location="files",
             required=False,
             type=werkzeug.datastructures.FileStorage,
             help="filename to be uploaded",
         )
-        parse_args = req.parse_args()
-        file_name = parse_args.get("filename").filename
-        file_ext = file_name.split(".")[1]
-        media_file = {"filename": file_name, "file_extension": file_ext}
+
+        parse_args = self.req.parse_args()
+        file_name = parse_args.get('filename').filename
+        media_file = {"filename": file_name, "file_extension": file_name}
         mediafile = self.storage.save_item_to_collection("mediafiles", media_file)
         mediafile_id = mediafile["_id"]
         upload_location = "{}/upload/{}".format(self.storage_api_url, mediafile_id)
@@ -199,7 +199,7 @@ class EntityMediafilesCreate(BaseResource):
 
         self.storage.patch_item_from_collection("mediafiles", mediafile_id, location)
         self.storage.add_mediafile_to_entity("entities", id, mediafile_id)
-        return upload_location, 201
+        return location, 201
 
 
 class EntityRelationships(BaseResource):
