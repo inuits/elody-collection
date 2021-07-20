@@ -1,4 +1,3 @@
-from flask_restful import reqparse
 
 import app
 
@@ -186,17 +185,19 @@ class EntityMediafilesCreate(BaseResource):
             type=werkzeug.datastructures.FileStorage,
             help="filename to be uploaded",
         )
-
         parse_args = self.req.parse_args()
-        file_name = parse_args.get('filename').filename
-        media_file = {"filename": file_name, "file_extension": file_name.split('.')[1]}
+        if parse_args.get("filename") is None:
+            media_file = dict()
+        else:
+            file_name = parse_args.get('filename').filename
+            media_file = {"filename": file_name, "file_extension": file_name.split('.')[1]}
+
         mediafile = self.storage.save_item_to_collection("mediafiles", media_file)
         mediafile_id = mediafile["_id"]
         upload_location = "{}/upload/{}".format(self.storage_api_url, mediafile_id)
         location = {
             "location": "{}/download/{}".format(self.storage_api_url, mediafile_id)
         }
-
         self.storage.patch_item_from_collection("mediafiles", mediafile_id, location)
         self.storage.add_mediafile_to_entity("entities", id, mediafile_id)
         return upload_location, 201
@@ -212,6 +213,8 @@ class EntityRelationships(BaseResource):
 
     def post(self, entity_id):
         self.abort_if_item_doesnt_exist('entities', entity_id)
+        body = self.get_request_body()
+        return body
 
     def put(self, relations):
         pass
