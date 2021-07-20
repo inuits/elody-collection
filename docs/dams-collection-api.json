@@ -831,12 +831,26 @@
         "summary": "Get Relationships between entities",
         "operationId": "getRelationsById",
         "description": "Get  relations given a specific Entity ID",
-        "parameters": {
-          "name": "entityId",
-          "in": "path",
-          "description": "Entity ID",
-          "schema": {
-            "type": "string"
+         "parameters": [
+          {
+            "name": "entityId",
+            "in": "path",
+            "description": "Entity id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Operation"
+          },
+          "400": {
+            "description": "Invalid Request"
+          },
+          "404": {
+            "description": "Entity with the ID provided does not exists"
           }
         }
       },
@@ -845,14 +859,22 @@
         "operationId": "postEntityRelations",
         "requestBody": {
           "description": "Entity Relationship Payload",
-          "require": true,
           "content": {
             "application/json": {
-              "type": "array",
               "schema": {
+                "type": "array",
                 "$ref":  "#/components/schemas/relations"
               }
             }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful operation"
+          }, "400": {
+            "description": "Bad Request"
+          }, "404": {
+            "description": "Cannot proceed with relationship, one of the entities does not exist "
           }
         }
       }
@@ -1138,7 +1160,6 @@
           ],
           "summary": "Upload Single File",
           "operationId": "uploadSingleFile",
-          "consumes": "multipart/form-data",
           "requestBody": {
             "required": true,
             "content": {
@@ -1189,7 +1210,6 @@
                   "type": "object",
                   "properties": {
                     "asset": {
-                      "required": "true",
                       "type": "array",
                       "format": "binary"
                     },
@@ -1296,7 +1316,7 @@
         "description": "upload Multiple files",
         "properties": {
           "file_name": {
-            "type": "formData"
+            "type": "string"
           }
         }
       },
