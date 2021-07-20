@@ -199,7 +199,7 @@ class EntityMediafilesCreate(BaseResource):
 
         self.storage.patch_item_from_collection("mediafiles", mediafile_id, location)
         self.storage.add_mediafile_to_entity("entities", id, mediafile_id)
-        return location, 201
+        return upload_location, 201
 
 
 class EntityRelationships(BaseResource):
