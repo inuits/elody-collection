@@ -58,7 +58,7 @@ from resources.entity import (
     EntityMetadata,
     EntityMetadataKey,
     EntityMediafiles,
-    EntityMediafilesCreate,
+    EntityMediafilesCreate, EntityRelationships,
 )
 from resources.importer import ImporterStart, ImporterDirectories
 from resources.job_status import (
@@ -79,7 +79,7 @@ api.add_resource(EntityMetadataKey, "/entities/<string:id>/metadata/<string:key>
 api.add_resource(EntityMetadata, "/entities/<string:id>/metadata")
 api.add_resource(EntityDetail, "/entities/<string:id>")
 api.add_resource(Entity, "/entities")
-
+api.add_resource(EntityRelationships, '/entity/<string:id>/relations')
 api.add_resource(ImporterStart, "/importer/start")
 api.add_resource(ImporterDirectories, "/importer/directories")
 
