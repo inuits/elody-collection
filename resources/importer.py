@@ -20,7 +20,7 @@ class ImporterStart(BaseResource):
     def __init__(self):
         super().__init__()
         global importer
-        importer = Importer(self.storage, self.storage_api_url, self.upload_source)
+        importer = Importer(self.storage, self.storage_api_url, self.upload_location)
 
     @app.oidc.accept_token(
         require_token=BaseResource.token_required, scopes_required=["openid"]
@@ -32,13 +32,13 @@ class ImporterStart(BaseResource):
             "message_id": message_id,
             "data": {
                 "upload_folder": os.path.join(
-                    self.upload_source, request_body["upload_folder"]
+                    self.upload_location, request_body["upload_folder"]
                 )
             },
         }
 
         app.ramq.send(message, routing_key="dams.import_start", exchange_name="dams")
-        return message
+        return message, 201
 
 
 class ImporterDirectories(BaseResource):
@@ -47,7 +47,49 @@ class ImporterDirectories(BaseResource):
     )
     def get(self):
         directories = [
-            str(x[0]).removeprefix(self.upload_source)
-            for x in os.walk(self.upload_source)
+            str(x[0]).removeprefix(self.upload_location)
+            for x in os.walk(self.upload_location)
         ]
         return jsonify(directories)
+
+
+class ImporterSources(BaseResource):
+    @app.oidc.accept_token(
+        require_token=BaseResource.token_required, scopes_required=["openid"]
+    )
+    def post(self):
+        request_body = self.get_request_body()
+        request_body["identifiers"] = ["0"]
+        request_body["upload_location"] = ""
+        self.storage.delete_item_from_collection("config", "0")
+        config = self.storage.save_item_to_collection("config", request_body)
+        return config["upload_sources"], 201
+
+    @app.oidc.accept_token(
+        require_token=BaseResource.token_required, scopes_required=["openid"]
+    )
+    def get(self):
+        if config := self.storage.get_item_from_collection_by_id("config", "0"):
+            return config["upload_sources"]
+        else:
+            return []
+
+
+class ImporterLocation(BaseResource):
+    @app.oidc.accept_token(
+        require_token=BaseResource.token_required, scopes_required=["openid"]
+    )
+    def post(self):
+        request_body = self.get_request_body()
+        request_body["identifiers"] = ["0"]
+        config = self.storage.patch_item_from_collection("config", "0", request_body)
+        return config["upload_location"], 201
+
+    @app.oidc.accept_token(
+        require_token=BaseResource.token_required, scopes_required=["openid"]
+    )
+    def get(self):
+        if config := self.storage.get_item_from_collection_by_id("config", "0"):
+            return config["upload_location"]
+        else:
+            return ""

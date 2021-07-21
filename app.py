@@ -61,7 +61,12 @@ from resources.entity import (
     EntityMediafilesCreate,
     EntityRelationships,
 )
-from resources.importer import ImporterStart, ImporterDirectories
+from resources.importer import (
+    ImporterStart,
+    ImporterDirectories,
+    ImporterLocation,
+    ImporterSources,
+)
 from resources.job_status import (
     JobStatusByUser,
     JobStatusById,
@@ -83,6 +88,8 @@ api.add_resource(Entity, "/entities")
 
 api.add_resource(ImporterStart, "/importer/start")
 api.add_resource(ImporterDirectories, "/importer/directories")
+api.add_resource(ImporterLocation, "/importer/location")
+api.add_resource(ImporterSources, "/importer/sources")
 
 api.add_resource(JobUploadMultipleItem, "/jobs/upload/multiple")
 api.add_resource(JobUploadSingleItem, "/jobs/upload/single")

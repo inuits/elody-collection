@@ -14,16 +14,16 @@ class BaseResource(Resource):
     def __init__(self):
         self.storage = StorageManager().get_db_engine()
         self.storage_api_url = os.getenv("STORAGE_API_URL", "http://localhost:8001")
-        self.upload_source = self.get_upload_source()
+        self.upload_location = self.get_upload_location()
         self.req = reqparse.RequestParser()
 
-    def get_upload_source(self):
+    def get_upload_location(self):
         # may be subject to changes
         config = self.storage.get_items_from_collection("config")
         return (
-            config["upload_source"]
+            config["results"][0]["upload_location"]
             if config["count"]
-            else os.getenv("UPLOAD_SOURCE", "/mnt/media-import")
+            else os.getenv("UPLOAD_LOCATION", "/mnt/media-import")
         )
 
     def get_request_body(self):
