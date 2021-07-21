@@ -829,7 +829,7 @@
     "/entity/{entityId}/relations": {
       "get": {"tags": ["relationships"],
         "summary": "Get Relationships between entities",
-        "operationId": "getRelationsById",
+        "operationId": "getRelationshipsById",
         "description": "Get  relations given a specific Entity ID",
          "parameters": [
           {
@@ -864,7 +864,7 @@
       },
       "post": {"tags": ["relationships"],
         "summary": "Add entity relationships",
-        "operationId": "postEntityRelations",
+        "operationId": "addRelations",
         "requestBody": {
           "description": "Entity Relationship Payload",
           "content": {
@@ -882,7 +882,7 @@
             "name": "entityId",
             "in": "path",
             "required": true,
-            "description": "entity Id ",
+            "description": "Entity Id ",
             "schema": {
               "type": "string"
             }
