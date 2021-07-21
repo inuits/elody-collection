@@ -11,18 +11,22 @@ class ImporterTest(BaseCase):
                 "upload_folder": folder,
             }
         )
-        response = self.app.post(
-            "/importer/start",
-            headers={"Content-Type": "application/json"},
-            data=upload_data,
-        )
-        self.assertEqual(200, response.status_code)
+        response = self.send_post_request("/importer/start", upload_data)
         self.assertEqual(
             response.json["data"]["upload_folder"],
-            os.path.join(self.upload_source, folder),
+            os.path.join(self.upload_location, folder),
         )
 
-    def get_from_db(self, endpoint):
+    def send_post_request(self, endpoint, json_data):
+        response = self.app.post(
+            endpoint,
+            headers={"Content-Type": "application/json"},
+            data=json_data,
+        )
+        self.assertEqual(201, response.status_code)
+        return response
+
+    def send_get_request(self, endpoint):
         response = self.app.get(
             endpoint,
             headers={"Content-Type": "application/json"},
@@ -36,7 +40,7 @@ class ImporterTest(BaseCase):
         self.validate_db_response("/mediafiles", "mediafile", mediafile_count)
 
     def validate_db_response(self, endpoint, entity_type, count):
-        response = self.get_from_db(endpoint)
+        response = self.send_get_request(endpoint)
         self.assertEqual(response.json["count"], count)
         self.assertEqual(len(response.json["results"]), response.json["count"])
         for obj in response.json["results"]:
@@ -64,13 +68,13 @@ class ImporterTest(BaseCase):
             self.valid_mediafile(obj)
 
     def test_get_directories(self):
-        response = self.get_from_db("/importer/directories")
+        response = self.send_get_request("/importer/directories")
         self.assertEqual(list, type(response.json))
         self.assertEqual(
             response.json,
             [
-                str(x[0]).removeprefix(self.upload_source)
-                for x in os.walk(self.upload_source)
+                str(x[0]).removeprefix(self.upload_location)
+                for x in os.walk(self.upload_location)
             ],
         )
 
@@ -89,3 +93,79 @@ class ImporterTest(BaseCase):
 
     def test_import_csv_metadata(self):
         self.run_test("metadata", 4, 7)
+
+    def set_upload_sources(self, upload_sources_json, upload_sources):
+        response = self.send_post_request("/importer/sources", upload_sources_json)
+        self.assertEqual(list, type(response.json))
+        self.assertEqual(upload_sources, response.json)
+
+    def validate_upload_sources(self, upload_sources):
+        response = self.send_get_request("/importer/sources")
+        self.assertEqual(list, type(response.json))
+        self.assertEqual(upload_sources, response.json)
+
+    def set_upload_location(self, upload_location_json, upload_location):
+        response = self.send_post_request("/importer/location", upload_location_json)
+        self.assertEqual(str, type(response.json))
+        self.assertEqual(upload_location, response.json)
+
+    def validate_upload_location(self, upload_location):
+        response = self.send_get_request("/importer/location")
+        self.assertEqual(str, type(response.json))
+        self.assertEqual(upload_location, response.json)
+
+    def test_upload_sources(self):
+        self.validate_upload_sources([])
+
+        upload_sources = ["/mnt/upload_source", "/mnt/ntfs_share"]
+        upload_sources_json = json.dumps(
+            {
+                "upload_sources": upload_sources,
+            }
+        )
+        self.set_upload_sources(upload_sources_json, upload_sources)
+        self.validate_upload_sources(upload_sources)
+        self.validate_upload_location("")
+
+        # Try to overwrite
+        new_upload_sources = ["/mnt/new_upload_source", "/mnt/new_ntfs_share"]
+        new_upload_sources_json = json.dumps(
+            {
+                "upload_sources": new_upload_sources,
+            }
+        )
+        self.set_upload_sources(new_upload_sources_json, new_upload_sources)
+        self.validate_upload_sources(new_upload_sources)
+        self.validate_upload_location("")
+
+    def test_upload_location(self):
+        self.validate_upload_location("")
+
+        upload_sources = ["/mnt/upload_source", "/mnt/ntfs_share"]
+        upload_sources_json = json.dumps(
+            {
+                "upload_sources": upload_sources,
+            }
+        )
+        self.set_upload_sources(upload_sources_json, upload_sources)
+        upload_location = "/mnt/upload_source"
+        upload_location_json = json.dumps(
+            {
+                "upload_location": upload_location,
+            }
+        )
+        self.set_upload_location(upload_location_json, upload_location)
+        self.validate_upload_location(upload_location)
+
+        new_upload_location = "/mnt/nfts_share"
+        new_upload_location_json = json.dumps(
+            {
+                "upload_location": new_upload_location,
+            }
+        )
+        self.set_upload_location(new_upload_location_json, new_upload_location)
+        self.validate_upload_location(new_upload_location)
+
+        # Setting new sources clears location
+        self.set_upload_sources(upload_sources_json, upload_sources)
+        self.validate_upload_location("")
