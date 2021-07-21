@@ -1,9 +1,8 @@
-
 import app
+import werkzeug.datastructures
 
 from flask import request
 from resources.base_resource import BaseResource
-import werkzeug.datastructures
 
 
 class Entity(BaseResource):
@@ -189,8 +188,11 @@ class EntityMediafilesCreate(BaseResource):
         if parse_args.get("filename") is None:
             media_file = dict()
         else:
-            file_name = parse_args.get('filename').filename
-            media_file = {"filename": file_name, "file_extension": file_name.split('.')[1]}
+            file_name = parse_args.get("filename").filename
+            media_file = {
+                "filename": file_name,
+                "file_extension": file_name.split(".")[1],
+            }
 
         mediafile = self.storage.save_item_to_collection("mediafiles", media_file)
         mediafile_id = mediafile["_id"]
@@ -212,7 +214,7 @@ class EntityRelationships(BaseResource):
         return self.storage.get_entity_relationships("entities", entity_id)
 
     def post(self, entity_id):
-        self.abort_if_item_doesnt_exist('entities', entity_id)
+        self.abort_if_item_doesnt_exist("entities", entity_id)
         body = self.get_request_body()
         return body
 

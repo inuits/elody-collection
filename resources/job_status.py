@@ -1,12 +1,10 @@
 import app
 import json
 import os
-
 import requests
+import werkzeug.datastructures
 
 from resources.base_resource import BaseResource
-
-import werkzeug.datastructures
 
 
 class JobStatusById(BaseResource):
@@ -107,7 +105,7 @@ class StartJobs(BaseResource):
                 job["status"] = "Finished" if save.status_code == 201 else "Failed"
         else:
             # process single jobs
-            save_file = self.process_data(+ data["asset"])
+            save_file = self.process_data(+data["asset"])
             job["status"] = "Finished" if save_file.status_code == 201 else "Failed"
         # Update Job Status
         self.storage.patch_item_from_collection("jobs", job["job_id"], job)
@@ -115,4 +113,6 @@ class StartJobs(BaseResource):
 
     def process_data(self, path):
         file_name = os.path.basename(StartJobs.mount_point + path)
-        return requests.post(f"{StartJobs.storage_api}/upload/{os.path.basename(file_name)}")
+        return requests.post(
+            f"{StartJobs.storage_api}/upload/{os.path.basename(file_name)}"
+        )

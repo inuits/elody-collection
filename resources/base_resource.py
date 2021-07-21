@@ -1,11 +1,10 @@
 import hashlib
-
-from flask_restful import Resource, abort, reqparse
-from flask import request, g
-
 import os
-from storage.storagemanager import StorageManager
 import uuid
+
+from flask import request, g
+from flask_restful import Resource, abort, reqparse
+from storage.storagemanager import StorageManager
 from werkzeug.exceptions import BadRequest
 
 
@@ -52,7 +51,7 @@ class BaseResource(Resource):
 
     def get_job_by_signature(self, signature):
         """ This method is necessary for reuse in some parts of job creation """
-        return self.storage.get_jobs_from_collection('jobs', signature)
+        return self.storage.get_jobs_from_collection("jobs", signature)
 
     def prepare_job_data(self, job_type):
         parse_data = self.req.parse_args(self)
@@ -66,17 +65,11 @@ class BaseResource(Resource):
 
     def create_single_job(self, file):
         """ creates  single job """
-        data_fetch = self.get_job_by_signature(
-            self.generate_file_signature(file)
-        )
+        data_fetch = self.get_job_by_signature(self.generate_file_signature(file))
         message_id = str(uuid.uuid4())
         file.sa
         m_message = {
-            "data": {
-                "job_folder": os.path.join(
-                    self.upload_source, file.filename
-                )
-            },
+            "data": {"job_folder": os.path.join(self.upload_source, file.filename)},
             "asset": file.filename,
         }
         if data_fetch is None:
@@ -85,7 +78,7 @@ class BaseResource(Resource):
             )
             m_message["job_id"] = save_job["_id"]
         else:
-            abort(409, message=f'File {file.filename} exists')
+            abort(409, message=f"File {file.filename} exists")
 
         m_message["message_id"] = message_id
 

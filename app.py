@@ -58,36 +58,37 @@ from resources.entity import (
     EntityMetadata,
     EntityMetadataKey,
     EntityMediafiles,
-    EntityMediafilesCreate, EntityRelationships,
+    EntityMediafilesCreate,
+    EntityRelationships,
 )
 from resources.importer import ImporterStart, ImporterDirectories
 from resources.job_status import (
-    JobStatusById,
     JobStatusByUser,
+    JobStatusById,
+    JobsByAsset,
     JobUploadSingleItem,
     JobUploadMultipleItem,
-    JobsByAsset,
 )
 from resources.mediafile import Mediafile, MediafileDetail
 from resources.spec import OpenAPISpec, AsyncAPISpec
 from resources.tenant import Tenant, TenantDetail
 
-
+api.add_resource(EntityRelationships, "/entity/<string:id>/relations")
 api.add_resource(EntityMediafilesCreate, "/entities/<string:id>/mediafiles/create")
 api.add_resource(EntityMediafiles, "/entities/<string:id>/mediafiles")
 api.add_resource(EntityMetadataKey, "/entities/<string:id>/metadata/<string:key>")
 api.add_resource(EntityMetadata, "/entities/<string:id>/metadata")
 api.add_resource(EntityDetail, "/entities/<string:id>")
 api.add_resource(Entity, "/entities")
-api.add_resource(EntityRelationships, '/entity/<string:id>/relations')
+
 api.add_resource(ImporterStart, "/importer/start")
 api.add_resource(ImporterDirectories, "/importer/directories")
 
+api.add_resource(JobUploadMultipleItem, "/jobs/upload/multiple")
+api.add_resource(JobUploadSingleItem, "/jobs/upload/single")
+api.add_resource(JobsByAsset, "/jobs/<asset>")
 api.add_resource(JobStatusById, "/jobs/<string:job_id>")
 api.add_resource(JobStatusByUser, "/jobs")
-api.add_resource(JobsByAsset, "/jobs/<asset>")
-api.add_resource(JobUploadSingleItem, "/jobs/upload/single")
-api.add_resource(JobUploadMultipleItem, "/jobs/upload/multiple")
 
 api.add_resource(MediafileDetail, "/mediafiles/<string:id>")
 api.add_resource(Mediafile, "/mediafiles")

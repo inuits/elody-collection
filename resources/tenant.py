@@ -1,9 +1,8 @@
 import app
 
-from flask_restful import Resource, abort
+from flask_restful import abort
 from resources.base_resource import BaseResource
 from validator import TenantValidator
-
 
 validator = TenantValidator()
 
