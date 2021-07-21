@@ -5,10 +5,10 @@ import requests
 
 
 class Importer:
-    def __init__(self, storage, storage_api_url, upload_source):
+    def __init__(self, storage, storage_api_url):
         self.storage = storage
         self.storage_api_url = storage_api_url
-        self.upload_source = upload_source
+        self.upload_location = self.storage.get_item_from_collection_by_id("config", "0")["upload_location"]
 
     def metadata_up_to_date(self, new_metadata, all_metadata):
         return all(elem in all_metadata for elem in new_metadata)
@@ -85,7 +85,7 @@ class Importer:
                 file_path = (
                     row["Padnaam"][1:] if row["Padnaam"][0] == "/" else row["Padnaam"]
                 )
-            file_path = os.path.join(self.upload_source, file_path)
+            file_path = os.path.join(self.upload_location, file_path)
         return file_path
 
     def is_malformed_row(self, row):
