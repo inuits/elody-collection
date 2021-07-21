@@ -826,7 +826,7 @@
         }
       }
     },
-    "/entities/{entityId}/relations": {
+    "/entity/{entityId}/relations": {
       "get": {"tags": ["relationships"],
         "summary": "Get Relationships between entities",
         "operationId": "getRelationsById",
@@ -844,6 +844,14 @@
         ],
         "responses": {
           "200": {
+            "content": {
+             "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {"$ref":  "#/components/schemas/relations"}
+
+              }
+            }},
             "description": "Successful Operation"
           },
           "400": {
@@ -863,17 +871,39 @@
             "application/json": {
               "schema": {
                 "type": "array",
-                "$ref":  "#/components/schemas/relations"
+                "items": {"$ref":  "#/components/schemas/relations"}
+
               }
             }
           }
         },
+        "parameters": [
+          {
+            "name": "entityId",
+            "in": "path",
+            "required": true,
+            "description": "entity Id ",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Successful operation"
-          }, "400": {
+            "content": {
+             "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {"$ref":  "#/components/schemas/relations"}
+
+              }
+            }},
+            "description": "Successful Operation"
+          },
+          "400": {
             "description": "Bad Request"
-          }, "404": {
+          },
+          "404": {
             "description": "Cannot proceed with relationship, one of the entities does not exist "
           }
         }
@@ -1300,6 +1330,16 @@
     "schemas": {
       "relations": {
         "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "relationship type"
+          },
+          "type": {
+            "type": "string"
+          }
+        },
         "description": "Entity Relationship data object"
       },
       "Singlefile": {
