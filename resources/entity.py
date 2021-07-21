@@ -1,8 +1,8 @@
 import app
-import werkzeug.datastructures
 
 from flask import request
 from resources.base_resource import BaseResource
+import werkzeug.datastructures
 
 
 class Entity(BaseResource):
@@ -186,6 +186,7 @@ class EntityMediafilesCreate(BaseResource):
         )
         parse_args = self.req.parse_args()
         if parse_args.get("filename") is None:
+            # in case a user did not provide filename in payload, return an empty dictionary
             media_file = dict()
         else:
             file_name = parse_args.get("filename").filename
@@ -210,13 +211,55 @@ class EntityRelationships(BaseResource):
         require_token=BaseResource.token_required, scopes_required=["openId"]
     )
     def get(self, entity_id):
-        self.abort_if_item_doesnt_exist("entities", entity_id)
-        return self.storage.get_entity_relationships("entities", entity_id)
+        entity = self.abort_if_item_doesnt_exist("entities", entity_id)
+        try:
+            related = entity["relations"]
+        except KeyError as e:
+            related = {"message": f"Entity has no {e} with other Entities "}, 400
+        return related
 
     def post(self, entity_id):
-        self.abort_if_item_doesnt_exist("entities", entity_id)
-        body = self.get_request_body()
-        return body
+        relation_pass = list()
+        relation_fail = list()
+        message = dict()
+        initiator = self.abort_if_item_doesnt_exist("entities", entity_id)
+        request_body = self.get_request_body()
+        initiator_reference = {"id": initiator["_id"], "type": initiator["type"]}
+        for relate in request_body:
+            # check if provided Id for the destination entity exists
+            rel = self.storage.get_item_from_collection_by_id("entities", relate["id"])
+            if rel:
+                relation_pass.append(relate)
+                try:
+                    existing_relationships = rel["relations"]
+                except KeyError:
+                    existing_relationships = None
+                if existing_relationships is None:
+                    rel["relations"] = [initiator_reference]
+                else:
+                    rel["relations"].append(
+                        initiator_reference
+                    ) if initiator_reference not in rel[
+                        "relations"
+                    ] else relation_fail.append(
+                        relate
+                    )
+                # save entity relationship
+                self.storage.patch_item_from_collection("entities", rel["_id"], rel)
+            else:
+                relation_fail.append(relate)
+        failures = len(relation_fail)  # number of failed relationships
+        passes = len(relation_pass)  # number of passed relationships
+        message["failed_relations"] = failures
+        message["passed_relations"] = passes
+        message[
+            "message"
+        ] = f"{f'{failures} relations failed' if failures>0 else ''}  {f'{passes} relations passed' if passes>0 else ''} "
+        message["status"] = False if failures > 0 else True
+        initiator["relations"] = relation_pass
+        # Save relationship for initiator entity
+        self.storage.patch_item_from_collection("entities", entity_id, initiator)
+        return message, 201 if message["status"] else 400
 
     def put(self, relations):
         pass
