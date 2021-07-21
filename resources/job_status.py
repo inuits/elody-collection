@@ -1,10 +1,14 @@
+from json import JSONDecodeError
+
 import app
 import json
 import os
+
 import requests
-import werkzeug.datastructures
 
 from resources.base_resource import BaseResource
+
+import werkzeug.datastructures
 
 
 class JobStatusById(BaseResource):
@@ -45,15 +49,15 @@ class JobUploadSingleItem(BaseResource):
             type=werkzeug.datastructures.FileStorage,
             location="files",
             help="Image is required",
-            required=True,
         )
         self.req.add_argument("info", required=True, help="File Information")
-        message = self.create_single_job()
-        app.ramq.send(
-            message,
-            exchange_name=os.getenv("EXCHANGE_NAME", "dams"),
-            routing_key=os.getenv("ROUTING_KEY", "dams.job_status"),
-        )
+        message = self.create_single_job(self.req.parse_args().get("asset"))
+        if message.status_code == 201:
+            app.ramq.send(
+                message,
+                exchange_name=os.getenv("EXCHANGE_NAME", "dams"),
+                routing_key=os.getenv("ROUTING_KEY", "dams.job_status"),
+            )
         return message
 
 
@@ -88,27 +92,32 @@ class JobUploadMultipleItem(BaseResource):
     routing_key=os.getenv("ROUTING_KEY", "dams.job_status"),
 )
 class StartJobs(BaseResource):
-    mount_point = os.getenv("MOUNT_POINT", "")
     storage_api = os.getenv("STORAGE_API_URL", "http://localhost:8001")
 
     def job_status(self, body):
-        data = json.loads(body)
-        # fetch job from collection
-        job = self.storage.get_jobs_from_collection("jobs", data["job_id"])
-        job["status"] = "In-Progress"
-        # Update Job Status
-        self.storage.patch_item_from_collection("jobs", job["job_id"], job)
-        # process multiple jobs
-        if data["job_type"] == "multiple":
-            for data in data["data"]:
-                save = self.process_data(data["job_folder"])
-                job["status"] = "Finished" if save.status_code == 201 else "Failed"
-        else:
-            # process single jobs
-            save_file = self.process_data(+data["asset"])
-            job["status"] = "Finished" if save_file.status_code == 201 else "Failed"
-        # Update Job Status
-        self.storage.patch_item_from_collection("jobs", job["job_id"], job)
+        try:
+            data = json.loads(body)
+            print(data)
+
+            # fetch job from collection
+            job = self.storage.get_jobs_from_collection("jobs", data["job_id"])
+            job["status"] = "In-Progress"
+            # Update Job Status
+            self.storage.patch_item_from_collection("jobs", job["job_id"], job)
+            # process multiple jobs
+            if data["job_type"] == "multiple":
+                for data in data["data"]:
+                    save = self.process_data(data["job_folder"])
+                    job["status"] = "Finished" if save.status_code == 201 else "Failed"
+            else:
+                # process single jobs
+                save_file = self.process_data(+data["asset"])
+                job["status"] = "Finished" if save_file.status_code == 201 else "Failed"
+            # Update Job Status
+            self.storage.patch_item_from_collection("jobs", job["job_id"], job)
+        except JSONDecodeError as e:
+            pass
+
         return True
 
     def process_data(self, path):
