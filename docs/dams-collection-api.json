@@ -907,8 +907,97 @@
             "description": "Cannot proceed with relationship, one of the entities does not exist "
           }
         }
-      }
+      },
+      "put": {"tags": ["relationships"],
+        "summary": "modify entity relationships",
+        "operationId": "putRelations",
+        "requestBody": {
+          "description": "Entity Relationship Payload",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {"$ref":  "#/components/schemas/relations"}
 
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "entityId",
+            "in": "path",
+            "required": true,
+            "description": "Entity Id ",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+             "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {"$ref":  "#/components/schemas/relations"}
+
+              }
+            }},
+            "description": "Successful Operation"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Entity modification failed "
+          }
+        }
+      },
+      "patch": {"tags": ["relationships"],
+        "summary": "patch entity relationships",
+        "operationId": "patchRelations",
+        "requestBody": {
+          "description": "Entity Relationship Payload",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {"$ref":  "#/components/schemas/relations"}
+
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "entityId",
+            "in": "path",
+            "required": true,
+            "description": "Entity Id ",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+             "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {"$ref":  "#/components/schemas/relations"}
+
+              }
+            }},
+            "description": "Successful Operation"
+          },
+          "400": {
+            "description": "Bad Request"
+          }
+
+        }
+      }
     },
     "/mediafiles": {
       "post": {
