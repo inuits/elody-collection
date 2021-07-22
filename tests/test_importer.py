@@ -5,6 +5,9 @@ from tests.base_case import BaseCase
 
 
 class ImporterTest(BaseCase):
+    def get_current_upload_location(self):
+        return self.storage.get_item_from_collection_by_id("config", "0")["upload_location"]
+
     def import_csv(self, folder):
         upload_data = json.dumps(
             {
@@ -14,7 +17,7 @@ class ImporterTest(BaseCase):
         response = self.send_post_request("/importer/start", upload_data)
         self.assertEqual(
             response.json["data"]["upload_folder"],
-            os.path.join(self.upload_location, folder),
+            os.path.join(self.get_current_upload_location(), folder),
         )
 
     def send_post_request(self, endpoint, json_data):
@@ -69,12 +72,13 @@ class ImporterTest(BaseCase):
 
     def test_get_directories(self):
         response = self.send_get_request("/importer/directories")
+        upload_location = self.get_current_upload_location()
         self.assertEqual(list, type(response.json))
         self.assertEqual(
             response.json,
             [
-                str(x[0]).removeprefix(self.upload_location)
-                for x in os.walk(self.upload_location)
+                str(x[0]).removeprefix(upload_location)
+                for x in os.walk(upload_location)
             ],
         )
 
@@ -171,3 +175,18 @@ class ImporterTest(BaseCase):
         # Setting new sources clears location
         self.set_upload_sources(upload_sources_json, upload_sources)
         self.validate_upload_location("")
+
+    def test_import_from_other_location(self):
+        self.run_test("location_test", 0, 0)
+        new_upload_location = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "other_csv_dir"
+        )
+        new_upload_location_json = json.dumps(
+            {
+                "upload_location": new_upload_location,
+            }
+        )
+        self.validate_upload_location("/home/gverm/Desktop/Work/inuits-dams-docker/collection-api/tests/csv")
+        self.set_upload_location(new_upload_location_json, new_upload_location)
+        self.validate_upload_location("/home/gverm/Desktop/Work/inuits-dams-docker/collection-api/tests/other_csv_dir")
+        self.run_test("location_test", 1, 1)
