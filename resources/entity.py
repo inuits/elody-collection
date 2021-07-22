@@ -1,8 +1,8 @@
 import app
+import werkzeug.datastructures
 
 from flask import request
 from resources.base_resource import BaseResource
-import werkzeug.datastructures
 
 
 class Entity(BaseResource):
@@ -254,10 +254,10 @@ class EntityRelationships(BaseResource):
         passes = len(relation_pass)  # number of passed relationships
         message["failed_relations"] = failures
         message["passed_relations"] = passes
-        message[
-            "message"
-        ] = f"{f'{failures} relationship(s) failed' if failures > 0 else ''} " \
+        message["message"] = (
+            f"{f'{failures} relationship(s) failed' if failures > 0 else ''} "
             f" {f'{passes} relationship(s) passed' if passes > 0 else ''} "
+        )
         message["status"] = False if failures > 0 else True
         initiator["relations"] = relation_pass
         # Save relationship for initiator entity
@@ -275,12 +275,10 @@ class EntityRelationships(BaseResource):
         return {"message": "entity relationship updated successfully"}
 
     def patch(self, entity_id):
-        entity = self.abort_if_item_doesnt_exist('entities', entity_id)
+        entity = self.abort_if_item_doesnt_exist("entities", entity_id)
         try:
-            entity['relations'] = self.get_request_body()
-            self.storage.patch_item_from_collection('entities', entity_id, entity)
-            return entity['relations'], 201
+            entity["relations"] = self.get_request_body()
+            self.storage.patch_item_from_collection("entities", entity_id, entity)
+            return entity["relations"], 201
         except KeyError:
             return f"Entity Relationships patching failed", 400
-
-
