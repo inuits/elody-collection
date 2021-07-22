@@ -3,6 +3,7 @@ import os
 import uuid
 
 from flask import jsonify
+from flask_restful import abort
 from resources.base_resource import BaseResource
 from workers.importer import Importer
 
@@ -19,17 +20,14 @@ def csv_import(body):
 class ImporterStart(BaseResource):
     def __init__(self):
         super().__init__()
-        global importer
-        importer = Importer(self.storage, self.storage_api_url)
 
     @app.oidc.accept_token(
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )
     def post(self):
         request_body = self.get_request_body()
-        upload_location = self.storage.get_item_from_collection_by_id("config", "0")[
-            "upload_location"
-        ]
+        config = self.abort_if_item_doesnt_exist("config", "0")
+        upload_location = self.abort_if_location_not_set(config)
         message_id = str(uuid.uuid4())
         message = {
             "message_id": message_id,
@@ -40,6 +38,10 @@ class ImporterStart(BaseResource):
             },
         }
 
+        # Defer init of Importer until it's verified that request can go through
+        global importer
+        importer = Importer(self.storage, self.storage_api_url)
+
         app.ramq.send(message, routing_key="dams.import_start", exchange_name="dams")
         return message, 201
 
@@ -49,9 +51,8 @@ class ImporterDirectories(BaseResource):
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )
     def get(self):
-        upload_location = self.storage.get_item_from_collection_by_id("config", "0")[
-            "upload_location"
-        ]
+        config = self.abort_if_item_doesnt_exist("config", "0")
+        upload_location = self.abort_if_location_not_set(config)
         directories = [
             str(x[0]).removeprefix(upload_location) for x in os.walk(upload_location)
         ]
@@ -65,7 +66,6 @@ class ImporterSources(BaseResource):
     def post(self):
         request_body = self.get_request_body()
         request_body["identifiers"] = ["0"]
-        request_body["upload_location"] = ""
         self.storage.delete_item_from_collection("config", "0")
         config = self.storage.save_item_to_collection("config", request_body)
         return config["upload_sources"], 201
@@ -74,10 +74,7 @@ class ImporterSources(BaseResource):
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )
     def get(self):
-        if config := self.storage.get_item_from_collection_by_id("config", "0"):
-            return config["upload_sources"]
-        else:
-            return []
+        return self.abort_if_item_doesnt_exist("config", "0")["upload_sources"]
 
 
 class ImporterLocation(BaseResource):
@@ -85,16 +82,15 @@ class ImporterLocation(BaseResource):
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )
     def post(self):
+        config = self.abort_if_item_doesnt_exist("config", "0")
         request_body = self.get_request_body()
-        request_body["identifiers"] = ["0"]
-        config = self.storage.patch_item_from_collection("config", "0", request_body)
+        config["upload_location"] = request_body["upload_location"]
+        config = self.storage.patch_item_from_collection("config", "0", config)
         return config["upload_location"], 201
 
     @app.oidc.accept_token(
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )
     def get(self):
-        if config := self.storage.get_item_from_collection_by_id("config", "0"):
-            return config["upload_location"]
-        else:
-            return ""
+        config = self.abort_if_item_doesnt_exist("config", "0")
+        return self.abort_if_location_not_set(config)
