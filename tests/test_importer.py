@@ -115,7 +115,9 @@ class ImporterTest(BaseCase):
         self.assertEqual(upload_location, response.json)
 
     def test_upload_sources(self):
-        self.validate_upload_sources([os.getenv("UPLOAD_LOCATION", "/mnt/media-import")])
+        self.validate_upload_sources(
+            [os.getenv("UPLOAD_LOCATION", "/mnt/media-import")]
+        )
 
         upload_sources = ["/mnt/upload_source", "/mnt/ntfs_share"]
         upload_sources_json = json.dumps(

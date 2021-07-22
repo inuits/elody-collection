@@ -163,3 +163,6 @@ FOR c IN @@collection
             return self.conn.createDatabase(arango_db_name)
         else:
             return self.conn[arango_db_name]
+
+    def get_entity_relationships(self, collection, e_id):
+        pass

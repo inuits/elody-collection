@@ -8,7 +8,9 @@ class Importer:
     def __init__(self, storage, storage_api_url):
         self.storage = storage
         self.storage_api_url = storage_api_url
-        self.upload_location = self.storage.get_item_from_collection_by_id("config", "0")["upload_location"]
+        self.upload_location = self.storage.get_item_from_collection_by_id(
+            "config", "0"
+        )["upload_location"]
 
     def metadata_up_to_date(self, new_metadata, all_metadata):
         return all(elem in all_metadata for elem in new_metadata)

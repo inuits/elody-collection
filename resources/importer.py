@@ -27,7 +27,9 @@ class ImporterStart(BaseResource):
     )
     def post(self):
         request_body = self.get_request_body()
-        upload_location = self.storage.get_item_from_collection_by_id("config", "0")["upload_location"]
+        upload_location = self.storage.get_item_from_collection_by_id("config", "0")[
+            "upload_location"
+        ]
         message_id = str(uuid.uuid4())
         message = {
             "message_id": message_id,
@@ -47,10 +49,11 @@ class ImporterDirectories(BaseResource):
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )
     def get(self):
-        upload_location = self.storage.get_item_from_collection_by_id("config", "0")["upload_location"]
+        upload_location = self.storage.get_item_from_collection_by_id("config", "0")[
+            "upload_location"
+        ]
         directories = [
-            str(x[0]).removeprefix(upload_location)
-            for x in os.walk(upload_location)
+            str(x[0]).removeprefix(upload_location) for x in os.walk(upload_location)
         ]
         return jsonify(directories)
 
