@@ -5,36 +5,49 @@ from tests.base_case import BaseCase
 
 
 class ImporterTest(BaseCase):
-    def get_current_upload_location(self):
-        return self.storage.get_item_from_collection_by_id("config", "0")["upload_location"]
+    def set_default_upload_sources_and_location(self):
+        config = self.storage.get_item_from_collection_by_id("config", "0")
+        if not config:
+            upload_location = os.getenv("UPLOAD_LOCATION", "/mnt/media-import")
+            content = {
+                "identifiers": ["0"],
+                "upload_sources": [upload_location],
+                "upload_location": upload_location,
+            }
+            self.storage.save_item_to_collection("config", content)
+        else:
+            upload_location = config["upload_location"]
+        return upload_location
 
     def import_csv(self, folder):
-        upload_data = json.dumps(
-            {
-                "upload_folder": folder,
-            }
-        )
-        response = self.send_post_request("/importer/start", upload_data)
+        upload_location = self.set_default_upload_sources_and_location()
+        response = self.send_post_request("/importer/start", {"upload_folder": folder})
         self.assertEqual(
             response.json["data"]["upload_folder"],
-            os.path.join(self.get_current_upload_location(), folder),
+            os.path.join(upload_location, folder),
         )
 
-    def send_post_request(self, endpoint, json_data):
+    def send_post_request(self, endpoint, content, success=True):
         response = self.app.post(
             endpoint,
             headers={"Content-Type": "application/json"},
-            data=json_data,
+            data=json.dumps(content),
         )
-        self.assertEqual(201, response.status_code)
+        if success:
+            self.assertEqual(201, response.status_code)
+        else:
+            self.not_found(response)
         return response
 
-    def send_get_request(self, endpoint):
+    def send_get_request(self, endpoint, success=True):
         response = self.app.get(
             endpoint,
             headers={"Content-Type": "application/json"},
         )
-        self.assertEqual(200, response.status_code)
+        if success:
+            self.assertEqual(200, response.status_code)
+        else:
+            self.not_found(response)
         return response
 
     def run_test(self, folder, entity_count, mediafile_count):
@@ -71,8 +84,8 @@ class ImporterTest(BaseCase):
             self.valid_mediafile(obj)
 
     def test_get_directories(self):
+        upload_location = self.set_default_upload_sources_and_location()
         response = self.send_get_request("/importer/directories")
-        upload_location = self.get_current_upload_location()
         self.assertEqual(list, type(response.json))
         self.assertEqual(
             response.json,
@@ -82,10 +95,74 @@ class ImporterTest(BaseCase):
             ],
         )
 
+    def set_upload_sources(self, upload_sources):
+        response = self.send_post_request("/importer/sources", {"upload_sources": upload_sources})
+        self.assertEqual(list, type(response.json))
+        self.assertEqual(upload_sources, response.json)
+
+    def validate_upload_sources(self, upload_sources):
+        response = self.send_get_request("/importer/sources")
+        self.assertEqual(list, type(response.json))
+        self.assertEqual(upload_sources, response.json)
+
+    def set_upload_location(self, upload_location):
+        response = self.send_post_request("/importer/location", {"upload_location": upload_location})
+        self.assertEqual(str, type(response.json))
+        self.assertEqual(upload_location, response.json)
+
+    def validate_upload_location(self, upload_location):
+        response = self.send_get_request("/importer/location")
+        self.assertEqual(str, type(response.json))
+        self.assertEqual(upload_location, response.json)
+
+    def test_fail_get_upload_sources(self):
+        self.send_get_request("/importer/sources", False)
+
+    def test_successful_getset_upload_sources(self):
+        upload_sources = ["/mnt/upload_source", "/mnt/ntfs_share"]
+        self.set_upload_sources(upload_sources)
+        self.validate_upload_sources(upload_sources)
+
+        # Try to overwrite
+        new_upload_sources = ["/mnt/new_upload_source", "/mnt/new_ntfs_share"]
+        self.set_upload_sources(new_upload_sources)
+        self.validate_upload_sources(new_upload_sources)
+
+    def test_fail_get_upload_location(self):
+        self.send_get_request("/importer/location", False)
+
+    def test_fail_set_upload_location(self):
+        # Config won't be created until sources are set
+        self.send_post_request("/importer/location", {"upload_location": "/mnt/media-import"}, False)
+
+    def test_successful_getset_upload_location(self):
+        upload_sources = ["/mnt/upload_source", "/mnt/ntfs_share"]
+        self.set_upload_sources(upload_sources)
+        # upload_location doesn't exist until it's explicitly set
+        self.send_get_request("/importer/location", False)
+        upload_location = "/mnt/upload_source"
+        self.set_upload_location(upload_location)
+        self.validate_upload_location(upload_location)
+
+        new_upload_location = "/mnt/nfts_share"
+        self.set_upload_location(new_upload_location)
+        self.validate_upload_location(new_upload_location)
+
+        # Setting new sources erases location
+        self.set_upload_sources(upload_sources)
+        self.send_get_request("/importer/location", False)
+
     def test_import_bad_files(self):
         self.run_test("empty", 0, 0)
         self.run_test("malformed_columns", 0, 0)
         self.run_test("malformed_rows", 0, 0)
+
+    def test_import_no_source_set(self):
+        self.send_post_request("/importer/start", {"upload_folder": "column_casing"}, False)
+
+    def test_import_no_location_set(self):
+        self.set_upload_sources([os.getenv("UPLOAD_LOCATION", "/mnt/media-import")])
+        self.send_post_request("/importer/start", {"upload_folder": "column_casing"}, False)
 
     # mediafile_count is wrong in the following tests as we don't check for duplicate files yet
 
@@ -98,95 +175,12 @@ class ImporterTest(BaseCase):
     def test_import_csv_metadata(self):
         self.run_test("metadata", 4, 7)
 
-    def set_upload_sources(self, upload_sources_json, upload_sources):
-        response = self.send_post_request("/importer/sources", upload_sources_json)
-        self.assertEqual(list, type(response.json))
-        self.assertEqual(upload_sources, response.json)
-
-    def validate_upload_sources(self, upload_sources):
-        response = self.send_get_request("/importer/sources")
-        self.assertEqual(list, type(response.json))
-        self.assertEqual(upload_sources, response.json)
-
-    def set_upload_location(self, upload_location_json, upload_location):
-        response = self.send_post_request("/importer/location", upload_location_json)
-        self.assertEqual(str, type(response.json))
-        self.assertEqual(upload_location, response.json)
-
-    def validate_upload_location(self, upload_location):
-        response = self.send_get_request("/importer/location")
-        self.assertEqual(str, type(response.json))
-        self.assertEqual(upload_location, response.json)
-
-    def test_upload_sources(self):
-        self.validate_upload_sources(
-            [os.getenv("UPLOAD_LOCATION", "/mnt/media-import")]
-        )
-
-        upload_sources = ["/mnt/upload_source", "/mnt/ntfs_share"]
-        upload_sources_json = json.dumps(
-            {
-                "upload_sources": upload_sources,
-            }
-        )
-        self.set_upload_sources(upload_sources_json, upload_sources)
-        self.validate_upload_sources(upload_sources)
-        self.validate_upload_location("")
-
-        # Try to overwrite
-        new_upload_sources = ["/mnt/new_upload_source", "/mnt/new_ntfs_share"]
-        new_upload_sources_json = json.dumps(
-            {
-                "upload_sources": new_upload_sources,
-            }
-        )
-        self.set_upload_sources(new_upload_sources_json, new_upload_sources)
-        self.validate_upload_sources(new_upload_sources)
-        self.validate_upload_location("")
-
-    def test_upload_location(self):
-        self.validate_upload_location(os.getenv("UPLOAD_LOCATION", "/mnt/media-import"))
-
-        upload_sources = ["/mnt/upload_source", "/mnt/ntfs_share"]
-        upload_sources_json = json.dumps(
-            {
-                "upload_sources": upload_sources,
-            }
-        )
-        self.set_upload_sources(upload_sources_json, upload_sources)
-        upload_location = "/mnt/upload_source"
-        upload_location_json = json.dumps(
-            {
-                "upload_location": upload_location,
-            }
-        )
-        self.set_upload_location(upload_location_json, upload_location)
-        self.validate_upload_location(upload_location)
-
-        new_upload_location = "/mnt/nfts_share"
-        new_upload_location_json = json.dumps(
-            {
-                "upload_location": new_upload_location,
-            }
-        )
-        self.set_upload_location(new_upload_location_json, new_upload_location)
-        self.validate_upload_location(new_upload_location)
-
-        # Setting new sources clears location
-        self.set_upload_sources(upload_sources_json, upload_sources)
-        self.validate_upload_location("")
-
     def test_import_from_other_location(self):
         self.run_test("location_test", 0, 0)
         new_upload_location = os.path.join(
             os.path.dirname(os.path.abspath(__file__)), "other_csv_dir"
         )
-        new_upload_location_json = json.dumps(
-            {
-                "upload_location": new_upload_location,
-            }
-        )
         self.validate_upload_location("/home/gverm/Desktop/Work/inuits-dams-docker/collection-api/tests/csv")
-        self.set_upload_location(new_upload_location_json, new_upload_location)
+        self.set_upload_location(new_upload_location)
         self.validate_upload_location("/home/gverm/Desktop/Work/inuits-dams-docker/collection-api/tests/other_csv_dir")
         self.run_test("location_test", 1, 1)
