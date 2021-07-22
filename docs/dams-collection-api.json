@@ -826,7 +826,7 @@
         }
       }
     },
-    "/entity/{entityId}/relations": {
+    "/entities/{entityId}/relations": {
       "get": {"tags": ["relationships"],
         "summary": "Get Relationships between entities",
         "operationId": "getRelationshipsById",
