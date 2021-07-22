@@ -15,18 +15,6 @@ class BaseResource(Resource):
         self.storage = StorageManager().get_db_engine()
         self.storage_api_url = os.getenv("STORAGE_API_URL", "http://localhost:8001")
         self.req = reqparse.RequestParser()
-        self.set_initial_conf()
-
-    def set_initial_conf(self):
-        # may be subject to changes
-        if not self.storage.get_item_from_collection_by_id("config", "0"):
-            location = os.getenv("UPLOAD_LOCATION", "/mnt/media-import")
-            content = {
-                "identifiers": ["0"],
-                "upload_sources": [location],
-                "upload_location": location,
-            }
-            self.storage.save_item_to_collection("config", content)
 
     def get_request_body(self):
         invalid_input = False
