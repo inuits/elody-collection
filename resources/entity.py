@@ -228,13 +228,15 @@ class EntityRelationships(BaseResource):
         for relate in request_body:
             # check if provided Id for the destination entity exists
             rel = self.storage.get_item_from_collection_by_id("entities", relate["id"])
-            if rel:
-                relation_pass.append(relate)
+            if rel is not None:
+
+                message["relation"] = rel
                 try:
                     existing_relationships = rel["relations"]
                 except KeyError:
                     existing_relationships = None
                 if existing_relationships is None:
+                    relation_pass.append(relate)
                     rel["relations"] = [initiator_reference]
                 else:
                     rel["relations"].append(
@@ -254,15 +256,31 @@ class EntityRelationships(BaseResource):
         message["passed_relations"] = passes
         message[
             "message"
-        ] = f"{f'{failures} relations failed' if failures>0 else ''}  {f'{passes} relations passed' if passes>0 else ''} "
+        ] = f"{f'{failures} relationship(s) failed' if failures > 0 else ''} " \
+            f" {f'{passes} relationship(s) passed' if passes > 0 else ''} "
         message["status"] = False if failures > 0 else True
         initiator["relations"] = relation_pass
         # Save relationship for initiator entity
         self.storage.patch_item_from_collection("entities", entity_id, initiator)
         return message, 201 if message["status"] else 400
 
-    def put(self, relations):
-        pass
+    def put(self, entity_id):
+        entity = self.abort_if_item_doesnt_exist("entities", entity_id)
+        request_body = self.get_request_body()
+        try:
+            entity["relations"] = request_body
+            self.storage.update_item_from_collection("entities", entity_id, entity)
+        except KeyError:
+            pass
+        return {"message": "entity relationship updated successfully"}
 
-    def patch(self, relations):
-        pass
+    def patch(self, entity_id):
+        entity = self.abort_if_item_doesnt_exist('entities', entity_id)
+        try:
+            entity['relations'] = self.get_request_body()
+            self.storage.patch_item_from_collection('entities', entity_id, entity)
+            return entity['relations'], 201
+        except KeyError:
+            return f"Entity Relationships patching failed", 400
+
+
