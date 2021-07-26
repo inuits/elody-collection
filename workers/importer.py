@@ -1,16 +1,18 @@
 import glob
+import json
 import os
 import pandas as pd
 import requests
 
 
 class Importer:
-    def __init__(self, storage, storage_api_url):
-        self.storage = storage
+    def __init__(self, collection_api_url, storage_api_url):
+        self.collection_api_url = collection_api_url
         self.storage_api_url = storage_api_url
-        self.upload_location = self.storage.get_item_from_collection_by_id(
-            "config", "0"
-        )["upload_location"]
+        self.upload_location = requests.get(
+            self.collection_api_url + "/importer/location",
+            headers={"Content-Type": "application/json"},
+        ).json()
 
     def metadata_up_to_date(self, new_metadata, all_metadata):
         return all(elem in all_metadata for elem in new_metadata)
@@ -30,7 +32,10 @@ class Importer:
         if self.no_metadata_available(rights, copyright):
             return None
         new_metadata = self.get_new_metadata(rights, copyright)
-        all_metadata = self.storage.get_collection_item_metadata("entities", object_id)
+        all_metadata = requests.get(
+            "{}/entities/{}/metadata".format(self.collection_api_url, object_id),
+            headers={"Content-Type": "application/json"},
+        ).json()
         if not all_metadata:
             all_metadata = new_metadata
         else:
@@ -42,25 +47,42 @@ class Importer:
                 if ("key", "rights") in data.items() and not pd.isna(rights):
                     all_metadata[index] = new_metadata.pop()
             all_metadata = all_metadata + new_metadata
-        return self.storage.update_collection_item_metadata(
-            "entities", object_id, all_metadata
-        )
+        return requests.patch(
+            "{}/entities/{}/metadata".format(self.collection_api_url, object_id),
+            headers={"Content-Type": "application/json"},
+            data=json.dumps(all_metadata),
+        ).json()
 
     def create_mediafile(self, object_id, file_name):
-        data = {
+        # Fix to include file or whatever this request needs
+        content = {
             "type": "mediafile",
             "location": "{}/download/{}".format(self.storage_api_url, file_name),
         }
-        mediafile = self.storage.save_item_to_collection("mediafiles", data)
-        ret = self.storage.add_mediafile_to_entity(
-            "entities", object_id, mediafile["_id"]
+        # This could be simplified by using the /entities/id/mediafiles/create endpoint
+        # The endpoint needs some tweaking first
+        mediafile = requests.post(
+            "{}/mediafiles".format(self.collection_api_url),
+            headers={"Content-Type": "application/json"},
+            data=json.dumps(content),
+        ).json()
+        ret = requests.post(
+            "{}/entities/{}/mediafiles".format(self.collection_api_url, object_id),
+            headers={"Content-Type": "application/json"},
+            data=json.dumps(mediafile),
         )
-        if not ret:
+        if ret.status_code != 201:
             content = {"identifiers": [object_id], "type": "asset"}
-            self.storage.save_item_to_collection("entities", content)
-            ret = self.storage.add_mediafile_to_entity(
-                "entities", object_id, mediafile["_id"]
+            requests.post(
+                "{}/entities".format(self.collection_api_url),
+                headers={"Content-Type": "application/json"},
+                data=json.dumps(content),
             )
+            ret = requests.post(
+                "{}/entities/{}/mediafiles".format(self.collection_api_url, object_id),
+                headers={"Content-Type": "application/json"},
+                data=json.dumps(mediafile),
+            ).json()
         return ret
 
     def upload_file(self, file_name, file_path):

@@ -13,6 +13,9 @@ class BaseResource(Resource):
 
     def __init__(self):
         self.storage = StorageManager().get_db_engine()
+        self.collection_api_url = os.getenv(
+            "COLLECTION_API_URL", "http://localhost:8000"
+        )
         self.storage_api_url = os.getenv("STORAGE_API_URL", "http://localhost:8001")
         self.req = reqparse.RequestParser()
 

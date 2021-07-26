@@ -3,7 +3,6 @@ import os
 import uuid
 
 from flask import jsonify
-from flask_restful import abort
 from resources.base_resource import BaseResource
 from workers.importer import Importer
 
@@ -40,7 +39,7 @@ class ImporterStart(BaseResource):
 
         # Defer init of Importer until it's verified that request can go through
         global importer
-        importer = Importer(self.storage, self.storage_api_url)
+        importer = Importer(self.collection_api_url, self.storage_api_url)
 
         app.ramq.send(message, routing_key="dams.import_start", exchange_name="dams")
         return message, 201
