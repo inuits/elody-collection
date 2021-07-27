@@ -93,3 +93,12 @@ class ImporterLocation(BaseResource):
     def get(self):
         config = self.abort_if_item_doesnt_exist("config", "0")
         return self.abort_if_location_not_set(config)
+
+
+class ImporterDrop(BaseResource):
+    @app.oidc.accept_token(
+        require_token=BaseResource.token_required, scopes_required=["openid"]
+    )
+    def post(self):
+        self.storage.drop_all_collections()
+        return "", 201
