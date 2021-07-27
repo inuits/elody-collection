@@ -1,3 +1,5 @@
+
+
 from flask import Flask
 from flask_oidc import OpenIDConnect
 from flask_rabmq import RabbitMQ
@@ -6,33 +8,6 @@ from flask_swagger_ui import get_swaggerui_blueprint
 
 import logging
 import os
-
-
-from resources.entity import (
-    Entity,
-    EntityDetail,
-    EntityMetadata,
-    EntityMetadataKey,
-    EntityMediafiles,
-    EntityMediafilesCreate,
-    EntityRelationships,
-)
-from resources.importer import (
-    ImporterStart,
-    ImporterDirectories,
-    ImporterLocation,
-    ImporterSources,
-)
-from resources.job_status import (
-    JobStatusByUser,
-    JobStatusById,
-    JobsByAsset,
-    JobUploadSingleItem,
-    JobUploadMultipleItem,
-)
-from resources.mediafile import Mediafile, MediafileDetail
-from resources.spec import OpenAPISpec, AsyncAPISpec
-from resources.tenant import Tenant, TenantDetail
 
 SWAGGER_URL = "/api/docs"  # URL for exposing Swagger UI (without trailing '/')
 API_URL = (
@@ -79,6 +54,31 @@ oidc = OpenIDConnect(app)
 
 app.register_blueprint(swaggerui_blueprint)
 
+from resources.entity import (
+    Entity,
+    EntityDetail,
+    EntityMetadata,
+    EntityMetadataKey,
+    EntityMediafiles,
+    EntityMediafilesCreate,
+    EntityRelationships,
+)
+from resources.importer import (
+    ImporterStart,
+    ImporterDirectories,
+    ImporterLocation,
+    ImporterSources,
+)
+from resources.job_status import (
+    JobStatusByUser,
+    JobStatusById,
+    JobsByAsset,
+    JobUploadSingleItem,
+    JobUploadMultipleItem,
+)
+from resources.mediafile import Mediafile, MediafileDetail
+from resources.spec import OpenAPISpec, AsyncAPISpec
+from resources.tenant import Tenant, TenantDetail
 
 api.add_resource(EntityRelationships, "/entities/<string:entity_id>/relations")
 api.add_resource(EntityMediafilesCreate, "/entities/<string:id>/mediafiles/create")
