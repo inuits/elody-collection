@@ -258,11 +258,11 @@ class EntityRelationships(BaseResource):
             f"{f'{failures} relationship(s) failed' if failures > 0 else ''} "
             f" {f'{passes} relationship(s) passed' if passes > 0 else ''} "
         )
-        message["status"] = False if failures > 0 else True
+        status = message["status"] == failures > 0
         initiator["relations"] = relation_pass
         # Save relationship for initiator entity
         self.storage.patch_item_from_collection("entities", entity_id, initiator)
-        return message, 201 if message["status"] else 400
+        return message, 201 if status else 400
 
     def put(self, entity_id):
         entity = self.abort_if_item_doesnt_exist("entities", entity_id)
