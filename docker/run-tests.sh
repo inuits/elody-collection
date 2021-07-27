@@ -10,7 +10,7 @@ cat << EOF
 ============================================
 EOF
 
-coverage run -m pytest
+coverage run -m pytest -s
 
 cat << EOF
 ==========================================
