@@ -105,6 +105,10 @@ class MongoStorageManager:
         self.patch_item_from_collection(collection, id, patch_data)
 
     def drop_all_collections(self):
+        self.db.config.drop()
+        self.db.entities.drop()
+        self.db.mediafiles.drop()
+        self.db.tenants.drop()
         return
 
     def _prepare_mongo_document(self, document, reversed, id=None):
