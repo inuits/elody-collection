@@ -34,12 +34,12 @@
       "name": "importer",
       "description": "Importer module in DAMS"
     },
-     {
+    {
       "name": "jobs",
       "description": "Job Status module in DAMS"
     },
-     {
-      "name": "relationships",
+    {
+      "name": "relations",
       "description": "Entity Relationships module in DAMS"
     }
   ],
@@ -803,7 +803,6 @@
               "type": "string"
             }
           }
-
         ],
         "responses": {
           "200": {
@@ -827,11 +826,14 @@
       }
     },
     "/entities/{entityId}/relations": {
-      "get": {"tags": ["relationships"],
+      "get": {
+        "tags": [
+          "relationships"
+        ],
         "summary": "Get Relationships between entities",
         "operationId": "getRelationshipsById",
         "description": "Get  relations given a specific Entity ID",
-         "parameters": [
+        "parameters": [
           {
             "name": "entityId",
             "in": "path",
@@ -845,13 +847,15 @@
         "responses": {
           "200": {
             "content": {
-             "application/json": {
-              "schema": {
-                "type": "array",
-                "items": {"$ref":  "#/components/schemas/relations"}
-
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/relations"
+                  }
+                }
               }
-            }},
+            },
             "description": "Successful Operation"
           },
           "400": {
@@ -862,7 +866,10 @@
           }
         }
       },
-      "post": {"tags": ["relationships"],
+      "post": {
+        "tags": [
+          "relationships"
+        ],
         "summary": "Add entity relationships",
         "operationId": "addRelations",
         "requestBody": {
@@ -871,8 +878,9 @@
             "application/json": {
               "schema": {
                 "type": "array",
-                "items": {"$ref":  "#/components/schemas/relations"}
-
+                "items": {
+                  "$ref": "#/components/schemas/relations"
+                }
               }
             }
           }
@@ -891,13 +899,15 @@
         "responses": {
           "200": {
             "content": {
-             "application/json": {
-              "schema": {
-                "type": "array",
-                "items": {"$ref":  "#/components/schemas/relations"}
-
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/relations"
+                  }
+                }
               }
-            }},
+            },
             "description": "Successful Operation"
           },
           "400": {
@@ -908,7 +918,10 @@
           }
         }
       },
-      "put": {"tags": ["relationships"],
+      "put": {
+        "tags": [
+          "relationships"
+        ],
         "summary": "modify entity relationships",
         "operationId": "putRelations",
         "requestBody": {
@@ -917,8 +930,9 @@
             "application/json": {
               "schema": {
                 "type": "array",
-                "items": {"$ref":  "#/components/schemas/relations"}
-
+                "items": {
+                  "$ref": "#/components/schemas/relations"
+                }
               }
             }
           }
@@ -937,13 +951,15 @@
         "responses": {
           "200": {
             "content": {
-             "application/json": {
-              "schema": {
-                "type": "array",
-                "items": {"$ref":  "#/components/schemas/relations"}
-
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/relations"
+                  }
+                }
               }
-            }},
+            },
             "description": "Successful Operation"
           },
           "400": {
@@ -954,7 +970,10 @@
           }
         }
       },
-      "patch": {"tags": ["relationships"],
+      "patch": {
+        "tags": [
+          "relationships"
+        ],
         "summary": "patch entity relationships",
         "operationId": "patchRelations",
         "requestBody": {
@@ -963,8 +982,9 @@
             "application/json": {
               "schema": {
                 "type": "array",
-                "items": {"$ref":  "#/components/schemas/relations"}
-
+                "items": {
+                  "$ref": "#/components/schemas/relations"
+                }
               }
             }
           }
@@ -983,19 +1003,20 @@
         "responses": {
           "200": {
             "content": {
-             "application/json": {
-              "schema": {
-                "type": "array",
-                "items": {"$ref":  "#/components/schemas/relations"}
-
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/relations"
+                  }
+                }
               }
-            }},
+            },
             "description": "Successful Operation"
           },
           "400": {
             "description": "Bad Request"
           }
-
         }
       }
     },
@@ -1173,10 +1194,11 @@
         }
       }
     },
-
     "/jobs/{job_id}": {
       "get": {
-        "tags": ["jobs"],
+        "tags": [
+          "jobs"
+        ],
         "summary": "Get Jobs By Job ID",
         "operationId": "getJobsById",
         "parameters": [
@@ -1196,7 +1218,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                    "$ref": "#/components/schemas/jobs"
+                  "$ref": "#/components/schemas/jobs"
                 }
               }
             }
@@ -1209,11 +1231,12 @@
           }
         }
       }
-
     },
     "/jobs/{asset}": {
       "get": {
-        "tags": ["jobs"],
+        "tags": [
+          "jobs"
+        ],
         "summary": "Get Jobs By Asset",
         "operationId": "getJobsByAsset",
         "parameters": [
@@ -1252,7 +1275,9 @@
     },
     "/jobs": {
       "get": {
-        "tags": ["jobs"],
+        "tags": [
+          "jobs"
+        ],
         "summary": "Get Jobs By User",
         "operationId": "getJobsByUser",
         "responses": {
@@ -1268,94 +1293,97 @@
                 }
               }
             }
-          },"400": {"description": "Invalid Job Request"}, "404": {"description": "Invalid Input"}
+          },
+          "400": {
+            "description": "Invalid Job Request"
+          },
+          "404": {
+            "description": "Invalid Input"
+          }
         }
       }
     },
     "/jobs/upload/single": {
-        "post": {
-          "tags": [
-            "jobs"
-          ],
-          "summary": "Upload Single File",
-          "operationId": "uploadSingleFile",
-          "requestBody": {
-            "required": true,
-            "content": {
-              "multipart/form-data": {
-                "schema": {
-                  "type": "object",
-
-                  "properties": {
-                    "asset": {
-                      "type": "string",
-                      "format": "binary",
-                      "description": "File to upload"
-                    },
-                    "info": {
-                      "type": "string",
-                      "description": "job information"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "responses": {
-            "200": {
-              "description": "Successful upload"
-            },
-            "400": {
-              "description": "Invalid request"
-            },
-            "404": {
-              "description": "Not Found"
-            }
-          }
-        }
-    },
-    "/jobs/upload/multiple": {
-       "post": {
-          "tags": [
-            "jobs"
-          ],
-          "summary": "Upload Multiple files",
-          "operationId": "uploadMultipleFiles",
+      "post": {
+        "tags": [
+          "jobs"
+        ],
+        "summary": "Upload Single File",
+        "operationId": "uploadSingleFile",
         "requestBody": {
           "required": true,
-            "content": {
-              "multipart/form-data": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "asset": {
-                      "type": "array",
-                      "format": "binary"
-                    },
-                    "info": {
-                      "type": "string",
-                      "description": "job information"
-                    }
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "asset": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "File to upload"
+                  },
+                  "info": {
+                    "type": "string",
+                    "description": "job information"
                   }
                 }
               }
             }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful upload"
           },
-          "responses": {
-            "200": {
-              "description": "Successful operation"
-            },
-            "400": {
-              "description": "Bad request"
-            },
-            "404": {
-              "description": "Not found"
-            }
+          "400": {
+            "description": "Invalid request"
+          },
+          "404": {
+            "description": "Not Found"
           }
         }
+      }
     },
-
-
+    "/jobs/upload/multiple": {
+      "post": {
+        "tags": [
+          "jobs"
+        ],
+        "summary": "Upload Multiple files",
+        "operationId": "uploadMultipleFiles",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "asset": {
+                    "type": "array",
+                    "format": "binary"
+                  },
+                  "info": {
+                    "type": "string",
+                    "description": "job information"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful operation"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      }
+    },
     "/importer/start": {
       "post": {
         "tags": [
@@ -1450,30 +1478,33 @@
         }
       },
       "jobs": {
-        "type":  "object",
+        "type": "object",
         "description": "Job status",
         "properties": {
           "job_id": {
             "type": "string",
             "format": "uuid"
           },
-         "mediafile_id": {
-           "type": "string"
-         },
+          "mediafile_id": {
+            "type": "string"
+          },
           "status": {
             "type": "string",
             "enum": [
-              "Finished", "In-progress","Queued", "Failed"
+              "Finished",
+              "In-progress",
+              "Queued",
+              "Failed"
             ],
             "description": "Job Status Enum Type"
           },
-           "asset": {
+          "asset": {
             "type": "string"
           },
-           "job_info": {
+          "job_info": {
             "type": "string"
           },
-           "job_type": {
+          "job_type": {
             "type": "string"
           }
         }
