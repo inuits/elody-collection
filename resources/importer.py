@@ -1,4 +1,5 @@
 import app
+import json
 import os
 import uuid
 
@@ -6,13 +7,16 @@ from flask import jsonify
 from resources.base_resource import BaseResource
 from workers.importer import Importer
 
-importer = None
-
 
 @app.ramq.queue(exchange_name="dams", routing_key="dams.import_start")
 def csv_import(body):
-    upload_folder = body["data"]["upload_folder"]
-    importer.import_from_csv(upload_folder)
+    body_dict = json.loads(body)
+    upload_location = body_dict["data"]["upload_location"]
+    upload_folder = body_dict["data"]["upload_folder"]
+    collection_api_url = body_dict["data"]["collection_api_url"]
+    storage_api_url = body_dict["data"]["storage_api_url"]
+    importer = Importer(collection_api_url, storage_api_url, upload_location, upload_folder)
+    importer.import_from_csv()
     return True
 
 
@@ -31,16 +35,14 @@ class ImporterStart(BaseResource):
         message = {
             "message_id": message_id,
             "data": {
+                "upload_location": upload_location,
                 "upload_folder": os.path.join(
                     upload_location, request_body["upload_folder"]
-                )
+                ),
+                "collection_api_url": self.collection_api_url,
+                "storage_api_url": self.storage_api_url,
             },
         }
-
-        # Defer init of Importer until it's verified that request can go through
-        global importer
-        importer = Importer(self.collection_api_url, self.storage_api_url)
-
         app.ramq.send(message, routing_key="dams.import_start", exchange_name="dams")
         return message, 201
 
