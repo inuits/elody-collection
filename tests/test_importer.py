@@ -1,13 +1,23 @@
 import json
 import os
 
+import requests
+
 from tests.base_case import BaseCase
 
 
 class ImporterTest(BaseCase):
+    def setUp(self):
+        super().setUp()
+        self.collection_api_url = os.getenv("COLLECTION_API_URL", "http://localhost:8000")
+        os.environ["UPLOAD_LOCATION"] = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "csv"
+        )
+        self.addCleanup(self.drop_collections)
+
     def set_default_upload_sources_and_location(self):
-        response = self.app.get(
-            "/importer/location", headers={"Content-Type": "application/json"}
+        response = requests.get(
+            "{}/importer/location".format(self.collection_api_url), headers={"Content-Type": "application/json"}
         )
         if response.status_code != 200:
             upload_location = os.getenv("UPLOAD_LOCATION", "/mnt/media-import")
@@ -25,38 +35,41 @@ class ImporterTest(BaseCase):
                 },
             )
         else:
-            upload_location = response.json
+            upload_location = response.json()
         return upload_location
 
     def import_csv(self, folder):
         upload_location = self.set_default_upload_sources_and_location()
         response = self.send_post_request("/importer/start", {"upload_folder": folder})
         self.assertEqual(
-            response.json["data"]["upload_folder"],
+            response.json()["data"]["upload_folder"],
             os.path.join(upload_location, folder),
         )
 
+    def drop_collections(self):
+        self.send_post_request("/importer/drop", {})
+
     def send_post_request(self, endpoint, content, success=True):
-        response = self.app.post(
-            endpoint,
+        response = requests.post(
+            "{}{}".format(self.collection_api_url, endpoint),
             headers={"Content-Type": "application/json"},
             data=json.dumps(content),
         )
         if success:
             self.assertEqual(201, response.status_code)
         else:
-            self.not_found(response)
+            self.assertEqual(404, response.status_code)
         return response
 
     def send_get_request(self, endpoint, success=True):
-        response = self.app.get(
-            endpoint,
+        response = requests.get(
+            "{}{}".format(self.collection_api_url, endpoint),
             headers={"Content-Type": "application/json"},
         )
         if success:
             self.assertEqual(200, response.status_code)
         else:
-            self.not_found(response)
+            self.assertEqual(404, response.status_code)
         return response
 
     def run_test(self, folder, entity_count, mediafile_count):
@@ -66,9 +79,9 @@ class ImporterTest(BaseCase):
 
     def validate_db_response(self, endpoint, entity_type, count):
         response = self.send_get_request(endpoint)
-        self.assertEqual(response.json["count"], count)
-        self.assertEqual(len(response.json["results"]), response.json["count"])
-        for obj in response.json["results"]:
+        self.assertEqual(response.json()["count"], count)
+        self.assertEqual(len(response.json()["results"]), response.json()["count"])
+        for obj in response.json()["results"]:
             self.validate_object(entity_type, obj)
 
     def validate_entity(self, entity):
@@ -95,9 +108,9 @@ class ImporterTest(BaseCase):
     def test_get_directories(self):
         upload_location = self.set_default_upload_sources_and_location()
         response = self.send_get_request("/importer/directories")
-        self.assertEqual(list, type(response.json))
+        self.assertEqual(list, type(response.json()))
         self.assertEqual(
-            response.json,
+            response.json(),
             [str(x[0]).removeprefix(upload_location) for x in os.walk(upload_location)],
         )
 
@@ -105,25 +118,25 @@ class ImporterTest(BaseCase):
         response = self.send_post_request(
             "/importer/sources", {"upload_sources": upload_sources}
         )
-        self.assertEqual(list, type(response.json))
-        self.assertEqual(upload_sources, response.json)
+        self.assertEqual(list, type(response.json()))
+        self.assertEqual(upload_sources, response.json())
 
     def validate_upload_sources(self, upload_sources):
         response = self.send_get_request("/importer/sources")
-        self.assertEqual(list, type(response.json))
-        self.assertEqual(upload_sources, response.json)
+        self.assertEqual(list, type(response.json()))
+        self.assertEqual(upload_sources, response.json())
 
     def set_upload_location(self, upload_location):
         response = self.send_post_request(
             "/importer/location", {"upload_location": upload_location}
         )
-        self.assertEqual(str, type(response.json))
-        self.assertEqual(upload_location, response.json)
+        self.assertEqual(str, type(response.json()))
+        self.assertEqual(upload_location, response.json())
 
     def validate_upload_location(self, upload_location):
         response = self.send_get_request("/importer/location")
-        self.assertEqual(str, type(response.json))
-        self.assertEqual(upload_location, response.json)
+        self.assertEqual(str, type(response.json()))
+        self.assertEqual(upload_location, response.json())
 
     def test_fail_get_upload_sources(self):
         self.send_get_request("/importer/sources", False)
@@ -196,11 +209,8 @@ class ImporterTest(BaseCase):
         new_upload_location = os.path.join(
             os.path.dirname(os.path.abspath(__file__)), "other_csv_dir"
         )
-        self.validate_upload_location(
-            "/home/gverm/Desktop/Work/inuits-dams-docker/collection-api/tests/csv"
-        )
+        old_upload_location = self.send_get_request("/importer/location").json()
+        self.validate_upload_location(old_upload_location)
         self.set_upload_location(new_upload_location)
-        self.validate_upload_location(
-            "/home/gverm/Desktop/Work/inuits-dams-docker/collection-api/tests/other_csv_dir"
-        )
+        self.validate_upload_location(new_upload_location)
         self.run_test("location_test", 1, 1)
