@@ -1,25 +1,8 @@
 import json
-import mongomock
-import os
 import unittest
 
 from app import app
-from resources import importer
 from storage.storagemanager import StorageManager
-from unittest.mock import patch
-
-
-def mocked_send(
-    body,
-    routing_key,
-    exchange_name=None,
-    exchange_type=None,
-    headers=None,
-    log_flag=None,
-):
-    if routing_key == "dams.import_start":
-        importer.csv_import(body)
-    return
 
 
 class BaseCase(unittest.TestCase):
@@ -65,22 +48,7 @@ class BaseCase(unittest.TestCase):
 
         self.app = app.test_client()
         self.storage = StorageManager().get_db_engine()
-        self.rabbitmq_patcher = patch("app.ramq")
-        self.mocked_rabbitmq = self.rabbitmq_patcher.start()
-        self.mocked_rabbitmq.send = mocked_send
-        self.importer_patcher = patch("workers.importer.Importer.upload_file")
-        self.mocked_importer = self.importer_patcher.start()
-        self.mongodb_patcher = patch(
-            "storage.mongostore.client", new_callable=mongomock.MongoClient
-        )
-        self.mocked_mongodb = self.mongodb_patcher.start()
-        os.environ["UPLOAD_LOCATION"] = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), "csv"
-        )
         self.addCleanup(self.storage.drop_all_collections)
-        self.addCleanup(self.rabbitmq_patcher.stop)
-        self.addCleanup(self.importer_patcher.stop)
-        self.addCleanup(self.mongodb_patcher.stop)
 
     def create_entity(self):
         return self.app.post(
