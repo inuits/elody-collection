@@ -1491,9 +1491,9 @@
           "status": {
             "type": "string",
             "enum": [
-              "Finished",
-              "In-progress",
               "Queued",
+              "In-progress",
+              "Finished",
               "Failed"
             ],
             "description": "Job Status Enum Type"
