@@ -1,5 +1,3 @@
-
-
 from flask import Flask
 from flask_oidc import OpenIDConnect
 from flask_rabmq import RabbitMQ
@@ -67,7 +65,8 @@ from resources.importer import (
     ImporterStart,
     ImporterDirectories,
     ImporterLocation,
-    ImporterSources, ImporterDrop,
+    ImporterSources,
+    ImporterDrop,
 )
 from resources.job_status import (
     JobStatusByUser,

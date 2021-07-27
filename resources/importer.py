@@ -15,7 +15,9 @@ def csv_import(body):
     upload_folder = body_dict["data"]["upload_folder"]
     collection_api_url = body_dict["data"]["collection_api_url"]
     storage_api_url = body_dict["data"]["storage_api_url"]
-    importer = Importer(collection_api_url, storage_api_url, upload_location, upload_folder)
+    importer = Importer(
+        collection_api_url, storage_api_url, upload_location, upload_folder
+    )
     importer.import_from_csv()
     return True
 

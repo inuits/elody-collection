@@ -63,7 +63,7 @@ class JobUploadSingleItem(BaseResource):
 
 # Upload multiple files
 class JobUploadMultipleItem(BaseResource):
-    """ Upload Multiple files"""
+    """Upload Multiple files"""
 
     @app.oidc.accept_token(
         require_token=BaseResource.token_required, scopes_required=["openid"]

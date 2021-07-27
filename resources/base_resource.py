@@ -51,7 +51,7 @@ class BaseResource(Resource):
         return config["upload_location"]
 
     def get_job_by_signature(self, signature):
-        """ This method is necessary for reuse in some parts of job creation """
+        """This method is necessary for reuse in some parts of job creation"""
         return self.storage.get_jobs_from_collection("jobs", signature)
 
     def prepare_job_data(self, job_type):
@@ -65,7 +65,7 @@ class BaseResource(Resource):
         return job_data
 
     def create_single_job(self, file):
-        """ creates  single job """
+        """creates  single job"""
         data_fetch = self.get_job_by_signature(self.generate_file_signature(file))
         message_id = str(uuid.uuid4())
         file.sa

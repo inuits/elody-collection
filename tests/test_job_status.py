@@ -68,7 +68,7 @@ class JobStatusTest(BaseCase):
 
     # Success get_job_by_id
     def test_success_get_job_by_id(self):
-        """ Run test_upload_single() or test_upload_multiple before calling this method"""
+        """Run test_upload_single() or test_upload_multiple before calling this method"""
         res = self.app.get(f"/jobs/{self.insert_single_id}", headers=self.content_type)
         self.assertEqual(200, res.status_code)
 

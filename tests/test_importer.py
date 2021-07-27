@@ -9,7 +9,9 @@ from tests.base_case import BaseCase
 class ImporterTest(BaseCase):
     def setUp(self):
         super().setUp()
-        self.collection_api_url = os.getenv("COLLECTION_API_URL", "http://localhost:8000")
+        self.collection_api_url = os.getenv(
+            "COLLECTION_API_URL", "http://localhost:8000"
+        )
         os.environ["UPLOAD_LOCATION"] = os.path.join(
             os.path.dirname(os.path.abspath(__file__)), "csv"
         )
@@ -17,7 +19,8 @@ class ImporterTest(BaseCase):
 
     def set_default_upload_sources_and_location(self):
         response = requests.get(
-            "{}/importer/location".format(self.collection_api_url), headers={"Content-Type": "application/json"}
+            "{}/importer/location".format(self.collection_api_url),
+            headers={"Content-Type": "application/json"},
         )
         if response.status_code != 200:
             upload_location = os.getenv("UPLOAD_LOCATION", "/mnt/media-import")

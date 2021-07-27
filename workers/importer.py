@@ -6,7 +6,9 @@ import requests
 
 
 class Importer:
-    def __init__(self, collection_api_url, storage_api_url, upload_location, upload_folder):
+    def __init__(
+        self, collection_api_url, storage_api_url, upload_location, upload_folder
+    ):
         self.collection_api_url = collection_api_url
         self.storage_api_url = storage_api_url
         self.upload_location = upload_location
@@ -34,7 +36,9 @@ class Importer:
             "{}/entities/{}/metadata".format(self.collection_api_url, object_id),
             headers={"Content-Type": "application/json"},
         )
-        if request.status_code != 200 or (request.status_code == 200 and not request.json()):
+        if request.status_code != 200 or (
+            request.status_code == 200 and not request.json()
+        ):
             all_metadata = new_metadata
         else:
             all_metadata = request.json()
@@ -99,7 +103,9 @@ class Importer:
     def parse_path(self, row):
         if pd.isna(row["Padnaam"]):
             file_path = sorted(
-                glob.glob(self.upload_folder + "**/" + row["Bestandsnaam"], recursive=True)
+                glob.glob(
+                    self.upload_folder + "**/" + row["Bestandsnaam"], recursive=True
+                )
             )[0]
         else:
             if row["Padnaam"][1] == ":":
@@ -142,7 +148,9 @@ class Importer:
 
     def import_from_csv(self):
         self.upload_folder = os.path.join(self.upload_folder, "")
-        all_csv_files = [i for i in glob.glob(self.upload_folder + "**/*.csv", recursive=True)]
+        all_csv_files = [
+            i for i in glob.glob(self.upload_folder + "**/*.csv", recursive=True)
+        ]
         if not (dataframes := self.read_csv(all_csv_files)):
             return
         combined_csv = pd.concat(dataframes)
