@@ -6,13 +6,11 @@ import requests
 
 
 class Importer:
-    def __init__(self, collection_api_url, storage_api_url):
+    def __init__(self, collection_api_url, storage_api_url, upload_location, upload_folder):
         self.collection_api_url = collection_api_url
         self.storage_api_url = storage_api_url
-        self.upload_location = requests.get(
-            self.collection_api_url + "/importer/location",
-            headers={"Content-Type": "application/json"},
-        ).json()
+        self.upload_location = upload_location
+        self.upload_folder = upload_folder
 
     def metadata_up_to_date(self, new_metadata, all_metadata):
         return all(elem in all_metadata for elem in new_metadata)
@@ -32,13 +30,14 @@ class Importer:
         if self.no_metadata_available(rights, copyright):
             return None
         new_metadata = self.get_new_metadata(rights, copyright)
-        all_metadata = requests.get(
+        request = requests.get(
             "{}/entities/{}/metadata".format(self.collection_api_url, object_id),
             headers={"Content-Type": "application/json"},
-        ).json()
-        if not all_metadata:
+        )
+        if request.status_code != 200 or (request.status_code == 200 and not request.json()):
             all_metadata = new_metadata
         else:
+            all_metadata = request.json()
             if self.metadata_up_to_date(new_metadata, all_metadata):
                 return all_metadata
             for index, data in enumerate(all_metadata):
@@ -47,7 +46,7 @@ class Importer:
                 if ("key", "rights") in data.items() and not pd.isna(rights):
                     all_metadata[index] = new_metadata.pop()
             all_metadata = all_metadata + new_metadata
-        return requests.patch(
+        return requests.put(
             "{}/entities/{}/metadata".format(self.collection_api_url, object_id),
             headers={"Content-Type": "application/json"},
             data=json.dumps(all_metadata),
@@ -97,10 +96,10 @@ class Importer:
             object_id, row["Rechtenstatus"], row["Copyright"]
         )
 
-    def parse_path(self, path, row):
+    def parse_path(self, row):
         if pd.isna(row["Padnaam"]):
             file_path = sorted(
-                glob.glob(path + "**/" + row["Bestandsnaam"], recursive=True)
+                glob.glob(self.upload_folder + "**/" + row["Bestandsnaam"], recursive=True)
             )[0]
         else:
             if row["Padnaam"][1] == ":":
@@ -117,11 +116,11 @@ class Importer:
             pd.isna(row["Padnaam"]) and pd.isna(row["Bestandsnaam"])
         )
 
-    def parse_rows(self, path, combined_csv):
+    def parse_rows(self, combined_csv):
         for index, row in combined_csv.iterrows():
             if self.is_malformed_row(row):
                 continue
-            file_path = self.parse_path(path, row)
+            file_path = self.parse_path(row)
             file_name = os.path.basename(file_path)
             object_id = row["Objectnummer"]
             self.write_to_db(object_id, file_name, file_path, row)
@@ -141,10 +140,10 @@ class Importer:
             dataframes.append(df)
         return dataframes
 
-    def import_from_csv(self, path):
-        path = os.path.join(path, "")
-        all_csv_files = [i for i in glob.glob(path + "**/*.csv", recursive=True)]
+    def import_from_csv(self):
+        self.upload_folder = os.path.join(self.upload_folder, "")
+        all_csv_files = [i for i in glob.glob(self.upload_folder + "**/*.csv", recursive=True)]
         if not (dataframes := self.read_csv(all_csv_files)):
             return
         combined_csv = pd.concat(dataframes)
-        self.parse_rows(path, combined_csv)
+        self.parse_rows(combined_csv)
