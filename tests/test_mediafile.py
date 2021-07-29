@@ -103,7 +103,7 @@ class MediafileTest(BaseCase):
         )
 
         self.valid_mediafile(response.json)
-        self.assertEqual(5, len(response.json))
+        self.assertEqual(4, len(response.json))
         self.assertEqual(str, type(response.json["format"]))
         self.assertEqual("jpg", response.json["format"])
         self.assertEqual(201, response.status_code)

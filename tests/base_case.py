@@ -30,7 +30,6 @@ class BaseCase(unittest.TestCase):
     mediafile = json.dumps(
         {
             "identifiers": ["12345", "abcde"],
-            "type": "mediafile",
             "location": "http://dams-storage.inuits.io/download/test.jpg",
         }
     )
@@ -40,6 +39,12 @@ class BaseCase(unittest.TestCase):
             "identifiers": ["12345", "abcde"],
             "type": "tenant",
             "name": "Een museum",
+        }
+    )
+
+    filename = json.dumps(
+        {
+            "filename": "test.jpg",
         }
     )
 
@@ -81,8 +86,6 @@ class BaseCase(unittest.TestCase):
     def valid_mediafile(self, mediafile):
         self.assertEqual(str, type(mediafile["_id"]))
         self.assertEqual(str, type(mediafile["location"]))
-        self.assertEqual(str, type(mediafile["type"]))
-        self.assertEqual("mediafile", mediafile["type"])
 
     def valid_tenant(self, tenant):
         self.assertEqual(str, type(tenant["_id"]))

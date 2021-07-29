@@ -74,13 +74,14 @@ class EntityTest(BaseCase):
         response = self.app.post(
             "/entities/{}/mediafiles/create".format(_id),
             headers={"Content-Type": "application/json"},
+            data=self.filename,
         )
 
         self.assertEqual(str, type(response.json))
         self.assertTrue(
             response.json.startswith("https://dams-storage-api.inuits.io/upload/")
         )
-        self.assertEqual(78, len(response.json))
+        self.assertEqual(87, len(response.json))
         self.assertEqual(201, response.status_code)
 
         response = self.app.get(
