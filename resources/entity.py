@@ -193,8 +193,8 @@ class EntityMediafilesCreate(BaseResource):
                 "original_file_location": "{}/download/{}".format(
                     self.storage_api_url, file_id
                 ),
-                "thumbnail_file_location": "{}/download/{}".format(
-                    self.storage_api_url, file_id
+                "thumbnail_file_location": "{}/iiif/3/{}/full/,150/0/default.jpg".format(
+                    self.cantaloupe_api_url, file_id
                 ),
             }
 

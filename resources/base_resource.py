@@ -17,6 +17,8 @@ class BaseResource(Resource):
             "COLLECTION_API_URL", "http://localhost:8000"
         )
         self.storage_api_url = os.getenv("STORAGE_API_URL", "http://localhost:8001")
+        self.cantaloupe_api_url = os.getenv("CANTALOUPE_API_URL", "http://localhost:8182")
+
         self.upload_source = os.getenv("UPLOAD_SOURCE", "/mnt/media-import")
         self.req = reqparse.RequestParser()
 
