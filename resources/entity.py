@@ -3,6 +3,8 @@ import werkzeug.datastructures
 
 from flask import request
 from resources.base_resource import BaseResource
+from flask import request, g
+import uuid
 
 
 class Entity(BaseResource):
@@ -11,6 +13,10 @@ class Entity(BaseResource):
     )
     def post(self):
         request_body = self.get_request_body()
+        if hasattr(g, "oidc_token_info"):
+            request_body["user"] = g.oidc_token_info["email"]
+        else:
+            request_body["user"] = "default_uploader"
         entity = self.storage.save_item_to_collection("entities", request_body)
         return entity, 201
 
@@ -177,44 +183,26 @@ class EntityMediafilesCreate(BaseResource):
             "entities",
             id,
         )
-        self.req.add_argument(
-            "filename",
-            location="files",
-            required=False,
-            type=werkzeug.datastructures.FileStorage,
-            help="filename to be uploaded",
-        )
-        parse_args = self.req.parse_args()
-        if parse_args.get("filename") is None:
-            # in case a user did not provide filename in payload, return an empty dictionary
-            media_file = dict()
-        else:
-            file_name = parse_args.get("filename").filename
-            media_file = {
-                "filename": file_name,
-                "file_extension": file_name.split(".")[1],
+        request_body = self.get_request_body()
+        mediafile = dict()
+        file_extension = ""
+        file_id = str(uuid.uuid4())
+        if "filename" in request_body:
+            filename = request_body["filename"]
+            file_id = "{}-{}".format(file_id, filename)
+            mediafile = {
+                "filename": filename,
+                "original_file_location": "{}/download/{}".format(
+                    self.storage_api_url, file_id
+                ),
+                "thumbnail_file_location": "{}/download/{}".format(
+                    self.storage_api_url, file_id
+                ),
             }
 
-        mediafile = self.storage.save_item_to_collection("mediafiles", media_file)
+        mediafile = self.storage.save_item_to_collection("mediafiles", mediafile)
         mediafile_id = mediafile["_id"]
-        upload_location = "{}/upload/{}".format(self.storage_api_url, mediafile_id)
-        original_file_location = {
-            "original_file_location": "{}/download/{}".format(
-                self.storage_api_url, mediafile_id
-            )
-        }
-        thumbnail_file_location = {
-            "thumbnail_file_location": "{}/download/{}".format(
-                self.storage_api_url, mediafile_id
-            )
-        }
-        self.storage.patch_item_from_collection(
-            "mediafiles", mediafile_id, original_file_location
-        )
-        self.storage.patch_item_from_collection(
-            "mediafiles", mediafile_id, thumbnail_file_location
-        )
-
+        upload_location = "{}/upload/{}".format(self.storage_api_url, file_id)
         self.storage.add_mediafile_to_entity("entities", id, mediafile_id)
         return upload_location, 201
 

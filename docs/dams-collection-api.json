@@ -779,16 +779,12 @@
         "description": "Create entity mediafiles for a specific ID",
         "operationId": "createEntityIdMediafiles",
         "requestBody": {
+          "description": "Filename of mediafile to be uploaded",
+          "required": true,
           "content": {
-            "multipart/form-data": {
+            "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "filename": {
-                    "type": "string",
-                    "format": "binary"
-                  }
-                }
+                "$ref": "#/components/schemas/uploadFile"
               }
             }
           }
@@ -1505,6 +1501,15 @@
             "type": "string"
           },
           "job_type": {
+            "type": "string"
+          }
+        }
+      },
+      "uploadFile": {
+        "type": "object",
+        "description": "Upload file object",
+        "properties": {
+          "filename": {
             "type": "string"
           }
         }
