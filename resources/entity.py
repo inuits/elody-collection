@@ -184,7 +184,6 @@ class EntityMediafilesCreate(BaseResource):
         )
         request_body = self.get_request_body()
         mediafile = dict()
-        file_extension = ""
         file_id = str(uuid.uuid4())
         if "filename" in request_body:
             filename = request_body["filename"]
