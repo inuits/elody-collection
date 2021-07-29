@@ -17,6 +17,7 @@ class BaseResource(Resource):
             "COLLECTION_API_URL", "http://localhost:8000"
         )
         self.storage_api_url = os.getenv("STORAGE_API_URL", "http://localhost:8001")
+        self.upload_source = os.getenv("UPLOAD_SOURCE", "/mnt/media-import")
         self.req = reqparse.RequestParser()
 
     def get_request_body(self):
@@ -41,14 +42,6 @@ class BaseResource(Resource):
                 message="Item {} doesn't exist in collection {}".format(id, collection),
             )
         return item
-
-    def abort_if_location_not_set(self, config):
-        if "upload_location" not in config.keys():
-            abort(
-                404,
-                message="Upload location not set",
-            )
-        return config["upload_location"]
 
     def get_job_by_signature(self, signature):
         """This method is necessary for reuse in some parts of job creation"""

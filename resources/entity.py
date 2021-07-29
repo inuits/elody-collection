@@ -199,13 +199,21 @@ class EntityMediafilesCreate(BaseResource):
         mediafile_id = mediafile["_id"]
         upload_location = "{}/upload/{}".format(self.storage_api_url, mediafile_id)
         original_file_location = {
-            "original_file_location": "{}/download/{}".format(self.storage_api_url, mediafile_id)
+            "original_file_location": "{}/download/{}".format(
+                self.storage_api_url, mediafile_id
+            )
         }
         thumbnail_file_location = {
-            "thumbnail_file_location": "{}/download/{}".format(self.storage_api_url, mediafile_id)
+            "thumbnail_file_location": "{}/download/{}".format(
+                self.storage_api_url, mediafile_id
+            )
         }
-        self.storage.patch_item_from_collection("mediafiles", mediafile_id, original_file_location)
-        self.storage.patch_item_from_collection("mediafiles", mediafile_id, thumbnail_file_location)
+        self.storage.patch_item_from_collection(
+            "mediafiles", mediafile_id, original_file_location
+        )
+        self.storage.patch_item_from_collection(
+            "mediafiles", mediafile_id, thumbnail_file_location
+        )
 
         self.storage.add_mediafile_to_entity("entities", id, mediafile_id)
         return upload_location, 201
