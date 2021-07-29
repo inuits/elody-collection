@@ -1,7 +1,6 @@
 import app
 import werkzeug.datastructures
 
-from flask import request
 from resources.base_resource import BaseResource
 from flask import request, g
 import uuid
