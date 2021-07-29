@@ -1,25 +1,9 @@
 import app
-import json
 import os
 import uuid
 
 from flask import jsonify
 from resources.base_resource import BaseResource
-from workers.importer import Importer
-
-
-@app.ramq.queue(exchange_name="dams", routing_key="dams.import_start")
-def csv_import(body):
-    body_dict = json.loads(body)
-    upload_location = body_dict["data"]["upload_location"]
-    upload_folder = body_dict["data"]["upload_folder"]
-    collection_api_url = body_dict["data"]["collection_api_url"]
-    storage_api_url = body_dict["data"]["storage_api_url"]
-    importer = Importer(
-        collection_api_url, storage_api_url, upload_location, upload_folder
-    )
-    importer.import_from_csv()
-    return True
 
 
 class ImporterStart(BaseResource):
