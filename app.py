@@ -64,7 +64,6 @@ from resources.entity import (
 from resources.importer import (
     ImporterStart,
     ImporterDirectories,
-    ImporterDrop,
 )
 from resources.job_status import (
     JobStatusByUser,
@@ -87,7 +86,6 @@ api.add_resource(Entity, "/entities")
 
 api.add_resource(ImporterStart, "/importer/start")
 api.add_resource(ImporterDirectories, "/importer/directories")
-api.add_resource(ImporterDrop, "/importer/drop")
 
 api.add_resource(JobUploadMultipleItem, "/jobs/upload/multiple")
 api.add_resource(JobUploadSingleItem, "/jobs/upload/single")
