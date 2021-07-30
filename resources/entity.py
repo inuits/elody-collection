@@ -2,6 +2,7 @@ import app
 import uuid
 
 from flask import g, request
+from flask_restful import abort
 from resources.base_resource import BaseResource
 
 
@@ -193,6 +194,11 @@ class EntityMediafilesCreate(BaseResource):
                     self.cantaloupe_api_url, file_id
                 ),
             }
+        else:
+            abort(
+                405,
+                message="Invalid input",
+            )
 
         mediafile = self.storage.save_item_to_collection("mediafiles", mediafile)
         mediafile_id = mediafile["_id"]
