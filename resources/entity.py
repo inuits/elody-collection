@@ -180,26 +180,23 @@ class EntityMediafilesCreate(BaseResource):
             id,
         )
         content = self.get_request_body()
-        mediafile = dict()
-        file_id = str(uuid.uuid4())
-        if "filename" in content:
-            filename = content["filename"]
-            file_id = "{}-{}".format(file_id, filename)
-            mediafile = {
-                "filename": filename,
-                "original_file_location": "{}/download/{}".format(
-                    self.storage_api_url, file_id
-                ),
-                "thumbnail_file_location": "{}/iiif/3/{}/full/,150/0/default.jpg".format(
-                    self.cantaloupe_api_url, file_id
-                ),
-            }
-        else:
+        if "filename" not in content:
             abort(
                 405,
                 message="Invalid input",
             )
-
+        file_id = str(uuid.uuid4())
+        filename = content["filename"]
+        file_id = "{}-{}".format(file_id, filename)
+        mediafile = {
+            "filename": filename,
+            "original_file_location": "{}/download/{}".format(
+                self.storage_api_url, file_id
+            ),
+            "thumbnail_file_location": "{}/iiif/3/{}/full/,150/0/default.jpg".format(
+                self.cantaloupe_api_url, file_id
+            ),
+        }
         mediafile = self.storage.save_item_to_collection("mediafiles", mediafile)
         mediafile_id = mediafile["_id"]
         upload_location = "{}/upload/{}".format(self.storage_api_url, file_id)
