@@ -4,6 +4,16 @@ import uuid
 from flask import g, request
 from flask_restful import abort
 from resources.base_resource import BaseResource
+from flask import request, g
+import uuid
+from validator import EntityValidator
+from flask_restful import abort
+
+validator = EntityValidator()
+
+def abort_if_not_valid_entity(entity_json):
+    if not validator.validate(entity_json):
+        abort(405, message="Entity doesn't have a valid format".format(id))
 
 
 class Entity(BaseResource):
@@ -12,6 +22,9 @@ class Entity(BaseResource):
     )
     def post(self):
         content = self.get_request_body()
+        abort_if_not_valid_entity(content)
+
+
         if hasattr(g, "oidc_token_info"):
             content["user"] = g.oidc_token_info["email"]
         else:
@@ -59,6 +72,7 @@ class EntityDetail(BaseResource):
             id,
         )
         content = self.get_request_body()
+        abort_if_not_valid_entity(content)
         entity = self.storage.update_item_from_collection("entities", id, content)
         return entity, 201
 

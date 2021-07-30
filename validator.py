@@ -29,11 +29,89 @@ tenant_schema = {
     },
 }
 
+entity_schema = {
+    "type": "object",
+    "default": {},
+    "required": [
+        '_id',
+        'type'
+    ],
+    "properties": {
+        "_id": {
+            "type": "string"
+        },
+        "identifiers": {
+            "type": "array",
+            "default": [],
+            "items": {
+                "$id": "#/properties/identifiers/items"
+            }
+        },
+        "type": {
+            "type": "string",
+            "default": "",
+        },
+        "metadata": {
+            "type": "array",
+            "default": [],
+            "additionalItems": True,
+            "items": {
+                "$id": "#/properties/metadata/items"
+            }
+        },
+        "data": {
+            "type": "object",
+            "title": "The data schema",
+            "description": "An explanation about the purpose of this instance.",
+            "default": {},
+            "required": [],
+            "properties": {
+                "@context": {
+                    "$id": "#/properties/data/properties/%40context",
+                    "type": "array",
+                    "default": [],
+                    "additionalItems": True,
+                    "items": {
+                        "$id": "#/properties/data/properties/%40context/items"
+                    }
+                },
+                "@id": {
+                    "type": "string",
+                    "default": ""
+                },
+                "@type": {
+                    "type": "string",
+                    "default": ""
+                },
+                "memberOf": {
+                    "type": "string",
+                }
+            },
+            "additionalProperties": True
+        },
+        "user": {
+            "type": "string",
+            "default": "",
+        }
+    },
+    "additionalProperties": True
+}
+
 
 class TenantValidator:
     def validate(self, tenant_json):
         try:
             validate(instance=tenant_json, schema=tenant_schema)
+        except Exception as e:
+            print(e)
+            return False
+        return True
+
+
+class EntityValidator:
+    def validate(self, entity_json):
+        try:
+            validate(instance=entity_json, schema=entity_schema)
         except:
             return False
         return True
