@@ -38,12 +38,3 @@ class ImporterDirectories(BaseResource):
             for x in os.walk(self.upload_source)
         ]
         return jsonify(directories)
-
-
-class ImporterDrop(BaseResource):
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openid"]
-    )
-    def post(self):
-        self.storage.drop_all_collections()
-        return "", 201

@@ -9,8 +9,8 @@ class Mediafile(BaseResource):
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )
     def post(self):
-        request = self.get_request_body()
-        mediafile = self.storage.save_item_to_collection("mediafiles", request)
+        content = self.get_request_body()
+        mediafile = self.storage.save_item_to_collection("mediafiles", content)
         return mediafile, 201
 
     @app.oidc.accept_token(
@@ -46,17 +46,17 @@ class MediafileDetail(BaseResource):
     )
     def patch(self, id):
         self.abort_if_item_doesnt_exist("mediafiles", id)
-        request = self.get_request_body()
-        asset = self.storage.patch_item_from_collection("mediafiles", id, request)
-        return asset, 201
+        content = self.get_request_body()
+        mediafile = self.storage.patch_item_from_collection("mediafiles", id, content)
+        return mediafile, 201
 
     @app.oidc.accept_token(
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )
     def put(self, id):
         self.abort_if_item_doesnt_exist("mediafiles", id)
-        request = self.get_request_body()
-        mediafile = self.storage.update_item_from_collection("mediafiles", id, request)
+        content = self.get_request_body()
+        mediafile = self.storage.update_item_from_collection("mediafiles", id, content)
         return mediafile, 201
 
     @app.oidc.accept_token(

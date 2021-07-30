@@ -1,9 +1,8 @@
 import app
-import werkzeug.datastructures
-
-from resources.base_resource import BaseResource
-from flask import request, g
 import uuid
+
+from flask import g, request
+from resources.base_resource import BaseResource
 
 
 class Entity(BaseResource):
@@ -11,12 +10,12 @@ class Entity(BaseResource):
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )
     def post(self):
-        request_body = self.get_request_body()
+        content = self.get_request_body()
         if hasattr(g, "oidc_token_info"):
-            request_body["user"] = g.oidc_token_info["email"]
+            content["user"] = g.oidc_token_info["email"]
         else:
-            request_body["user"] = "default_uploader"
-        entity = self.storage.save_item_to_collection("entities", request_body)
+            content["user"] = "default_uploader"
+        entity = self.storage.save_item_to_collection("entities", content)
         return entity, 201
 
     @app.oidc.accept_token(
@@ -58,8 +57,8 @@ class EntityDetail(BaseResource):
             "entities",
             id,
         )
-        request = self.get_request_body()
-        entity = self.storage.update_item_from_collection("entities", id, request)
+        content = self.get_request_body()
+        entity = self.storage.update_item_from_collection("entities", id, content)
         return entity, 201
 
     @app.oidc.accept_token(
@@ -70,8 +69,8 @@ class EntityDetail(BaseResource):
             "entities",
             id,
         )
-        request = self.get_request_body()
-        entity = self.storage.patch_item_from_collection("entities", id, request)
+        content = self.get_request_body()
+        entity = self.storage.patch_item_from_collection("entities", id, content)
         return entity, 201
 
     @app.oidc.accept_token(
@@ -103,8 +102,8 @@ class EntityMetadata(BaseResource):
             "entities",
             id,
         )
-        request = self.get_request_body()
-        metadata = self.storage.add_collection_item_metadata("entities", id, request)
+        content = self.get_request_body()
+        metadata = self.storage.add_collection_item_metadata("entities", id, content)
         return metadata, 201
 
     @app.oidc.accept_token(
@@ -115,8 +114,8 @@ class EntityMetadata(BaseResource):
             "entities",
             id,
         )
-        request = self.get_request_body()
-        metadata = self.storage.update_collection_item_metadata("entities", id, request)
+        content = self.get_request_body()
+        metadata = self.storage.update_collection_item_metadata("entities", id, content)
         return metadata, 201
 
 
@@ -164,11 +163,8 @@ class EntityMediafiles(BaseResource):
             "entities",
             id,
         )
-        # grab request data ---
-
-        request_body = self.get_request_body()
-        mediafile_id = request_body["_id"]
-
+        content = self.get_request_body()
+        mediafile_id = content["_id"]
         mediafile = self.storage.add_mediafile_to_entity("entities", id, mediafile_id)
         return mediafile, 201
 
@@ -182,11 +178,11 @@ class EntityMediafilesCreate(BaseResource):
             "entities",
             id,
         )
-        request_body = self.get_request_body()
+        content = self.get_request_body()
         mediafile = dict()
         file_id = str(uuid.uuid4())
-        if "filename" in request_body:
-            filename = request_body["filename"]
+        if "filename" in content:
+            filename = content["filename"]
             file_id = "{}-{}".format(file_id, filename)
             mediafile = {
                 "filename": filename,

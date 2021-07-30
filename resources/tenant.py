@@ -17,9 +17,9 @@ class Tenant(BaseResource):
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )
     def post(self):
-        request = self.get_request_body()
-        abort_if_not_valid_tenant(request)
-        tenant = self.storage.save_item_to_collection("tenants", request)
+        content = self.get_request_body()
+        abort_if_not_valid_tenant(content)
+        tenant = self.storage.save_item_to_collection("tenants", content)
         return tenant, 201
 
 
@@ -36,18 +36,18 @@ class TenantDetail(BaseResource):
     )
     def patch(self, id):
         self.abort_if_item_doesnt_exist("tenants", id)
-        request = self.get_request_body()
-        asset = self.storage.patch_item_from_collection("tenants", id, request)
-        return asset, 201
+        content = self.get_request_body()
+        tenant = self.storage.patch_item_from_collection("tenants", id, content)
+        return tenant, 201
 
     @app.oidc.accept_token(
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )
     def put(self, id):
         self.abort_if_item_doesnt_exist("tenants", id)
-        request = self.get_request_body()
-        abort_if_not_valid_tenant(request)
-        tenant = self.storage.update_item_from_collection("tenants", id, request)
+        content = self.get_request_body()
+        abort_if_not_valid_tenant(content)
+        tenant = self.storage.update_item_from_collection("tenants", id, content)
         return tenant, 201
 
     @app.oidc.accept_token(

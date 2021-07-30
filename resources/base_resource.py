@@ -17,13 +17,13 @@ class BaseResource(Resource):
             "COLLECTION_API_URL", "http://localhost:8000"
         )
         self.storage_api_url = os.getenv("STORAGE_API_URL", "http://localhost:8001")
-        self.cantaloupe_api_url = os.getenv("CANTALOUPE_API_URL", "http://localhost:8182")
-
+        self.cantaloupe_api_url = os.getenv(
+            "CANTALOUPE_API_URL", "http://localhost:8182"
+        )
         self.upload_source = os.getenv("UPLOAD_SOURCE", "/mnt/media-import")
         self.req = reqparse.RequestParser()
 
     def get_request_body(self):
-        invalid_input = False
         try:
             request_body = request.get_json()
             invalid_input = request_body is None
@@ -41,7 +41,9 @@ class BaseResource(Resource):
         if item is None:
             abort(
                 404,
-                message="Item {} doesn't exist in collection {}".format(id, collection),
+                message="Item with id {} doesn't exist in collection {}".format(
+                    id, collection
+                ),
             )
         return item
 

@@ -2,7 +2,7 @@ import uuid
 
 
 class MemoryStorageManager:
-    collections = {"config": {}, "entities": {}, "mediafiles": {}, "tenants": {}}
+    collections = {"entities": {}, "mediafiles": {}, "tenants": {}}
 
     def get_items_from_collection(self, collection, skip=0, limit=20):
         items = dict()
