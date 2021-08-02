@@ -29,6 +29,39 @@ tenant_schema = {
     },
 }
 
+mediafile_schema = {
+    "type": "object",
+    "default": {},
+    "required": [
+        "filename",
+        "original_file_location",
+        "thumbnail_file_location",
+        "entities",
+    ],
+    "properties": {
+        "filename": {
+            "type": "string",
+        },
+        "original_file_location": {
+            "type": "string",
+        },
+        "thumbnail_file_location": {
+            "type": "string",
+        },
+        "entities": {
+            "type": "array",
+            "default": [],
+            "items": {
+                "anyOf": [
+                    {
+                        "type": "string",
+                    }
+                ]
+            },
+        },
+    },
+}
+
 entity_schema = {
     "type": "object",
     "default": {},
@@ -94,6 +127,15 @@ class EntityValidator:
     def validate(self, entity_json):
         try:
             validate(instance=entity_json, schema=entity_schema)
+        except:
+            return False
+        return True
+
+
+class MediafileValidator:
+    def validate(self, mediafile_json):
+        try:
+            validate(instance=mediafile_json, schema=mediafile_schema)
         except:
             return False
         return True

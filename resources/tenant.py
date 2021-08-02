@@ -9,7 +9,7 @@ validator = TenantValidator()
 
 def abort_if_not_valid_tenant(tenant_json):
     if not validator.validate(tenant_json):
-        abort(405, message="Tenant doesn't have a valid format")
+        abort(400, message="Tenant doesn't have a valid format")
 
 
 class Tenant(BaseResource):

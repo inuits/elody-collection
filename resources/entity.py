@@ -11,7 +11,7 @@ validator = EntityValidator()
 
 def abort_if_not_valid_entity(entity_json):
     if not validator.validate(entity_json):
-        abort(405, message="Entity doesn't have a valid format")
+        abort(400, message="Entity doesn't have a valid format")
 
 
 class Entity(BaseResource):
