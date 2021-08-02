@@ -79,6 +79,11 @@ class MongoStorageManager:
         )
         return content
 
+    def add_relations_to_collection_item(self, collection, id, content):
+        self.add_sub_item_to_collection_item(collection, id, "relations", content)
+        self._update_child_relations(collection, id, content)
+        return self.get_collection_item_sub_item(collection, id, "relations")
+
     def save_item_to_collection(self, collection, content):
         content = self._prepare_mongo_document(content, False, str(uuid.uuid4()))
         item_id = self.db[collection].insert_one(content).inserted_id
@@ -150,6 +155,19 @@ class MongoStorageManager:
 
     def _get_multiple_id_query(self, ids):
         return {"$or": [{"_id": {"$in": ids}}, {"identifiers": {"$in": ids}}]}
+
+    def _map_relation(self, relation):
+        mapping = {"authoredBy": "authored", "isIn": "contains"}
+        return mapping.get(relation)
+
+    def _update_child_relations(self, collection, id, relations):
+        for relation in relations:
+            dst_relation = self._map_relation(relation["type"])
+            dst_id = relation["key"]
+            dst_content = {"key": id, "type": dst_relation}
+            self.add_sub_item_to_collection_item(
+                collection, dst_id, "relations", dst_content
+            )
 
     def get_jobs_from_collection(self, collection, target):
         return self.db[collection].find(

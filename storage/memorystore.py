@@ -56,6 +56,11 @@ class MemoryStorageManager:
             return content
         return None
 
+    def add_relations_to_collection_item(self, collection, id, content):
+        self.add_sub_item_to_collection_item(collection, id, "relations", content)
+        self._update_child_relations(collection, id, content)
+        return self.get_collection_item_sub_item(collection, id, "relations")
+
     def save_item_to_collection(self, collection, content):
         gen_id = str(uuid.uuid4())
         content["_id"] = gen_id
@@ -106,3 +111,16 @@ class MemoryStorageManager:
             ] == obj_id:
                 return item["_id"]
         return None
+
+    def _map_relation(self, relation):
+        mapping = {"authoredBy": "authored", "isIn": "contains"}
+        return mapping.get(relation)
+
+    def _update_child_relations(self, collection, obj_id, relations):
+        for relation in relations:
+            dst_relation = self._map_relation(relation["type"])
+            dst_id = relation["key"]
+            dst_content = {"key": obj_id, "type": dst_relation}
+            self.add_sub_item_to_collection_item(
+                collection, dst_id, "relations", dst_content
+            )

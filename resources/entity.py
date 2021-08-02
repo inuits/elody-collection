@@ -227,3 +227,21 @@ class EntityMediafilesCreate(BaseResource):
         upload_location = "{}/upload/{}".format(self.storage_api_url, file_id)
         self.storage.add_mediafile_to_collection_item("entities", id, mediafile_id)
         return upload_location, 201
+
+
+class EntityRelations(BaseResource):
+    @app.oidc.accept_token(
+        require_token=BaseResource.token_required, scopes_required=["openId"]
+    )
+    def get(self, id):
+        self.abort_if_item_doesnt_exist("entities", id)
+        return self.storage.get_collection_item_sub_item("entities", id, "relations")
+
+    @app.oidc.accept_token(
+        require_token=BaseResource.token_required, scopes_required=["openId"]
+    )
+    def post(self, id):
+        self.abort_if_item_doesnt_exist("entities", id)
+        content = self.get_request_body()
+        relations = self.storage.add_relations_to_collection_item(content)
+        return relations, 201
