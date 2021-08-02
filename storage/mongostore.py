@@ -14,12 +14,19 @@ class MongoStorageManager:
         client = MongoClient(mongo_host, mongo_port)
         self.db = client[mongo_db]
 
-    def get_items_from_collection(self, collection, skip=0, limit=20):
+    def get_items_from_collection(self, collection, skip=0, limit=20, ids=False):
         items = dict()
-        count = self.db[collection].count_documents({})
+        if ids:
+            documents = self.db[collection].find(self._get_multiple_id_query(ids))
+            count = self.db[collection].count_documents(
+                self._get_multiple_id_query(ids)
+            )
+        else:
+            documents = self.db[collection].find(skip=skip, limit=limit)
+            count = self.db[collection].count_documents({})
         items["count"] = count
         items["results"] = list()
-        for document in self.db[collection].find(skip=skip, limit=limit):
+        for document in documents:
             items["results"].append(self._prepare_mongo_document(document, True))
         return items
 
@@ -141,6 +148,9 @@ class MongoStorageManager:
 
     def _get_id_query(self, id):
         return {"$or": [{"_id": id}, {"identifiers": id}]}
+
+    def _get_multiple_id_query(self, ids):
+        return {"$or": [{"_id": {"$in": ids}}, {"identifiers": {"$in": ids}}]}
 
     def get_jobs_from_collection(self, collection, target):
         return self.db[collection].find(
