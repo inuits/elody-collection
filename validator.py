@@ -33,7 +33,6 @@ entity_schema = {
     "type": "object",
     "default": {},
     "required": [
-        '_id',
         'type'
     ],
     "properties": {
