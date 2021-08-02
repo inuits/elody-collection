@@ -1,16 +1,16 @@
 import app
 
 from flask import request
-from resources.base_resource import BaseResource
-from validator import EntityValidator
 from flask_restful import abort
+from resources.base_resource import BaseResource
+from validator import MediafileValidator
 
-validator = EntityValidator()
+validator = MediafileValidator()
 
 
 def abort_if_not_valid_mediafile(mediafile_json):
     if not validator.validate(mediafile_json):
-        abort(400, message="Mediafile doesn't have a valid format".format(id))
+        abort(400, message="Mediafile doesn't have a valid format")
 
 
 class Mediafile(BaseResource):
