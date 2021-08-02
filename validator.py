@@ -34,9 +34,6 @@ mediafile_schema = {
     "default": {},
     "required": [
         "filename",
-        "original_file_location",
-        "thumbnail_file_location",
-        "entities",
     ],
     "properties": {
         "filename": {
