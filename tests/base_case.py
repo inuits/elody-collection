@@ -52,8 +52,7 @@ class BaseCase(unittest.TestCase):
         app.testing = True
 
         self.app = app.test_client()
-        self.storage = StorageManager().get_db_engine()
-        self.addCleanup(self.storage.drop_all_collections)
+        self.addCleanup(StorageManager().get_db_engine().drop_all_collections)
 
     def create_entity(self):
         return self.app.post(
