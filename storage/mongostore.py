@@ -67,7 +67,8 @@ class MongoStorageManager:
         if identifiers and "identifiers" in identifiers:
             identifiers = identifiers["identifiers"]
             self.db["mediafiles"].update_one(
-                self._get_id_query(mediafile_id), {"$set": {"entities": identifiers}}
+                self._get_id_query(mediafile_id),
+                {"$addToSet": {"entities": identifiers}},
             )
             mediafile = self.db["mediafiles"].find_one(self._get_id_query(mediafile_id))
         return mediafile
@@ -110,11 +111,9 @@ class MongoStorageManager:
         self.patch_item_from_collection(collection, id, patch_data)
 
     def drop_all_collections(self):
-        self.db.config.drop()
         self.db.entities.drop()
         self.db.mediafiles.drop()
         self.db.tenants.drop()
-        return
 
     def _prepare_mongo_document(self, document, reversed, id=None):
         if id:

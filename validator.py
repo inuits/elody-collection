@@ -32,19 +32,13 @@ tenant_schema = {
 entity_schema = {
     "type": "object",
     "default": {},
-    "required": [
-        'type'
-    ],
+    "required": ["type"],
     "properties": {
-        "_id": {
-            "type": "string"
-        },
+        "_id": {"type": "string"},
         "identifiers": {
             "type": "array",
             "default": [],
-            "items": {
-                "$id": "#/properties/identifiers/items"
-            }
+            "items": {"$id": "#/properties/identifiers/items"},
         },
         "type": {
             "type": "string",
@@ -54,9 +48,7 @@ entity_schema = {
             "type": "array",
             "default": [],
             "additionalItems": True,
-            "items": {
-                "$id": "#/properties/metadata/items"
-            }
+            "items": {"$id": "#/properties/metadata/items"},
         },
         "data": {
             "type": "object",
@@ -70,30 +62,22 @@ entity_schema = {
                     "type": "array",
                     "default": [],
                     "additionalItems": True,
-                    "items": {
-                        "$id": "#/properties/data/properties/%40context/items"
-                    }
+                    "items": {"$id": "#/properties/data/properties/%40context/items"},
                 },
-                "@id": {
-                    "type": "string",
-                    "default": ""
-                },
-                "@type": {
-                    "type": "string",
-                    "default": ""
-                },
+                "@id": {"type": "string", "default": ""},
+                "@type": {"type": "string", "default": ""},
                 "memberOf": {
                     "type": "string",
-                }
+                },
             },
-            "additionalProperties": True
+            "additionalProperties": True,
         },
         "user": {
             "type": "string",
             "default": "",
-        }
+        },
     },
-    "additionalProperties": True
+    "additionalProperties": True,
 }
 
 
@@ -101,8 +85,7 @@ class TenantValidator:
     def validate(self, tenant_json):
         try:
             validate(instance=tenant_json, schema=tenant_schema)
-        except Exception as e:
-            print(e)
+        except:
             return False
         return True
 

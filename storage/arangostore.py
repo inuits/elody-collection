@@ -90,7 +90,12 @@ FOR c IN @@collection
     LET newSubItem = PUSH(c.@sub_item, @content, true)
     UPDATE c WITH {@sub_item: newSubItem} IN @@collection
 """
-        bind = {"@collection": collection, "id": id, "sub_item": sub_item, "content": content}
+        bind = {
+            "@collection": collection,
+            "id": id,
+            "sub_item": sub_item,
+            "content": content,
+        }
         self._execute_query(aql, bind)
         return content
 

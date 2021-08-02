@@ -4,16 +4,14 @@ import uuid
 from flask import g, request
 from flask_restful import abort
 from resources.base_resource import BaseResource
-from flask import request, g
-import uuid
 from validator import EntityValidator
-from flask_restful import abort
 
 validator = EntityValidator()
 
+
 def abort_if_not_valid_entity(entity_json):
     if not validator.validate(entity_json):
-        abort(405, message="Entity doesn't have a valid format".format(id))
+        abort(405, message="Entity doesn't have a valid format")
 
 
 class Entity(BaseResource):
@@ -23,8 +21,6 @@ class Entity(BaseResource):
     def post(self):
         content = self.get_request_body()
         abort_if_not_valid_entity(content)
-
-
         if hasattr(g, "oidc_token_info"):
             content["user"] = g.oidc_token_info["email"]
         else:
@@ -123,7 +119,9 @@ class EntityMetadata(BaseResource):
             id,
         )
         content = self.get_request_body()
-        metadata = self.storage.add_sub_item_to_collection_item("entities", id, "metadata", content)
+        metadata = self.storage.add_sub_item_to_collection_item(
+            "entities", id, "metadata", content
+        )
         return metadata, 201
 
     @app.oidc.accept_token(
@@ -135,7 +133,9 @@ class EntityMetadata(BaseResource):
             id,
         )
         content = self.get_request_body()
-        metadata = self.storage.update_collection_item_sub_item("entities", id, "metadata", content)
+        metadata = self.storage.update_collection_item_sub_item(
+            "entities", id, "metadata", content
+        )
         return metadata, 201
 
 
@@ -148,7 +148,9 @@ class EntityMetadataKey(BaseResource):
             "entities",
             id,
         )
-        metadata = self.storage.get_collection_item_sub_item_key("entities", id, "metadata", key)
+        metadata = self.storage.get_collection_item_sub_item_key(
+            "entities", id, "metadata", key
+        )
         return metadata
 
     @app.oidc.accept_token(
@@ -159,7 +161,9 @@ class EntityMetadataKey(BaseResource):
             "entities",
             id,
         )
-        self.storage.delete_collection_item_sub_item_key("entities", id, "metadata", key)
+        self.storage.delete_collection_item_sub_item_key(
+            "entities", id, "metadata", key
+        )
         return "", 204
 
 
@@ -185,7 +189,9 @@ class EntityMediafiles(BaseResource):
         )
         content = self.get_request_body()
         mediafile_id = content["_id"]
-        mediafile = self.storage.add_mediafile_to_collection_item("entities", id, mediafile_id)
+        mediafile = self.storage.add_mediafile_to_collection_item(
+            "entities", id, mediafile_id
+        )
         return mediafile, 201
 
 
