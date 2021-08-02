@@ -8,6 +8,7 @@ COPY docker/entrypoint*.sh /
 COPY docker/run-tests.sh /
 COPY docker/test-coverage.sh /
 COPY requirements.txt ./
+COPY requirements_dev.txt ./
 
 ENTRYPOINT ["/entrypoint.sh"]
 
@@ -18,7 +19,7 @@ ARG APP_ENV
 
 ENV APP_ENV=${APP_ENV}
 
-RUN pip install -r requirements.txt
+RUN pip install -r requirements_dev.txt
 
 ### Build stage
 FROM base-stage AS build-stage

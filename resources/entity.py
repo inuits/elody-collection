@@ -38,7 +38,12 @@ class Entity(BaseResource):
     def get(self):
         skip = int(request.args.get("skip", 0))
         limit = int(request.args.get("limit", 20))
-        entities = self.storage.get_items_from_collection("entities", skip, limit)
+        ids = request.args.get("ids")
+        if ids:
+            ids = ids.split(",")
+        else:
+            ids = False
+        entities = self.storage.get_items_from_collection("entities", skip, limit, ids)
         count = entities["count"]
         entities["limit"] = limit
         if skip + limit < count:
