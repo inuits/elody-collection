@@ -18,17 +18,17 @@ class MemoryStorageManager:
             return self.collections[collection].get(gen_id, None)
         return None
 
-    def get_collection_item_metadata(self, collection, obj_id):
+    def get_collection_item_sub_item(self, collection, obj_id, sub_item):
         if item := self.get_item_from_collection_by_id(collection, obj_id):
-            return item["metadata"] if "metadata" in item else []
+            return item[sub_item] if sub_item in item else []
         return None
 
-    def get_collection_item_metadata_key(self, collection, obj_id, key):
-        if metadata := self.get_collection_item_metadata(collection, obj_id):
+    def get_collection_item_sub_item_key(self, collection, obj_id, sub_item, key):
+        if obj := self.get_collection_item_sub_item(collection, obj_id, sub_item):
             return list(
                 filter(
                     lambda elem: elem["key"] == key,
-                    metadata,
+                    obj,
                 )
             )
         return None
@@ -43,17 +43,17 @@ class MemoryStorageManager:
             )
         return None
 
-    def add_collection_item_metadata(self, collection, obj_id, content):
-        if gen_id := self._get_collection_item_gen_id_by_identifier(collection, obj_id):
-            self.collections[collection][gen_id]["metadata"].append(content)
-            return content
-        return None
-
-    def add_mediafile_to_entity(self, collection, obj_id, mediafile_id):
+    def add_mediafile_to_collection_item(self, collection, obj_id, mediafile_id):
         if item := self.get_item_from_collection_by_id(collection, obj_id):
             identifiers = item["identifiers"]
             self.collections["mediafiles"][mediafile_id][collection] = identifiers
             return self.collections["mediafiles"][mediafile_id]
+        return None
+
+    def add_sub_item_to_collection_item(self, collection, obj_id, sub_item, content):
+        if gen_id := self._get_collection_item_gen_id_by_identifier(collection, obj_id):
+            self.collections[collection][gen_id][sub_item].append(content)
+            return content
         return None
 
     def save_item_to_collection(self, collection, content):
@@ -70,10 +70,10 @@ class MemoryStorageManager:
             return self.collections[collection][gen_id]
         return None
 
-    def update_collection_item_metadata(self, collection, obj_id, content):
+    def update_collection_item_sub_item(self, collection, obj_id, sub_item, content):
         if gen_id := self._get_collection_item_gen_id_by_identifier(collection, obj_id):
-            self.collections[collection][gen_id]["metadata"] = content
-            return self.collections[collection][gen_id]["metadata"]
+            self.collections[collection][gen_id][sub_item] = content
+            return self.collections[collection][gen_id][sub_item]
         return None
 
     def patch_item_from_collection(self, collection, obj_id, content):
@@ -87,12 +87,12 @@ class MemoryStorageManager:
         gen_id = self._get_collection_item_gen_id_by_identifier(collection, obj_id)
         self.collections[collection].pop(gen_id, None)
 
-    def delete_collection_item_metadata_key(self, collection, obj_id, key):
+    def delete_collection_item_sub_item_key(self, collection, obj_id, sub_item, key):
         if gen_id := self._get_collection_item_gen_id_by_identifier(collection, obj_id):
-            self.collections[collection][gen_id]["metadata"] = list(
+            self.collections[collection][gen_id][sub_item] = list(
                 filter(
                     lambda elem: elem["key"] != key,
-                    self.collections[collection][gen_id]["metadata"],
+                    self.collections[collection][gen_id][sub_item],
                 )
             )
 

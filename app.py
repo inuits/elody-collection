@@ -59,7 +59,6 @@ from resources.entity import (
     EntityMetadataKey,
     EntityMediafiles,
     EntityMediafilesCreate,
-    EntityRelationships,
 )
 from resources.importer import (
     ImporterStart,
@@ -76,7 +75,6 @@ from resources.mediafile import Mediafile, MediafileDetail
 from resources.spec import OpenAPISpec, AsyncAPISpec
 from resources.tenant import Tenant, TenantDetail
 
-api.add_resource(EntityRelationships, "/entities/<string:entity_id>/relations")
 api.add_resource(EntityMediafilesCreate, "/entities/<string:id>/mediafiles/create")
 api.add_resource(EntityMediafiles, "/entities/<string:id>/mediafiles")
 api.add_resource(EntityMetadataKey, "/entities/<string:id>/metadata/<string:key>")

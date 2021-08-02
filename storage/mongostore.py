@@ -36,22 +36,22 @@ class MongoStorageManager:
             document = self._prepare_mongo_document(document, True)
         return document
 
-    def get_collection_item_metadata(self, collection, id):
-        metadata = []
+    def get_collection_item_sub_item(self, collection, id, sub_item):
+        ret = []
         document = self.db[collection].find_one(
-            self._get_id_query(id), {"metadata": 1, "_id": 0}
+            self._get_id_query(id), {sub_item: 1, "_id": 0}
         )
-        if document and "metadata" in document:
-            metadata = document["metadata"]
-        return metadata
+        if document and sub_item in document:
+            ret = document[sub_item]
+        return ret
 
-    def get_collection_item_metadata_key(self, collection, id, key):
-        metadata = []
-        all_metadata = self.get_collection_item_metadata(collection, id)
-        for metadata_object in all_metadata:
-            if metadata_object["key"] == key:
-                metadata.append(metadata_object)
-        return metadata
+    def get_collection_item_sub_item_key(self, collection, id, sub_item, key):
+        ret = []
+        all_sub_items = self.get_collection_item_sub_item(collection, id, sub_item)
+        for obj in all_sub_items:
+            if obj["key"] == key:
+                ret.append(obj)
+        return ret
 
     def get_collection_item_mediafiles(self, collection, id):
         mediafiles = []
@@ -59,7 +59,7 @@ class MongoStorageManager:
             mediafiles.append(mediafile)
         return mediafiles
 
-    def add_mediafile_to_entity(self, collection, id, mediafile_id):
+    def add_mediafile_to_collection_item(self, collection, id, mediafile_id):
         mediafile = None
         identifiers = self.db[collection].find_one(
             self._get_id_query(id), {"identifiers": 1}
@@ -72,9 +72,9 @@ class MongoStorageManager:
             mediafile = self.db["mediafiles"].find_one(self._get_id_query(mediafile_id))
         return mediafile
 
-    def add_collection_item_metadata(self, collection, id, content):
+    def add_sub_item_to_collection_item(self, collection, id, sub_item, content):
         self.db[collection].update_one(
-            self._get_id_query(id), {"$addToSet": {"metadata": content}}
+            self._get_id_query(id), {"$addToSet": {sub_item: content}}
         )
         return content
 
@@ -88,10 +88,10 @@ class MongoStorageManager:
         self.db[collection].replace_one(self._get_id_query(id), content)
         return self.get_item_from_collection_by_id(collection, id)
 
-    def update_collection_item_metadata(self, collection, id, content):
-        patch_data = {"metadata": content}
+    def update_collection_item_sub_item(self, collection, id, sub_item, content):
+        patch_data = {sub_item: content}
         item = self.patch_item_from_collection(collection, id, patch_data)
-        return item["metadata"]
+        return item[sub_item]
 
     def patch_item_from_collection(self, collection, id, content):
         content = self._prepare_mongo_document(content, False)
@@ -101,12 +101,12 @@ class MongoStorageManager:
     def delete_item_from_collection(self, collection, id):
         self.db[collection].delete_one(self._get_id_query(id))
 
-    def delete_collection_item_metadata_key(self, collection, id, key):
-        patch_data = {"metadata": []}
-        all_metadata = self.get_collection_item_metadata(collection, id)
-        for metadata_object in all_metadata:
-            if metadata_object["key"] != key:
-                patch_data["metadata"].append(metadata_object)
+    def delete_collection_item_sub_item_key(self, collection, id, sub_item, key):
+        patch_data = {sub_item: []}
+        all_sub_items = self.get_collection_item_sub_item(collection, id, sub_item)
+        for obj in all_sub_items:
+            if obj["key"] != key:
+                patch_data[sub_item].append(obj)
         self.patch_item_from_collection(collection, id, patch_data)
 
     def drop_all_collections(self):
@@ -163,11 +163,3 @@ class MongoStorageManager:
                 ]
             }
         )
-
-    def get_entity_relationships(self, collection, e_id):
-        relations = list()
-        relation = self.db[collection].find({"relation": e_id})
-        if relation:
-            for item in relation:
-                relations.append(item)
-        return relations

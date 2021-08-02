@@ -45,27 +45,27 @@ class ArangoStorageManager:
             item = None
         return item
 
-    def get_collection_item_metadata(self, collection, id):
-        metadata = []
-        queryResults = self._get_field_for_id(collection, id, "metadata")
+    def get_collection_item_sub_item(self, collection, id, sub_item):
+        ret = []
+        queryResults = self._get_field_for_id(collection, id, sub_item)
         if queryResults:
-            metadata = queryResults[0]
-        return metadata
+            ret = queryResults[0]
+        return ret
 
-    def get_collection_item_metadata_key(self, collection, id, key):
-        metadata = []
+    def get_collection_item_sub_item_key(self, collection, id, sub_item, key):
+        ret = []
         aql = """
 FOR c IN @@collection
     FILTER @id IN c.identifiers OR c._key == @id
-    FOR metadata IN c.metadata
-        FILTER metadata.key == @key
-        RETURN metadata
+    FOR obj IN c.@sub_item
+        FILTER obj.key == @key
+        RETURN obj
 """
-        bind = {"@collection": collection, "id": id, "key": key}
+        bind = {"@collection": collection, "id": id, "sub_item": sub_item, "key": key}
         queryResults = self._execute_query(aql, bind)
         for queryResult in queryResults:
-            metadata.append(queryResult)
-        return metadata
+            ret.append(queryResult)
+        return ret
 
     def get_collection_item_mediafiles(self, collection, id):
         entity = self.get_raw_item_from_collection_by_id(collection, id)
@@ -74,7 +74,7 @@ FOR c IN @@collection
             mediafiles.append(self.db.fetchDocument(edge["_to"]).getStore())
         return mediafiles
 
-    def add_mediafile_to_entity(self, collection, id, mediafile_id):
+    def add_mediafile_to_collection_item(self, collection, id, mediafile_id):
         entity = self.get_raw_item_from_collection_by_id(collection, id)
         if not entity:
             return None
@@ -83,14 +83,14 @@ FOR c IN @@collection
         )
         return self.db.fetchDocument(mediafile_id).getStore()
 
-    def add_collection_item_metadata(self, collection, id, content):
+    def add_sub_item_to_collection_item(self, collection, id, sub_item, content):
         aql = """
 FOR c IN @@collection
     FILTER @id IN c.identifiers OR c._key == @id
-    LET newMetadata = PUSH(c.metadata, @metadata, true)
-    UPDATE c WITH {metadata: newMetadata} IN @@collection
+    LET newSubItem = PUSH(c.@sub_item, @content, true)
+    UPDATE c WITH {@sub_item: newSubItem} IN @@collection
 """
-        bind = {"@collection": collection, "id": id, "metadata": content}
+        bind = {"@collection": collection, "id": id, "sub_item": sub_item, "content": content}
         self._execute_query(aql, bind)
         return content
 
@@ -110,10 +110,10 @@ FOR c IN @@collection
         item.save()
         return item.getStore()
 
-    def update_collection_item_metadata(self, collection, id, content):
-        patch_data = {"metadata": content}
+    def update_collection_item_sub_item(self, collection, id, sub_item, content):
+        patch_data = {sub_item: content}
         item = self.patch_item_from_collection(collection, id, patch_data)
-        return item["metadata"]
+        return item[sub_item]
 
     def patch_item_from_collection(self, collection, id, content):
         key = self._get_key_for_id(collection, id)
@@ -126,18 +126,18 @@ FOR c IN @@collection
         key = self._get_key_for_id(collection, id)
         self.db[collection][key].delete()
 
-    def delete_collection_item_metadata_key(self, collection, id, key):
+    def delete_collection_item_sub_item_key(self, collection, id, sub_item, key):
         aql = """
 FOR c IN @@collection
     FILTER @id IN c.identifiers OR c._key == @id
-    LET filteredMetadata = (
-        FOR metadata IN c.metadata
-            FILTER metadata.key != @key
-            RETURN metadata
+    LET filteredSubItems = (
+        FOR obj IN c.@sub_item
+            FILTER obj.key != @key
+            RETURN obj
     )
-    UPDATE c WITH {metadata: filteredMetadata} IN @@collection
+    UPDATE c WITH {@sub_item: filteredSubItems} IN @@collection
 """
-        bind = {"@collection": collection, "id": id, "key": key}
+        bind = {"@collection": collection, "id": id, "sub_item": sub_item, "key": key}
         queryResults = self._execute_query(aql, bind)
 
     def drop_all_collections(self):
@@ -163,6 +163,3 @@ FOR c IN @@collection
             return self.conn.createDatabase(arango_db_name)
         else:
             return self.conn[arango_db_name]
-
-    def get_entity_relationships(self, collection, e_id):
-        pass
