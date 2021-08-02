@@ -17,7 +17,9 @@ class MongoStorageManager:
     def get_items_from_collection(self, collection, skip=0, limit=20, ids=False):
         items = dict()
         if ids:
-            documents = self.db[collection].find(self._get_multiple_id_query(ids), skip=skip, limit=limit)
+            documents = self.db[collection].find(
+                self._get_multiple_id_query(ids), skip=skip, limit=limit
+            )
             count = self.db[collection].count_documents(
                 self._get_multiple_id_query(ids)
             )
@@ -68,7 +70,7 @@ class MongoStorageManager:
             identifiers = identifiers["identifiers"]
             self.db["mediafiles"].update_one(
                 self._get_id_query(mediafile_id),
-                {"$addToSet": {"entities": identifiers}},
+                {"$addToSet": {"entities": {"$each": identifiers}}},
             )
             mediafile = self.db["mediafiles"].find_one(self._get_id_query(mediafile_id))
         return mediafile
