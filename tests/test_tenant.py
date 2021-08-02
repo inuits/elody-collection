@@ -26,7 +26,7 @@ class TenantTest(BaseCase):
 
         self.assertEqual(str, type(response.json["message"]))
         self.assertEqual("Tenant doesn't have a valid format", response.json["message"])
-        self.assertEqual(405, response.status_code)
+        self.assertEqual(400, response.status_code)
 
     def test_invalid_input_tenant_create(self):
         tenant = "<tenant><location>http://dams-storage.inuits.io/1234-abcd</location><tenant>"

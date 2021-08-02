@@ -11,7 +11,7 @@ class MediafileTest(BaseCase):
         self.assertEqual(201, response.status_code)
 
     def test_invalid_input_mediafile_create(self):
-        mediafile = "<mediafile><location>http://dams-storage.inuits.io/1234-abcd</location><mediafile>"
+        mediafile = "<mediafile><original_file_location>http://dams-storage.inuits.io/1234-abcd</original_file_location><mediafile>"
 
         response = self.app.post(
             "/mediafiles", headers={"content-type": "application/json"}, data=mediafile
@@ -53,7 +53,8 @@ class MediafileTest(BaseCase):
                 "_id": _id,
                 "identifiers": ["12345", "abcde"],
                 "type": "mediafile",
-                "location": "http://dams-storage.inuits.io/download/test.jpg",
+                "filename": "test.jpg",
+                "original_file_location": "http://dams-storage.inuits.io/download/test.jpg",
                 "format": "jpg",
             }
         )
@@ -65,7 +66,7 @@ class MediafileTest(BaseCase):
         )
 
         self.valid_mediafile(response.json)
-        self.assertEqual(5, len(response.json))
+        self.assertEqual(6, len(response.json))
         self.assertEqual(str, type(response.json["format"]))
         self.assertEqual("jpg", response.json["format"])
         self.assertEqual(201, response.status_code)
@@ -74,7 +75,7 @@ class MediafileTest(BaseCase):
         update = json.dumps(
             {
                 "_id": "non-existent-id",
-                "location": "http://dams-storage.inuits.io/download/test.jpg",
+                "original_file_location": "http://dams-storage.inuits.io/download/test.jpg",
                 "format": "jpg",
             }
         )
@@ -103,7 +104,7 @@ class MediafileTest(BaseCase):
         )
 
         self.valid_mediafile(response.json)
-        self.assertEqual(4, len(response.json))
+        self.assertEqual(5, len(response.json))
         self.assertEqual(str, type(response.json["format"]))
         self.assertEqual("jpg", response.json["format"])
         self.assertEqual(201, response.status_code)
