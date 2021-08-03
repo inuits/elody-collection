@@ -90,13 +90,21 @@ class MemoryStorageManager:
         return None
 
     def update_collection_item_relations(self, collection, id, content):
-        self.update_collection_item_sub_item(collection, id, "relations", content)
-        # Deleting and then adding ensure that new relations are made as well
-        for item in content:
+        for item in self.get_collection_item_sub_item(collection, id, "relations"):
             self.delete_collection_item_sub_item_key(
                 collection, item["key"], "relations", id
             )
+        self.update_collection_item_sub_item(collection, id, "relations", content)
         self._add_child_relations(collection, id, content)
+        return content
+
+    def patch_collection_item_relations(self, collection, id, content):
+        for item in content:
+            self.delete_collection_item_sub_item_key(collection, id, "relations", item["key"])
+            self.delete_collection_item_sub_item_key(collection, item["key"], "relations", id)
+        self.update_collection_item_sub_item(collection, id, "relations", content)
+        self._add_child_relations(collection, id, content)
+        return content
 
     def patch_item_from_collection(self, collection, obj_id, content):
         if gen_id := self._get_collection_item_gen_id_by_identifier(collection, obj_id):

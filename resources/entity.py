@@ -220,7 +220,7 @@ class EntityRelations(BaseResource):
     def put(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
-        relations = self.storage.update_collection_item_relations(content)
+        relations = self.storage.update_collection_item_relations("entities", id, content)
         return relations, 201
 
     @app.oidc.accept_token(
@@ -229,5 +229,5 @@ class EntityRelations(BaseResource):
     def patch(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
-        relations = self.storage.update_collection_item_relations(content)
+        relations = self.storage.patch_collection_item_relations("entities", id, content)
         return relations, 201
