@@ -66,7 +66,7 @@ class MemoryStorageManager:
 
     def add_relations_to_collection_item(self, collection, id, content):
         self.add_sub_item_to_collection_item(collection, id, "relations", content)
-        self._update_child_relations(collection, id, content)
+        self._add_child_relations(collection, id, content)
         return self.get_collection_item_sub_item(collection, id, "relations")
 
     def save_item_to_collection(self, collection, content):
@@ -88,6 +88,15 @@ class MemoryStorageManager:
             self.collections[collection][gen_id][sub_item] = content
             return self.collections[collection][gen_id][sub_item]
         return None
+
+    def update_collection_item_relations(self, collection, id, content):
+        self.update_collection_item_sub_item(collection, id, "relations", content)
+        # Deleting and then adding ensure that new relations are made as well
+        for item in content:
+            self.delete_collection_item_sub_item_key(
+                collection, item["key"], "relations", id
+            )
+        self._add_child_relations(collection, id, content)
 
     def patch_item_from_collection(self, collection, obj_id, content):
         if gen_id := self._get_collection_item_gen_id_by_identifier(collection, obj_id):
@@ -124,7 +133,7 @@ class MemoryStorageManager:
         mapping = {"authoredBy": "authored", "isIn": "contains"}
         return mapping.get(relation)
 
-    def _update_child_relations(self, collection, obj_id, relations):
+    def _add_child_relations(self, collection, obj_id, relations):
         for relation in relations:
             dst_relation = self._map_relation(relation["type"])
             dst_id = relation["key"]

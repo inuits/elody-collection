@@ -58,20 +58,13 @@ class EntityDetail(BaseResource):
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )
     def get(self, id):
-        entity = self.abort_if_item_doesnt_exist(
-            "entities",
-            id,
-        )
-        return entity
+        return self.abort_if_item_doesnt_exist("entities", id)
 
     @app.oidc.accept_token(
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )
     def put(self, id):
-        self.abort_if_item_doesnt_exist(
-            "entities",
-            id,
-        )
+        self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
         abort_if_not_valid_entity(content)
         entity = self.storage.update_item_from_collection("entities", id, content)
@@ -81,10 +74,7 @@ class EntityDetail(BaseResource):
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )
     def patch(self, id):
-        self.abort_if_item_doesnt_exist(
-            "entities",
-            id,
-        )
+        self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
         entity = self.storage.patch_item_from_collection("entities", id, content)
         return entity, 201
@@ -103,10 +93,7 @@ class EntityMetadata(BaseResource):
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )
     def get(self, id):
-        self.abort_if_item_doesnt_exist(
-            "entities",
-            id,
-        )
+        self.abort_if_item_doesnt_exist("entities", id)
         metadata = self.storage.get_collection_item_sub_item("entities", id, "metadata")
         return metadata
 
@@ -114,10 +101,7 @@ class EntityMetadata(BaseResource):
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )
     def post(self, id):
-        self.abort_if_item_doesnt_exist(
-            "entities",
-            id,
-        )
+        self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
         metadata = self.storage.add_sub_item_to_collection_item(
             "entities", id, "metadata", content
@@ -128,10 +112,7 @@ class EntityMetadata(BaseResource):
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )
     def put(self, id):
-        self.abort_if_item_doesnt_exist(
-            "entities",
-            id,
-        )
+        self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
         metadata = self.storage.update_collection_item_sub_item(
             "entities", id, "metadata", content
@@ -144,10 +125,7 @@ class EntityMetadataKey(BaseResource):
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )
     def get(self, id, key):
-        self.abort_if_item_doesnt_exist(
-            "entities",
-            id,
-        )
+        self.abort_if_item_doesnt_exist("entities", id)
         metadata = self.storage.get_collection_item_sub_item_key(
             "entities", id, "metadata", key
         )
@@ -157,10 +135,7 @@ class EntityMetadataKey(BaseResource):
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )
     def delete(self, id, key):
-        self.abort_if_item_doesnt_exist(
-            "entities",
-            id,
-        )
+        self.abort_if_item_doesnt_exist("entities", id)
         self.storage.delete_collection_item_sub_item_key(
             "entities", id, "metadata", key
         )
@@ -172,10 +147,7 @@ class EntityMediafiles(BaseResource):
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )
     def get(self, id):
-        self.abort_if_item_doesnt_exist(
-            "entities",
-            id,
-        )
+        self.abort_if_item_doesnt_exist("entities", id)
         mediafiles = self.storage.get_collection_item_mediafiles("entities", id)
         return mediafiles
 
@@ -183,10 +155,7 @@ class EntityMediafiles(BaseResource):
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )
     def post(self, id):
-        self.abort_if_item_doesnt_exist(
-            "entities",
-            id,
-        )
+        self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
         mediafile_id = content["_id"]
         mediafile = self.storage.add_mediafile_to_collection_item(
@@ -200,10 +169,7 @@ class EntityMediafilesCreate(BaseResource):
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )
     def post(self, id):
-        self.abort_if_item_doesnt_exist(
-            "entities",
-            id,
-        )
+        self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
         if "filename" not in content:
             abort(
@@ -243,5 +209,25 @@ class EntityRelations(BaseResource):
     def post(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
-        relations = self.storage.add_relations_to_collection_item(content)
+        relations = self.storage.add_relations_to_collection_item(
+            "entities", id, content
+        )
+        return relations, 201
+
+    @app.oidc.accept_token(
+        require_token=BaseResource.token_required, scopes_required=["openid"]
+    )
+    def put(self, id):
+        self.abort_if_item_doesnt_exist("entities", id)
+        content = self.get_request_body()
+        relations = self.storage.update_collection_item_relations(content)
+        return relations, 201
+
+    @app.oidc.accept_token(
+        require_token=BaseResource.token_required, scopes_required=["openid"]
+    )
+    def patch(self, id):
+        self.abort_if_item_doesnt_exist("entities", id)
+        content = self.get_request_body()
+        relations = self.storage.update_collection_item_relations(content)
         return relations, 201

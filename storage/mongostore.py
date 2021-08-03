@@ -101,6 +101,15 @@ class MongoStorageManager:
         self.patch_item_from_collection(collection, id, patch_data)
         return content
 
+    def update_collection_item_relations(self, collection, id, content):
+        self.update_collection_item_sub_item(collection, id, "relations", content)
+        # Deleting and then adding ensure that new relations are made as well
+        for item in content:
+            self.delete_collection_item_sub_item_key(
+                collection, item["key"], "relations", id
+            )
+        self._add_child_relations(collection, id, content)
+
     def patch_item_from_collection(self, collection, id, content):
         content = self._prepare_mongo_document(content, False)
         self.db[collection].update_one(self._get_id_query(id), {"$set": content})
@@ -162,7 +171,7 @@ class MongoStorageManager:
         mapping = {"authoredBy": "authored", "isIn": "contains"}
         return mapping.get(relation)
 
-    def _update_child_relations(self, collection, id, relations):
+    def _add_child_relations(self, collection, id, relations):
         for relation in relations:
             dst_relation = self._map_relation(relation["type"])
             dst_id = relation["key"]
