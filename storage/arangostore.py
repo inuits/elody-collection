@@ -14,6 +14,7 @@ class ArangoStorageManager:
         self.mediafile_collection_name = os.getenv("MEDIAFILE_COLLECTION", "mediafiles")
         self.mediafile_edge_name = os.getenv("MEDIAFILE_EDGE", "hasMediafile")
         self.default_graph_name = os.getenv("DEFAULT_GRAPH", "assets")
+        self.entity_relations = ["authoredBy", "authored", "isIn", "contains"]
 
         self.conn = Connection(
             arangoURL="http://" + self.arango_host + ":8529",
@@ -46,6 +47,9 @@ class ArangoStorageManager:
         return item
 
     def get_collection_item_sub_item(self, collection, id, sub_item):
+        # Relations are implemented using edges, not keys
+        if sub_item == "relations":
+            return self.get_collection_item_relations(collection, id)
         ret = []
         queryResults = self._get_field_for_id(collection, id, sub_item)
         if queryResults:
@@ -99,6 +103,29 @@ FOR c IN @@collection
         self._execute_query(aql, bind)
         return content
 
+    def get_collection_item_relations(self, collection, id):
+        entity = self.get_raw_item_from_collection_by_id(collection, id)
+        relations = []
+        for relation in self.entity_relations:
+            for edge in entity.getOutEdges(relation):
+                relations.append({"key": edge["_to"], "type": relation})
+        return relations
+
+    def add_relations_to_collection_item(self, collection, id, relations):
+        entity = self.get_raw_item_from_collection_by_id(collection, id)
+        if not entity:
+            return None
+        for relation in relations:
+            # Instead of creating 2 edges, we could create 1
+            # and use in edges + _map_relation
+            self.db.graphs[self.default_graph_name].createEdge(
+                relation["type"], entity["_id"], relation["key"], {}
+            )
+            self.db.graphs[self.default_graph_name].createEdge(
+                self._map_relation(relation["type"]), relation["key"], entity["_id"], {}
+            )
+        return relations
+
     def save_item_to_collection(self, collection, content):
         _id = str(uuid.uuid4())
         content["_key"] = _id
@@ -147,6 +174,10 @@ FOR c IN @@collection
 
     def drop_all_collections(self):
         return
+
+    def _map_relation(self, relation):
+        mapping = {"authoredBy": "authored", "isIn": "contains"}
+        return mapping.get(relation)
 
     def _get_key_for_id(self, collection, id):
         key = None
