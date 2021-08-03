@@ -566,6 +566,60 @@ class EntityTest(BaseCase):
         self.assertEqual(list, type(response.json))
         self.assertEqual(0, len(response.json))
 
+    def test_patch_entity_relations_no_overwrite(self):
+        ids = []
+        for i in range(2):
+            ids.append(self.create_entity_get_id())
+        relations = [{"key": ids[1], "type": "authoredBy"}]
+
+        response = self.app.post(
+            "/entities/{}/relations".format(ids[0]),
+            headers={"Content-Type": "application/json"},
+            data=json.dumps(relations),
+        )
+        self.assertEqual(201, response.status_code)
+
+        new_id = self.create_entity_get_id()
+        new_relations = [{"key": new_id, "type": "isIn"}]
+
+        response = self.app.patch(
+            "/entities/{}/relations".format(ids[0]),
+            headers={"Content-Type": "application/json"},
+            data=json.dumps(new_relations),
+        )
+        self.assertEqual(201, response.status_code)
+        self.assertEqual(list, type(response.json))
+        self.assertEqual(1, len(response.json))
+        self.assertEqual(new_relations, response.json)
+
+        response = self.app.get(
+            "/entities/{}/relations".format(ids[0]),
+            headers={"Content-Type": "application/json"},
+        )
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(list, type(response.json))
+        print(response.json)
+        self.assertEqual(2, len(response.json))
+        self.assertEqual(relations + new_relations, response.json)
+
+        response = self.app.get(
+            "/entities/{}/relations".format(new_id),
+            headers={"Content-Type": "application/json"},
+        )
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(list, type(response.json))
+        self.assertEqual(1, len(response.json))
+        self.assertEqual([{"key": ids[0], "type": "contains"}], response.json)
+
+        response = self.app.get(
+            "/entities/{}/relations".format(ids[1]),
+            headers={"Content-Type": "application/json"},
+        )
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(list, type(response.json))
+        self.assertEqual(1, len(response.json))
+        self.assertEqual([{"key": ids[0], "type": "authored"}], response.json)
+
     def valid_entity(self, entity, identifier_count, metadata_count):
         self.assertEqual(str, type(entity["_id"]))
         self.assertEqual(str, type(entity["metadata"][0]["value"]))
