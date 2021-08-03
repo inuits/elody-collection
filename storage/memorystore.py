@@ -49,13 +49,18 @@ class MemoryStorageManager:
             if collection not in self.collections["mediafiles"][mediafile_id]:
                 self.collections["mediafiles"][mediafile_id][collection] = identifiers
             else:
-                self.collections["mediafiles"][mediafile_id][collection].extend(identifiers)
+                self.collections["mediafiles"][mediafile_id][collection].extend(
+                    identifiers
+                )
             return self.collections["mediafiles"][mediafile_id]
         return None
 
     def add_sub_item_to_collection_item(self, collection, obj_id, sub_item, content):
         if gen_id := self._get_collection_item_gen_id_by_identifier(collection, obj_id):
-            self.collections[collection][gen_id][sub_item].append(content)
+            if sub_item not in self.collections[collection][obj_id]:
+                self.collections[collection][gen_id][sub_item] = content
+            else:
+                self.collections[collection][gen_id][sub_item].extend(content)
             return content
         return None
 

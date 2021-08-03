@@ -77,7 +77,7 @@ class MongoStorageManager:
 
     def add_sub_item_to_collection_item(self, collection, id, sub_item, content):
         result = self.db[collection].update_one(
-            self._get_id_query(id), {"$addToSet": {sub_item: content}}
+            self._get_id_query(id), {"$addToSet": {sub_item: {"$each": content}}}
         )
         return content if result.modified_count else None
 

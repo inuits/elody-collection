@@ -14,11 +14,13 @@ class EntityTest(BaseCase):
         _id = self.create_entity_get_id()
 
         metadata = json.dumps(
-            {
-                "key": "type",
-                "value": "schilderij",
-                "lang": "nl",
-            }
+            [
+                {
+                    "key": "type",
+                    "value": "schilderij",
+                    "lang": "nl",
+                }
+            ]
         )
 
         response = self.app.post(
@@ -27,10 +29,11 @@ class EntityTest(BaseCase):
             data=metadata,
         )
 
-        self.assertEqual(3, len(response.json))
-        for key in response.json:
-            self.assertEqual(str, type(response.json[key]))
-        self.assertEqual("schilderij", response.json["value"])
+        self.assertEqual(1, len(response.json))
+        self.assertEqual(list, type(response.json))
+        for key in response.json[0]:
+            self.assertEqual(str, type(response.json[0][key]))
+        self.assertEqual("schilderij", response.json[0]["value"])
         self.assertEqual(201, response.status_code)
 
     def test_non_existent_entity_metadata_create(self):
