@@ -76,15 +76,15 @@ class MongoStorageManager:
         return mediafile
 
     def add_sub_item_to_collection_item(self, collection, id, sub_item, content):
-        self.db[collection].update_one(
+        result = self.db[collection].update_one(
             self._get_id_query(id), {"$addToSet": {sub_item: content}}
         )
-        return content
+        return content if result.modified_count else None
 
     def add_relations_to_collection_item(self, collection, id, content):
         self.add_sub_item_to_collection_item(collection, id, "relations", content)
-        self._update_child_relations(collection, id, content)
-        return self.get_collection_item_sub_item(collection, id, "relations")
+        self._add_child_relations(collection, id, content)
+        return content
 
     def save_item_to_collection(self, collection, content):
         content = self._prepare_mongo_document(content, False, str(uuid.uuid4()))
@@ -98,8 +98,8 @@ class MongoStorageManager:
 
     def update_collection_item_sub_item(self, collection, id, sub_item, content):
         patch_data = {sub_item: content}
-        item = self.patch_item_from_collection(collection, id, patch_data)
-        return item[sub_item]
+        self.patch_item_from_collection(collection, id, patch_data)
+        return content
 
     def patch_item_from_collection(self, collection, id, content):
         content = self._prepare_mongo_document(content, False)
