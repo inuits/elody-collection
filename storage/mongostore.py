@@ -112,9 +112,16 @@ class MongoStorageManager:
 
     def patch_collection_item_relations(self, collection, id, content):
         for item in content:
-            self.delete_collection_item_sub_item_key(collection, id, "relations", item["key"])
-            self.delete_collection_item_sub_item_key(collection, item["key"], "relations", id)
-        self.update_collection_item_sub_item(collection, id, "relations", content)
+            self.delete_collection_item_sub_item_key(
+                collection, id, "relations", item["key"]
+            )
+            self.delete_collection_item_sub_item_key(
+                collection, item["key"], "relations", id
+            )
+        relations = self.get_collection_item_sub_item(collection, id, "relations")
+        self.update_collection_item_sub_item(
+            collection, id, "relations", relations + content
+        )
         self._add_child_relations(collection, id, content)
         return content
 

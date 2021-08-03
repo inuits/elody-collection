@@ -84,26 +84,32 @@ class MemoryStorageManager:
         return None
 
     def update_collection_item_sub_item(self, collection, obj_id, sub_item, content):
-        if gen_id := self._get_collection_item_gen_id_by_identifier(collection, obj_id):
-            self.collections[collection][gen_id][sub_item] = content
-            return self.collections[collection][gen_id][sub_item]
-        return None
-
-    def update_collection_item_relations(self, collection, id, content):
-        for item in self.get_collection_item_sub_item(collection, id, "relations"):
-            self.delete_collection_item_sub_item_key(
-                collection, item["key"], "relations", id
-            )
-        self.update_collection_item_sub_item(collection, id, "relations", content)
-        self._add_child_relations(collection, id, content)
+        patch_data = {sub_item: content}
+        self.patch_item_from_collection(collection, obj_id, patch_data)
         return content
 
-    def patch_collection_item_relations(self, collection, id, content):
+    def update_collection_item_relations(self, collection, obj_id, content):
+        for item in self.get_collection_item_sub_item(collection, obj_id, "relations"):
+            self.delete_collection_item_sub_item_key(
+                collection, item["key"], "relations", obj_id
+            )
+        self.update_collection_item_sub_item(collection, obj_id, "relations", content)
+        self._add_child_relations(collection, obj_id, content)
+        return content
+
+    def patch_collection_item_relations(self, collection, obj_id, content):
         for item in content:
-            self.delete_collection_item_sub_item_key(collection, id, "relations", item["key"])
-            self.delete_collection_item_sub_item_key(collection, item["key"], "relations", id)
-        self.update_collection_item_sub_item(collection, id, "relations", content)
-        self._add_child_relations(collection, id, content)
+            self.delete_collection_item_sub_item_key(
+                collection, obj_id, "relations", item["key"]
+            )
+            self.delete_collection_item_sub_item_key(
+                collection, item["key"], "relations", obj_id
+            )
+        relations = self.get_collection_item_sub_item(collection, obj_id, "relations")
+        self.update_collection_item_sub_item(
+            collection, obj_id, "relations", relations + content
+        )
+        self._add_child_relations(collection, obj_id, content)
         return content
 
     def patch_item_from_collection(self, collection, obj_id, content):
@@ -118,13 +124,12 @@ class MemoryStorageManager:
         self.collections[collection].pop(gen_id, None)
 
     def delete_collection_item_sub_item_key(self, collection, obj_id, sub_item, key):
-        if gen_id := self._get_collection_item_gen_id_by_identifier(collection, obj_id):
-            self.collections[collection][gen_id][sub_item] = list(
-                filter(
-                    lambda elem: elem["key"] != key,
-                    self.collections[collection][gen_id][sub_item],
-                )
-            )
+        patch_data = {sub_item: []}
+        all_sub_items = self.get_collection_item_sub_item(collection, obj_id, sub_item)
+        for obj in all_sub_items:
+            if obj["key"] != key:
+                patch_data[sub_item].append(obj)
+        self.patch_item_from_collection(collection, obj_id, patch_data)
 
     def drop_all_collections(self):
         [self.collections[collection].clear() for collection in self.collections]
