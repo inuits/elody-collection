@@ -175,7 +175,7 @@ class MongoStorageManager:
         for relation in relations:
             dst_relation = self._map_relation(relation["type"])
             dst_id = relation["key"]
-            dst_content = {"key": id, "type": dst_relation}
+            dst_content = [{"key": id, "type": dst_relation}]
             self.add_sub_item_to_collection_item(
                 collection, dst_id, "relations", dst_content
             )
