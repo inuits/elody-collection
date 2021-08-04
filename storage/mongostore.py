@@ -32,6 +32,20 @@ class MongoStorageManager:
             items["results"].append(self._prepare_mongo_document(document, True))
         return items
 
+    def get_items_from_collection_by_ids(self, collection, ids):
+        items = dict()
+        documents = self.db[collection].find(
+            self._get_multiple_id_query(ids)
+        )
+        count = self.db[collection].count_documents(
+            self._get_multiple_id_query(ids)
+        )
+        items["count"] = count
+        items["results"] = list()
+        for document in documents:
+            items["results"].append(self._prepare_mongo_document(document, True))
+        return items
+
     def get_item_from_collection_by_id(self, collection, id):
         document = self.db[collection].find_one(self._get_id_query(id))
         if document:

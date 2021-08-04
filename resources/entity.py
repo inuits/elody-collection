@@ -37,8 +37,7 @@ class Entity(BaseResource):
         ids = request.args.get("ids")
         if ids:
             ids = ids.split(",")
-        else:
-            ids = False
+            return self.storage.get_items_from_collection_by_ids("entities", ids)
         entities = self.storage.get_items_from_collection("entities", skip, limit, ids)
         count = entities["count"]
         entities["limit"] = limit

@@ -33,6 +33,21 @@ class ArangoStorageManager:
             items["results"].append(document.getStore())
         return items
 
+    def get_items_from_collection_by_ids(self, collection, ids):
+        items = dict()
+        items["results"] = list()
+        aql = """
+FOR c IN @@collection
+    FILTER c._key IN @ids
+    RETURN c
+"""
+        bind = {"@collection": collection, "ids": ids}
+        queryResults = self._execute_query(aql, bind)
+        items["count"] = len(queryResults)
+        for queryResult in queryResults:
+            items["results"].append(queryResult)
+        return items
+
     def get_item_from_collection_by_id(self, collection, id):
         item = self.get_raw_item_from_collection_by_id(collection, id)
         if item:
