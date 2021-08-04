@@ -200,7 +200,7 @@ class EntityRelations(BaseResource):
     )
     def get(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
-        return self.storage.get_collection_item_sub_item("entities", id, "relations")
+        return self.storage.get_collection_item_relations("entities", id)
 
     @app.oidc.accept_token(
         require_token=BaseResource.token_required, scopes_required=["openId"]

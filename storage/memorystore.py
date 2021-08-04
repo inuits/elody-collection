@@ -33,6 +33,9 @@ class MemoryStorageManager:
             )
         return None
 
+    def get_collection_item_relations(self, collection, obj_id):
+        return self.get_collection_item_sub_item(collection, obj_id, "relations")
+
     def get_collection_item_mediafiles(self, collection, obj_id):
         if gen_id := self._get_collection_item_gen_id_by_identifier(collection, obj_id):
             return list(

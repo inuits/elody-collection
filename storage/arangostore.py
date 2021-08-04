@@ -63,9 +63,6 @@ FOR c IN @@collection
         return item
 
     def get_collection_item_sub_item(self, collection, id, sub_item):
-        # Relations are implemented using edges, not keys
-        if sub_item == "relations":
-            return self.get_collection_item_relations(collection, id)
         ret = []
         queryResults = self._get_field_for_id(collection, id, sub_item)
         if queryResults:

@@ -69,6 +69,9 @@ class MongoStorageManager:
                 ret.append(obj)
         return ret
 
+    def get_collection_item_relations(self, collection, id):
+        return self.get_collection_item_sub_item(collection, id, "relations")
+
     def get_collection_item_mediafiles(self, collection, id):
         mediafiles = []
         for mediafile in self.db["mediafiles"].find({collection: id}):
