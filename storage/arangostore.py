@@ -91,7 +91,7 @@ FOR c IN @@collection
         aql = """
 FOR c IN @@collection
     FILTER @id IN c.identifiers OR c._key == @id
-    LET newSubItem = PUSH(c.@sub_item, @content, true)
+    LET newSubItem = APPEND(c.@sub_item, @content, true)
     UPDATE c WITH {@sub_item: newSubItem} IN @@collection
 """
         bind = {
