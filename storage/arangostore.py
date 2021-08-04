@@ -71,6 +71,14 @@ FOR c IN @@collection
             ret.append(queryResult)
         return ret
 
+    def get_collection_item_relations(self, collection, id):
+        entity = self.get_raw_item_from_collection_by_id(collection, id)
+        relations = []
+        for relation in self.entity_relations:
+            for edge in entity.getOutEdges(self.db[relation]):
+                relations.append({"key": edge["_to"], "type": relation})
+        return relations
+
     def get_collection_item_mediafiles(self, collection, id):
         entity = self.get_raw_item_from_collection_by_id(collection, id)
         mediafiles = []
@@ -102,14 +110,6 @@ FOR c IN @@collection
         }
         self._execute_query(aql, bind)
         return content
-
-    def get_collection_item_relations(self, collection, id):
-        entity = self.get_raw_item_from_collection_by_id(collection, id)
-        relations = []
-        for relation in self.entity_relations:
-            for edge in entity.getOutEdges(relation):
-                relations.append({"key": edge["_to"], "type": relation})
-        return relations
 
     def add_relations_to_collection_item(self, collection, id, relations):
         entity = self.get_raw_item_from_collection_by_id(collection, id)
