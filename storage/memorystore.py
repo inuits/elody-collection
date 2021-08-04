@@ -142,13 +142,18 @@ class MemoryStorageManager:
                 return item["_id"]
         return None
 
-    def _map_relation(self, relation):
-        mapping = {"authoredBy": "authored", "isIn": "contains"}
+    def _map_entity_relation(self, relation):
+        mapping = {
+            "authoredBy": "authored",
+            "isIn": "contains",
+            "authored": "authoredBy",
+            "contains": "isIn",
+        }
         return mapping.get(relation)
 
     def _add_child_relations(self, collection, obj_id, relations):
         for relation in relations:
-            dst_relation = self._map_relation(relation["type"])
+            dst_relation = self._map_entity_relation(relation["type"])
             dst_id = relation["key"]
             dst_content = [{"key": obj_id, "type": dst_relation}]
             self.add_sub_item_to_collection_item(

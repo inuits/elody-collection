@@ -623,7 +623,10 @@ class EntityTest(BaseCase):
         ids = []
         for i in range(3):
             ids.append(self.create_entity_get_id())
-        relations = [{"key": ids[1], "type": "authoredBy"}, {"key": ids[2], "type": "authoredBy"}]
+        relations = [
+            {"key": ids[1], "type": "authoredBy"},
+            {"key": ids[2], "type": "authoredBy"},
+        ]
 
         response = self.app.post(
             "/entities/{}/relations".format(ids[0]),
