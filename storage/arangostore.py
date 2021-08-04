@@ -14,7 +14,7 @@ class ArangoStorageManager:
         self.mediafile_collection_name = os.getenv("MEDIAFILE_COLLECTION", "mediafiles")
         self.mediafile_edge_name = os.getenv("MEDIAFILE_EDGE", "hasMediafile")
         self.default_graph_name = os.getenv("DEFAULT_GRAPH", "assets")
-        self.entity_relations = ["authoredBy", "authored", "isIn", "contains"]
+        self.entity_relations = ["authoredBy", "authored", "isIn", "contains", "hasMediafile"]
 
         self.conn = Connection(
             arangoURL="http://" + self.arango_host + ":8529",
@@ -156,7 +156,11 @@ FOR c IN @@collection
 
     def delete_item_from_collection(self, collection, id):
         key = self._get_key_for_id(collection, id)
-        self.db[collection][key].delete()
+        item = self.db[collection][key]
+        for edge_name in self.entity_relations:
+            for edge in item.getEdges(self.db[edge_name]):
+                edge.delete()
+        item.delete()
 
     def delete_collection_item_sub_item_key(self, collection, id, sub_item, key):
         aql = """
