@@ -137,6 +137,38 @@ class EntityTest(BaseCase):
     def test_successful_entity_list_no_entities(self):
         self.entity_list(0, 20, 0)
 
+    def test_successful_entity_ids_get(self):
+        _id1 = self.create_entity_get_id()
+        _id2 = self.create_entity_get_id()
+        _id3 = self.create_entity_get_id()
+
+        ids = [_id1, _id2, _id3]
+
+        response = self.app.get(
+            "/entities?ids={}".format(",".join(ids)),
+            headers={"Content-Type": "application/json"},
+        )
+
+        self.assertEqual(3, response.json["count"])
+        self.assertEqual(3, len(response.json["results"]))
+        self.assertEqual(200, response.status_code)
+
+    def test_entity_ids_get_one_non_existant_id(self):
+        _id1 = self.create_entity_get_id()
+        _id2 = self.create_entity_get_id()
+        _id3 = "non_existant_id"
+
+        ids = [_id1, _id2, _id3]
+
+        response = self.app.get(
+            "/entities?ids={}".format(",".join(ids)),
+            headers={"Content-Type": "application/json"},
+        )
+
+        self.assertEqual(2, response.json["count"])
+        self.assertEqual(2, len(response.json["results"]))
+        self.assertEqual(200, response.status_code)
+
     def test_successful_entity_metadata_get(self):
         _id = self.create_entity_get_id()
 

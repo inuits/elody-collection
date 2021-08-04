@@ -13,6 +13,16 @@ class MemoryStorageManager:
         ]
         return items
 
+    def get_items_from_collection_by_ids(self, collection, ids):
+        items = dict()
+        items["results"] = [
+            self.collections[collection].get(id)
+            for id in ids
+            if id in self.collections[collection]
+        ]
+        items["count"] = len(items["results"])
+        return items
+
     def get_item_from_collection_by_id(self, collection, obj_id):
         if gen_id := self._get_collection_item_gen_id_by_identifier(collection, obj_id):
             return self.collections[collection].get(gen_id, None)

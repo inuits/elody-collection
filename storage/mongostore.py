@@ -34,12 +34,8 @@ class MongoStorageManager:
 
     def get_items_from_collection_by_ids(self, collection, ids):
         items = dict()
-        documents = self.db[collection].find(
-            self._get_multiple_id_query(ids)
-        )
-        count = self.db[collection].count_documents(
-            self._get_multiple_id_query(ids)
-        )
+        documents = self.db[collection].find(self._get_multiple_id_query(ids))
+        count = self.db[collection].count_documents(self._get_multiple_id_query(ids))
         items["count"] = count
         items["results"] = list()
         for document in documents:
