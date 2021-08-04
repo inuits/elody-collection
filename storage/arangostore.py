@@ -171,10 +171,11 @@ FOR c IN @@collection
     def patch_collection_item_relations(self, collection, id, content):
         entity = self.get_raw_item_from_collection_by_id(collection, id)
         for item in content:
-            for edge in entity.getEdges(self.db[item["type"]]):
-                if edge["_from"] == item["key"] or edge["_to"] == item["key"]:
-                    edge.delete()
-        relations = self.get_collection_item_sub_item("entities", id, "relations")
+            for relation in self.entity_relations:
+                for edge in entity.getEdges(self.db[relation]):
+                    if edge["_from"] == item["key"] or edge["_to"] == item["key"]:
+                        edge.delete()
+        relations = self.get_collection_item_relations("entities", id)
         self.update_collection_item_relations(collection, id, relations + content)
         return content
 
