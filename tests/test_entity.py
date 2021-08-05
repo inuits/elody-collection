@@ -73,7 +73,9 @@ class EntityTest(BaseCase):
 
     def test_invalid_entity_create(self):
         response = self.app.post(
-            "/entities", headers={"content-type": "application/json"}, data=self.invalid_entity
+            "/entities",
+            headers={"content-type": "application/json"},
+            data=self.invalid_entity,
         )
 
         self.check_invalid_entity(response)

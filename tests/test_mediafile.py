@@ -30,7 +30,9 @@ class MediafileTest(BaseCase):
 
     def test_invalid_mediafile_create(self):
         response = self.app.post(
-            "/mediafiles", headers={"content-type": "application/json"}, data=self.invalid_mediafile
+            "/mediafiles",
+            headers={"content-type": "application/json"},
+            data=self.invalid_mediafile,
         )
 
         self.check_invalid_mediafile(response)
@@ -186,5 +188,7 @@ class MediafileTest(BaseCase):
 
     def check_invalid_mediafile(self, response):
         self.assertEqual(str, type(response.json["message"]))
-        self.assertEqual("Mediafile doesn't have a valid format", response.json["message"])
+        self.assertEqual(
+            "Mediafile doesn't have a valid format", response.json["message"]
+        )
         self.assertEqual(400, response.status_code)

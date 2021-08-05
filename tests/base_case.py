@@ -46,7 +46,9 @@ class BaseCase(unittest.TestCase):
     invalid_mediafile = json.dumps(
         {
             "identifiers": "12345",
-            "original_file_location": ["http://dams-storage.inuits.io/download/test.jpg"],
+            "original_file_location": [
+                "http://dams-storage.inuits.io/download/test.jpg"
+            ],
         }
     )
 

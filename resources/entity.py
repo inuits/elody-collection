@@ -153,7 +153,7 @@ class EntityMediafiles(BaseResource):
         def add_header(response):
             response.headers["Access-Control-Allow-Origin"] = "*"
             return response
-            
+
         return mediafiles
 
     @app.oidc.accept_token(
@@ -213,7 +213,7 @@ class EntityRelations(BaseResource):
         def add_header(response):
             response.headers["Access-Control-Allow-Origin"] = "*"
             return response
-            
+
         return self.storage.get_collection_item_relations("entities", id)
 
     @app.oidc.accept_token(
