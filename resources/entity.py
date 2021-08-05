@@ -193,6 +193,8 @@ class EntityMediafilesCreate(BaseResource):
                 self.cantaloupe_api_url, file_id
             ),
         }
+        if "metadata" in content:
+            mediafile["metadata"] = content["metadata"]
         mediafile = self.storage.save_item_to_collection("mediafiles", mediafile)
         mediafile_id = mediafile["_id"]
         upload_location = "{}/upload/{}".format(self.storage_api_url, file_id)
