@@ -71,6 +71,13 @@ class EntityTest(BaseCase):
 
         self.invalid_input(response)
 
+    def test_invalid_entity_create(self):
+        response = self.app.post(
+            "/entities", headers={"content-type": "application/json"}, data=self.invalid_entity
+        )
+
+        self.check_invalid_entity(response)
+
     def test_successful_entity_mediafile_create(self):
         _id = self.create_entity_get_id()
 
@@ -724,6 +731,11 @@ class EntityTest(BaseCase):
         self.assertEqual("Een schilderij", entity["metadata"][0]["value"])
         self.assertEqual(identifier_count, len(entity["identifiers"]))
         self.assertEqual(metadata_count, len(entity["metadata"]))
+
+    def check_invalid_entity(self, response):
+        self.assertEqual(str, type(response.json["message"]))
+        self.assertEqual("Entity doesn't have a valid format", response.json["message"])
+        self.assertEqual(400, response.status_code)
 
     def entity_list(self, count, limit, skip):
         ids = list()

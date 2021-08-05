@@ -27,11 +27,26 @@ class BaseCase(unittest.TestCase):
         }
     )
 
+    invalid_entity = json.dumps(
+        {
+            "identifiers": "123",
+            "metadata": "title",
+            "data": "test",
+        }
+    )
+
     mediafile = json.dumps(
         {
             "identifiers": ["12345", "abcde"],
             "filename": "test.jpg",
             "original_file_location": "http://dams-storage.inuits.io/download/test.jpg",
+        }
+    )
+
+    invalid_mediafile = json.dumps(
+        {
+            "identifiers": "12345",
+            "original_file_location": ["http://dams-storage.inuits.io/download/test.jpg"],
         }
     )
 
