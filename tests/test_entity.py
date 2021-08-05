@@ -104,6 +104,16 @@ class EntityTest(BaseCase):
             self.assertEqual(list, type(mediafile["entities"]))
             self.assertEqual(3, len(mediafile["entities"]))
 
+    def test_entity_mediafile_create_without_filename(self):
+        _id = self.create_entity_get_id()
+
+        response = self.app.post(
+            "/entities/{}/mediafiles/create".format(_id),
+            headers={"Content-Type": "application/json"},
+        )
+
+        self.invalid_input(response)
+
     def test_create_mediafile_from_non_existent_entity(self):
         response = self.app.post(
             "/entities/non-existent-id/mediafiles/create",
