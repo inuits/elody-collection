@@ -148,6 +148,12 @@ class EntityMediafiles(BaseResource):
     def get(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         mediafiles = self.storage.get_collection_item_mediafiles("entities", id)
+
+        @after_this_request
+        def add_header(response):
+            response.headers["Access-Control-Allow-Origin"] = "*"
+            return response
+            
         return mediafiles
 
     @app.oidc.accept_token(
