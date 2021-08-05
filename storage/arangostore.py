@@ -175,9 +175,7 @@ FOR c IN @@collection
                 for edge in entity.getEdges(self.db[relation]):
                     if edge["_from"] == item["key"] or edge["_to"] == item["key"]:
                         edge.delete()
-        relations = self.get_collection_item_relations("entities", id)
-        self.update_collection_item_relations(collection, id, relations + content)
-        return content
+        return self.add_relations_to_collection_item(collection, id, content)
 
     def patch_item_from_collection(self, collection, id, content):
         key = self._get_key_for_id(collection, id)
