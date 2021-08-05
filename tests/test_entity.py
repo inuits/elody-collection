@@ -138,6 +138,7 @@ class EntityTest(BaseCase):
         self.entity_list(0, 20, 0)
 
     def test_successful_entity_ids_get(self):
+        valid_asset_count = 3
         _id1 = self.create_entity_get_id()
         _id2 = self.create_entity_get_id()
         _id3 = self.create_entity_get_id()
@@ -149,11 +150,16 @@ class EntityTest(BaseCase):
             headers={"Content-Type": "application/json"},
         )
 
-        self.assertEqual(3, response.json["count"])
-        self.assertEqual(3, len(response.json["results"]))
+        self.assertEqual(valid_asset_count, response.json["count"])
+        self.assertEqual(valid_asset_count, len(response.json["results"]))
+        for i in range(valid_asset_count):
+            entity = response.json["results"][i]
+            self.assertEqual(ids[i], entity["_id"])
+            self.valid_entity(entity, 3, 4)
         self.assertEqual(200, response.status_code)
 
     def test_entity_ids_get_one_non_existant_id(self):
+        valid_asset_count = 2
         _id1 = self.create_entity_get_id()
         _id2 = self.create_entity_get_id()
         _id3 = "non_existant_id"
@@ -165,8 +171,12 @@ class EntityTest(BaseCase):
             headers={"Content-Type": "application/json"},
         )
 
-        self.assertEqual(2, response.json["count"])
-        self.assertEqual(2, len(response.json["results"]))
+        self.assertEqual(valid_asset_count, response.json["count"])
+        self.assertEqual(valid_asset_count, len(response.json["results"]))
+        for i in range(valid_asset_count):
+            entity = response.json["results"][i]
+            self.assertEqual(ids[i], entity["_id"])
+            self.valid_entity(entity, 3, 4)
         self.assertEqual(200, response.status_code)
 
     def test_successful_entity_metadata_get(self):
