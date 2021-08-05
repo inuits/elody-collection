@@ -1,7 +1,7 @@
 import app
 import uuid
 
-from flask import g, request
+from flask import g, request, after_this_request
 from flask_restful import abort
 from resources.base_resource import BaseResource
 from validator import EntityValidator
@@ -200,6 +200,12 @@ class EntityRelations(BaseResource):
     )
     def get(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
+
+        @after_this_request
+        def add_header(response):
+            response.headers["Access-Control-Allow-Origin"] = "*"
+            return response
+            
         return self.storage.get_collection_item_relations("entities", id)
 
     @app.oidc.accept_token(
