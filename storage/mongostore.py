@@ -212,15 +212,3 @@ class MongoStorageManager:
             self.add_sub_item_to_collection_item(
                 collection, dst_id, "relations", dst_content
             )
-
-    def get_jobs_from_collection(self, collection, target):
-        return self.db[collection].find(
-            {
-                "$or": [
-                    {"_id": target},
-                    {"asset": target},
-                    {"user": target},
-                    {"signature": target},
-                ]
-            }
-        )
