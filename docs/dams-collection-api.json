@@ -33,14 +33,6 @@
     {
       "name": "importer",
       "description": "Importer module in DAMS"
-    },
-    {
-      "name": "jobs",
-      "description": "Job Status module in DAMS"
-    },
-    {
-      "name": "relations",
-      "description": "Entity Relationships module in DAMS"
     }
   ],
   "paths": {
@@ -63,7 +55,7 @@
           }
         },
         "responses": {
-          "200": {
+          "201": {
             "description": "successful operation",
             "content": {
               "application/json": {
@@ -74,7 +66,7 @@
             }
           },
           "400": {
-            "description": "Invalid request"
+            "description": "Tenant doesn't have a valid format"
           },
           "405": {
             "description": "Invalid input"
@@ -112,7 +104,7 @@
           }
         },
         "responses": {
-          "200": {
+          "201": {
             "description": "successful operation",
             "content": {
               "application/json": {
@@ -123,7 +115,7 @@
             }
           },
           "400": {
-            "description": "Invalid request"
+            "description": "Tenant doesn't have a valid format"
           },
           "404": {
             "description": "Tenant not found"
@@ -162,7 +154,7 @@
           }
         },
         "responses": {
-          "200": {
+          "201": {
             "description": "successful operation",
             "content": {
               "application/json": {
@@ -173,7 +165,7 @@
             }
           },
           "400": {
-            "description": "Invalid request"
+            "description": "Tenant doesn't have a valid format"
           },
           "404": {
             "description": "Tenant not found"
@@ -212,9 +204,6 @@
               }
             }
           },
-          "400": {
-            "description": "Invalid request"
-          },
           "404": {
             "description": "Tenant not found"
           }
@@ -239,8 +228,8 @@
           }
         ],
         "responses": {
-          "400": {
-            "description": "Invalid request"
+          "204": {
+            "description": "successful operation"
           },
           "404": {
             "description": "Tenant not found"
@@ -267,8 +256,18 @@
           }
         },
         "responses": {
+          "201": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/entity"
+                }
+              }
+            }
+          },
           "400": {
-            "description": "Invalid request"
+            "description": "Entity doesn't have a valid format"
           },
           "405": {
             "description": "Invalid input"
@@ -280,7 +279,7 @@
           "entity"
         ],
         "summary": "Get entity list",
-        "description": "Get specific entity for a specific ID",
+        "description": "Get all entities",
         "operationId": "getEntities",
         "parameters": [
           {
@@ -349,8 +348,18 @@
           }
         },
         "responses": {
+          "201": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/entity"
+                }
+              }
+            }
+          },
           "400": {
-            "description": "Invalid request"
+            "description": "Entity doesn't have a valid format"
           },
           "404": {
             "description": "Entity not found"
@@ -389,8 +398,18 @@
           }
         },
         "responses": {
+          "201": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/entity"
+                }
+              }
+            }
+          },
           "400": {
-            "description": "Invalid request"
+            "description": "Entity doesn't have a valid format"
           },
           "404": {
             "description": "Entity not found"
@@ -429,9 +448,6 @@
               }
             }
           },
-          "400": {
-            "description": "Invalid ID supplied"
-          },
           "404": {
             "description": "Entity not found"
           }
@@ -456,8 +472,8 @@
           }
         ],
         "responses": {
-          "400": {
-            "description": "Invalid request"
+          "204": {
+            "description": "successful operation"
           },
           "404": {
             "description": "Entity not found"
@@ -498,9 +514,6 @@
               }
             }
           },
-          "400": {
-            "description": "Invalid ID supplied"
-          },
           "404": {
             "description": "Entity not found"
           }
@@ -525,32 +538,38 @@
           }
         ],
         "requestBody": {
-          "description": "Metadata object that needs to be added",
+          "description": "Metadata objects that need to be added",
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/metadata"
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/metadata"
+                }
               }
             }
           }
         },
         "responses": {
-          "200": {
+          "201": {
             "description": "successful operation",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/metadata"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/metadata"
+                  }
                 }
               }
             }
           },
-          "400": {
-            "description": "Invalid ID supplied"
-          },
           "404": {
             "description": "Entity not found"
+          },
+          "405": {
+            "description": "Invalid input"
           }
         }
       },
@@ -573,7 +592,7 @@
           }
         ],
         "requestBody": {
-          "description": "Metadata object that needs to be updated",
+          "description": "Metadata objects that need to be updated",
           "required": true,
           "content": {
             "application/json": {
@@ -587,21 +606,24 @@
           }
         },
         "responses": {
-          "200": {
+          "201": {
             "description": "successful operation",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/metadata"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/metadata"
+                  }
                 }
               }
             }
           },
-          "400": {
-            "description": "Invalid ID supplied"
-          },
           "404": {
             "description": "Entity not found"
+          },
+          "405": {
+            "description": "Invalid input"
           }
         }
       }
@@ -611,7 +633,7 @@
         "tags": [
           "entity"
         ],
-        "summary": "Get a specific entity metadata field",
+        "summary": "Get specific entity metadata fields",
         "description": "Get specific entity metadata for a specific entity ID",
         "operationId": "getEntityIdMetadataField",
         "parameters": [
@@ -640,13 +662,13 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/metadata"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/metadata"
+                  }
                 }
               }
             }
-          },
-          "400": {
-            "description": "Invalid ID supplied"
           },
           "404": {
             "description": "Entity not found"
@@ -657,8 +679,8 @@
         "tags": [
           "entity"
         ],
-        "summary": "Delete a specific entity metadata field",
-        "description": "Delete a specific entity metadata field for a specific ID",
+        "summary": "Delete specific entity metadata fields",
+        "description": "Delete specific entity metadata fields for a specific ID",
         "operationId": "deleteEntityIdMetadata",
         "parameters": [
           {
@@ -681,8 +703,8 @@
           }
         ],
         "responses": {
-          "400": {
-            "description": "Invalid ID supplied"
+          "204": {
+            "description": "successful operation"
           },
           "404": {
             "description": "Entity not found"
@@ -723,9 +745,6 @@
               }
             }
           },
-          "400": {
-            "description": "Invalid ID supplied"
-          },
           "404": {
             "description": "Entity not found"
           }
@@ -735,9 +754,9 @@
         "tags": [
           "entity"
         ],
-        "summary": "Add asset mediafiles",
-        "description": "Add entity mediafiles for a specific ID",
-        "operationId": "addEntityIdMediafiles",
+        "summary": "Add asset mediafile",
+        "description": "Add entity mediafile for a specific ID",
+        "operationId": "addEntityIdMediafile",
         "parameters": [
           {
             "name": "entityId",
@@ -750,19 +769,15 @@
           }
         ],
         "responses": {
-          "200": {
+          "201": {
             "description": "successful operation",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "string",
-                  "format": "uri"
+                  "$ref": "#/components/schemas/mediafile"
                 }
               }
             }
-          },
-          "400": {
-            "description": "Invalid ID supplied"
           },
           "404": {
             "description": "Entity not found"
@@ -776,8 +791,8 @@
           "entity"
         ],
         "summary": "Create asset mediafile",
-        "description": "Create entity mediafiles for a specific ID",
-        "operationId": "createEntityIdMediafiles",
+        "description": "Create entity mediafile for a specific ID",
+        "operationId": "createEntityIdMediafile",
         "requestBody": {
           "description": "Filename of mediafile to be uploaded",
           "required": true,
@@ -801,7 +816,7 @@
           }
         ],
         "responses": {
-          "200": {
+          "201": {
             "description": "successful operation",
             "content": {
               "application/json": {
@@ -812,206 +827,8 @@
               }
             }
           },
-          "400": {
-            "description": "Invalid ID supplied"
-          },
           "404": {
             "description": "Entity not found"
-          }
-        }
-      }
-    },
-    "/entities/{entityId}/relations": {
-      "get": {
-        "tags": [
-          "relationships"
-        ],
-        "summary": "Get Relationships between entities",
-        "operationId": "getRelationshipsById",
-        "description": "Get  relations given a specific Entity ID",
-        "parameters": [
-          {
-            "name": "entityId",
-            "in": "path",
-            "description": "Entity id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/relations"
-                  }
-                }
-              }
-            },
-            "description": "Successful Operation"
-          },
-          "400": {
-            "description": "Invalid Request"
-          },
-          "404": {
-            "description": "Entity with the ID provided does not exists"
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "relationships"
-        ],
-        "summary": "Add entity relationships",
-        "operationId": "addRelations",
-        "requestBody": {
-          "description": "Entity Relationship Payload",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/relations"
-                }
-              }
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "entityId",
-            "in": "path",
-            "required": true,
-            "description": "Entity Id ",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/relations"
-                  }
-                }
-              }
-            },
-            "description": "Successful Operation"
-          },
-          "400": {
-            "description": "Bad Request"
-          },
-          "404": {
-            "description": "Cannot proceed with relationship, one of the entities does not exist "
-          }
-        }
-      },
-      "put": {
-        "tags": [
-          "relationships"
-        ],
-        "summary": "modify entity relationships",
-        "operationId": "putRelations",
-        "requestBody": {
-          "description": "Entity Relationship Payload",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/relations"
-                }
-              }
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "entityId",
-            "in": "path",
-            "required": true,
-            "description": "Entity Id ",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/relations"
-                  }
-                }
-              }
-            },
-            "description": "Successful Operation"
-          },
-          "400": {
-            "description": "Bad Request"
-          },
-          "404": {
-            "description": "Entity modification failed "
-          }
-        }
-      },
-      "patch": {
-        "tags": [
-          "relationships"
-        ],
-        "summary": "patch entity relationships",
-        "operationId": "patchRelations",
-        "requestBody": {
-          "description": "Entity Relationship Payload",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/relations"
-                }
-              }
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "entityId",
-            "in": "path",
-            "required": true,
-            "description": "Entity Id ",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/relations"
-                  }
-                }
-              }
-            },
-            "description": "Successful Operation"
-          },
-          "400": {
-            "description": "Bad Request"
           }
         }
       }
@@ -1035,11 +852,64 @@
           }
         },
         "responses": {
+          "201": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/mediafile"
+                }
+              }
+            }
+          },
           "400": {
-            "description": "Invalid request"
+            "description": "Mediafile doesn't have a valid format"
           },
           "405": {
             "description": "Invalid input"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "mediafile"
+        ],
+        "summary": "Get mediafile list",
+        "description": "Get all mediafiles",
+        "operationId": "getMediafiles",
+        "parameters": [
+          {
+            "name": "skip",
+            "in": "query",
+            "description": "Skip number of entities",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Limit number of entities",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/mediafile"
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -1050,6 +920,7 @@
           "mediafile"
         ],
         "summary": "Update an existing mediafile",
+        "description": "Update mediafile with a specific ID",
         "operationId": "updateMediafile",
         "parameters": [
           {
@@ -1074,14 +945,24 @@
           }
         },
         "responses": {
+          "201": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/mediafile"
+                }
+              }
+            }
+          },
           "400": {
-            "description": "Invalid request"
+            "description": "Mediafile doesn't have a valid format"
           },
           "404": {
             "description": "Mediafile not found"
           },
           "405": {
-            "description": "Validation exception"
+            "description": "Invalid input"
           }
         }
       },
@@ -1090,6 +971,7 @@
           "mediafile"
         ],
         "summary": "Patch an existing mediafile",
+        "description": "Patch mediafile with a specific ID",
         "operationId": "patchMediafile",
         "parameters": [
           {
@@ -1114,14 +996,24 @@
           }
         },
         "responses": {
+          "201": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/mediafile"
+                }
+              }
+            }
+          },
           "400": {
-            "description": "Invalid request"
+            "description": "Mediafile doesn't have a valid format"
           },
           "404": {
             "description": "Mediafile not found"
           },
           "405": {
-            "description": "Validation exception"
+            "description": "Invalid input"
           }
         }
       },
@@ -1130,7 +1022,7 @@
           "mediafile"
         ],
         "summary": "Get specific mediafile",
-        "description": "Get specific mediafile for a specific ID",
+        "description": "Get mediafile with a specific ID",
         "operationId": "getMediafileId",
         "parameters": [
           {
@@ -1153,9 +1045,6 @@
                 }
               }
             }
-          },
-          "400": {
-            "description": "Invalid ID supplied"
           },
           "404": {
             "description": "Mediafile not found"
@@ -1181,201 +1070,11 @@
           }
         ],
         "responses": {
-          "400": {
-            "description": "Invalid request"
+          "204": {
+            "description": "successful operation"
           },
           "404": {
             "description": "Mediafile not found"
-          }
-        }
-      }
-    },
-    "/jobs/{job_id}": {
-      "get": {
-        "tags": [
-          "jobs"
-        ],
-        "summary": "Get Jobs By Job ID",
-        "operationId": "getJobsById",
-        "parameters": [
-          {
-            "name": "job_id",
-            "in": "path",
-            "description": "Job id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful operation",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/jobs"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid Job ID "
-          },
-          "404": {
-            "description": "Job Not Found"
-          }
-        }
-      }
-    },
-    "/jobs/{asset}": {
-      "get": {
-        "tags": [
-          "jobs"
-        ],
-        "summary": "Get Jobs By Asset",
-        "operationId": "getJobsByAsset",
-        "parameters": [
-          {
-            "name": "asset",
-            "in": "path",
-            "description": "Job Asset",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful operation",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/jobs"
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid Asset "
-          },
-          "404": {
-            "description": "Job Not Found"
-          }
-        }
-      }
-    },
-    "/jobs": {
-      "get": {
-        "tags": [
-          "jobs"
-        ],
-        "summary": "Get Jobs By User",
-        "operationId": "getJobsByUser",
-        "responses": {
-          "200": {
-            "description": "Successful operation",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/jobs"
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid Job Request"
-          },
-          "404": {
-            "description": "Invalid Input"
-          }
-        }
-      }
-    },
-    "/jobs/upload/single": {
-      "post": {
-        "tags": [
-          "jobs"
-        ],
-        "summary": "Upload Single File",
-        "operationId": "uploadSingleFile",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "asset": {
-                    "type": "string",
-                    "format": "binary",
-                    "description": "File to upload"
-                  },
-                  "info": {
-                    "type": "string",
-                    "description": "job information"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful upload"
-          },
-          "400": {
-            "description": "Invalid request"
-          },
-          "404": {
-            "description": "Not Found"
-          }
-        }
-      }
-    },
-    "/jobs/upload/multiple": {
-      "post": {
-        "tags": [
-          "jobs"
-        ],
-        "summary": "Upload Multiple files",
-        "operationId": "uploadMultipleFiles",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "asset": {
-                    "type": "array",
-                    "format": "binary"
-                  },
-                  "info": {
-                    "type": "string",
-                    "description": "job information"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful operation"
-          },
-          "400": {
-            "description": "Bad request"
-          },
-          "404": {
-            "description": "Not found"
           }
         }
       }
@@ -1388,7 +1087,7 @@
         "summary": "Start import job",
         "operationId": "startImport",
         "requestBody": {
-          "description": "Mediafile object that needs to be added",
+          "description": "Folder in source location to import from",
           "required": true,
           "content": {
             "application/json": {
@@ -1396,8 +1095,7 @@
                 "type": "object",
                 "properties": {
                   "upload_folder": {
-                    "type": "string",
-                    "description": "Location to import from"
+                    "type": "string"
                   }
                 }
               }
@@ -1405,11 +1103,15 @@
           }
         },
         "responses": {
-          "400": {
-            "description": "Invalid request"
-          },
-          "405": {
-            "description": "Invalid input"
+          "201": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/message"
+                }
+              }
+            }
           }
         }
       }
@@ -1419,7 +1121,7 @@
         "tags": [
           "importer"
         ],
-        "summary": "List possible directories to import from",
+        "summary": "List of possible directories in source location to import from",
         "operationId": "importDirectoryList",
         "responses": {
           "200": {
@@ -1441,79 +1143,6 @@
   },
   "components": {
     "schemas": {
-      "relations": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid",
-            "description": "relationship type"
-          },
-          "type": {
-            "type": "string"
-          }
-        },
-        "description": "Entity Relationship data object"
-      },
-      "Singlefile": {
-        "type": "object",
-        "description": "upload single file",
-        "properties": {
-          "file_name": {
-            "type": "string"
-          }
-        }
-      },
-      "MultipleFiles": {
-        "type": "object",
-        "description": "upload Multiple files",
-        "properties": {
-          "file_name": {
-            "type": "string"
-          }
-        }
-      },
-      "jobs": {
-        "type": "object",
-        "description": "Job status",
-        "properties": {
-          "job_id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "mediafile_id": {
-            "type": "string"
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "Queued",
-              "In-progress",
-              "Finished",
-              "Failed"
-            ],
-            "description": "Job Status Enum Type"
-          },
-          "asset": {
-            "type": "string"
-          },
-          "job_info": {
-            "type": "string"
-          },
-          "job_type": {
-            "type": "string"
-          }
-        }
-      },
-      "uploadFile": {
-        "type": "object",
-        "description": "Upload file object",
-        "properties": {
-          "filename": {
-            "type": "string"
-          }
-        }
-      },
       "tenant": {
         "type": "object",
         "description": "Tenant object",
@@ -1592,9 +1221,38 @@
           }
         }
       },
-      "security": {
+      "message": {
         "type": "object",
-        "description": "Security info"
+        "description": "RabbitMQ message",
+        "properties": {
+          "message_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "upload_source": {
+                "type": "string",
+                "description": "source location to import from"
+              },
+              "upload_folder": {
+                "type": "string",
+                "description": "folder in source location to import from"
+              },
+              "collection_api_url": {
+                "type": "string",
+                "format": "uri",
+                "description": "url of running collection-api instance"
+              },
+              "storage_api_url": {
+                "type": "string",
+                "format": "uri",
+                "description": "url of running storage-api instance"
+              }
+            }
+          }
+        }
       },
       "Geometry": {
         "type": "object",
@@ -1637,6 +1295,15 @@
             }
           }
         ]
+      },
+      "uploadFile": {
+        "type": "object",
+        "description": "Upload file object",
+        "properties": {
+          "filename": {
+            "type": "string"
+          }
+        }
       }
     }
   }
