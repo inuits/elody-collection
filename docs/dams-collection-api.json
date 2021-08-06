@@ -180,7 +180,7 @@
           "tenant"
         ],
         "summary": "Get specific tenant",
-        "description": "Get specific tenant for a specific ID",
+        "description": "Get tenant for a specific ID",
         "operationId": "getTenantId",
         "parameters": [
           {
@@ -424,7 +424,7 @@
           "entity"
         ],
         "summary": "Get specific entity",
-        "description": "Get specific entity for a specific ID",
+        "description": "Get entity for a specific ID",
         "operationId": "getEntityId",
         "parameters": [
           {
@@ -487,7 +487,7 @@
           "entity"
         ],
         "summary": "Get specific entity metadata",
-        "description": "Get specific entity metadata for a specific ID",
+        "description": "Get entity metadata for a specific ID",
         "operationId": "getEntityIdMetadata",
         "parameters": [
           {
@@ -634,7 +634,7 @@
           "entity"
         ],
         "summary": "Get specific entity metadata fields",
-        "description": "Get specific entity metadata for a specific entity ID",
+        "description": "Get entity metadata for a specific entity ID",
         "operationId": "getEntityIdMetadataField",
         "parameters": [
           {
@@ -680,7 +680,7 @@
           "entity"
         ],
         "summary": "Delete specific entity metadata fields",
-        "description": "Delete specific entity metadata fields for a specific ID",
+        "description": "Delete entity metadata fields for a specific ID",
         "operationId": "deleteEntityIdMetadata",
         "parameters": [
           {
@@ -718,7 +718,7 @@
           "entity"
         ],
         "summary": "Get specific asset mediafiles",
-        "description": "Get specific entity mediafiles for a specific ID",
+        "description": "Get entity mediafiles for a specific ID",
         "operationId": "getEntityIdMediafiles",
         "parameters": [
           {
@@ -779,6 +779,9 @@
               }
             }
           },
+          "400": {
+            "description": "Mediafile doesn't have a valid format"
+          },
           "404": {
             "description": "Entity not found"
           }
@@ -829,6 +832,207 @@
           },
           "404": {
             "description": "Entity not found"
+          }
+        }
+      }
+    },
+    "/entities/{entityId}/relations": {
+      "get": {
+        "tags": [
+          "entity"
+        ],
+        "summary": "Get specific entity relations",
+        "description": "Get entity relations for a specific ID",
+        "operationId": "getEntityIdRelations",
+        "parameters": [
+          {
+            "name": "entityId",
+            "in": "path",
+            "description": "Entity id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/relation"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Entity not found"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "entity"
+        ],
+        "summary": "Add entity metadata",
+        "description": "Add entity relations for a specific ID",
+        "operationId": "addEntityIdRelations",
+        "parameters": [
+          {
+            "name": "entityId",
+            "in": "path",
+            "description": "Entity id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "relation objects that need to be added",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/relation"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/relation"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Entity not found"
+          },
+          "405": {
+            "description": "Invalid input"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "entity"
+        ],
+        "summary": "Update entity relations",
+        "description": "Update entity relations for a specific ID",
+        "operationId": "updateEntityIdRelations",
+        "parameters": [
+          {
+            "name": "entityId",
+            "in": "path",
+            "description": "Entity id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Relation objects that need to be updated",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/relation"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/relation"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Entity not found"
+          },
+          "405": {
+            "description": "Invalid input"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "entity"
+        ],
+        "summary": "Patch entity relations",
+        "description": "Patch entity relations for a specific ID",
+        "operationId": "patchEntityIdRelations",
+        "parameters": [
+          {
+            "name": "entityId",
+            "in": "path",
+            "description": "Entity id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Relation objects that need to be updated",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/relation"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/relation"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Entity not found"
+          },
+          "405": {
+            "description": "Invalid input"
           }
         }
       }
@@ -1218,6 +1422,21 @@
           "language": {
             "type": "string",
             "description": "language of the metadata"
+          }
+        }
+      },
+      "relation": {
+        "type": "object",
+        "description": "Metadata object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "format": "uuid",
+            "description": "entityid of entity that is the endpoint of the relation"
+          },
+          "type": {
+            "type": "string",
+            "description": "relation type"
           }
         }
       },
