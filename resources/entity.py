@@ -4,14 +4,10 @@ import uuid
 from flask import g, request, after_this_request
 from flask_restful import abort
 from resources.base_resource import BaseResource
-from validator import EntityValidator
+from validator import EntityValidator, MediafileValidator
 
-validator = EntityValidator()
-
-
-def abort_if_not_valid_entity(entity_json):
-    if not validator.validate(entity_json):
-        abort(400, message="Entity doesn't have a valid format")
+entity_validator = EntityValidator()
+mediafile_validator = MediafileValidator()
 
 
 class Entity(BaseResource):
@@ -20,7 +16,7 @@ class Entity(BaseResource):
     )
     def post(self):
         content = self.get_request_body()
-        abort_if_not_valid_entity(content)
+        self.abort_if_not_valid_json(entity_validator, "Entity", content)
         if hasattr(g, "oidc_token_info"):
             content["user"] = g.oidc_token_info["email"]
         else:
@@ -65,7 +61,7 @@ class EntityDetail(BaseResource):
     def put(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
-        abort_if_not_valid_entity(content)
+        self.abort_if_not_valid_json(entity_validator, "Entity", content)
         entity = self.storage.update_item_from_collection("entities", id, content)
         return entity, 201
 
@@ -162,6 +158,7 @@ class EntityMediafiles(BaseResource):
     def post(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
+        self.abort_if_not_valid_json(mediafile_validator, "Mediafile", content)
         mediafile_id = content["_id"]
         mediafile = self.storage.add_mediafile_to_collection_item(
             "entities", id, mediafile_id

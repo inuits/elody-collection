@@ -47,6 +47,10 @@ class BaseResource(Resource):
             )
         return item
 
+    def abort_if_not_valid_json(self, validator, type, json):
+        if not validator.validate(json):
+            abort(400, message="{} doesn't have a valid format".format(type))
+
     def get_job_by_signature(self, signature):
         """This method is necessary for reuse in some parts of job creation"""
         return self.storage.get_jobs_from_collection("jobs", signature)

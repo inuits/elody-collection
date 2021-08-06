@@ -1,16 +1,10 @@
 import app
 
 from flask import request
-from flask_restful import abort
 from resources.base_resource import BaseResource
 from validator import MediafileValidator
 
 validator = MediafileValidator()
-
-
-def abort_if_not_valid_mediafile(mediafile_json):
-    if not validator.validate(mediafile_json):
-        abort(400, message="Mediafile doesn't have a valid format")
 
 
 class Mediafile(BaseResource):
@@ -19,7 +13,7 @@ class Mediafile(BaseResource):
     )
     def post(self):
         content = self.get_request_body()
-        abort_if_not_valid_mediafile(content)
+        self.abort_if_not_valid_json(validator, "Mediafile", content)
         mediafile = self.storage.save_item_to_collection("mediafiles", content)
         return mediafile, 201
 
@@ -66,7 +60,7 @@ class MediafileDetail(BaseResource):
     def put(self, id):
         self.abort_if_item_doesnt_exist("mediafiles", id)
         content = self.get_request_body()
-        abort_if_not_valid_mediafile(content)
+        self.abort_if_not_valid_json(validator, "Mediafile", content)
         mediafile = self.storage.update_item_from_collection("mediafiles", id, content)
         return mediafile, 201
 
