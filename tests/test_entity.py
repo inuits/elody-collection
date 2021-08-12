@@ -106,6 +106,36 @@ class EntityTest(BaseCase):
             self.assertEqual(list, type(mediafile["entities"]))
             self.assertEqual(3, len(mediafile["entities"]))
 
+    def test_successful_entity_mediafile_create_with_metadata(self):
+        _id = self.create_entity_get_id()
+
+        response = self.app.post(
+            "/entities/{}/mediafiles/create".format(_id),
+            headers={"Content-Type": "application/json"},
+            data=self.filename_with_metadata,
+        )
+
+        self.assertEqual(str, type(response.json))
+        self.assertTrue(
+            response.json.startswith("https://dams-storage-api.inuits.io/upload/")
+        )
+        self.assertEqual(87, len(response.json))
+        self.assertEqual(201, response.status_code)
+
+        response = self.app.get(
+            "/entities/{}/mediafiles".format(_id),
+            headers={"Content-Type": "application/json"},
+        )
+
+        self.assertEqual(1, len(response.json))
+        for mediafile in response.json:
+            self.assertEqual(list, type(mediafile["entities"]))
+            self.assertEqual(3, len(mediafile["entities"]))
+            self.assertEqual(list, type(mediafile["metadata"]))
+            self.assertEqual(2, len(mediafile["metadata"]))
+            self.assertEqual("rights", mediafile["metadata"][0]["key"])
+            self.assertEqual("Inuits", mediafile["metadata"][1]["value"])
+
     def test_entity_mediafile_create_without_filename(self):
         _id = self.create_entity_get_id()
 

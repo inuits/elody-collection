@@ -66,6 +66,22 @@ class BaseCase(unittest.TestCase):
         }
     )
 
+    filename_with_metadata = json.dumps(
+        {
+            "filename": "test.jpg",
+            "metadata": [{
+                "key": "rights",
+                "value": "CC-BY-4.0",
+                "lang": "en",
+            },
+            {
+                "key": "copyright",
+                "value": "Inuits",
+                "lang": "en",
+            }]
+        }
+    )
+
     def setUp(self):
         app.testing = True
 
