@@ -299,6 +299,19 @@
             "schema": {
               "type": "integer"
             }
+          },
+          {
+            "name": "ids",
+            "in": "query",
+            "description": "List of id's to include in the list",
+            "required": false,
+            "explode": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
           }
         ],
         "responses": {
@@ -1521,6 +1534,12 @@
         "properties": {
           "filename": {
             "type": "string"
+          },
+          "metadata": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/metadata"
+            }
           }
         }
       }
