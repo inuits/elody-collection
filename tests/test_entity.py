@@ -112,6 +112,7 @@ class EntityTest(BaseCase):
         response = self.app.post(
             "/entities/{}/mediafiles/create".format(_id),
             headers={"Content-Type": "application/json"},
+            data=json.dumps({}),
         )
 
         self.invalid_input(response)
