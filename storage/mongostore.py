@@ -14,18 +14,10 @@ class MongoStorageManager:
         client = MongoClient(mongo_host, mongo_port)
         self.db = client[mongo_db]
 
-    def get_items_from_collection(self, collection, skip=0, limit=20, ids=False):
+    def get_items_from_collection(self, collection, skip=0, limit=20):
         items = dict()
-        if ids:
-            documents = self.db[collection].find(
-                self._get_multiple_id_query(ids), skip=skip, limit=limit
-            )
-            count = self.db[collection].count_documents(
-                self._get_multiple_id_query(ids)
-            )
-        else:
-            documents = self.db[collection].find(skip=skip, limit=limit)
-            count = self.db[collection].count_documents({})
+        documents = self.db[collection].find(skip=skip, limit=limit)
+        count = self.db[collection].count_documents({})
         items["count"] = count
         items["results"] = list()
         for document in documents:

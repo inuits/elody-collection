@@ -34,7 +34,7 @@ class Entity(BaseResource):
         if ids:
             ids = ids.split(",")
             return self.storage.get_items_from_collection_by_ids("entities", ids)
-        entities = self.storage.get_items_from_collection("entities", skip, limit, ids)
+        entities = self.storage.get_items_from_collection("entities", skip, limit)
         count = entities["count"]
         entities["limit"] = limit
         if skip + limit < count:

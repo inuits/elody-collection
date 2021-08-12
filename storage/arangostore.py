@@ -24,7 +24,7 @@ class ArangoStorageManager:
         )
         self.db = self._create_database_if_not_exists(self.arango_db_name)
 
-    def get_items_from_collection(self, collection, skip=0, limit=20, ids=False):
+    def get_items_from_collection(self, collection, skip=0, limit=20):
         items = dict()
         count = self.db[collection].count()
         items["count"] = count
