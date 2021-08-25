@@ -1,9 +1,7 @@
 ### Base stage
-#FROM python:3.9-slim AS base-stage
-FROM python:3.9-alpine AS base-stage
+FROM python:3.9-slim AS base-stage
 
-RUN adduser --disabled-password --home /app --shell /bin/ash app
-USER app
+RUN adduser --no-create-home --disabled-password --home /app --shell /bin/ash app
 WORKDIR /app
 
 COPY docker/entrypoint*.sh /
@@ -17,14 +15,14 @@ ENTRYPOINT ["/entrypoint.sh"]
 ### Development stage
 FROM base-stage AS development-stage
 
-ENV APP_ENV=dev
+ARG APP_ENV
+
+ENV APP_ENV=${APP_ENV}
 
 RUN pip install -r requirements_dev.txt
 
 ### Build stage
 FROM base-stage AS build-stage
-
-ENV APP_ENV=prod
 
 COPY . ./
 
@@ -34,3 +32,5 @@ RUN pip install -r requirements.txt
 FROM build-stage AS production-stage
 
 ENV GUNICORN_CMD_ARGS="--workers=3"
+
+USER app

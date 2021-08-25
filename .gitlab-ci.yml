@@ -5,9 +5,10 @@
 
 include:
   - project: 'inuits/gitlab-ci/pipeline-templates'
-    file: 'common-pipeline.yml'
-    ref: 'v1.2.0'
-
+    file: 
+      - 'common-pipeline.yml'
+#    ref: 'v1.0.2'
+    
 variables:
   CUSTOMER: 'inuits'
   APPLICATION: 'dams-collection'
