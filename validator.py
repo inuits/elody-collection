@@ -110,6 +110,62 @@ entity_schema = {
     "additionalProperties": True,
 }
 
+job_schema = {
+    "type": "object",
+    "default": {},
+    "required": [
+        "job_id",
+        "job_type",
+        "job_info",
+        "status",
+        "start_time"
+    ],
+    "properties": {
+        "job_id": {
+            "type": "string",
+        },
+        "job_type": {
+            "type": "string",
+
+        },
+        "job_info": {
+            "type": "string",
+        },
+        "end_time": {
+            "type": "string",
+        },
+        "user": {
+            "type": "string",
+        },
+        "asset": {
+            "type": "string",
+        },
+        "mediafile_id": {
+            "type": "string",
+        },
+        "parent_job_id": {
+            "type": "string",
+        },
+        "status":{
+            "enum": [
+                "queued",
+                "in-progress",
+                "finished",
+                "failed"
+            ]
+        }
+    },
+}
+
+
+class JobValidator:
+    def validate(self, job_json):
+        try:
+            validate(instance=job_json, schema=job_schema)
+        except:
+            return False
+        return True
+
 
 class TenantValidator:
     def validate(self, tenant_json):

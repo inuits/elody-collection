@@ -68,6 +68,8 @@ from resources.importer import (
 from resources.mediafile import Mediafile, MediafileDetail
 from resources.spec import OpenAPISpec, AsyncAPISpec
 from resources.tenant import Tenant, TenantDetail
+from resources.job import Job, JobDetail
+
 
 api.add_resource(EntityRelations, "/entities/<string:id>/relations")
 api.add_resource(EntityMediafilesCreate, "/entities/<string:id>/mediafiles/create")
@@ -88,6 +90,9 @@ api.add_resource(AsyncAPISpec, "/spec/dams-collection-api-events.html")
 
 api.add_resource(TenantDetail, "/tenants/<string:id>")
 api.add_resource(Tenant, "/tenants")
+
+api.add_resource(JobDetail, "/jobs/<string:id>")
+api.add_resource(Job, "/jobs")
 
 if __name__ == "__main__":
     app.run(debug=True)
