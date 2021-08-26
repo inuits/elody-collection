@@ -14,7 +14,7 @@ class Job(BaseResource):
     )
     def post(self):
         content = self.get_request_body()
-        self.abort_if_not_valid_json(validator, "job", content)
+        self.abort_if_not_valid_json(validator, "Job", content)
         Job = self.storage.save_item_to_collection("jobs", content)
         return Job, 201
 
@@ -47,32 +47,32 @@ class JobDetail(BaseResource):
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )
     def get(self, id):
-        Job = self.abort_if_item_doesnt_exist("Jobs", id)
+        Job = self.abort_if_item_doesnt_exist("jobs", id)
         return Job
 
     @app.oidc.accept_token(
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )
     def patch(self, id):
-        self.abort_if_item_doesnt_exist("Jobs", id)
+        self.abort_if_item_doesnt_exist("jobs", id)
         content = self.get_request_body()
-        Job = self.storage.patch_item_from_collection("Jobs", id, content)
+        Job = self.storage.patch_item_from_collection("jobs", id, content)
         return Job, 201
 
     @app.oidc.accept_token(
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )
     def put(self, id):
-        self.abort_if_item_doesnt_exist("Jobs", id)
+        self.abort_if_item_doesnt_exist("jobs", id)
         content = self.get_request_body()
         self.abort_if_not_valid_json(validator, "Job", content)
-        Job = self.storage.update_item_from_collection("Jobs", id, content)
+        Job = self.storage.update_item_from_collection("jobs", id, content)
         return Job, 201
 
     @app.oidc.accept_token(
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )
     def delete(self, id):
-        self.abort_if_item_doesnt_exist("Jobs", id)
-        self.storage.delete_item_from_collection("Jobs", id)
+        self.abort_if_item_doesnt_exist("jobs", id)
+        self.storage.delete_item_from_collection("jobs", id)
         return "", 204

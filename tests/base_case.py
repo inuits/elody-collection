@@ -117,6 +117,9 @@ class BaseCase(unittest.TestCase):
             "/jobs", headers={"Content-Type": "application/json"}, data=self.job
         )
 
+    def create_job_get_id(self):
+        return self.create_job().json["_id"]
+
     def create_entity_get_id(self):
         return self.create_entity().json["_id"]
 
