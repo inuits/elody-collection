@@ -114,16 +114,12 @@ job_schema = {
     "type": "object",
     "default": {},
     "required": [
-        "job_id",
         "job_type",
         "job_info",
         "status",
         "start_time"
     ],
     "properties": {
-        "job_id": {
-            "type": "string",
-        },
         "job_type": {
             "type": "string",
 

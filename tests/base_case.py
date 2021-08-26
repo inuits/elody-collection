@@ -62,7 +62,6 @@ class BaseCase(unittest.TestCase):
 
     job = json.dumps(
         {
-            "job_id": "0920943iu32i43k32iiu53",
             "job_type": "download",
             "job_info": "Some info about download",
             "status": "queued",
@@ -71,7 +70,6 @@ class BaseCase(unittest.TestCase):
     )
     invalid_job = json.dumps(
         {
-            "job_id": "0920943iu32i43k32iiu53",
             "job_type": "download",
             "job_info": "Some info about download",
             "status": "jrekjndfkjsadkfnkjsadfsaekjnfewdsk",

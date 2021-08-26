@@ -49,7 +49,6 @@ class JobTest(BaseCase):
         update = json.dumps(
             {
                 "_id": _id,
-                "job_id": "0920943iu32i43k32iiu53",
                 "job_type": "download",
                 "job_info": "Updated info",
                 "status": "in-progress",
@@ -64,7 +63,7 @@ class JobTest(BaseCase):
         )
 
         self.valid_job(response.json)
-        self.assertEqual(6, len(response.json))
+        self.assertEqual(5, len(response.json))
         self.assertEqual(str, type(response.json["job_info"]))
         self.assertEqual("Updated info", response.json["job_info"])
         self.assertEqual(201, response.status_code)
@@ -100,7 +99,7 @@ class JobTest(BaseCase):
         )
 
         self.valid_job(response.json)
-        self.assertEqual(6, len(response.json))
+        self.assertEqual(5, len(response.json))
         self.assertEqual(str, type(response.json["job_info"]))
         self.assertEqual("Patched info", response.json["job_info"])
         self.assertEqual(201, response.status_code)
