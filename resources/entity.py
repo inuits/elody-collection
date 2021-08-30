@@ -1,5 +1,6 @@
 import datetime
 import json
+import os
 
 import app
 import uuid
@@ -8,10 +9,11 @@ from flask import g, request, after_this_request
 from flask_restful import abort
 from resources.base_resource import BaseResource
 from validator import EntityValidator, MediafileValidator
+from classes.job_helper import JobHelper
 
 entity_validator = EntityValidator()
 mediafile_validator = MediafileValidator()
-
+job_helper = JobHelper(os.getenv("JOB_API_BASE_URL", "http://localhost:8000"))
 
 class Entity(BaseResource):
     @app.oidc.accept_token(
@@ -182,16 +184,8 @@ class EntityMediafilesCreate(BaseResource):
                 405,
                 message="Invalid input",
             )
-        job = {
-            "job_type": "create_mediafile",
-            "job_info": "Starting mediafile creation for entity with id " + id,
-            "status": "queued",
-            "start_time": str(datetime.datetime.utcnow())
-        }
-        job_id = json.loads(requests.post(
-            "http://localhost:8000/jobs",  json=job
-        ).text)["_id"]
-        print(job_id)
+        user = g.oidc_token_info["email"] if hasattr(g, "oidc_token_info") else "default_uploader"
+        job = job_helper.create_new_job("Create mediafile", "mediafile", user=user)
         file_id = str(uuid.uuid4())
         filename = content["filename"]
         file_id = "{}-{}".format(file_id, filename)
@@ -209,24 +203,12 @@ class EntityMediafilesCreate(BaseResource):
         mediafile = self.storage.save_item_to_collection("mediafiles", mediafile)
         mediafile_id = mediafile["_id"]
         upload_location = "{}/upload/{}".format(self.storage_api_url, file_id)
-        job = {
-            "status": "in-progress",
-        }
-        requests.patch(
-            "http://localhost:8000/jobs/"+job_id, json=job
-        )
+        job_helper.progress_job(job)
         try:
             self.storage.add_mediafile_to_collection_item("entities", id, mediafile_id)
-            job = {
-                "status": "finished",
-            }
+            job_helper.finish_job(job)
         except:
-            job = {
-                "status": "failed",
-            }
-        requests.patch(
-            "http://localhost:8000/jobs/" + job_id, json=job
-        )
+            job_helper.fail_job(job)
         return upload_location, 201
 
 

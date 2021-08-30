@@ -1,4 +1,5 @@
 from jsonschema import validate
+from classes.job_helper import Status
 
 tenant_schema = {
     "type": "object",
@@ -144,10 +145,10 @@ job_schema = {
         },
         "status":{
             "enum": [
-                "queued",
-                "in-progress",
-                "finished",
-                "failed"
+                Status.QUEUED.value,
+                Status.IN_PROGRESS.value,
+                Status.FINISHED.value,
+                Status.FAILED.value
             ]
         }
     },
