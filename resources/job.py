@@ -4,7 +4,7 @@ import app
 
 from resources.base_resource import BaseResource
 from validator import JobValidator
-
+from classes.job_helper import Status
 validator = JobValidator()
 
 
@@ -15,8 +15,8 @@ class Job(BaseResource):
     def post(self):
         content = self.get_request_body()
         self.abort_if_not_valid_json(validator, "Job", content)
-        Job = self.storage.save_item_to_collection("jobs", content)
-        return Job, 201
+        job = self.storage.save_item_to_collection("jobs", content)
+        return job, 201
 
     @app.oidc.accept_token(
         require_token=BaseResource.token_required, scopes_required=["openid"]
@@ -46,9 +46,13 @@ class JobDetail(BaseResource):
     @app.oidc.accept_token(
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )
+    def __send_amqp_message(self, job):
+        if job["status"] == (Status.FINISHED.value or Status.FAILED.value):
+            app.ramq.send(job, routing_key="dams.jobs")
+
     def get(self, id):
-        Job = self.abort_if_item_doesnt_exist("jobs", id)
-        return Job
+        job = self.abort_if_item_doesnt_exist("jobs", id)
+        return job
 
     @app.oidc.accept_token(
         require_token=BaseResource.token_required, scopes_required=["openid"]
@@ -56,7 +60,8 @@ class JobDetail(BaseResource):
     def patch(self, id):
         self.abort_if_item_doesnt_exist("jobs", id)
         content = self.get_request_body()
-        Job = self.storage.patch_item_from_collection("jobs", id, content)
+        job = self.storage.patch_item_from_collection("jobs", id, content)
+        self.__send_amqp_message(job)
         return Job, 201
 
     @app.oidc.accept_token(
@@ -66,7 +71,8 @@ class JobDetail(BaseResource):
         self.abort_if_item_doesnt_exist("jobs", id)
         content = self.get_request_body()
         self.abort_if_not_valid_json(validator, "Job", content)
-        Job = self.storage.update_item_from_collection("jobs", id, content)
+        job = self.storage.update_item_from_collection("jobs", id, content)
+        self.__send_amqp_message(job)
         return Job, 201
 
     @app.oidc.accept_token(
