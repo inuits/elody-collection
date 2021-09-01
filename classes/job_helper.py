@@ -2,7 +2,7 @@ import json
 import string
 from datetime import datetime
 from enum import Enum
-
+import app
 import requests
 
 
@@ -22,7 +22,8 @@ class JobHelper:
             "{}/jobs/{}".format(self.job_api_base_url, job["_id"]), json=job
         ).json()
 
-    def create_new_job(self, job_info: string, job_type: string, user: string, asset_id=None, mediafile_id=None, parent_job_id=None):
+    def create_new_job(self, job_info: string, job_type: string, user: string, asset_id=None, mediafile_id=None,
+                       parent_job_id=None):
         new_job = {
             "job_type": job_type,
             "job_info": job_info,
@@ -48,9 +49,12 @@ class JobHelper:
     def finish_job(self, job):
         job["status"] = Status.FINISHED.value
         job["end_time"] = str(datetime.utcnow())
+        app.ramq.send(job, routing_key="dams.jobs")
         return self.__patch_job(job)
 
-    def fail_job(self, job):
+    def fail_job(self, job, error_message=""):
         job["status"] = Status.FAILED.value
         job["end_time"] = str(datetime.utcnow())
+        job["error_message"] = error_message
+        app.ramq.send(job, routing_key="dams.jobs")
         return self.__patch_job(job)

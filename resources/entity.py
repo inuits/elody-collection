@@ -1,6 +1,7 @@
 import datetime
 import json
 import os
+import sys
 
 import app
 import uuid
@@ -13,7 +14,10 @@ from classes.job_helper import JobHelper
 
 entity_validator = EntityValidator()
 mediafile_validator = MediafileValidator()
-job_helper = JobHelper(os.getenv("JOB_API_BASE_URL", "http://localhost:8000"))
+job_helper = JobHelper(
+    job_api_base_url=os.getenv("JOB_API_BASE_URL", "http://localhost:8000")
+
+)
 
 class Entity(BaseResource):
     @app.oidc.accept_token(
@@ -208,7 +212,7 @@ class EntityMediafilesCreate(BaseResource):
             self.storage.add_mediafile_to_collection_item("entities", id, mediafile_id)
             job_helper.finish_job(job)
         except:
-            job_helper.fail_job(job)
+            job_helper.fail_job(job, sys.exc_info()[0])
         return upload_location, 201
 
 
