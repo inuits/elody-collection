@@ -47,7 +47,7 @@ class JobDetail(BaseResource):
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )
     def __send_amqp_message(self, job):
-        if job["status"] == (Status.FINISHED.value or Status.FAILED.value):
+        if job["status"] == Status.FINISHED.value or job["status"] == Status.FAILED.value:
             app.ramq.send(job, routing_key="dams.jobs")
 
     def get(self, id):
@@ -62,7 +62,7 @@ class JobDetail(BaseResource):
         content = self.get_request_body()
         job = self.storage.patch_item_from_collection("jobs", id, content)
         self.__send_amqp_message(job)
-        return Job, 201
+        return job, 201
 
     @app.oidc.accept_token(
         require_token=BaseResource.token_required, scopes_required=["openid"]
@@ -73,7 +73,7 @@ class JobDetail(BaseResource):
         self.abort_if_not_valid_json(validator, "Job", content)
         job = self.storage.update_item_from_collection("jobs", id, content)
         self.__send_amqp_message(job)
-        return Job, 201
+        return job, 201
 
     @app.oidc.accept_token(
         require_token=BaseResource.token_required, scopes_required=["openid"]
