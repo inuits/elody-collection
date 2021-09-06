@@ -16,10 +16,10 @@ ENTRYPOINT ["/entrypoint.sh"]
 FROM base-stage AS development-stage
 
 ARG APP_ENV
+ARG PIPENV_USERNAME
+ARG PIPENV_PASSWORD
 
-ENV APP_ENV=${APP_ENV}
-
-RUN pip install -r requirements_dev.txt
+RUN pip install -r requirements_dev.txt -i "https://${PIPENV_USERNAME}:${PIPENV_PASSWORD}@nexus.inuits.eu/repository/python/simple"
 
 ### Build stage
 FROM base-stage AS build-stage

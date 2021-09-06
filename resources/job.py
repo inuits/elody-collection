@@ -4,7 +4,7 @@ import app
 
 from resources.base_resource import BaseResource
 from validator import JobValidator
-from classes.job_helper import Status
+from job_helper.job_helper import Status
 validator = JobValidator()
 
 

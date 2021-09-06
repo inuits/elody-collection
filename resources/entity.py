@@ -10,7 +10,7 @@ from flask import g, request, after_this_request
 from flask_restful import abort
 from resources.base_resource import BaseResource
 from validator import EntityValidator, MediafileValidator
-from classes.job_helper import JobHelper
+from job_helper.job_helper import JobHelper
 
 entity_validator = EntityValidator()
 mediafile_validator = MediafileValidator()

@@ -1,5 +1,5 @@
 from jsonschema import validate
-from classes.job_helper import Status
+from job_helper.job_helper import Status
 
 tenant_schema = {
     "type": "object",
