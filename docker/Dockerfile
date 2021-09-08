@@ -26,7 +26,10 @@ FROM base-stage AS build-stage
 
 COPY . ./
 
-RUN pip install -r requirements.txt
+ARG PIPENV_USERNAME
+ARG PIPENV_PASSWORD
+
+RUN pip install -r requirements.txt -i "https://${PIPENV_USERNAME}:${PIPENV_PASSWORD}@nexus.inuits.eu/repository/python/simple"
 
 ### Production stage
 FROM build-stage AS production-stage

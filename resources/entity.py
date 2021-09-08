@@ -188,8 +188,7 @@ class EntityMediafilesCreate(BaseResource):
                 405,
                 message="Invalid input",
             )
-        user = g.oidc_token_info["email"] if hasattr(g, "oidc_token_info") else "default_uploader"
-        job = job_helper.create_new_job("Create mediafile", "mediafile", user=user)
+        job = job_helper.create_new_job("Create mediafile", "mediafile")
         file_id = str(uuid.uuid4())
         filename = content["filename"]
         file_id = "{}-{}".format(file_id, filename)
@@ -211,8 +210,8 @@ class EntityMediafilesCreate(BaseResource):
         try:
             self.storage.add_mediafile_to_collection_item("entities", id, mediafile_id)
             job_helper.finish_job(job)
-        except:
-            job_helper.fail_job(job, sys.exc_info()[0])
+        except Exception as ex:
+            job_helper.fail_job(job, str(ex))
         return upload_location, 201
 
 
