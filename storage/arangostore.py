@@ -14,7 +14,7 @@ class ArangoStorageManager:
         self.mediafile_collection_name = os.getenv("MEDIAFILE_COLLECTION", "mediafiles")
         self.mediafile_edge_name = os.getenv("MEDIAFILE_EDGE", "hasMediafile")
         self.default_graph_name = os.getenv("DEFAULT_GRAPH", "assets")
-        self.entity_relations = ["authoredBy", "authored", "isIn", "contains"]
+        self.entity_relations = ["authoredBy", "authored", "isIn", "contains", "components", "parent"]
         self.edges = self.entity_relations + ["hasMediafile"]
 
         self.conn = Connection(
@@ -215,6 +215,8 @@ FOR c IN @@collection
             "isIn": "contains",
             "authored": "authoredBy",
             "contains": "isIn",
+            "components": "parent",
+            "parent": "components"
         }
         return mapping.get(relation)
 
@@ -235,6 +237,7 @@ FOR c IN @@collection
 
     def _create_database_if_not_exists(self, arango_db_name):
         if not self.conn.hasDatabase(arango_db_name):
+
             return self.conn.createDatabase(arango_db_name)
         else:
             return self.conn[arango_db_name]
