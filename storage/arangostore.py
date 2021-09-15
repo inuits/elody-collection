@@ -237,7 +237,6 @@ FOR c IN @@collection
 
     def _create_database_if_not_exists(self, arango_db_name):
         if not self.conn.hasDatabase(arango_db_name):
-
             return self.conn.createDatabase(arango_db_name)
         else:
             return self.conn[arango_db_name]
