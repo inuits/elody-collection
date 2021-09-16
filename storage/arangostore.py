@@ -2,6 +2,7 @@ import os
 
 from pyArango.connection import *
 from pyArango.theExceptions import *
+from werkzeug.exceptions import BadRequest
 
 
 class ArangoStorageManager:
@@ -92,6 +93,20 @@ FOR c IN @@collection
                 relations.append({"key": edge["_to"], "type": relation})
         return relations
 
+    def get_collection_item_components(self, collection, id):
+        entity = self.get_raw_item_from_collection_by_id(collection, id)
+        relations = []
+        for edge in entity.getOutEdges(self.db["components"]):
+            relations.append({"key": edge["_to"], "type": "components", "order": edge["order"]})
+        return relations
+
+    def get_collection_item_parent(self, collection, id):
+        entity = self.get_raw_item_from_collection_by_id(collection, id)
+        relations = []
+        for edge in entity.getOutEdges(self.db["parent"]):
+            relations.append({"key": edge["_to"], "type": "parent"})
+        return relations
+
     def get_collection_item_mediafiles(self, collection, id):
         entity = self.get_raw_item_from_collection_by_id(collection, id)
         mediafiles = []
@@ -130,7 +145,7 @@ FOR c IN @@collection
             return None
         for relation in relations:
             self.db.graphs[self.default_graph_name].createEdge(
-                relation["type"], entity["_id"], relation["key"], {}
+                relation["type"], entity["_id"], relation["key"], {"order": relation["order"]} if "order" in relation.keys() and relation["type"] == "components" else {}
             )
             self.db.graphs[self.default_graph_name].createEdge(
                 self._map_entity_relation(relation["type"]),
