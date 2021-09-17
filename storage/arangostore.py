@@ -1,6 +1,7 @@
 import os
+import uuid
 
-from pyArango.connection import *
+from .py_arango_connection_extension import PyArangoConnection as Connection
 from pyArango.theExceptions import *
 from werkzeug.exceptions import BadRequest
 
@@ -252,6 +253,22 @@ FOR c IN @@collection
 
     def _create_database_if_not_exists(self, arango_db_name):
         if not self.conn.hasDatabase(arango_db_name):
-            return self.conn.createDatabase(arango_db_name)
+            self.conn.createDatabase(arango_db_name)
+            for collection in ["entities", "tenants", "jobs", "mediafiles"]:
+                self.conn.createCollection(collection, arango_db_name)
+            for edge in ["authoredBy", "contains", "isIn", "authored", "components", "parent"]:
+                self.conn.createEdge(edge, arango_db_name)
+            self.conn.createGraph(self.default_graph_name, arango_db_name,
+                                  {"edgeDefinitions": [
+                                      {"collection": "authored", "from": ["entities"], "to": ["entities"]},
+                                      {"collection": "authoredBy", "from": ["entities"], "to": ["entities"]},
+                                      {"collection": "components", "from": ["entities"], "to": ["entities"]},
+                                      {"collection": "parent", "from": ["entities"], "to": ["entities"]},
+                                      {"collection": "contains", "from": ["entities"], "to": ["entities"]},
+                                      {"collection": "isIn", "from": ["entities"], "to": ["entities"]}
+                                  ],
+                                   "orphanCollections": []}
+                                  )
+            return arango_db_name
         else:
             return self.conn[arango_db_name]
