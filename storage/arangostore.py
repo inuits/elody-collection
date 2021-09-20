@@ -99,6 +99,7 @@ FOR c IN @@collection
         relations = []
         for edge in entity.getOutEdges(self.db["components"]):
             relations.append({"key": edge["_to"], "type": "components", "order": edge["order"]})
+            relations = sorted(relations, key=lambda tup: tup["order"])
         return relations
 
     def get_collection_item_parent(self, collection, id):
