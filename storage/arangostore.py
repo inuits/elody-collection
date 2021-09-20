@@ -265,7 +265,9 @@ FOR c IN @@collection
                                       {"collection": "components", "from": ["entities"], "to": ["entities"]},
                                       {"collection": "parent", "from": ["entities"], "to": ["entities"]},
                                       {"collection": "contains", "from": ["entities"], "to": ["entities"]},
-                                      {"collection": "isIn", "from": ["entities"], "to": ["entities"]}
+                                      {"collection": "isIn", "from": ["entities"], "to": ["entities"]},
+                                      {"collection": "hasMediafile", "from": ["entities"], "to": ["mediafiles"]},
+
                                   ],
                                    "orphanCollections": []}
                                   )
