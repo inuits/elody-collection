@@ -85,6 +85,10 @@ entity_schema = {
             "type": "string",
             "default": ""
         },
+        "thumbnail_file": {
+            "type": "string",
+            "default": ""
+        },
         "data": {
             "type": "object",
             "title": "The data schema",
