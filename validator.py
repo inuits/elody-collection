@@ -81,6 +81,10 @@ entity_schema = {
             "additionalItems": True,
             "items": {"$id": "#/properties/metadata/items"},
         },
+        "primary_mediafile_id": {
+            "type": "string",
+            "default": ""
+        },
         "data": {
             "type": "object",
             "title": "The data schema",
@@ -143,7 +147,7 @@ job_schema = {
         "parent_job_id": {
             "type": "string",
         },
-        "status":{
+        "status": {
             "enum": [
                 Status.QUEUED.value,
                 Status.IN_PROGRESS.value,
