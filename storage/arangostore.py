@@ -1,4 +1,5 @@
 import os
+import sys
 import uuid
 
 from .py_arango_connection_extension import PyArangoConnection as Connection
@@ -118,6 +119,10 @@ FOR c IN @@collection
 
     def add_mediafile_to_collection_item(self, collection, id, mediafile_id):
         entity = self.get_raw_item_from_collection_by_id(collection, id)
+        if "primary_mediafile_id" not in entity:
+            dict_entity = entity.getStore()
+            dict_entity["primary_mediafile_id"] = mediafile_id
+            self.update_item_from_collection("entities", id, dict_entity)
         if not entity:
             return None
         self.db.graphs[self.default_graph_name].createEdge(
