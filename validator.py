@@ -85,7 +85,7 @@ entity_schema = {
             "type": "string",
             "default": ""
         },
-        "thumbnail_file": {
+        "primary_thumbnail_file_location": {
             "type": "string",
             "default": ""
         },

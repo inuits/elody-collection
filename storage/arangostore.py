@@ -122,12 +122,17 @@ FOR c IN @@collection
         if "primary_mediafile_id" not in entity:
             dict_entity = entity.getStore()
             dict_entity["primary_mediafile_id"] = mediafile_id
+            if "primary_thumbnail_file_location" not in entity:
+                mediafile =  self.db.fetchDocument(mediafile_id)
+                if mediafile is not None:
+                    dict_entity["primary_thumbnail_file_location"] = mediafile["thumbnail_file_location"]
             self.update_item_from_collection("entities", id, dict_entity)
         if not entity:
             return None
         self.db.graphs[self.default_graph_name].createEdge(
             self.mediafile_edge_name, entity["_id"], mediafile_id, {}
         )
+
         return self.db.fetchDocument(mediafile_id).getStore()
 
     def add_sub_item_to_collection_item(self, collection, id, sub_item, content):
