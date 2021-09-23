@@ -17,7 +17,7 @@ class ArangoStorageManager:
         self.mediafile_collection_name = os.getenv("MEDIAFILE_COLLECTION", "mediafiles")
         self.mediafile_edge_name = os.getenv("MEDIAFILE_EDGE", "hasMediafile")
         self.default_graph_name = os.getenv("DEFAULT_GRAPH", "assets")
-        self.entity_relations = ["authoredBy", "authored", "isIn", "contains", "components", "parent"]
+        self.entity_relations = ["authoredBy", "authored", "isIn", "contains", "components", "parent", "isTypeOf", "isUsedIn" ]
         self.edges = self.entity_relations + ["hasMediafile"]
 
         self.conn = Connection(
@@ -243,7 +243,9 @@ FOR c IN @@collection
             "authored": "authoredBy",
             "contains": "isIn",
             "components": "parent",
-            "parent": "components"
+            "parent": "components",
+            "isTypeOf": "isUsedIn",
+            "isUsedIn": "isTypeOf"
         }
         return mapping.get(relation)
 
@@ -277,6 +279,8 @@ FOR c IN @@collection
                                       {"collection": "parent", "from": ["entities"], "to": ["entities"]},
                                       {"collection": "contains", "from": ["entities"], "to": ["entities"]},
                                       {"collection": "isIn", "from": ["entities"], "to": ["entities"]},
+                                      {"collection": "isTypeOf", "from": ["entities"], "to": ["entities"]},
+                                      {"collection": "isUsedIn", "from": ["entities"], "to": ["entities"]},
                                       {"collection": "hasMediafile", "from": ["entities"], "to": ["mediafiles"]},
 
                                   ],
