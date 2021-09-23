@@ -72,6 +72,8 @@ from resources.spec import OpenAPISpec, AsyncAPISpec
 from resources.tenant import Tenant, TenantDetail
 from resources.job import Job, JobDetail
 
+api.add_resource(EntityComponents, "/entities/<string:id>/types")
+
 api.add_resource(EntityParent, "/entities/<string:id>/parent")
 
 api.add_resource(EntityComponents, "/entities/<string:id>/components")
