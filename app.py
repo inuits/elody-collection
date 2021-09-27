@@ -62,7 +62,8 @@ from resources.entity import (
     EntityRelations,
     EntityComponents,
     EntityParent,
-    EntityTypes
+    EntityTypes,
+    EntityUsage
 )
 from resources.importer import (
     ImporterStart,
@@ -74,6 +75,8 @@ from resources.tenant import Tenant, TenantDetail
 from resources.job import Job, JobDetail
 
 api.add_resource(EntityTypes, "/entities/<string:id>/types")
+api.add_resource(EntityUsage, "/entities/<string:id>/usage")
+
 
 api.add_resource(EntityParent, "/entities/<string:id>/parent")
 

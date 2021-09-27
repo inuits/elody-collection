@@ -19,6 +19,7 @@ job_helper = JobHelper(
 
 )
 
+
 class Entity(BaseResource):
     @app.oidc.accept_token(
         require_token=BaseResource.token_required, scopes_required=["openid"]
@@ -262,6 +263,7 @@ class EntityRelations(BaseResource):
         )
         return relations, 201
 
+
 class EntityComponents(BaseResource):
     @app.oidc.accept_token(
         require_token=BaseResource.token_required, scopes_required=["openId"]
@@ -317,6 +319,7 @@ class EntityComponents(BaseResource):
         for item in items:
             if item["type"] != "components":
                 abort(400, message="Invalid relation type: '" + item["type"] + "'")
+
 
 class EntityParent(BaseResource):
     @app.oidc.accept_token(
@@ -374,6 +377,7 @@ class EntityParent(BaseResource):
             if item["type"] != "parent":
                 abort(400, message="Invalid relation type: '" + item["type"] + "'")
 
+
 class EntityTypes(BaseResource):
     @app.oidc.accept_token(
         require_token=BaseResource.token_required, scopes_required=["openId"]
@@ -427,5 +431,61 @@ class EntityTypes(BaseResource):
     @staticmethod
     def _abort_if_incorrect_type(items):
         for item in items:
-            if item["type"] != "isTYpeOf":
+            if item["type"] != "isTypeOf":
+                abort(400, message="Invalid relation type: '" + item["type"] + "'")
+
+class EntityUsage(BaseResource):
+    @app.oidc.accept_token(
+        require_token=BaseResource.token_required, scopes_required=["openId"]
+    )
+    def get(self, id):
+        self.abort_if_item_doesnt_exist("entities", id)
+
+        @after_this_request
+        def add_header(response):
+            response.headers["Access-Control-Allow-Origin"] = "*"
+            return response
+
+        return self.storage.get_collection_item_usage("entities", id)
+
+    @app.oidc.accept_token(
+        require_token=BaseResource.token_required, scopes_required=["openId"]
+    )
+    def post(self, id):
+        self.abort_if_item_doesnt_exist("entities", id)
+        content = self.get_request_body()
+        self._abort_if_incorrect_type(content)
+        components = self.storage.add_relations_to_collection_item(
+            "entities", id, content
+        )
+        return components, 201
+
+    @app.oidc.accept_token(
+        require_token=BaseResource.token_required, scopes_required=["openid"]
+    )
+    def put(self, id):
+        self.abort_if_item_doesnt_exist("entities", id)
+        content = self.get_request_body()
+        self._abort_if_incorrect_type(content)
+        components = self.storage.update_collection_item_relations(
+            "entities", id, content
+        )
+        return components, 201
+
+    @app.oidc.accept_token(
+        require_token=BaseResource.token_required, scopes_required=["openid"]
+    )
+    def patch(self, id):
+        self.abort_if_item_doesnt_exist("entities", id)
+        content = self.get_request_body()
+        self._abort_if_incorrect_type(content)
+        components = self.storage.patch_collection_item_relations(
+            "entities", id, content
+        )
+        return components, 201
+
+    @staticmethod
+    def _abort_if_incorrect_type(items):
+        for item in items:
+            if item["type"] != "isUsedIn":
                 abort(400, message="Invalid relation type: '" + item["type"] + "'")

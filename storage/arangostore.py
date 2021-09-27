@@ -95,6 +95,20 @@ FOR c IN @@collection
                 relations.append({"key": edge["_to"], "type": relation})
         return relations
 
+    def get_collection_item_types(self, collection, id):
+        entity = self.get_raw_item_from_collection_by_id(collection, id)
+        types = []
+        for edge in entity.getOutEdges(self.db["isTypeOf"]):
+            types.append({"key": edge["_to"], "type": "isTypeOf"})
+        return types
+
+    def get_collection_item_usage(self, collection, id):
+        entity = self.get_raw_item_from_collection_by_id(collection, id)
+        usage = []
+        for edge in entity.getOutEdges(self.db["isUsedIn"]):
+            usage.append({"key": edge["_to"], "type": "isUsedIn"})
+        return usage
+
     def get_collection_item_components(self, collection, id):
         entity = self.get_raw_item_from_collection_by_id(collection, id)
         relations = []
