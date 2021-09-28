@@ -13,13 +13,12 @@ class ImporterStart(BaseResource):
     def post(self):
         request_body = self.get_request_body()
         message_id = str(uuid.uuid4())
+        upload_folder = os.path.join(self.upload_source, str(request_body["upload_folder"]).removeprefix("/"))
         message = {
             "message_id": message_id,
             "data": {
                 "upload_source": self.upload_source,
-                "upload_folder": os.path.join(
-                    self.upload_source, request_body["upload_folder"]
-                ),
+                "upload_folder": upload_folder,
                 "collection_api_url": self.collection_api_url,
                 "storage_api_url": self.storage_api_url,
             },
