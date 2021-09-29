@@ -13,7 +13,9 @@ class ImporterStart(BaseResource):
     def post(self):
         request_body = self.get_request_body()
         message_id = str(uuid.uuid4())
-        upload_folder = os.path.join(self.upload_source, str(request_body["upload_folder"]).removeprefix("/"))
+        upload_folder = os.path.join(
+            self.upload_source, str(request_body["upload_folder"]).removeprefix("/")
+        )
         message = {
             "message_id": message_id,
             "data": {

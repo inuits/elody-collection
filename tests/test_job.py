@@ -52,7 +52,7 @@ class JobTest(BaseCase):
                 "job_type": "download",
                 "job_info": "Updated info",
                 "status": "in-progress",
-                "start_time": "25-08-2021-04:30:00"
+                "start_time": "25-08-2021-04:30:00",
             }
         )
 
@@ -69,11 +69,7 @@ class JobTest(BaseCase):
         self.assertEqual(201, response.status_code)
 
     def test_non_existent_job_put(self):
-        update = json.dumps(
-            {
-                "_id": "non-existent-id"
-            }
-        )
+        update = json.dumps({"_id": "non-existent-id"})
 
         response = self.app.put(
             "/jobs/non-existent-id",
@@ -82,6 +78,7 @@ class JobTest(BaseCase):
         )
 
         self.not_found(response)
+
     #
     def test_successful_job_patch(self):
         _id = self.create_job_get_id()

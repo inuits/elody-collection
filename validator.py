@@ -81,14 +81,8 @@ entity_schema = {
             "additionalItems": True,
             "items": {"$id": "#/properties/metadata/items"},
         },
-        "primary_mediafile_id": {
-            "type": "string",
-            "default": ""
-        },
-        "primary_thumbnail_file_location": {
-            "type": "string",
-            "default": ""
-        },
+        "primary_mediafile_id": {"type": "string", "default": ""},
+        "primary_thumbnail_file_location": {"type": "string", "default": ""},
         "data": {
             "type": "object",
             "title": "The data schema",
@@ -122,16 +116,10 @@ entity_schema = {
 job_schema = {
     "type": "object",
     "default": {},
-    "required": [
-        "job_type",
-        "job_info",
-        "status",
-        "start_time"
-    ],
+    "required": ["job_type", "job_info", "status", "start_time"],
     "properties": {
         "job_type": {
             "type": "string",
-
         },
         "job_info": {
             "type": "string",
@@ -156,9 +144,9 @@ job_schema = {
                 Status.QUEUED.value,
                 Status.IN_PROGRESS.value,
                 Status.FINISHED.value,
-                Status.FAILED.value
+                Status.FAILED.value,
             ]
-        }
+        },
     },
 }
 

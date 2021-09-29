@@ -16,7 +16,6 @@ entity_validator = EntityValidator()
 mediafile_validator = MediafileValidator()
 job_helper = JobHelper(
     job_api_base_url=os.getenv("JOB_API_BASE_URL", "http://localhost:8000")
-
 )
 
 
@@ -433,6 +432,7 @@ class EntityTypes(BaseResource):
         for item in items:
             if item["type"] != "isTypeOf":
                 abort(400, message="Invalid relation type: '" + item["type"] + "'")
+
 
 class EntityUsage(BaseResource):
     @app.oidc.accept_token(

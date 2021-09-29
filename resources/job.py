@@ -5,6 +5,7 @@ import app
 from resources.base_resource import BaseResource
 from validator import JobValidator
 from job_helper.job_helper import Status
+
 validator = JobValidator()
 
 
@@ -32,9 +33,7 @@ class Job(BaseResource):
         count = jobs["count"]
         jobs["limit"] = limit
         if skip + limit < count:
-            jobs["next"] = "/{}?skip={}&limit={}".format(
-                "jobs", skip + limit, limit
-            )
+            jobs["next"] = "/{}?skip={}&limit={}".format("jobs", skip + limit, limit)
         if skip > 0:
             jobs["previous"] = "/{}?skip={}&limit={}".format(
                 "jobs", max(0, skip - limit), limit
@@ -47,7 +46,10 @@ class JobDetail(BaseResource):
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )
     def __send_amqp_message(self, job):
-        if job["status"] == Status.FINISHED.value or job["status"] == Status.FAILED.value:
+        if (
+            job["status"] == Status.FINISHED.value
+            or job["status"] == Status.FAILED.value
+        ):
             app.ramq.send(job, routing_key="dams.jobs")
 
     def get(self, id):

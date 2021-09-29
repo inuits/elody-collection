@@ -63,7 +63,7 @@ from resources.entity import (
     EntityComponents,
     EntityParent,
     EntityTypes,
-    EntityUsage
+    EntityUsage,
 )
 from resources.importer import (
     ImporterStart,

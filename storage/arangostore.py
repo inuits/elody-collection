@@ -17,7 +17,16 @@ class ArangoStorageManager:
         self.mediafile_collection_name = os.getenv("MEDIAFILE_COLLECTION", "mediafiles")
         self.mediafile_edge_name = os.getenv("MEDIAFILE_EDGE", "hasMediafile")
         self.default_graph_name = os.getenv("DEFAULT_GRAPH", "assets")
-        self.entity_relations = ["authoredBy", "authored", "isIn", "contains", "components", "parent", "isTypeOf", "isUsedIn" ]
+        self.entity_relations = [
+            "authoredBy",
+            "authored",
+            "isIn",
+            "contains",
+            "components",
+            "parent",
+            "isTypeOf",
+            "isUsedIn",
+        ]
         self.edges = self.entity_relations + ["hasMediafile"]
 
         self.conn = Connection(
@@ -113,7 +122,9 @@ FOR c IN @@collection
         entity = self.get_raw_item_from_collection_by_id(collection, id)
         relations = []
         for edge in entity.getOutEdges(self.db["components"]):
-            relations.append({"key": edge["_to"], "type": "components", "order": edge["order"]})
+            relations.append(
+                {"key": edge["_to"], "type": "components", "order": edge["order"]}
+            )
             relations = sorted(relations, key=lambda tup: tup["order"])
         return relations
 
@@ -137,9 +148,11 @@ FOR c IN @@collection
             dict_entity = entity.getStore()
             dict_entity["primary_mediafile_id"] = mediafile_id
             if "primary_thumbnail_file_location" not in entity:
-                mediafile =  self.db.fetchDocument(mediafile_id)
+                mediafile = self.db.fetchDocument(mediafile_id)
                 if mediafile is not None:
-                    dict_entity["primary_thumbnail_file_location"] = mediafile["thumbnail_file_location"]
+                    dict_entity["primary_thumbnail_file_location"] = mediafile[
+                        "thumbnail_file_location"
+                    ]
             self.update_item_from_collection("entities", id, dict_entity)
         if not entity:
             return None
@@ -171,7 +184,12 @@ FOR c IN @@collection
             return None
         for relation in relations:
             self.db.graphs[self.default_graph_name].createEdge(
-                relation["type"], entity["_id"], relation["key"], {"order": relation["order"]} if "order" in relation.keys() and relation["type"] == "components" else {}
+                relation["type"],
+                entity["_id"],
+                relation["key"],
+                {"order": relation["order"]}
+                if "order" in relation.keys() and relation["type"] == "components"
+                else {},
             )
             self.db.graphs[self.default_graph_name].createEdge(
                 self._map_entity_relation(relation["type"]),
@@ -259,7 +277,7 @@ FOR c IN @@collection
             "components": "parent",
             "parent": "components",
             "isTypeOf": "isUsedIn",
-            "isUsedIn": "isTypeOf"
+            "isUsedIn": "isTypeOf",
         }
         return mapping.get(relation)
 
@@ -283,23 +301,69 @@ FOR c IN @@collection
             self.conn.createDatabase(arango_db_name)
             for collection in ["entities", "tenants", "jobs", "mediafiles"]:
                 self.conn.createCollection(collection, arango_db_name)
-            for edge in ["authoredBy", "contains", "isIn", "authored", "components", "parent"]:
+            for edge in [
+                "authoredBy",
+                "contains",
+                "isIn",
+                "authored",
+                "components",
+                "parent",
+            ]:
                 self.conn.createEdge(edge, arango_db_name)
-            self.conn.createGraph(self.default_graph_name, arango_db_name,
-                                  {"edgeDefinitions": [
-                                      {"collection": "authored", "from": ["entities"], "to": ["entities"]},
-                                      {"collection": "authoredBy", "from": ["entities"], "to": ["entities"]},
-                                      {"collection": "components", "from": ["entities"], "to": ["entities"]},
-                                      {"collection": "parent", "from": ["entities"], "to": ["entities"]},
-                                      {"collection": "contains", "from": ["entities"], "to": ["entities"]},
-                                      {"collection": "isIn", "from": ["entities"], "to": ["entities"]},
-                                      {"collection": "isTypeOf", "from": ["entities"], "to": ["entities"]},
-                                      {"collection": "isUsedIn", "from": ["entities"], "to": ["entities"]},
-                                      {"collection": "hasMediafile", "from": ["entities"], "to": ["mediafiles"]},
-
-                                  ],
-                                   "orphanCollections": []}
-                                  )
+            self.conn.createGraph(
+                self.default_graph_name,
+                arango_db_name,
+                {
+                    "edgeDefinitions": [
+                        {
+                            "collection": "authored",
+                            "from": ["entities"],
+                            "to": ["entities"],
+                        },
+                        {
+                            "collection": "authoredBy",
+                            "from": ["entities"],
+                            "to": ["entities"],
+                        },
+                        {
+                            "collection": "components",
+                            "from": ["entities"],
+                            "to": ["entities"],
+                        },
+                        {
+                            "collection": "parent",
+                            "from": ["entities"],
+                            "to": ["entities"],
+                        },
+                        {
+                            "collection": "contains",
+                            "from": ["entities"],
+                            "to": ["entities"],
+                        },
+                        {
+                            "collection": "isIn",
+                            "from": ["entities"],
+                            "to": ["entities"],
+                        },
+                        {
+                            "collection": "isTypeOf",
+                            "from": ["entities"],
+                            "to": ["entities"],
+                        },
+                        {
+                            "collection": "isUsedIn",
+                            "from": ["entities"],
+                            "to": ["entities"],
+                        },
+                        {
+                            "collection": "hasMediafile",
+                            "from": ["entities"],
+                            "to": ["mediafiles"],
+                        },
+                    ],
+                    "orphanCollections": [],
+                },
+            )
             return arango_db_name
         else:
             return self.conn[arango_db_name]

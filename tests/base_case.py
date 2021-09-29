@@ -65,7 +65,7 @@ class BaseCase(unittest.TestCase):
             "job_type": "download",
             "job_info": "Some info about download",
             "status": "queued",
-            "start_time": "25-08-2021-04:30:00"
+            "start_time": "25-08-2021-04:30:00",
         }
     )
     invalid_job = json.dumps(
@@ -73,7 +73,7 @@ class BaseCase(unittest.TestCase):
             "job_type": "download",
             "job_info": "Some info about download",
             "status": "jrekjndfkjsadkfnkjsadfsaekjnfewdsk",
-            "start_time": "25-08-2021-04:30:00"
+            "start_time": "25-08-2021-04:30:00",
         }
     )
 
@@ -86,16 +86,18 @@ class BaseCase(unittest.TestCase):
     filename_with_metadata = json.dumps(
         {
             "filename": "test.jpg",
-            "metadata": [{
-                "key": "rights",
-                "value": "CC-BY-4.0",
-                "lang": "en",
-            },
-            {
-                "key": "copyright",
-                "value": "Inuits",
-                "lang": "en",
-            }]
+            "metadata": [
+                {
+                    "key": "rights",
+                    "value": "CC-BY-4.0",
+                    "lang": "en",
+                },
+                {
+                    "key": "copyright",
+                    "value": "Inuits",
+                    "lang": "en",
+                },
+            ],
         }
     )
 
