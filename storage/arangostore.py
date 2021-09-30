@@ -101,14 +101,17 @@ FOR c IN @@collection
         relations = []
         for relation in self.entity_relations:
             for edge in entity.getOutEdges(self.db[relation]):
-                relations.append({"key": edge["_to"], "type": relation})
+                relationobject = {"key": edge["_to"], "type": relation}
+                if "label" in edge:
+                    relationobject["label"] = edge["label"]["@value"]
+                relations.append(relationobject)
         return relations
 
     def get_collection_item_types(self, collection, id):
         entity = self.get_raw_item_from_collection_by_id(collection, id)
         types = []
         for edge in entity.getOutEdges(self.db["isTypeOf"]):
-            types.append({"key": edge["_to"], "type": "isTypeOf"})
+            types.append({"key": edge["_to"], "type": "isTypeOf", "label": edge["label"]["@value"]})
         return types
 
     def get_collection_item_usage(self, collection, id):
@@ -183,13 +186,16 @@ FOR c IN @@collection
         if not entity:
             return None
         for relation in relations:
+            extraData = {}
+            if "order" in relation.keys() and relation["type"] == "components":
+                extraData["order"] = relation["order"]
+            if "label" in relation.keys() and relation["type"] == "isTypeOf":
+                extraData["label"] = relation["label"]
             self.db.graphs[self.default_graph_name].createEdge(
                 relation["type"],
                 entity["_id"],
                 relation["key"],
-                {"order": relation["order"]}
-                if "order" in relation.keys() and relation["type"] == "components"
-                else {},
+                extraData,
             )
             self.db.graphs[self.default_graph_name].createEdge(
                 self._map_entity_relation(relation["type"]),
