@@ -43,7 +43,7 @@ class MediafileDetail(BaseResource):
     )
     def get(self, id):
         mediafile = self.abort_if_item_doesnt_exist("mediafiles", id)
-        return self._inject_storage_api_url([mediafile])
+        return self._inject_storage_api_url([mediafile])[0]
 
     @app.oidc.accept_token(
         require_token=BaseResource.token_required, scopes_required=["openid"]
