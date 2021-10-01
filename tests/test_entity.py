@@ -82,7 +82,7 @@ class EntityTest(BaseCase):
 
         self.check_invalid_entity(response)
 
-    @patch('job_helper.job_helper')
+    @patch("job_helper.job_helper")
     def test_successful_entity_mediafile_create(self, fake_job_helper):
         _id = self.create_entity_get_id()
 
@@ -94,7 +94,7 @@ class EntityTest(BaseCase):
 
         self.assertEqual(str, type(response.json))
         self.assertTrue(
-            response.json.startswith("{}/upload/".format(os.environ['STORAGE_API_URL']))
+            response.json.startswith("{}/upload/".format(os.environ["STORAGE_API_URL"]))
         )
         self.assertEqual(87, len(response.json))
         self.assertEqual(201, response.status_code)
@@ -108,8 +108,23 @@ class EntityTest(BaseCase):
         for mediafile in response.json:
             self.assertEqual(list, type(mediafile["entities"]))
             self.assertEqual(3, len(mediafile["entities"]))
+            self.valid_mediafile(mediafile)
+            self.assertTrue(
+                mediafile["original_file_location"].startswith(
+                    "https://dams-storage-api.inuits.io/download/"
+                )
+            )
+            self.assertTrue(mediafile["original_file_location"].endswith("test.jpg"))
+            self.assertTrue(
+                mediafile["thumbnail_file_location"].startswith(
+                    "https://dams-image-api.inuits.io/iiif/3/"
+                )
+            )
+            self.assertTrue(
+                mediafile["thumbnail_file_location"].endswith("default.jpg")
+            )
 
-    @patch('job_helper.job_helper')
+    @patch("job_helper.job_helper")
     def test_successful_entity_mediafile_create_with_metadata(self, fake_job_helper):
         _id = self.create_entity_get_id()
 
@@ -121,7 +136,7 @@ class EntityTest(BaseCase):
 
         self.assertEqual(str, type(response.json))
         self.assertTrue(
-            response.json.startswith("{}/upload/".format(os.environ['STORAGE_API_URL']))
+            response.json.startswith("{}/upload/".format(os.environ["STORAGE_API_URL"]))
         )
         self.assertEqual(87, len(response.json))
         self.assertEqual(201, response.status_code)
@@ -139,6 +154,21 @@ class EntityTest(BaseCase):
             self.assertEqual(2, len(mediafile["metadata"]))
             self.assertEqual("rights", mediafile["metadata"][0]["key"])
             self.assertEqual("Inuits", mediafile["metadata"][1]["value"])
+            self.valid_mediafile(mediafile)
+            self.assertTrue(
+                mediafile["original_file_location"].startswith(
+                    "https://dams-storage-api.inuits.io/download/"
+                )
+            )
+            self.assertTrue(mediafile["original_file_location"].endswith("test.jpg"))
+            self.assertTrue(
+                mediafile["thumbnail_file_location"].startswith(
+                    "https://dams-image-api.inuits.io/iiif/3/"
+                )
+            )
+            self.assertTrue(
+                mediafile["thumbnail_file_location"].endswith("default.jpg")
+            )
 
     def test_entity_mediafile_create_without_filename(self):
         _id = self.create_entity_get_id()
