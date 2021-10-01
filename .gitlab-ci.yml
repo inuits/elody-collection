@@ -1,6 +1,6 @@
 ---
 ###############################################################################
-# COMMON APPLICATION PIPELINE
+# PYTHON APPLICATION PIPELINE
 ###############################################################################
 
 include:
@@ -13,4 +13,4 @@ variables:
   APPLICATION: 'dams-collection'
   TERRAFORM_IMAGE: 'dams-terraform'
   TERRAFORM_TAG: 'latest'
-  SKIP_DEPLOY: true
+  SKIP_DEPLOY: 'true'
