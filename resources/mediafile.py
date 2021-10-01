@@ -34,7 +34,7 @@ class Mediafile(BaseResource):
             mediafiles["previous"] = "/{}?skip={}&limit={}".format(
                 "mediafiles", max(0, skip - limit), limit
             )
-        return mediafiles
+        return self._inject_storage_api_url(mediafiles)
 
 
 class MediafileDetail(BaseResource):
@@ -43,7 +43,7 @@ class MediafileDetail(BaseResource):
     )
     def get(self, id):
         mediafile = self.abort_if_item_doesnt_exist("mediafiles", id)
-        return mediafile
+        return self._inject_storage_api_url([mediafile])
 
     @app.oidc.accept_token(
         require_token=BaseResource.token_required, scopes_required=["openid"]

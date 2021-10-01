@@ -48,3 +48,9 @@ class BaseResource(Resource):
     def abort_if_not_valid_json(self, validator, type, json):
         if not validator.validate(json):
             abort(400, message="{} doesn't have a valid format".format(type))
+
+    def _inject_storage_api_url(self, mediafiles):
+        for mediafile in mediafiles:
+            if "original_file_location" in mediafile:
+                mediafile["original_file_location"] = self.storage_api_url + mediafile["original_file_location"]
+        return mediafiles
