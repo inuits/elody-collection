@@ -1,5 +1,4 @@
 import json
-import unittest.mock as mock
 
 from tests.base_case import BaseCase
 
@@ -81,17 +80,7 @@ class EntityTest(BaseCase):
 
         self.check_invalid_entity(response)
 
-    fake_post = mock.MagicMock()
-    fake_patch = mock.MagicMock()
-    fake_get = mock.MagicMock()
-
-    @mock.patch("requests.post", return_value=fake_post)
-    @mock.patch("requests.patch", return_value=fake_patch)
-    def test_successful_entity_mediafile_create(self, fake_post, fake_patch):
-        fake_post.return_value = mock.Mock(status_code=201, json=lambda: {"_id": "1"})
-        fake_post.return_value.text = '{"_id":"1"}'
-        fake_patch.return_value = mock.Mock(status_code=201, json=lambda: {"_id": "1"})
-        fake_patch.return_value.text = '{"_id":"1"}'
+    def test_successful_entity_mediafile_create(self):
         _id = self.create_entity_get_id()
 
         response = self.app.post(
@@ -117,15 +106,7 @@ class EntityTest(BaseCase):
             self.assertEqual(list, type(mediafile["entities"]))
             self.assertEqual(3, len(mediafile["entities"]))
 
-    @mock.patch("requests.post", return_value=fake_post)
-    @mock.patch("requests.patch", return_value=fake_patch)
-    def test_successful_entity_mediafile_create_with_metadata(
-        self, fake_post, fake_patch
-    ):
-        fake_post.return_value = mock.Mock(status_code=201, json=lambda: {"_id": "1"})
-        fake_post.return_value.text = '{"_id":"1"}'
-        fake_patch.return_value = mock.Mock(status_code=201, json=lambda: {"_id": "1"})
-        fake_patch.return_value.text = '{"_id":"1"}'
+    def test_successful_entity_mediafile_create_with_metadata(self):
         _id = self.create_entity_get_id()
 
         response = self.app.post(
