@@ -109,7 +109,13 @@ FOR c IN @@collection
         entity = self.get_raw_item_from_collection_by_id(collection, id)
         types = []
         for edge in entity.getOutEdges(self.db["isTypeOf"]):
-            types.append({"key": edge["_to"], "type": "isTypeOf", "label": edge["label"]["@value"]})
+            types.append(
+                {
+                    "key": edge["_to"],
+                    "type": "isTypeOf",
+                    "label": edge["label"]["@value"],
+                }
+            )
         return types
 
     def get_collection_item_usage(self, collection, id):
