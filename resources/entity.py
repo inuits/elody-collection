@@ -208,6 +208,7 @@ class EntityMediafilesCreate(BaseResource):
             job_helper.finish_job(job)
         except Exception as ex:
             job_helper.fail_job(job, str(ex))
+            return str(ex), 400
         return upload_location, 201
 
 
