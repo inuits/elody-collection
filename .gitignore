@@ -143,3 +143,6 @@ import/
 
 # pycharm
 .idea
+
+# pip configuration
+pip.conf
