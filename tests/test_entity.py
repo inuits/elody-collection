@@ -1,6 +1,5 @@
 import json
 import unittest.mock as mock
-from requests import Response
 
 from tests.base_case import BaseCase
 

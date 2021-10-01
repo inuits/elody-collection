@@ -1,10 +1,8 @@
 import os
-import sys
 import uuid
 
 from .py_arango_connection_extension import PyArangoConnection as Connection
-from pyArango.theExceptions import *
-from werkzeug.exceptions import BadRequest
+from pyArango.theExceptions import DocumentNotFoundError
 
 
 class ArangoStorageManager:

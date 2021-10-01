@@ -1,64 +1,5 @@
-from jsonschema import validate
 from job_helper.job_helper import Status
-
-tenant_schema = {
-    "type": "object",
-    "properties": {
-        "_id": {"type": "string"},
-        "_key": {"type": "string"},
-        "_from": {"type": "string"},
-        "_to": {"type": "string"},
-        "@context": {"type": ["object", "string", "array", "null"]},
-        "@type": {"type": "string"},
-        "security": {
-            "type": "object",
-            "properties": {
-                "@context": {"type": ["object", "string", "array", "null"]},
-                "@type": {"type": "string"},
-                "list": {
-                    "type": "array",
-                },
-            },
-        },
-        "data": {
-            "type": "object",
-            "properties": {
-                "@context": {"type": ["object", "string", "array", "null"]},
-                "@type": {"type": "string"},
-            },
-        },
-    },
-}
-
-mediafile_schema = {
-    "type": "object",
-    "default": {},
-    "required": [
-        "filename",
-    ],
-    "properties": {
-        "filename": {
-            "type": "string",
-        },
-        "original_file_location": {
-            "type": "string",
-        },
-        "thumbnail_file_location": {
-            "type": "string",
-        },
-        "entities": {
-            "type": "array",
-            "default": [],
-            "items": {
-                "anyOf": [
-                    {
-                        "type": "string",
-                    }
-                ]
-            },
-        },
-    },
-}
+from jsonschema import validate
 
 entity_schema = {
     "type": "object",
@@ -150,23 +91,64 @@ job_schema = {
     },
 }
 
+mediafile_schema = {
+    "type": "object",
+    "default": {},
+    "required": [
+        "filename",
+    ],
+    "properties": {
+        "filename": {
+            "type": "string",
+        },
+        "original_file_location": {
+            "type": "string",
+        },
+        "thumbnail_file_location": {
+            "type": "string",
+        },
+        "entities": {
+            "type": "array",
+            "default": [],
+            "items": {
+                "anyOf": [
+                    {
+                        "type": "string",
+                    }
+                ]
+            },
+        },
+    },
+}
 
-class JobValidator:
-    def validate(self, job_json):
-        try:
-            validate(instance=job_json, schema=job_schema)
-        except:
-            return False
-        return True
-
-
-class TenantValidator:
-    def validate(self, tenant_json):
-        try:
-            validate(instance=tenant_json, schema=tenant_schema)
-        except:
-            return False
-        return True
+tenant_schema = {
+    "type": "object",
+    "properties": {
+        "_id": {"type": "string"},
+        "_key": {"type": "string"},
+        "_from": {"type": "string"},
+        "_to": {"type": "string"},
+        "@context": {"type": ["object", "string", "array", "null"]},
+        "@type": {"type": "string"},
+        "security": {
+            "type": "object",
+            "properties": {
+                "@context": {"type": ["object", "string", "array", "null"]},
+                "@type": {"type": "string"},
+                "list": {
+                    "type": "array",
+                },
+            },
+        },
+        "data": {
+            "type": "object",
+            "properties": {
+                "@context": {"type": ["object", "string", "array", "null"]},
+                "@type": {"type": "string"},
+            },
+        },
+    },
+}
 
 
 class EntityValidator:
@@ -178,10 +160,28 @@ class EntityValidator:
         return True
 
 
+class JobValidator:
+    def validate(self, job_json):
+        try:
+            validate(instance=job_json, schema=job_schema)
+        except:
+            return False
+        return True
+
+
 class MediafileValidator:
     def validate(self, mediafile_json):
         try:
             validate(instance=mediafile_json, schema=mediafile_schema)
+        except:
+            return False
+        return True
+
+
+class TenantValidator:
+    def validate(self, tenant_json):
+        try:
+            validate(instance=tenant_json, schema=tenant_schema)
         except:
             return False
         return True

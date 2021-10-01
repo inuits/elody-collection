@@ -1,19 +1,16 @@
-import datetime
-import json
-import os
-import sys
-
 import app
+import os
 import uuid
-import requests
+
 from flask import g, request, after_this_request
 from flask_restful import abort
+from job_helper.job_helper import JobHelper
 from resources.base_resource import BaseResource
 from validator import EntityValidator, MediafileValidator
-from job_helper.job_helper import JobHelper
 
 entity_validator = EntityValidator()
 mediafile_validator = MediafileValidator()
+
 job_helper = JobHelper(
     job_api_base_url=os.getenv("JOB_API_BASE_URL", "http://localhost:8000")
 )
@@ -180,7 +177,6 @@ class EntityMediafilesCreate(BaseResource):
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )
     def post(self, id):
-
         self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
         if "filename" not in content:

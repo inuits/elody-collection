@@ -1,9 +1,8 @@
 import json
 import sys
-from abc import ABC
 
+from abc import ABC
 from pyArango.connection import Connection
-from pyArango.database import Database
 from pyArango.theExceptions import CreationError
 
 
