@@ -29,7 +29,7 @@ COPY . ./
 ARG PIPENV_USERNAME
 ARG PIPENV_PASSWORD
 
-RUN pip install -r requirements.txt -i "https://${PIPENV_USERNAME}:${PIPENV_PASSWORD}@nexus.inuits.eu/repository/python/simple"
+RUN pip install -r requirements.txt
 
 ### Production stage
 FROM build-stage AS production-stage
