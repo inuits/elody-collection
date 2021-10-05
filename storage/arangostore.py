@@ -276,7 +276,10 @@ FOR c IN @@collection
         queryResults = self._execute_query(aql, bind)
 
     def drop_all_collections(self):
-        return
+        self.db["entities"].truncate()
+        self.db["jobs"].truncate()
+        self.db["mediafiles"].truncate()
+        self.db["tenants"].truncate()
 
     def _map_entity_relation(self, relation):
         mapping = {
