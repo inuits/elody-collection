@@ -44,6 +44,8 @@ class MediafileDetail(BaseResource):
     )
     def get(self, id):
         mediafile = self.abort_if_item_doesnt_exist("mediafiles", id)
+        if request.args.get("raw", None):
+            return mediafile
         return self._inject_api_urls([mediafile])[0]
 
     @app.oidc.accept_token(
