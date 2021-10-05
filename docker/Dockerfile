@@ -19,7 +19,7 @@ ARG APP_ENV
 ARG PIPENV_USERNAME
 ARG PIPENV_PASSWORD
 
-RUN pip install -r requirements.txt && pip install -r requirements_dev.txt
+RUN pip install -r requirements.txt -r requirements_dev.txt
 
 ### Build stage
 FROM base-stage AS build-stage
