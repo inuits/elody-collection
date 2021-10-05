@@ -49,8 +49,14 @@ class BaseResource(Resource):
         if not validator.validate(json):
             abort(400, message="{} doesn't have a valid format".format(type))
 
-    def _inject_storage_api_url(self, mediafiles):
+    def _inject_api_urls(self, mediafiles):
         for mediafile in mediafiles:
             if "original_file_location" in mediafile:
-                mediafile["original_file_location"] = self.storage_api_url + mediafile["original_file_location"]
+                mediafile["original_file_location"] = (
+                    self.storage_api_url + mediafile["original_file_location"]
+                )
+            if "thumbnail_file_location" in mediafile:
+                mediafile["thumbnail_file_location"] = (
+                    self.cantaloupe_api_url + mediafile["thumbnail_file_location"]
+                )
         return mediafiles

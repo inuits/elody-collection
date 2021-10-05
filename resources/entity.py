@@ -156,7 +156,7 @@ class EntityMediafiles(BaseResource):
             response.headers["Access-Control-Allow-Origin"] = "*"
             return response
 
-        return self._inject_storage_api_url(mediafiles)
+        return self._inject_api_urls(mediafiles)
 
     @app.oidc.accept_token(
         require_token=BaseResource.token_required, scopes_required=["openid"]
@@ -191,8 +191,8 @@ class EntityMediafilesCreate(BaseResource):
         mediafile = {
             "filename": filename,
             "original_file_location": "/download/{}".format(file_id),
-            "thumbnail_file_location": "{}/iiif/3/{}/full/,150/0/default.jpg".format(
-                self.cantaloupe_api_url, file_id
+            "thumbnail_file_location": "/iiif/3/{}/full/,150/0/default.jpg".format(
+                file_id
             ),
         }
         if "metadata" in content:
