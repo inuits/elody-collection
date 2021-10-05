@@ -148,6 +148,7 @@ class MongoStorageManager:
 
     def drop_all_collections(self):
         self.db.entities.drop()
+        self.db.jobs.drop()
         self.db.mediafiles.drop()
         self.db.tenants.drop()
 
