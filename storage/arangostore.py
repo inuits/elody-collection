@@ -28,7 +28,7 @@ class ArangoStorageManager:
         self.edges = self.entity_relations + ["hasMediafile"]
 
         self.conn = Connection(
-            arangoURL="http://" + self.arango_host + ":8529",
+            arangoURL=self.arango_host,
             username=self.arango_username,
             password=self.arango_password,
         )
