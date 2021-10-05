@@ -139,6 +139,7 @@ dmypy.json
 cython_debug/
 
 client_secrets.json
+import/
 
 # pycharm
 .idea
