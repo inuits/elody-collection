@@ -185,21 +185,22 @@ class EntityMediafilesCreate(BaseResource):
                 message="Invalid input",
             )
         job = job_helper.create_new_job("Create mediafile", "mediafile")
-        file_id = str(uuid.uuid4())
         filename = content["filename"]
-        file_id = "{}-{}".format(file_id, filename)
         mediafile = {
             "filename": filename,
-            "original_file_location": "/download/{}".format(file_id),
+            "original_file_location": "/download/{}".format(filename),
             "thumbnail_file_location": "/iiif/3/{}/full/,150/0/default.jpg".format(
-                file_id
+                filename
             ),
         }
         if "metadata" in content:
             mediafile["metadata"] = content["metadata"]
         mediafile = self.storage.save_item_to_collection("mediafiles", mediafile)
         mediafile_id = mediafile["_id"]
-        upload_location = "{}/upload/{}".format(self.storage_api_url, file_id)
+        mediafile_raw_id = mediafile["_key"] if "_key" in mediafile else mediafile_id
+        upload_location = "{}/upload/{}?url={}/mediafiles/{}&action=postMD5".format(
+            self.storage_api_url, filename, self.collection_api_url, mediafile_raw_id
+        )
         job_helper.progress_job(job)
         try:
             self.storage.add_mediafile_to_collection_item("entities", id, mediafile_id)
