@@ -82,7 +82,7 @@ class EntityTest(BaseCase):
 
         self.check_invalid_entity(response)
 
-    @patch("job_helper.job_helper")
+    @patch("resources.entity.job_helper")
     def test_successful_entity_mediafile_create(self, fake_job_helper):
         _id = self.create_entity_get_id()
 
@@ -124,7 +124,7 @@ class EntityTest(BaseCase):
                 mediafile["thumbnail_file_location"].endswith("default.jpg")
             )
 
-    @patch("job_helper.job_helper")
+    @patch("resources.entity.job_helper")
     def test_successful_entity_mediafile_create_with_metadata(self, fake_job_helper):
         _id = self.create_entity_get_id()
 
