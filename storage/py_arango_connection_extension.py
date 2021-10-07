@@ -29,4 +29,4 @@ class PyArangoConnection(Connection, ABC):
         self.create_helper(name, db_name, "/_api/collection", args, 200)
 
     def createGraph(self, name, db_name, args=None):
-        self.create_helper(name, db_name, "/_api/gharial", args, 200)
+        self.create_helper(name, db_name, "/_api/gharial", args, 202)
