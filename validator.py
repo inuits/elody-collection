@@ -65,7 +65,7 @@ job_schema = {
         "job_info": {
             "type": "string",
         },
-        "end_time": {
+        "start_time": {
             "type": "string",
         },
         "user": {
