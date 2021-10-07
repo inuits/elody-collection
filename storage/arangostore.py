@@ -377,6 +377,4 @@ FOR c IN @@collection
                     "orphanCollections": [],
                 },
             )
-            return arango_db_name
-        else:
-            return self.conn[arango_db_name]
+        return self.conn[arango_db_name]
