@@ -1,15 +1,14 @@
 import app
 import os
-import uuid
 
 from flask import g, request, after_this_request
 from flask_restful import abort
 from job_helper.job_helper import JobHelper
 from resources.base_resource import BaseResource
-from validator import EntityValidator, MediafileValidator
+from validator import Validator, entity_schema, mediafile_schema
 
-entity_validator = EntityValidator()
-mediafile_validator = MediafileValidator()
+entity_validator = Validator(entity_schema)
+mediafile_validator = Validator(mediafile_schema)
 
 job_helper = JobHelper(
     job_api_base_url=os.getenv("JOB_API_BASE_URL", "http://localhost:8000")

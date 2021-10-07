@@ -3,9 +3,9 @@ import app
 from flask import request
 from job_helper.job_helper import Status
 from resources.base_resource import BaseResource
-from validator import JobValidator
+from validator import Validator, job_schema
 
-validator = JobValidator()
+validator = Validator(job_schema)
 
 
 class Job(BaseResource):

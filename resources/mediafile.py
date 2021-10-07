@@ -2,9 +2,9 @@ import app
 
 from flask import request
 from resources.base_resource import BaseResource
-from validator import MediafileValidator
+from validator import Validator, mediafile_schema
 
-validator = MediafileValidator()
+validator = Validator(mediafile_schema)
 
 
 class Mediafile(BaseResource):

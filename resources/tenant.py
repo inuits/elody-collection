@@ -1,9 +1,9 @@
 import app
 
 from resources.base_resource import BaseResource
-from validator import TenantValidator
+from validator import Validator, tenant_schema
 
-validator = TenantValidator()
+validator = Validator(tenant_schema)
 
 
 class Tenant(BaseResource):

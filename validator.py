@@ -1,5 +1,5 @@
 from job_helper.job_helper import Status
-from jsonschema import validate
+from jsonschema import validate, ValidationError
 
 entity_schema = {
     "type": "object",
@@ -151,37 +151,13 @@ tenant_schema = {
 }
 
 
-class EntityValidator:
-    def validate(self, entity_json):
+class Validator:
+    def __init__(self, schema):
+        self.schema = schema
+
+    def validate(self, json):
         try:
-            validate(instance=entity_json, schema=entity_schema)
-        except:
-            return False
-        return True
-
-
-class JobValidator:
-    def validate(self, job_json):
-        try:
-            validate(instance=job_json, schema=job_schema)
-        except:
-            return False
-        return True
-
-
-class MediafileValidator:
-    def validate(self, mediafile_json):
-        try:
-            validate(instance=mediafile_json, schema=mediafile_schema)
-        except:
-            return False
-        return True
-
-
-class TenantValidator:
-    def validate(self, tenant_json):
-        try:
-            validate(instance=tenant_json, schema=tenant_schema)
-        except:
+            validate(instance=json, schema=self.schema)
+        except ValidationError:
             return False
         return True
