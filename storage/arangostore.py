@@ -150,6 +150,9 @@ FOR c IN @@collection
             mediafile = self.db.fetchDocument(edge["_to"]).getStore()
             if "is_primary" in edge:
                 mediafile["is_primary"] = edge["is_primary"]
+            if "is_primary_thumbnail" in edge:
+                mediafile["is_primary_thumbnail"] = edge["is_primary_thumbnail"]
+
             mediafiles.append(mediafile)
         return mediafiles
 
@@ -157,12 +160,12 @@ FOR c IN @@collection
         entity = self.get_raw_item_from_collection_by_id(collection, id)
         if not entity:
             return None
-        extra_data = {"is_primary": True}
+        extra_data = {"is_primary": True, "is_primary_thumbnail": True}
         for edge in entity.getOutEdges(self.db["hasMediafile"]):
             if "is_primary" in edge and edge["is_primary"] is True:
-                print("in edge", file=sys.stderr)
-                extra_data = {"is_primary": False}
-                break
+                extra_data["is_primary"]: False
+            if "is_primary_thumbnail" in edge["is_primary_thumbnail"] is True:
+                extra_data["is_primary_thumbnail"]: False
 
         self.db.graphs[self.default_graph_name].createEdge(
             self.mediafile_edge_name, entity["_id"], mediafile_id, extra_data
