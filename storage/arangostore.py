@@ -1,4 +1,5 @@
 import os
+import sys
 import uuid
 
 from .py_arango_connection_extension import PyArangoConnection as Connection
@@ -146,25 +147,25 @@ FOR c IN @@collection
         entity = self.get_raw_item_from_collection_by_id(collection, id)
         mediafiles = []
         for edge in entity.getOutEdges(self.db[self.mediafile_edge_name]):
-            mediafiles.append(self.db.fetchDocument(edge["_to"]).getStore())
+            mediafile = self.db.fetchDocument(edge["_to"]).getStore()
+            if "is_primary" in edge:
+                mediafile["is_primary"] = edge["is_primary"]
+            mediafiles.append(mediafile)
         return mediafiles
 
     def add_mediafile_to_collection_item(self, collection, id, mediafile_id):
         entity = self.get_raw_item_from_collection_by_id(collection, id)
-        if "primary_mediafile_id" not in entity:
-            dict_entity = entity.getStore()
-            dict_entity["primary_mediafile_id"] = mediafile_id
-            if "primary_thumbnail_file_location" not in entity:
-                mediafile = self.db.fetchDocument(mediafile_id)
-                if mediafile is not None:
-                    dict_entity["primary_thumbnail_file_location"] = mediafile[
-                        "thumbnail_file_location"
-                    ]
-            self.update_item_from_collection("entities", id, dict_entity)
         if not entity:
             return None
+        extra_data = {"is_primary": True}
+        for edge in entity.getOutEdges(self.db["hasMediafile"]):
+            if "is_primary" in edge and edge["is_primary"] is True:
+                print("in edge", file=sys.stderr)
+                extra_data = {"is_primary": False}
+                break
+
         self.db.graphs[self.default_graph_name].createEdge(
-            self.mediafile_edge_name, entity["_id"], mediafile_id, {}
+            self.mediafile_edge_name, entity["_id"], mediafile_id, extra_data
         )
 
         return self.db.fetchDocument(mediafile_id).getStore()
