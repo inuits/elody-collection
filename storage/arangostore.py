@@ -164,7 +164,7 @@ FOR c IN @@collection
         for edge in entity.getOutEdges(self.db["hasMediafile"]):
             if "is_primary" in edge and edge["is_primary"] is True:
                 extra_data["is_primary"]: False
-            if "is_primary_thumbnail" in edge["is_primary_thumbnail"] is True:
+            if "is_primary_thumbnail" in edge and edge["is_primary_thumbnail"] is True:
                 extra_data["is_primary_thumbnail"]: False
 
         self.db.graphs[self.default_graph_name].createEdge(
