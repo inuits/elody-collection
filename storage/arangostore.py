@@ -59,16 +59,20 @@ FOR c IN @@collection
             items["results"].append(queryResult)
         return items
 
-    def get_items_from_collection_by_field(self, collection, field_name, field_value, skip=0, limit=20):
+    def get_items_from_collection_by_fields(self, collection, fields, skip=0, limit=20):
         items = dict()
         items["results"] = list()
+        extra_query = ""
+        for field_name, field_value in fields.items():
+            extra_query = """FILTER c.{} == {}
+            """.format(field_name, field_value)
         aql = """
 FOR c IN @@collection
-    FILTER c.@field_name == @field_value
+    {}
     LIMIT @skip, @limit
     RETURN c
-"""
-        bind = {"@collection": collection, "field_name": field_name, "field_value": field_value, "skip": skip, "limit": limit}
+""".format(extra_query)
+        bind = {"@collection": collection, "skip": skip, "limit": limit}
         queryResults = self._execute_query(aql, bind)
         items["count"] = len(queryResults)
         for queryResult in queryResults:
