@@ -145,7 +145,7 @@ FOR c IN @@collection
 
     def get_collection_item_mediafiles(self, collection, id):
         entity = self.get_raw_item_from_collection_by_id(collection, id)
-        mediafiles = []
+        mediafiles = list()
         for edge in entity.getOutEdges(self.db[self.mediafile_edge_name]):
             mediafile = self.db.fetchDocument(edge["_to"]).getStore()
             if "is_primary" in edge:

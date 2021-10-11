@@ -1,3 +1,6 @@
+import json
+import sys
+
 import app
 import os
 
@@ -13,6 +16,17 @@ mediafile_validator = Validator(mediafile_schema)
 job_helper = JobHelper(
     job_api_base_url=os.getenv("JOB_API_BASE_URL", "http://localhost:8000")
 )
+
+
+def _set_entity_mediafile_and_thumbnail(entity, storage):
+
+    mediafiles = storage.get_collection_item_mediafiles("entities", entity["_key"])
+    for mediafile in mediafiles:
+        if "is_primary" in mediafile and mediafile["is_primary"] is True:
+            entity["primary_mediafile_location"] = mediafile["original_file_location"]
+        if "is_primary_thumbnail" in mediafile and mediafile["is_primary_thumbnail"] is True:
+            entity["primary_thumbnail_location"] = mediafile["thumbnail_file_location"]
+    return entity
 
 
 class Entity(BaseResource):
@@ -50,6 +64,10 @@ class Entity(BaseResource):
             entities["previous"] = "/{}?skip={}&limit={}".format(
                 "entities", max(0, skip - limit), limit
             )
+        updated_entities = list()
+        for entity in entities["results"]:
+            updated_entities.append(_set_entity_mediafile_and_thumbnail(entity, self.storage))
+        entities["results"] = updated_entities
         return entities
 
 
@@ -58,7 +76,8 @@ class EntityDetail(BaseResource):
         require_token=BaseResource.token_required, scopes_required=["openid"]
     )
     def get(self, id):
-        return self.abort_if_item_doesnt_exist("entities", id)
+        entity = self.abort_if_item_doesnt_exist("entities", id)
+        return _set_entity_mediafile_and_thumbnail(entity, self.storage)
 
     @app.oidc.accept_token(
         require_token=BaseResource.token_required, scopes_required=["openid"]
