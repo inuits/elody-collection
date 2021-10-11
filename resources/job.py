@@ -63,6 +63,9 @@ class JobDetail(BaseResource):
 
     def get(self, id):
         job = self.abort_if_item_doesnt_exist("jobs", id)
+        if job["parent_job_id"] == "":
+            sub_jobs = self.storage.get_items_from_collection_by_fields("jobs", {"parent_job_id": job["_id"]})
+            job["sub_jobs"] = sub_jobs["results"]
         return job
 
     @app.oidc.accept_token(
