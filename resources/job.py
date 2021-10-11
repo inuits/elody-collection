@@ -30,8 +30,9 @@ class Job(BaseResource):
             ids = ids.split(",")
             return self.storage.get_items_from_collection_by_ids("jobs", ids)
         if job_type:
-            return self.storage.get_items_from_collection_by_field("jobs", "job_type", job_type)
-        jobs = self.storage.get_items_from_collection("jobs", skip, limit)
+            jobs = self.storage.get_items_from_collection_by_field("jobs", "job_type", job_type, skip, limit)
+        else:
+            jobs = self.storage.get_items_from_collection("jobs", skip, limit)
         count = jobs["count"]
         jobs["limit"] = limit
         if skip + limit < count:
