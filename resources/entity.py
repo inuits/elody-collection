@@ -49,20 +49,24 @@ class Entity(BaseResource):
     def get(self):
         skip = int(request.args.get("skip", 0))
         limit = int(request.args.get("limit", 20))
+        item_type = request.args.get("type", None)
+        type_var = "type={}&".format(item_type) if item_type else ""
         ids = request.args.get("ids")
         if ids:
             ids = ids.split(",")
             return self.storage.get_items_from_collection_by_ids("entities", ids)
-        entities = self.storage.get_items_from_collection("entities", skip, limit)
+        entities = self.storage.get_items_from_collection(
+            "entities", skip, limit, item_type
+        )
         count = entities["count"]
         entities["limit"] = limit
         if skip + limit < count:
-            entities["next"] = "/{}?skip={}&limit={}".format(
-                "entities", skip + limit, limit
+            entities["next"] = "/{}?{}skip={}&limit={}".format(
+                "entities", type_var, skip + limit, limit
             )
         if skip > 0:
-            entities["previous"] = "/{}?skip={}&limit={}".format(
-                "entities", max(0, skip - limit), limit
+            entities["previous"] = "/{}?{}skip={}&limit={}".format(
+                "entities", type_var, max(0, skip - limit), limit
             )
         updated_entities = list()
         for entity in entities["results"]:

@@ -1,5 +1,4 @@
 import os
-import sys
 import uuid
 
 from .py_arango_connection_extension import PyArangoConnection as Connection
@@ -35,14 +34,41 @@ class ArangoStorageManager:
         )
         self.db = self._create_database_if_not_exists(self.arango_db_name)
 
-    def get_items_from_collection(self, collection, skip=0, limit=20):
+    def _get_all_items_from_collection_filter_type(
+        self, collection, skip, limit, item_type
+    ):
+        aql = """
+FOR c IN @@collection
+    FILTER c.type == @type
+    LIMIT @skip, @limit
+    RETURN c
+"""
+        bind = {
+            "@collection": collection,
+            "type": item_type,
+            "skip": skip,
+            "limit": limit,
+        }
+        results = self.db.AQLQuery(aql, rawResults=True, bindVars=bind, fullCount=True)
         items = dict()
-        count = self.db[collection].count()
-        items["count"] = count
-        items["results"] = list()
-        for document in self.db[collection].fetchAll(skip=skip, limit=limit):
-            items["results"].append(document.getStore())
+        items["count"] = results.extra["stats"]["fullCount"]
+        items["results"] = list(results)
         return items
+
+    def _get_all_items_from_collection(self, collection, skip, limit):
+        items = dict()
+        items["count"] = self.db[collection].count()
+        items["results"] = list(
+            self.db[collection].fetchAll(skip=skip, limit=limit, rawResults=True)
+        )
+        return items
+
+    def get_items_from_collection(self, collection, skip=0, limit=20, item_type=None):
+        if item_type:
+            return self._get_all_items_from_collection_filter_type(
+                collection, skip, limit, item_type
+            )
+        return self._get_all_items_from_collection(collection, skip, limit)
 
     def get_items_from_collection_by_ids(self, collection, ids):
         items = dict()
