@@ -25,9 +25,12 @@ class Job(BaseResource):
         skip = int(request.args.get("skip", 0))
         limit = int(request.args.get("limit", 20))
         ids = request.args.get("ids")
+        job_type = request.args.get("type")
         if ids:
             ids = ids.split(",")
             return self.storage.get_items_from_collection_by_ids("jobs", ids)
+        if job_type:
+            return self.storage.get_items_from_collection_by_field("jobs", "job_type", job_type)
         jobs = self.storage.get_items_from_collection("jobs", skip, limit)
         count = jobs["count"]
         jobs["limit"] = limit
