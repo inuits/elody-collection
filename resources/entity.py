@@ -19,8 +19,8 @@ job_helper = JobHelper(
 
 
 def _set_entity_mediafile_and_thumbnail(entity, storage):
-
-    mediafiles = storage.get_collection_item_mediafiles("entities", entity["_key"])
+    entity_id = entity["_key"] if "_key" in entity else entity["_id"]
+    mediafiles = storage.get_collection_item_mediafiles("entities", entity_id)
     for mediafile in mediafiles:
         if "is_primary" in mediafile and mediafile["is_primary"] is True:
             entity["primary_mediafile_location"] = mediafile["original_file_location"]
