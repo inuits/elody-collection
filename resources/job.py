@@ -34,10 +34,7 @@ class Job(BaseResource):
         else:
             fields = {"parent_job_id": ""}
         jobs = self.storage.get_items_from_collection_by_fields(
-            "jobs",
-            fields,
-            skip,
-            limit
+            "jobs", fields, skip, limit
         )
         count = jobs["count"]
         jobs["limit"] = limit
@@ -64,7 +61,9 @@ class JobDetail(BaseResource):
     def get(self, id):
         job = self.abort_if_item_doesnt_exist("jobs", id)
         if "parent_job_id" in job and job["parent_job_id"] == "":
-            sub_jobs = self.storage.get_items_from_collection_by_fields("jobs", {"parent_job_id": job["_key"]}, limit=job["amount_of_jobs"])
+            sub_jobs = self.storage.get_items_from_collection_by_fields(
+                "jobs", {"parent_job_id": job["_key"]}, limit=job["amount_of_jobs"]
+            )
             job["sub_jobs"] = sub_jobs["results"]
         return job
 

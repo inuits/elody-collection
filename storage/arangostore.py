@@ -90,14 +90,21 @@ FOR c IN @@collection
         items["results"] = list()
         extra_query = ""
         for field_name, field_value in fields.items():
-            extra_query = extra_query + """FILTER c.{} == \"{}\"
-            """.format(field_name, field_value)
+            extra_query = (
+                extra_query
+                + """FILTER c.{} == \"{}\"
+            """.format(
+                    field_name, field_value
+                )
+            )
         aql = """
 FOR c IN @@collection
     {}
     LIMIT @skip, @limit
     RETURN c
-""".format(extra_query)
+""".format(
+            extra_query
+        )
         bind = {"@collection": collection, "skip": skip, "limit": limit}
         queryResults = self._execute_query(aql, bind)
         items["count"] = len(queryResults)

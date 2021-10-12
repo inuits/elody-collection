@@ -24,7 +24,10 @@ def _set_entity_mediafile_and_thumbnail(entity, storage):
     for mediafile in mediafiles:
         if "is_primary" in mediafile and mediafile["is_primary"] is True:
             entity["primary_mediafile_location"] = mediafile["original_file_location"]
-        if "is_primary_thumbnail" in mediafile and mediafile["is_primary_thumbnail"] is True:
+        if (
+            "is_primary_thumbnail" in mediafile
+            and mediafile["is_primary_thumbnail"] is True
+        ):
             entity["primary_thumbnail_location"] = mediafile["thumbnail_file_location"]
     return entity
 
@@ -70,7 +73,9 @@ class Entity(BaseResource):
             )
         updated_entities = list()
         for entity in entities["results"]:
-            updated_entities.append(_set_entity_mediafile_and_thumbnail(entity, self.storage))
+            updated_entities.append(
+                _set_entity_mediafile_and_thumbnail(entity, self.storage)
+            )
         entities["results"] = updated_entities
         return entities
 
