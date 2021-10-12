@@ -14,7 +14,7 @@ class MongoStorageManager:
         client = MongoClient(mongo_host, mongo_port)
         self.db = client[mongo_db]
 
-    def get_items_from_collection(self, collection, skip=0, limit=20):
+    def get_items_from_collection(self, collection, skip=0, limit=20, item_type=None):
         items = dict()
         documents = self.db[collection].find(skip=skip, limit=limit)
         count = self.db[collection].count_documents({})

@@ -4,7 +4,7 @@ import uuid
 class MemoryStorageManager:
     collections = {"entities": {}, "mediafiles": {}, "tenants": {}, "jobs": {}}
 
-    def get_items_from_collection(self, collection, skip=0, limit=20):
+    def get_items_from_collection(self, collection, skip=0, limit=20, item_type=None):
         items = dict()
         count = len(self.collections[collection])
         items["count"] = count
