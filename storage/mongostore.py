@@ -16,8 +16,16 @@ class MongoStorageManager:
 
     def get_items_from_collection(self, collection, skip=0, limit=20, item_type=None):
         items = dict()
-        documents = self.db[collection].find(skip=skip, limit=limit)
-        count = self.db[collection].count_documents({})
+        if item_type:
+            documents = self.db[collection].find(
+                self._get_entities_by_type_query(item_type), skip=skip, limit=limit
+            )
+            count = self.db[collection].count_documents(
+                self._get_entities_by_type_query(item_type)
+            )
+        else:
+            documents = self.db[collection].find(skip=skip, limit=limit)
+            count = self.db[collection].count_documents({})
         items["count"] = count
         items["results"] = list()
         for document in documents:
@@ -187,6 +195,9 @@ class MongoStorageManager:
 
     def _get_multiple_id_query(self, ids):
         return {"$or": [{"_id": {"$in": ids}}, {"identifiers": {"$in": ids}}]}
+
+    def _get_entities_by_type_query(self, item_type):
+        return {"type": item_type}
 
     def _map_entity_relation(self, relation):
         mapping = {

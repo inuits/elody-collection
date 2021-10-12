@@ -6,11 +6,17 @@ class MemoryStorageManager:
 
     def get_items_from_collection(self, collection, skip=0, limit=20, item_type=None):
         items = dict()
-        count = len(self.collections[collection])
-        items["count"] = count
-        items["results"] = list(self.collections[collection].values())[
-            skip : skip + limit
-        ]
+        if item_type:
+            items["results"] = list(
+                filter(
+                    lambda elem: elem["type"] == item_type,
+                    self.collections["entities"].values(),
+                )
+            )
+        else:
+            items["results"] = list(self.collections[collection].values())
+        items["count"] = len(items["results"])
+        items["results"] = list(items["results"])[skip : skip + limit]
         return items
 
     def get_items_from_collection_by_ids(self, collection, ids):
