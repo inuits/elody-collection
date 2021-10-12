@@ -30,9 +30,9 @@ class Job(BaseResource):
             ids = ids.split(",")
             return self.storage.get_items_from_collection_by_ids("jobs", ids)
         if job_type:
-            fields = {"job_type": job_type, "parent_job_id": "\"\""}
+            fields = {"job_type": job_type, "parent_job_id": ""}
         else:
-            fields = {"parent_job_id": "\"\""}
+            fields = {"parent_job_id": ""}
         jobs = self.storage.get_items_from_collection_by_fields(
             "jobs",
             fields,
