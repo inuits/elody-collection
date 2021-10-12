@@ -1,6 +1,8 @@
 ### Base stage
 FROM python:3.9-slim AS base-stage
 
+ENV FLASK_APP=app.py
+
 RUN adduser --disabled-password --home /app --shell /bin/bash app
 USER app
 WORKDIR /app
