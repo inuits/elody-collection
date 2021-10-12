@@ -90,7 +90,7 @@ FOR c IN @@collection
         items["results"] = list()
         extra_query = ""
         for field_name, field_value in fields.items():
-            extra_query = """FILTER c.{} == \"{}\"
+            extra_query = extra_query + """FILTER c.{} == \"{}\"
             """.format(field_name, field_value)
         aql = """
 FOR c IN @@collection
