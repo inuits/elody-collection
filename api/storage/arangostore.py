@@ -106,8 +106,8 @@ FOR c IN @@collection
             extra_query
         )
         bind = {"@collection": collection, "skip": skip, "limit": limit}
-        queryResults = self._execute_query(aql, bind)
-        items["count"] = len(queryResults)
+        queryResults = self.db.AQLQuery(aql, rawResults=True, bindVars=bind, fullCount=True)
+        items["count"] = queryResults.extra["stats"]["fullCount"]
         for queryResult in queryResults:
             items["results"].append(queryResult)
         return items
