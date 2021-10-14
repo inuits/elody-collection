@@ -34,55 +34,31 @@ class ArangoStorageManager:
         )
         self.db = self._create_database_if_not_exists(self.arango_db_name)
 
-    def _get_all_items_from_collection_filter_type(
-        self, collection, skip, limit, item_type
-    ):
-        aql = """
-FOR c IN @@collection
-    FILTER c.type == @type
-    LIMIT @skip, @limit
-    RETURN c
-"""
-        bind = {
-            "@collection": collection,
-            "type": item_type,
-            "skip": skip,
-            "limit": limit,
-        }
-        results = self.db.AQLQuery(aql, rawResults=True, bindVars=bind, fullCount=True)
-        items = dict()
-        items["count"] = results.extra["stats"]["fullCount"]
-        items["results"] = list(results)
-        return items
-
     def _get_all_items_from_collection(self, collection, skip, limit):
         items = dict()
+        results = self.db[collection].fetchAll(skip=skip, limit=limit, rawResults=True)
         items["count"] = self.db[collection].count()
-        items["results"] = list(
-            self.db[collection].fetchAll(skip=skip, limit=limit, rawResults=True)
-        )
+        items["results"] = list(results)
         return items
 
     def get_items_from_collection(self, collection, skip=0, limit=20, item_type=None):
         if item_type:
-            return self._get_all_items_from_collection_filter_type(
-                collection, skip, limit, item_type
+            return self.get_items_from_collection_by_fields(
+                collection, {"type": item_type}, skip, limit
             )
         return self._get_all_items_from_collection(collection, skip, limit)
 
     def get_items_from_collection_by_ids(self, collection, ids):
-        items = dict()
-        items["results"] = list()
         aql = """
 FOR c IN @@collection
     FILTER c._key IN @ids
     RETURN c
 """
         bind = {"@collection": collection, "ids": ids}
-        queryResults = self._execute_query(aql, bind)
-        items["count"] = len(queryResults)
-        for queryResult in queryResults:
-            items["results"].append(queryResult)
+        results = self.db.AQLQuery(aql, rawResults=True, bindVars=bind)
+        items = dict()
+        items["count"] = len(results)
+        items["results"] = list(results)
         return items
 
     def get_items_from_collection_by_fields(self, collection, fields, skip=0, limit=20):
@@ -106,10 +82,9 @@ FOR c IN @@collection
             extra_query
         )
         bind = {"@collection": collection, "skip": skip, "limit": limit}
-        queryResults = self.db.AQLQuery(aql, rawResults=True, bindVars=bind, fullCount=True)
-        items["count"] = queryResults.extra["stats"]["fullCount"]
-        for queryResult in queryResults:
-            items["results"].append(queryResult)
+        results = self.db.AQLQuery(aql, rawResults=True, bindVars=bind, fullCount=True)
+        items["count"] = results.extra["stats"]["fullCount"]
+        items["results"] = list(results)
         return items
 
     def get_item_from_collection_by_id(self, collection, id):
@@ -127,14 +102,9 @@ FOR c IN @@collection
         return item
 
     def get_collection_item_sub_item(self, collection, id, sub_item):
-        ret = []
-        queryResults = self._get_field_for_id(collection, id, sub_item)
-        if queryResults:
-            ret = queryResults[0]
-        return ret
+        return list(self._get_field_for_id(collection, id, sub_item))
 
     def get_collection_item_sub_item_key(self, collection, id, sub_item, key):
-        ret = []
         aql = """
 FOR c IN @@collection
     FILTER @id IN c.identifiers OR c._key == @id
@@ -143,10 +113,8 @@ FOR c IN @@collection
         RETURN obj
 """
         bind = {"@collection": collection, "id": id, "sub_item": sub_item, "key": key}
-        queryResults = self._execute_query(aql, bind)
-        for queryResult in queryResults:
-            ret.append(queryResult)
-        return ret
+        results = self.db.AQLQuery(aql, rawResults=True, bindVars=bind)
+        return list(results)
 
     def get_collection_item_relations(self, collection, id):
         entity = self.get_raw_item_from_collection_by_id(collection, id)
@@ -239,7 +207,7 @@ FOR c IN @@collection
             "sub_item": sub_item,
             "content": content,
         }
-        self._execute_query(aql, bind)
+        self.db.AQLQuery(aql, rawResults=True, bindVars=bind)
         return content
 
     def add_relations_to_collection_item(self, collection, id, relations):
@@ -330,7 +298,7 @@ FOR c IN @@collection
     UPDATE c WITH {@sub_item: filteredSubItems} IN @@collection
 """
         bind = {"@collection": collection, "id": id, "sub_item": sub_item, "key": key}
-        queryResults = self._execute_query(aql, bind)
+        self.db.AQLQuery(aql, rawResults=True, bindVars=bind)
 
     def drop_all_collections(self):
         self.db["entities"].truncate()
@@ -361,10 +329,7 @@ FOR c IN @@collection
     def _get_field_for_id(self, collection, id, field):
         aql = "FOR c in @@collection FILTER @id IN c.identifiers OR c._key == @id RETURN c.@field"
         bind = {"id": id, "@collection": collection, "field": field}
-        return self._execute_query(aql, bind)
-
-    def _execute_query(self, aql, bindVars):
-        return self.db.AQLQuery(aql, rawResults=True, bindVars=bindVars)
+        return self.db.AQLQuery(aql, rawResults=True, bindVars=bind)
 
     def _create_database_if_not_exists(self, arango_db_name):
         if not self.conn.hasDatabase(arango_db_name):
