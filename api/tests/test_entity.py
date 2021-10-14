@@ -846,7 +846,10 @@ class EntityTest(BaseCase):
 
     def check_invalid_entity(self, response):
         self.assertEqual(str, type(response.json["message"]))
-        self.assertEqual("Entity doesn't have a valid format\n'type' is a required property", response.json["message"])
+        self.assertEqual(
+            "Entity doesn't have a valid format\n'type' is a required property",
+            response.json["message"],
+        )
         self.assertEqual(400, response.status_code)
 
     def entity_list(self, count, limit, skip):
