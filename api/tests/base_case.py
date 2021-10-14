@@ -118,10 +118,10 @@ class BaseCase(unittest.TestCase):
         )
 
     def create_job_get_id(self):
-        return self.create_job().json["_id"]
+        return self._get_item_id(self.create_job().json)
 
     def create_entity_get_id(self):
-        return self.create_entity().json["_id"]
+        return self._get_item_id(self.create_entity().json)
 
     def create_mediafile(self):
         return self.app.post(
@@ -131,7 +131,7 @@ class BaseCase(unittest.TestCase):
         )
 
     def create_mediafile_get_id(self):
-        return self.create_mediafile().json["_id"]
+        return self._get_item_id(self.create_mediafile().json)
 
     def create_tenant(self):
         return self.app.post(
@@ -140,22 +140,25 @@ class BaseCase(unittest.TestCase):
             data=self.tenant,
         )
 
+    def _get_item_id(self, item):
+        return item["_key"] if "_key" in item else item["_id"]
+
     def create_tenant_get_id(self):
-        return self.create_tenant().json["_id"]
+        return self._get_item_id(self.create_tenant().json)
 
     def valid_mediafile(self, mediafile):
-        self.assertEqual(str, type(mediafile["_id"]))
+        self.assertEqual(str, type(self._get_item_id(mediafile)))
         self.assertEqual(str, type(mediafile["filename"]))
 
     def valid_job(self, job):
-        self.assertEqual(str, type(job["_id"]))
+        self.assertEqual(str, type(self._get_item_id(job)))
         self.assertEqual(str, type(job["job_type"]))
         self.assertEqual(str, type(job["job_info"]))
         self.assertEqual(str, type(job["status"]))
         self.assertEqual(str, type(job["start_time"]))
 
     def valid_tenant(self, tenant):
-        self.assertEqual(str, type(tenant["_id"]))
+        self.assertEqual(str, type(self._get_item_id(tenant)))
         self.assertEqual(str, type(tenant["name"]))
         self.assertEqual("Een museum", tenant["name"])
         self.assertEqual(str, type(tenant["type"]))

@@ -67,11 +67,11 @@ class TenantTest(BaseCase):
         self.not_found(response)
 
     def test_successful_tenant_put(self):
-        _id = self.create_tenant_get_id()
+        tenant = self.create_tenant().json
 
         update = json.dumps(
             {
-                "_id": _id,
+                "_id": tenant["_id"],
                 "identifiers": ["12345", "abcde"],
                 "type": "tenant",
                 "name": "Een museum",
@@ -80,13 +80,13 @@ class TenantTest(BaseCase):
         )
 
         response = self.app.put(
-            "/tenants/{}".format(_id),
+            "/tenants/{}".format(self._get_item_id(tenant)),
             headers={"Content-Type": "application/json"},
             data=update,
         )
 
         self.valid_tenant(response.json)
-        self.assertEqual(5, len(response.json))
+        self.assertEqual(dict, type(response.json))
         self.assertEqual(str, type(response.json["city"]))
         self.assertEqual("Gent", response.json["city"])
         self.assertEqual(201, response.status_code)
@@ -126,7 +126,7 @@ class TenantTest(BaseCase):
         )
 
         self.valid_tenant(response.json)
-        self.assertEqual(5, len(response.json))
+        self.assertEqual(dict, type(response.json))
         self.assertEqual(str, type(response.json["city"]))
         self.assertEqual("Gent", response.json["city"])
         self.assertEqual(201, response.status_code)
