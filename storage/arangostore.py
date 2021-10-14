@@ -102,7 +102,7 @@ FOR c IN @@collection
         return item
 
     def get_collection_item_sub_item(self, collection, id, sub_item):
-        return list(self._get_field_for_id(collection, id, sub_item))
+        return list(self._get_field_for_id(collection, id, sub_item))[0]
 
     def get_collection_item_sub_item_key(self, collection, id, sub_item, key):
         aql = """
