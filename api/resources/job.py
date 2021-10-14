@@ -3,9 +3,7 @@ import app
 from flask import request
 from job_helper.job_helper import Status
 from resources.base_resource import BaseResource
-from validator import Validator, job_schema
-
-validator = Validator(job_schema)
+from validator import job_schema
 
 
 class Job(BaseResource):
@@ -14,7 +12,7 @@ class Job(BaseResource):
     )
     def post(self):
         content = self.get_request_body()
-        self.abort_if_not_valid_json(validator, "Job", content)
+        self.abort_if_not_valid_json("Job", content, job_schema)
         job = self.storage.save_item_to_collection("jobs", content)
         return job, 201
 
@@ -83,7 +81,7 @@ class JobDetail(BaseResource):
     def put(self, id):
         self.abort_if_item_doesnt_exist("jobs", id)
         content = self.get_request_body()
-        self.abort_if_not_valid_json(validator, "Job", content)
+        self.abort_if_not_valid_json("Job", content, job_schema)
         job = self.storage.update_item_from_collection("jobs", id, content)
         self.__send_amqp_message(job)
         return job, 201

@@ -3,6 +3,7 @@ import os
 from flask import request
 from flask_restful import Resource, abort, reqparse
 from storage.storagemanager import StorageManager
+from validator import validate_json
 from werkzeug.exceptions import BadRequest
 
 
@@ -45,9 +46,10 @@ class BaseResource(Resource):
             )
         return item
 
-    def abort_if_not_valid_json(self, validator, type, json):
-        if not validator.validate(json):
-            abort(400, message="{} doesn't have a valid format".format(type))
+    def abort_if_not_valid_json(self, type, json, schema):
+        validation_error = validate_json(json, schema)
+        if validation_error:
+            abort(400, message="{} doesn't have a valid format\n{}".format(type, validation_error))
 
     def _inject_api_urls(self, mediafiles):
         for mediafile in mediafiles:

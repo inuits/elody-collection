@@ -1,6 +1,3 @@
-import json
-import sys
-
 import app
 import os
 
@@ -8,10 +5,7 @@ from flask import g, request, after_this_request
 from flask_restful import abort
 from job_helper.job_helper import JobHelper
 from resources.base_resource import BaseResource
-from validator import Validator, entity_schema, mediafile_schema
-
-entity_validator = Validator(entity_schema)
-mediafile_validator = Validator(mediafile_schema)
+from validator import entity_schema, mediafile_schema
 
 job_helper = JobHelper(
     job_api_base_url=os.getenv("JOB_API_BASE_URL", "http://localhost:8000")
@@ -38,7 +32,7 @@ class Entity(BaseResource):
     )
     def post(self):
         content = self.get_request_body()
-        self.abort_if_not_valid_json(entity_validator, "Entity", content)
+        self.abort_if_not_valid_json("Entity", content, entity_schema)
         if hasattr(g, "oidc_token_info"):
             content["user"] = g.oidc_token_info["email"]
         else:
@@ -94,7 +88,7 @@ class EntityDetail(BaseResource):
     def put(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
-        self.abort_if_not_valid_json(entity_validator, "Entity", content)
+        self.abort_if_not_valid_json("Entity", content, entity_schema)
         entity = self.storage.update_item_from_collection("entities", id, content)
         return entity, 201
 
@@ -191,7 +185,7 @@ class EntityMediafiles(BaseResource):
     def post(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
-        self.abort_if_not_valid_json(mediafile_validator, "Mediafile", content)
+        self.abort_if_not_valid_json("Mediafile", content, mediafile_schema)
         mediafile_id = content["_id"]
         mediafile = self.storage.add_mediafile_to_collection_item(
             "entities", id, mediafile_id
