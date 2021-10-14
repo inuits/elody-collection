@@ -49,7 +49,12 @@ class BaseResource(Resource):
     def abort_if_not_valid_json(self, type, json, schema):
         validation_error = validate_json(json, schema)
         if validation_error:
-            abort(400, message="{} doesn't have a valid format\n{}".format(type, validation_error))
+            abort(
+                400,
+                message="{} doesn't have a valid format\n{}".format(
+                    type, validation_error
+                ),
+            )
 
     def _inject_api_urls(self, mediafiles):
         for mediafile in mediafiles:
