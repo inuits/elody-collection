@@ -14,7 +14,7 @@ class JobTest(BaseCase):
             "/jobs", headers={"content-type": "application/json"}, data=self.invalid_job
         )
         self.assertEqual(str, type(response.json["message"]))
-        self.assertEqual("Job doesn't have a valid format", response.json["message"])
+        self.assertEqual("Job doesn't have a valid format\n'garbage' is not one of ['queued', 'in-progress', 'finished', 'failed']", response.json["message"])
         self.assertEqual(400, response.status_code)
 
     def test_invalid_content_type_job_create(self):

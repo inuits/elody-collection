@@ -72,7 +72,7 @@ class BaseCase(unittest.TestCase):
         {
             "job_type": "download",
             "job_info": "Some info about download",
-            "status": "jrekjndfkjsadkfnkjsadfsaekjnfewdsk",
+            "status": "garbage",
             "start_time": "25-08-2021-04:30:00",
         }
     )

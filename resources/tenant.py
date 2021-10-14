@@ -1,9 +1,7 @@
 import app
 
 from resources.base_resource import BaseResource
-from validator import Validator, tenant_schema
-
-validator = Validator(tenant_schema)
+from validator import tenant_schema
 
 
 class Tenant(BaseResource):
@@ -12,7 +10,7 @@ class Tenant(BaseResource):
     )
     def post(self):
         content = self.get_request_body()
-        self.abort_if_not_valid_json(validator, "Tenant", content)
+        self.abort_if_not_valid_json("Tenant", content, tenant_schema)
         tenant = self.storage.save_item_to_collection("tenants", content)
         return tenant, 201
 
@@ -40,7 +38,7 @@ class TenantDetail(BaseResource):
     def put(self, id):
         self.abort_if_item_doesnt_exist("tenants", id)
         content = self.get_request_body()
-        self.abort_if_not_valid_json(validator, "Tenant", content)
+        self.abort_if_not_valid_json("Tenant", content, tenant_schema)
         tenant = self.storage.update_item_from_collection("tenants", id, content)
         return tenant, 201
 

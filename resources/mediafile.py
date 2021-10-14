@@ -2,9 +2,7 @@ import app
 
 from flask import request
 from resources.base_resource import BaseResource
-from validator import Validator, mediafile_schema
-
-validator = Validator(mediafile_schema)
+from validator import mediafile_schema
 
 
 class Mediafile(BaseResource):
@@ -13,7 +11,7 @@ class Mediafile(BaseResource):
     )
     def post(self):
         content = self.get_request_body()
-        self.abort_if_not_valid_json(validator, "Mediafile", content)
+        self.abort_if_not_valid_json("Mediafile", content, mediafile_schema)
         mediafile = self.storage.save_item_to_collection("mediafiles", content)
         return mediafile, 201
 
@@ -63,7 +61,7 @@ class MediafileDetail(BaseResource):
     def put(self, id):
         self.abort_if_item_doesnt_exist("mediafiles", id)
         content = self.get_request_body()
-        self.abort_if_not_valid_json(validator, "Mediafile", content)
+        self.abort_if_not_valid_json("Mediafile", content, mediafile_schema)
         mediafile = self.storage.update_item_from_collection("mediafiles", id, content)
         return mediafile, 201
 

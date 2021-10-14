@@ -151,13 +151,9 @@ tenant_schema = {
 }
 
 
-class Validator:
-    def __init__(self, schema):
-        self.schema = schema
-
-    def validate(self, json):
-        try:
-            validate(instance=json, schema=self.schema)
-        except ValidationError:
-            return False
-        return True
+def validate_json(json, schema):
+    try:
+        validate(instance=json, schema=schema)
+    except ValidationError as ve:
+        return ve.message
+    return ""
