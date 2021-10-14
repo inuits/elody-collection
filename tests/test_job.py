@@ -47,11 +47,11 @@ class JobTest(BaseCase):
         self.not_found(response)
 
     def test_successful_job_put(self):
-        _id = self.create_job_get_id()
+        job = self.create_job().json
 
         update = json.dumps(
             {
-                "_id": _id,
+                "_id": job["_id"],
                 "job_type": "download",
                 "job_info": "Updated info",
                 "status": "in-progress",
@@ -60,13 +60,13 @@ class JobTest(BaseCase):
         )
 
         response = self.app.put(
-            "/jobs/{}".format(_id),
+            "/jobs/{}".format(self._get_item_id(job)),
             headers={"Content-Type": "application/json"},
             data=update,
         )
 
         self.valid_job(response.json)
-        self.assertEqual(5, len(response.json))
+        self.assertEqual(dict, type(response.json))
         self.assertEqual(str, type(response.json["job_info"]))
         self.assertEqual("Updated info", response.json["job_info"])
         self.assertEqual(201, response.status_code)
@@ -99,7 +99,7 @@ class JobTest(BaseCase):
         )
 
         self.valid_job(response.json)
-        self.assertEqual(5, len(response.json))
+        self.assertEqual(dict, type(response.json))
         self.assertEqual(str, type(response.json["job_info"]))
         self.assertEqual("Patched info", response.json["job_info"])
         self.assertEqual(201, response.status_code)

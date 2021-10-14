@@ -55,11 +55,11 @@ class MediafileTest(BaseCase):
         self.not_found(response)
 
     def test_successful_mediafile_put(self):
-        _id = self.create_mediafile_get_id()
+        mediafile = self.create_mediafile().json
 
         update = json.dumps(
             {
-                "_id": _id,
+                "_id": mediafile["_id"],
                 "identifiers": ["12345", "abcde"],
                 "type": "mediafile",
                 "filename": "test.jpg",
@@ -69,13 +69,13 @@ class MediafileTest(BaseCase):
         )
 
         response = self.app.put(
-            "/mediafiles/{}".format(_id),
+            "/mediafiles/{}".format(self._get_item_id(mediafile)),
             headers={"Content-Type": "application/json"},
             data=update,
         )
 
         self.valid_mediafile(response.json)
-        self.assertEqual(6, len(response.json))
+        self.assertEqual(dict, type(response.json))
         self.assertEqual(str, type(response.json["format"]))
         self.assertEqual("jpg", response.json["format"])
         self.assertEqual(201, response.status_code)
@@ -113,7 +113,7 @@ class MediafileTest(BaseCase):
         )
 
         self.valid_mediafile(response.json)
-        self.assertEqual(5, len(response.json))
+        self.assertEqual(dict, type(response.json))
         self.assertEqual(str, type(response.json["format"]))
         self.assertEqual("jpg", response.json["format"])
         self.assertEqual(201, response.status_code)
@@ -182,7 +182,7 @@ class MediafileTest(BaseCase):
         self.assertEqual(skip > 0, "previous" in response.json)
         for i in range(min(count, limit)):
             mediafile = response.json["results"][i]
-            self.assertEqual(ids[i + skip], mediafile["_id"])
+            self.assertEqual(ids[i + skip], self._get_item_id(mediafile))
             self.valid_mediafile(mediafile)
         self.assertEqual(200, response.status_code)
 
