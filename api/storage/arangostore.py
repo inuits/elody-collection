@@ -305,6 +305,8 @@ FOR c IN @@collection
         self.db["jobs"].truncate()
         self.db["mediafiles"].truncate()
         self.db["tenants"].truncate()
+        for edge in self.edges:
+            self.db[edge].truncate()
 
     def _map_entity_relation(self, relation):
         mapping = {
