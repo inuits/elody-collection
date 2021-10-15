@@ -1356,10 +1356,314 @@
           }
         }
       }
+    },
+    "/jobs": {
+      "post": {
+        "tags": [
+          "job"
+        ],
+        "summary": "Add a new job",
+        "operationId": "addJob",
+        "requestBody": {
+          "description": "Job object that needs to be added",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/job"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/job"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Job doesn't have a valid format"
+          },
+          "405": {
+            "description": "Invalid input"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "job"
+        ],
+        "summary": "Get job list",
+        "description": "Get all parent jobs",
+        "operationId": "getJobs",
+        "parameters": [
+           {
+            "name": "type",
+            "in": "query",
+            "description": "Filter by type of job",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "skip",
+            "in": "query",
+            "description": "Skip number of jobs",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Limit number of jobs",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "ids",
+            "in": "query",
+            "description": "List of id's to include in the list",
+            "required": false,
+            "explode": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/job"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/jobs/{jobId}": {
+      "put": {
+        "tags": [
+          "job"
+        ],
+        "summary": "Update an existing job",
+        "operationId": "updateJob",
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "description": "Job id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Job object that needs to be updated",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/job"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/job"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Job doesn't have a valid format"
+          },
+          "404": {
+            "description": "Job not found"
+          },
+          "405": {
+            "description": "Invalid input"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "job"
+        ],
+        "summary": "Patch an existing job",
+        "operationId": "patchJob",
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "description": "Job id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Job object that needs to be patched",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/job"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/job"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Job doesn't have a valid format"
+          },
+          "404": {
+            "description": "Job not found"
+          },
+          "405": {
+            "description": "Invalid input"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "job"
+        ],
+        "summary": "Get specific job",
+        "description": "Get job for a specific ID",
+        "operationId": "getJobId",
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "description": "Job id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/job"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Job not found"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "job"
+        ],
+        "summary": "Delete specific job",
+        "description": "Delete job with a specific ID",
+        "operationId": "deleteJobId",
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "description": "Job id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "successful operation"
+          },
+          "404": {
+            "description": "Job not found"
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "job": {
+      "type": "object",
+      "default": {},
+      "required": ["job_type", "job_info", "status", "start_time"],
+      "properties": {
+          "job_type": {
+              "type": "string"
+          },
+          "job_info": {
+              "type": "string"
+          },
+          "start_time": {
+              "type": "string"
+          },
+          "user": {
+              "type": "string"
+          },
+          "asset": {
+              "type": "string"
+          },
+          "mediafile_id": {
+              "type": "string"
+          },
+          "parent_job_id": {
+              "type": "string"
+          },
+          "status": {
+              "type": "string"
+          },
+          "sub_jobs": {
+              "type": "array",
+              "items":{
+                "$ref": "#/components/schemas/job"
+
+              }
+          }
+      }
+  },
       "tenant": {
         "type": "object",
         "description": "Tenant object",
