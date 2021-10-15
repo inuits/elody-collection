@@ -88,6 +88,9 @@ job_schema = {
                 Status.FAILED.value,
             ]
         },
+        "sub_jobs": {
+            "type": "array"
+        }
     },
 }
 
