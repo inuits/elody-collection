@@ -1,5 +1,7 @@
 import uuid
 
+from copy import deepcopy
+
 
 class MemoryStorageManager:
     collections = {"entities": {}, "mediafiles": {}, "tenants": {}, "jobs": {}}
@@ -17,7 +19,7 @@ class MemoryStorageManager:
             items["results"] = list(self.collections[collection].values())
         items["count"] = len(items["results"])
         items["results"] = list(items["results"])[skip : skip + limit]
-        return items
+        return deepcopy(items)
 
     def get_items_from_collection_by_ids(self, collection, ids):
         items = dict()
@@ -27,24 +29,26 @@ class MemoryStorageManager:
             if id in self.collections[collection]
         ]
         items["count"] = len(items["results"])
-        return items
+        return deepcopy(items)
 
     def get_item_from_collection_by_id(self, collection, obj_id):
         if gen_id := self._get_collection_item_gen_id_by_identifier(collection, obj_id):
-            return self.collections[collection].get(gen_id, None)
+            return deepcopy(self.collections[collection].get(gen_id, None))
         return None
 
     def get_collection_item_sub_item(self, collection, obj_id, sub_item):
         if item := self.get_item_from_collection_by_id(collection, obj_id):
-            return item[sub_item] if sub_item in item else []
+            return deepcopy(item[sub_item]) if sub_item in item else []
         return None
 
     def get_collection_item_sub_item_key(self, collection, obj_id, sub_item, key):
         if obj := self.get_collection_item_sub_item(collection, obj_id, sub_item):
-            return list(
-                filter(
-                    lambda elem: elem["key"] == key,
-                    obj,
+            return deepcopy(
+                list(
+                    filter(
+                        lambda elem: elem["key"] == key,
+                        obj,
+                    )
                 )
             )
         return None
@@ -54,10 +58,12 @@ class MemoryStorageManager:
 
     def get_collection_item_mediafiles(self, collection, obj_id):
         if gen_id := self._get_collection_item_gen_id_by_identifier(collection, obj_id):
-            return list(
-                filter(
-                    lambda elem: gen_id in elem[collection],
-                    self.collections["mediafiles"].values(),
+            return deepcopy(
+                list(
+                    filter(
+                        lambda elem: gen_id in elem[collection],
+                        self.collections["mediafiles"].values(),
+                    )
                 )
             )
         return None
@@ -158,7 +164,7 @@ class MemoryStorageManager:
             if ("identifiers" in item and obj_id in item["identifiers"]) or item[
                 "_id"
             ] == obj_id:
-                return item["_id"]
+                return deepcopy(item["_id"])
         return None
 
     def _map_entity_relation(self, relation):
