@@ -499,7 +499,7 @@ class EntityTest(BaseCase):
         )
 
         self.valid_mediafile(response.json)
-        if "entitites" in response.json:
+        if "entities" in response.json:
             self.assertEqual(list, type(response.json["entities"]))
             self.assertEqual(3, len(response.json["entities"]))
         self.assertEqual(201, response.status_code)
