@@ -67,11 +67,9 @@ FOR c IN @@collection
         extra_query = ""
         for field_name, field_value in fields.items():
             extra_query = (
-                extra_query
-                + """FILTER c.{} == \"{}\"
-            """.format(
-                    field_name, field_value
-                )
+                    extra_query
+                    + """FILTER c.{} == \"{}\"
+            """.format(field_name, field_value)
             )
         aql = """
 FOR c IN @@collection
@@ -176,6 +174,16 @@ FOR c IN @@collection
 
             mediafiles.append(mediafile)
         return mediafiles
+
+    def set_primary_mediafile_for_entity(self, collection, entity_id, mediafile_id, thumbnail=False):
+        entity = self.get_raw_item_from_collection_by_id(collection, entity_id)
+        field = "is_primary" if thumbnail==False else "is_primary_thumbnail"
+        for edge in entity.getOutEdges(self.db[self.mediafile_edge_name]):
+            if edge["_to"] == "mediafiles/"+mediafile_id:
+                edge[field] = True
+            else:
+                edge[field] = False
+            self.conn.updateDocumentEdge(self.arango_db_name, "hasMediafile", edge.getStore())
 
     def add_mediafile_to_collection_item(self, collection, id, mediafile_id):
         entity = self.get_raw_item_from_collection_by_id(collection, id)

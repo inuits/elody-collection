@@ -57,6 +57,8 @@ from resources.entity import (
     EntityComponents,
     EntityDetail,
     EntityMediafiles,
+    EntitySetPrimaryMediafile,
+    EntitySetPrimaryThumbnail,
     EntityMediafilesCreate,
     EntityMetadata,
     EntityMetadataKey,
@@ -77,6 +79,9 @@ from resources.tenant import Tenant, TenantDetail
 api.add_resource(Entity, "/entities")
 api.add_resource(EntityComponents, "/entities/<string:id>/components")
 api.add_resource(EntityDetail, "/entities/<string:id>")
+api.add_resource(EntitySetPrimaryMediafile, "/entities/<string:id>/set_primary_mediafile/<string:mediafile_id>")
+api.add_resource(EntitySetPrimaryThumbnail, "/entities/<string:id>/set_primary_thumbnail/<string:mediafile_id>")
+
 api.add_resource(EntityMediafiles, "/entities/<string:id>/mediafiles")
 api.add_resource(EntityMediafilesCreate, "/entities/<string:id>/mediafiles/create")
 api.add_resource(EntityMetadata, "/entities/<string:id>/metadata")
