@@ -1,6 +1,7 @@
 import json
 
 from tests.base_case import BaseCase
+from unittest.mock import patch
 
 
 class MediafileTest(BaseCase):
@@ -46,6 +47,33 @@ class MediafileTest(BaseCase):
 
         self.valid_mediafile(response.json)
         self.assertEqual(200, response.status_code)
+
+    @patch("resources.entity.job_helper")
+    def test_successful_raw_mediafile_get(self, fake_job_helper):
+        _id = self.create_entity_get_id()
+
+        self.app.post(
+            "/entities/{}/mediafiles/create".format(_id),
+            headers={"Content-Type": "application/json"},
+            data=self.filename_with_metadata,
+        )
+        response = self.app.get(
+            "/entities/{}/mediafiles".format(_id),
+            headers={"Content-Type": "application/json"},
+        )
+
+        response = self.app.get(
+            "/mediafiles/{}?raw=1".format(self._get_item_id(response.json[0])),
+            headers={"Content-Type": "application/json"},
+        )
+        self.assertEqual(200, response.status_code)
+
+        mediafile = response.json
+        self.valid_mediafile(mediafile)
+        self.assertTrue(mediafile["original_file_location"].startswith("/download/"))
+        self.assertTrue(mediafile["original_file_location"].endswith("test.jpg"))
+        self.assertTrue(mediafile["thumbnail_file_location"].startswith("/iiif/3/"))
+        self.assertTrue(mediafile["thumbnail_file_location"].endswith("default.jpg"))
 
     def test_non_existent_mediafile_get(self):
         response = self.app.get(
