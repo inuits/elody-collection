@@ -31,13 +31,8 @@ class Entity(BaseResource):
     def post(self):
         content = self.get_request_body()
         self.abort_if_not_valid_json("Entity", content, entity_schema)
-<<<<<<< HEAD:api/resources/entity.py
         if "Email" in current_token:
             content["user"] = current_token["Email"]
-=======
-        if hasattr(g, "oidc_token_info"):
-            content["user"] = g.oidc_token_info["email"]
->>>>>>> 7885560 (Show why validation failed in JSON validator):resources/entity.py
         else:
             content["user"] = "default_uploader"
         entity = self.storage.save_item_to_collection("entities", content)
