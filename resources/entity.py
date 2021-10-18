@@ -19,8 +19,8 @@ def _set_entity_mediafile_and_thumbnail(entity, storage):
         if "is_primary" in mediafile and mediafile["is_primary"] is True:
             entity["primary_mediafile_location"] = mediafile["original_file_location"]
         if (
-            "is_primary_thumbnail" in mediafile
-            and mediafile["is_primary_thumbnail"] is True
+                "is_primary_thumbnail" in mediafile
+                and mediafile["is_primary_thumbnail"] is True
         ):
             entity["primary_thumbnail_location"] = mediafile["thumbnail_file_location"]
     return entity
@@ -108,6 +108,28 @@ class EntityDetail(BaseResource):
         self.abort_if_item_doesnt_exist("entities", id)
         self.storage.delete_item_from_collection("entities", id)
         return "", 204
+
+
+class EntitySetPrimaryMediafile(BaseResource):
+
+    @app.oidc.accept_token(
+        require_token=BaseResource.token_required, scopes_required=["openid"]
+    )
+    def put(self, id, mediafile_id):
+        self.abort_if_item_doesnt_exist("entities", id)
+        self.storage.set_primary_mediafile_for_entity("entities", id, mediafile_id)
+        return 204
+
+
+class EntitySetPrimaryThumbnail(BaseResource):
+
+    @app.oidc.accept_token(
+        require_token=BaseResource.token_required, scopes_required=["openid"]
+    )
+    def put(self, id, mediafile_id):
+        self.abort_if_item_doesnt_exist("entities", id)
+        self.storage.set_primary_mediafile_for_entity("entities", id, mediafile_id, thumbnail=True)
+        return 204
 
 
 class EntityMetadata(BaseResource):
