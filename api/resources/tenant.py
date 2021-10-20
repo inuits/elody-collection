@@ -5,9 +5,7 @@ from validator import tenant_schema
 
 
 class Tenant(BaseResource):
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openid"]
-    )
+
     def post(self):
         content = self.get_request_body()
         self.abort_if_not_valid_json("Tenant", content, tenant_schema)
@@ -16,25 +14,19 @@ class Tenant(BaseResource):
 
 
 class TenantDetail(BaseResource):
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openid"]
-    )
+    @app.require_oauth()
     def get(self, id):
         tenant = self.abort_if_item_doesnt_exist("tenants", id)
         return tenant
 
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openid"]
-    )
+    @app.require_oauth()
     def patch(self, id):
         self.abort_if_item_doesnt_exist("tenants", id)
         content = self.get_request_body()
         tenant = self.storage.patch_item_from_collection("tenants", id, content)
         return tenant, 201
 
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openid"]
-    )
+    @app.require_oauth()
     def put(self, id):
         self.abort_if_item_doesnt_exist("tenants", id)
         content = self.get_request_body()
@@ -42,9 +34,7 @@ class TenantDetail(BaseResource):
         tenant = self.storage.update_item_from_collection("tenants", id, content)
         return tenant, 201
 
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openid"]
-    )
+    @app.require_oauth()
     def delete(self, id):
         self.abort_if_item_doesnt_exist("tenants", id)
         self.storage.delete_item_from_collection("tenants", id)

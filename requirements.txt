@@ -5,7 +5,7 @@ certifi==2020.12.5
 chardet==4.0.0
 click==7.1.2
 DateTime==4.3
-flask-oidc==1.4.0
+Authlib==1.0.0b1
 flask-rabmq==0.0.21
 Flask-RESTful==0.3.8
 flask-swagger-ui==3.36.0

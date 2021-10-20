@@ -27,9 +27,7 @@ def _set_entity_mediafile_and_thumbnail(entity, storage):
 
 
 class Entity(BaseResource):
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openid"]
-    )
+    @app.require_oauth()
     def post(self):
         content = self.get_request_body()
         self.abort_if_not_valid_json("Entity", content, entity_schema)
@@ -40,9 +38,7 @@ class Entity(BaseResource):
         entity = self.storage.save_item_to_collection("entities", content)
         return entity, 201
 
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openid"]
-    )
+    @app.require_oauth()
     def get(self):
         skip = int(request.args.get("skip", 0))
         limit = int(request.args.get("limit", 20))
@@ -75,16 +71,12 @@ class Entity(BaseResource):
 
 
 class EntityDetail(BaseResource):
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openid"]
-    )
+    @app.require_oauth()
     def get(self, id):
         entity = self.abort_if_item_doesnt_exist("entities", id)
         return _set_entity_mediafile_and_thumbnail(entity, self.storage)
 
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openid"]
-    )
+    @app.require_oauth()
     def put(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
@@ -92,18 +84,14 @@ class EntityDetail(BaseResource):
         entity = self.storage.update_item_from_collection("entities", id, content)
         return entity, 201
 
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openid"]
-    )
+    @app.require_oauth()
     def patch(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
         entity = self.storage.patch_item_from_collection("entities", id, content)
         return entity, 201
 
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openid"]
-    )
+    @app.require_oauth()
     def delete(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         self.storage.delete_item_from_collection("entities", id)
@@ -112,9 +100,7 @@ class EntityDetail(BaseResource):
 
 class EntitySetPrimaryMediafile(BaseResource):
 
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openid"]
-    )
+    @app.require_oauth()
     def put(self, id, mediafile_id):
         self.abort_if_item_doesnt_exist("entities", id)
         self.storage.set_primary_mediafile_for_entity("entities", id, mediafile_id)
@@ -123,9 +109,7 @@ class EntitySetPrimaryMediafile(BaseResource):
 
 class EntitySetPrimaryThumbnail(BaseResource):
 
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openid"]
-    )
+    @app.require_oauth()
     def put(self, id, mediafile_id):
         self.abort_if_item_doesnt_exist("entities", id)
         self.storage.set_primary_mediafile_for_entity("entities", id, mediafile_id, thumbnail=True)
@@ -133,17 +117,13 @@ class EntitySetPrimaryThumbnail(BaseResource):
 
 
 class EntityMetadata(BaseResource):
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openid"]
-    )
+    @app.require_oauth()
     def get(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         metadata = self.storage.get_collection_item_sub_item("entities", id, "metadata")
         return metadata
 
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openid"]
-    )
+    @app.require_oauth()
     def post(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
@@ -152,9 +132,7 @@ class EntityMetadata(BaseResource):
         )
         return metadata, 201
 
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openid"]
-    )
+    @app.require_oauth()
     def put(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
@@ -165,9 +143,7 @@ class EntityMetadata(BaseResource):
 
 
 class EntityMetadataKey(BaseResource):
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openid"]
-    )
+    @app.require_oauth()
     def get(self, id, key):
         self.abort_if_item_doesnt_exist("entities", id)
         metadata = self.storage.get_collection_item_sub_item_key(
@@ -175,9 +151,7 @@ class EntityMetadataKey(BaseResource):
         )
         return metadata
 
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openid"]
-    )
+    @app.require_oauth()
     def delete(self, id, key):
         self.abort_if_item_doesnt_exist("entities", id)
         self.storage.delete_collection_item_sub_item_key(
@@ -187,9 +161,7 @@ class EntityMetadataKey(BaseResource):
 
 
 class EntityMediafiles(BaseResource):
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openid"]
-    )
+    @app.require_oauth()
     def get(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         mediafiles = self.storage.get_collection_item_mediafiles("entities", id)
@@ -201,9 +173,7 @@ class EntityMediafiles(BaseResource):
 
         return self._inject_api_urls(mediafiles)
 
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openid"]
-    )
+    @app.require_oauth()
     def post(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
@@ -216,9 +186,7 @@ class EntityMediafiles(BaseResource):
 
 
 class EntityMediafilesCreate(BaseResource):
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openid"]
-    )
+    @app.require_oauth()
     def post(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
@@ -255,9 +223,7 @@ class EntityMediafilesCreate(BaseResource):
 
 
 class EntityRelations(BaseResource):
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openId"]
-    )
+    @app.require_oauth()
     def get(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
 
@@ -268,9 +234,7 @@ class EntityRelations(BaseResource):
 
         return self.storage.get_collection_item_relations("entities", id)
 
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openId"]
-    )
+    @app.require_oauth()
     def post(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
@@ -279,9 +243,7 @@ class EntityRelations(BaseResource):
         )
         return relations, 201
 
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openid"]
-    )
+    @app.require_oauth()
     def put(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
@@ -290,9 +252,7 @@ class EntityRelations(BaseResource):
         )
         return relations, 201
 
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openid"]
-    )
+    @app.require_oauth()
     def patch(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
@@ -303,9 +263,7 @@ class EntityRelations(BaseResource):
 
 
 class EntityComponents(BaseResource):
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openId"]
-    )
+    @app.require_oauth()
     def get(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
 
@@ -316,9 +274,7 @@ class EntityComponents(BaseResource):
 
         return self.storage.get_collection_item_components("entities", id)
 
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openId"]
-    )
+    @app.require_oauth()
     def post(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
@@ -328,9 +284,7 @@ class EntityComponents(BaseResource):
         )
         return components, 201
 
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openid"]
-    )
+    @app.require_oauth()
     def put(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
@@ -340,9 +294,7 @@ class EntityComponents(BaseResource):
         )
         return components, 201
 
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openid"]
-    )
+    @app.require_oauth()
     def patch(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
@@ -360,9 +312,7 @@ class EntityComponents(BaseResource):
 
 
 class EntityParent(BaseResource):
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openId"]
-    )
+    @app.require_oauth()
     def get(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
 
@@ -373,9 +323,7 @@ class EntityParent(BaseResource):
 
         return self.storage.get_collection_item_components("entities", id)
 
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openId"]
-    )
+    @app.require_oauth()
     def post(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
@@ -385,9 +333,7 @@ class EntityParent(BaseResource):
         )
         return components, 201
 
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openid"]
-    )
+    @app.require_oauth()
     def put(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
@@ -397,9 +343,7 @@ class EntityParent(BaseResource):
         )
         return components, 201
 
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openid"]
-    )
+    @app.require_oauth()
     def patch(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
@@ -417,9 +361,7 @@ class EntityParent(BaseResource):
 
 
 class EntityTypes(BaseResource):
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openId"]
-    )
+    @app.require_oauth()
     def get(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
 
@@ -430,9 +372,7 @@ class EntityTypes(BaseResource):
 
         return self.storage.get_collection_item_types("entities", id)
 
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openId"]
-    )
+    @app.require_oauth()
     def post(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
@@ -442,9 +382,7 @@ class EntityTypes(BaseResource):
         )
         return components, 201
 
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openid"]
-    )
+    @app.require_oauth()
     def put(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
@@ -454,9 +392,7 @@ class EntityTypes(BaseResource):
         )
         return components, 201
 
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openid"]
-    )
+    @app.require_oauth()
     def patch(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
@@ -474,9 +410,7 @@ class EntityTypes(BaseResource):
 
 
 class EntityUsage(BaseResource):
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openId"]
-    )
+    @app.require_oauth()
     def get(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
 
@@ -487,9 +421,7 @@ class EntityUsage(BaseResource):
 
         return self.storage.get_collection_item_usage("entities", id)
 
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openId"]
-    )
+    @app.require_oauth()
     def post(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
@@ -499,9 +431,7 @@ class EntityUsage(BaseResource):
         )
         return components, 201
 
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openid"]
-    )
+    @app.require_oauth()
     def put(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
@@ -511,9 +441,7 @@ class EntityUsage(BaseResource):
         )
         return components, 201
 
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openid"]
-    )
+    @app.require_oauth()
     def patch(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()

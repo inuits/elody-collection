@@ -7,9 +7,7 @@ from resources.base_resource import BaseResource
 
 
 class ImporterStart(BaseResource):
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openid"]
-    )
+    @app.require_oauth()
     def post(self):
         request_body = self.get_request_body()
         message_id = str(uuid.uuid4())
@@ -30,9 +28,7 @@ class ImporterStart(BaseResource):
 
 
 class ImporterDirectories(BaseResource):
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openid"]
-    )
+    @app.require_oauth()
     def get(self):
         directories = [
             str(x[0]).removeprefix(self.upload_source)
