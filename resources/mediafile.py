@@ -6,18 +6,14 @@ from validator import mediafile_schema
 
 
 class Mediafile(BaseResource):
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openid"]
-    )
+    @app.require_oauth()
     def post(self):
         content = self.get_request_body()
         self.abort_if_not_valid_json("Mediafile", content, mediafile_schema)
         mediafile = self.storage.save_item_to_collection("mediafiles", content)
         return mediafile, 201
 
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openid"]
-    )
+    @app.require_oauth()
     def get(self):
         skip = int(request.args.get("skip", 0))
         limit = int(request.args.get("limit", 20))
@@ -37,27 +33,21 @@ class Mediafile(BaseResource):
 
 
 class MediafileDetail(BaseResource):
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openid"]
-    )
+    @app.require_oauth()
     def get(self, id):
         mediafile = self.abort_if_item_doesnt_exist("mediafiles", id)
         if request.args.get("raw", None):
             return mediafile
         return self._inject_api_urls([mediafile])[0]
 
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openid"]
-    )
+    @app.require_oauth()
     def patch(self, id):
         self.abort_if_item_doesnt_exist("mediafiles", id)
         content = self.get_request_body()
         mediafile = self.storage.patch_item_from_collection("mediafiles", id, content)
         return mediafile, 201
 
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openid"]
-    )
+    @app.require_oauth()
     def put(self, id):
         self.abort_if_item_doesnt_exist("mediafiles", id)
         content = self.get_request_body()
@@ -65,9 +55,7 @@ class MediafileDetail(BaseResource):
         mediafile = self.storage.update_item_from_collection("mediafiles", id, content)
         return mediafile, 201
 
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openid"]
-    )
+    @app.require_oauth()
     def delete(self, id):
         self.abort_if_item_doesnt_exist("mediafiles", id)
         self.storage.delete_item_from_collection("mediafiles", id)

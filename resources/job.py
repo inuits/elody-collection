@@ -7,18 +7,14 @@ from validator import job_schema
 
 
 class Job(BaseResource):
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openid"]
-    )
+    @app.require_oauth()
     def post(self):
         content = self.get_request_body()
         self.abort_if_not_valid_json("Job", content, job_schema)
         job = self.storage.save_item_to_collection("jobs", content)
         return job, 201
 
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openid"]
-    )
+    @app.require_oauth()
     def get(self):
         skip = int(request.args.get("skip", 0))
         limit = int(request.args.get("limit", 20))
@@ -46,9 +42,7 @@ class Job(BaseResource):
 
 
 class JobDetail(BaseResource):
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openid"]
-    )
+    @app.require_oauth()
     def __send_amqp_message(self, job):
         if (
             job["status"] == Status.FINISHED.value
@@ -56,6 +50,7 @@ class JobDetail(BaseResource):
         ):
             app.ramq.send(job, routing_key="dams.jobs")
 
+    @app.require_oauth()
     def get(self, id):
         job = self.abort_if_item_doesnt_exist("jobs", id)
         if "parent_job_id" in job and job["parent_job_id"] == "":
@@ -65,9 +60,7 @@ class JobDetail(BaseResource):
             job["sub_jobs"] = sub_jobs["results"]
         return job
 
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openid"]
-    )
+    @app.require_oauth()
     def patch(self, id):
         self.abort_if_item_doesnt_exist("jobs", id)
         content = self.get_request_body()
@@ -75,9 +68,7 @@ class JobDetail(BaseResource):
         self.__send_amqp_message(job)
         return job, 201
 
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openid"]
-    )
+    @app.require_oauth()
     def put(self, id):
         self.abort_if_item_doesnt_exist("jobs", id)
         content = self.get_request_body()
@@ -86,9 +77,7 @@ class JobDetail(BaseResource):
         self.__send_amqp_message(job)
         return job, 201
 
-    @app.oidc.accept_token(
-        require_token=BaseResource.token_required, scopes_required=["openid"]
-    )
+    @app.require_oauth()
     def delete(self, id):
         self.abort_if_item_doesnt_exist("jobs", id)
         self.storage.delete_item_from_collection("jobs", id)

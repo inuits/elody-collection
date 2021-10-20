@@ -2,10 +2,10 @@ import logging
 import os
 
 from flask import Flask
-from flask_oidc import OpenIDConnect
 from flask_rabmq import RabbitMQ
 from flask_restful import Api
 from flask_swagger_ui import get_swaggerui_blueprint
+from authorization import JWTValidator, MyResourceProtector
 
 SWAGGER_URL = "/api/docs"  # URL for exposing Swagger UI (without trailing '/')
 API_URL = (
@@ -26,13 +26,6 @@ app.config.update(
         "SECRET_KEY": "SomethingNotEntirelySecret",
         "TESTING": True,
         "DEBUG": True,
-        "OIDC_CLIENT_SECRETS": "client_secrets.json",
-        "OIDC_ID_TOKEN_COOKIE_SECURE": False,
-        "OIDC_REQUIRE_VERIFIED_EMAIL": False,
-        "OIDC_USER_INFO_ENABLED": True,
-        "OIDC_OPENID_REALM": os.getenv("OIDC_OPENID_REALM"),
-        "OIDC_SCOPES": ["openid", "email", "profile"],
-        "OIDC_INTROSPECTION_AUTH_METHOD": "client_secret_post",
     }
 )
 
@@ -48,7 +41,10 @@ ramq = RabbitMQ()
 ramq.init_app(app=app)
 ramq.run_consumer()
 
-oidc = OpenIDConnect(app)
+require_oauth = MyResourceProtector(os.getenv("STATIC_JWT", False))
+validator = JWTValidator(logger, os.getenv("STATIC_JWT", False), os.getenv("STATIC_ISSUER", False),
+                         os.getenv("STATIC_PUBLIC_KEY", False))
+require_oauth.register_token_validator(validator)
 
 app.register_blueprint(swaggerui_blueprint)
 
