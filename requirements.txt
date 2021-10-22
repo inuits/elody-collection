@@ -5,7 +5,6 @@ certifi==2020.12.5
 chardet==4.0.0
 click==7.1.2
 DateTime==4.3
-Authlib==1.0.0b1
 flask-rabmq==0.0.21
 Flask-RESTful==0.3.8
 flask-swagger-ui==3.36.0
@@ -15,6 +14,7 @@ gunicorn==20.0.4
 httplib2==0.18.1
 idna==2.10
 iniconfig==1.1.1
+inuits-jwt-auth==0.0.3
 itsdangerous==1.1.0
 Jinja2==2.11.2
 job_helper==0.1.7
