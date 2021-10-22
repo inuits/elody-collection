@@ -5,7 +5,7 @@ from flask import Flask
 from flask_rabmq import RabbitMQ
 from flask_restful import Api
 from flask_swagger_ui import get_swaggerui_blueprint
-from authorization import JWTValidator, MyResourceProtector
+from inuits_jwt_auth.authorization import JWTValidator, MyResourceProtector
 
 SWAGGER_URL = "/api/docs"  # URL for exposing Swagger UI (without trailing '/')
 API_URL = (
