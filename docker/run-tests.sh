@@ -1,5 +1,6 @@
 #!/bin/sh
 
+export PATH=${PATH}:/app/.local/bin
 export DB_ENGINE=$1
 export REQUIRE_TOKEN=0
 export STORAGE_API_URL=https://dams-storage-api.inuits.io
