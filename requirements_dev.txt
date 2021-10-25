@@ -1,7 +1,6 @@
 black==21.9b0
 coverage==5.5
 mypy-extensions==0.4.3
-packaging==21.0
 pathspec==0.9.0
 platformdirs==2.4.0
 pluggy==1.0.0
