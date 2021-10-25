@@ -36,6 +36,7 @@ class Entity(BaseResource):
         else:
             content["user"] = "default_uploader"
         entity = self.storage.save_item_to_collection("entities", content)
+        self._index_entity(entity["_key"] if "_key" in entity else entity["_id"])
         return entity, 201
 
     @app.require_oauth()
@@ -82,6 +83,7 @@ class EntityDetail(BaseResource):
         content = self.get_request_body()
         self.abort_if_not_valid_json("Entity", content, entity_schema)
         entity = self.storage.update_item_from_collection("entities", id, content)
+        self._index_entity(id)
         return entity, 201
 
     @app.require_oauth()
@@ -89,6 +91,7 @@ class EntityDetail(BaseResource):
         self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
         entity = self.storage.patch_item_from_collection("entities", id, content)
+        self._index_entity(id)
         return entity, 201
 
     @app.require_oauth()

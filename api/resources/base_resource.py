@@ -1,5 +1,9 @@
+import app
+import json
 import os
+import uuid
 
+from cloudevents.http import CloudEvent, to_json
 from flask import request
 from flask_restful import Resource, abort, reqparse
 from storage.storagemanager import StorageManager
@@ -19,6 +23,7 @@ class BaseResource(Resource):
         self.cantaloupe_api_url = os.getenv(
             "CANTALOUPE_API_URL", "http://localhost:8182"
         )
+        self.elastic_url = os.getenv("ELASTIC_URL", "es")
         self.upload_source = os.getenv("UPLOAD_SOURCE", "/mnt/media-import")
         self.req = reqparse.RequestParser()
 
@@ -67,3 +72,20 @@ class BaseResource(Resource):
                     self.cantaloupe_api_url + mediafile["thumbnail_file_location"]
                 )
         return mediafiles
+
+    def _index_entity(self, entity_id):
+        message_id = str(uuid.uuid4())
+        attributes = {
+            "id": message_id,
+            "message_id": message_id,
+            "type": "dams.index_start",
+            "source": "dams"
+        }
+        data = {
+            "elastic_url": self.elastic_url,
+            "entities_url": "{}/entities/{}".format(self.collection_api_url, entity_id)
+        }
+        event = CloudEvent(attributes, data)
+        message = json.loads(to_json(event))
+        app.ramq.send(message, routing_key="dams.index_start", exchange_name="dams")
+        return message
