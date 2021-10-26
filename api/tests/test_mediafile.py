@@ -1,9 +1,11 @@
 import json
 
 from tests.base_case import BaseCase
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 
+@patch("resources.base_resource.BaseResource._index_entity", new=Mock())
+@patch("resources.entity.job_helper", new=Mock())
 class MediafileTest(BaseCase):
     def test_successful_mediafile_create(self):
         response = self.create_mediafile()
@@ -48,8 +50,7 @@ class MediafileTest(BaseCase):
         self.valid_mediafile(response.json)
         self.assertEqual(200, response.status_code)
 
-    @patch("resources.entity.job_helper")
-    def test_successful_raw_mediafile_get(self, fake_job_helper):
+    def test_successful_raw_mediafile_get(self):
         _id = self.create_entity_get_id()
 
         self.app.post(

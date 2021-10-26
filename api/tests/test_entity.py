@@ -2,9 +2,11 @@ import json
 import os
 
 from tests.base_case import BaseCase
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 
 
+@patch("resources.base_resource.BaseResource._index_entity", new=Mock())
+@patch("resources.entity.job_helper", new=Mock())
 class EntityTest(BaseCase):
     def test_successful_entity_create(self):
         response = self.create_entity()
@@ -82,8 +84,7 @@ class EntityTest(BaseCase):
 
         self.check_invalid_entity(response)
 
-    @patch("resources.entity.job_helper")
-    def test_successful_entity_mediafile_create(self, fake_job_helper):
+    def test_successful_entity_mediafile_create(self):
         _id = self.create_entity_get_id()
 
         response = self.app.post(
@@ -125,8 +126,7 @@ class EntityTest(BaseCase):
                 mediafile["thumbnail_file_location"].endswith("default.jpg")
             )
 
-    @patch("resources.entity.job_helper")
-    def test_successful_entity_mediafile_create_with_metadata(self, fake_job_helper):
+    def test_successful_entity_mediafile_create_with_metadata(self):
         _id = self.create_entity_get_id()
 
         response = self.app.post(
