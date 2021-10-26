@@ -12,20 +12,6 @@ job_helper = JobHelper(
 )
 
 
-def _set_entity_mediafile_and_thumbnail(entity, storage):
-    entity_id = entity["_key"] if "_key" in entity else entity["_id"]
-    mediafiles = storage.get_collection_item_mediafiles("entities", entity_id)
-    for mediafile in mediafiles:
-        if "is_primary" in mediafile and mediafile["is_primary"] is True:
-            entity["primary_mediafile_location"] = mediafile["original_file_location"]
-        if (
-                "is_primary_thumbnail" in mediafile
-                and mediafile["is_primary_thumbnail"] is True
-        ):
-            entity["primary_thumbnail_location"] = mediafile["thumbnail_file_location"]
-    return entity
-
-
 class Entity(BaseResource):
     @app.require_oauth()
     def post(self):
@@ -36,7 +22,7 @@ class Entity(BaseResource):
         else:
             content["user"] = "default_uploader"
         entity = self.storage.save_item_to_collection("entities", content)
-        self._index_entity(entity["_key"] if "_key" in entity else entity["_id"])
+        self._index_entity(self._get_raw_id(entity))
         return entity, 201
 
     @app.require_oauth()
@@ -65,7 +51,7 @@ class Entity(BaseResource):
         updated_entities = list()
         for entity in entities["results"]:
             updated_entities.append(
-                _set_entity_mediafile_and_thumbnail(entity, self.storage)
+                self._set_entity_mediafile_and_thumbnail(entity)
             )
         entities["results"] = updated_entities
         return entities
@@ -75,7 +61,7 @@ class EntityDetail(BaseResource):
     @app.require_oauth()
     def get(self, id):
         entity = self.abort_if_item_doesnt_exist("entities", id)
-        return _set_entity_mediafile_and_thumbnail(entity, self.storage)
+        return self._set_entity_mediafile_and_thumbnail(entity)
 
     @app.require_oauth()
     def put(self, id):
@@ -210,14 +196,12 @@ class EntityMediafilesCreate(BaseResource):
         if "metadata" in content:
             mediafile["metadata"] = content["metadata"]
         mediafile = self.storage.save_item_to_collection("mediafiles", mediafile)
-        mediafile_id = mediafile["_id"]
-        mediafile_raw_id = mediafile["_key"] if "_key" in mediafile else mediafile_id
         upload_location = "{}/upload/{}?url={}/mediafiles/{}&action=postMD5".format(
-            self.storage_api_url, filename, self.collection_api_url, mediafile_raw_id
+            self.storage_api_url, filename, self.collection_api_url, self._get_raw_id(mediafile)
         )
         job_helper.progress_job(job)
         try:
-            self.storage.add_mediafile_to_collection_item("entities", id, mediafile_id)
+            self.storage.add_mediafile_to_collection_item("entities", id, mediafile["_id"])
             job_helper.finish_job(job)
         except Exception as ex:
             job_helper.fail_job(job, str(ex))

@@ -89,3 +89,18 @@ class BaseResource(Resource):
         message = json.loads(to_json(event))
         app.ramq.send(message, routing_key="dams.index_start", exchange_name="dams")
         return message
+
+    def _get_raw_id(self, item):
+        return item["_key"] if "_key" in item else item["_id"]
+
+    def _set_entity_mediafile_and_thumbnail(self, entity):
+        mediafiles = self.storage.get_collection_item_mediafiles("entities", self._get_raw_id(entity))
+        for mediafile in mediafiles:
+            if "is_primary" in mediafile and mediafile["is_primary"] is True:
+                entity["primary_mediafile_location"] = mediafile["original_file_location"]
+            if (
+                    "is_primary_thumbnail" in mediafile
+                    and mediafile["is_primary_thumbnail"] is True
+            ):
+                entity["primary_thumbnail_location"] = mediafile["thumbnail_file_location"]
+        return entity
