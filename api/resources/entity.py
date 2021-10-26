@@ -1,8 +1,9 @@
+import sys
 import app
 import os
-
-from flask import g, request, after_this_request
+from flask import request, after_this_request
 from flask_restful import abort
+from inuits_jwt_auth.authorization import current_token
 from job_helper.job_helper import JobHelper
 from resources.base_resource import BaseResource
 from validator import entity_schema, mediafile_schema
@@ -31,8 +32,8 @@ class Entity(BaseResource):
     def post(self):
         content = self.get_request_body()
         self.abort_if_not_valid_json("Entity", content, entity_schema)
-        if hasattr(g, "oidc_token_info"):
-            content["user"] = g.oidc_token_info["email"]
+        if "Email" in current_token:
+            content["user"] = current_token["Email"]
         else:
             content["user"] = "default_uploader"
         entity = self.storage.save_item_to_collection("entities", content)
