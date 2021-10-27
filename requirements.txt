@@ -1,6 +1,7 @@
 amqp==5.0.6
 aniso8601==8.1.0
 attrs==21.2.0
+Authlib==1.0.0b1
 certifi==2020.12.5
 cffi==1.14.5
 chardet==4.0.0
