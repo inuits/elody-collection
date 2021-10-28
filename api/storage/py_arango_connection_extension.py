@@ -34,10 +34,12 @@ class PyArangoConnection(Connection, ABC):
 
     def updateDocumentEdge(self, db_name, edge_name, data):
         data.pop("_rev", None)
-        url = "{}/_db/{}/_api/document/{}?returnNew=true".format(self.getEndpointURL(), db_name, edge_name)
+        url = "{}/_db/{}/_api/document/{}?returnNew=true".format(
+            self.getEndpointURL(), db_name, edge_name
+        )
         datalist = list()
         datalist.append(data)
-        datalist =json.dumps(datalist, default=str)
+        datalist = json.dumps(datalist, default=str)
         r = self.session.put(url, data=datalist)
         data = r.json()
         if r.status_code == 202 and "error" not in data:

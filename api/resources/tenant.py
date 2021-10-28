@@ -5,7 +5,6 @@ from validator import tenant_schema
 
 
 class Tenant(BaseResource):
-
     def post(self):
         content = self.get_request_body()
         self.abort_if_not_valid_json("Tenant", content, tenant_schema)

@@ -42,8 +42,13 @@ ramq.init_app(app=app)
 ramq.run_consumer()
 
 require_oauth = MyResourceProtector(os.getenv("STATIC_JWT", False))
-validator = JWTValidator(logger, os.getenv("STATIC_JWT", False), os.getenv("STATIC_ISSUER", False),
-                         os.getenv("STATIC_PUBLIC_KEY", False), os.getenv("REALMS", "").split(","))
+validator = JWTValidator(
+    logger,
+    os.getenv("STATIC_JWT", False),
+    os.getenv("STATIC_ISSUER", False),
+    os.getenv("STATIC_PUBLIC_KEY", False),
+    os.getenv("REALMS", "").split(","),
+)
 require_oauth.register_token_validator(validator)
 
 app.register_blueprint(swaggerui_blueprint)
@@ -75,8 +80,14 @@ from resources.tenant import Tenant, TenantDetail
 api.add_resource(Entity, "/entities")
 api.add_resource(EntityComponents, "/entities/<string:id>/components")
 api.add_resource(EntityDetail, "/entities/<string:id>")
-api.add_resource(EntitySetPrimaryMediafile, "/entities/<string:id>/set_primary_mediafile/<string:mediafile_id>")
-api.add_resource(EntitySetPrimaryThumbnail, "/entities/<string:id>/set_primary_thumbnail/<string:mediafile_id>")
+api.add_resource(
+    EntitySetPrimaryMediafile,
+    "/entities/<string:id>/set_primary_mediafile/<string:mediafile_id>",
+)
+api.add_resource(
+    EntitySetPrimaryThumbnail,
+    "/entities/<string:id>/set_primary_thumbnail/<string:mediafile_id>",
+)
 
 api.add_resource(EntityMediafiles, "/entities/<string:id>/mediafiles")
 api.add_resource(EntityMediafilesCreate, "/entities/<string:id>/mediafiles/create")

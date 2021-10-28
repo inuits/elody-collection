@@ -79,11 +79,11 @@ class BaseResource(Resource):
             "id": message_id,
             "message_id": message_id,
             "type": "dams.index_start",
-            "source": "dams"
+            "source": "dams",
         }
         data = {
             "elastic_url": self.elastic_url,
-            "entities_url": "{}/entities/{}".format(self.collection_api_url, entity_id)
+            "entities_url": "{}/entities/{}".format(self.collection_api_url, entity_id),
         }
         event = CloudEvent(attributes, data)
         message = json.loads(to_json(event))
@@ -94,13 +94,19 @@ class BaseResource(Resource):
         return item["_key"] if "_key" in item else item["_id"]
 
     def _set_entity_mediafile_and_thumbnail(self, entity):
-        mediafiles = self.storage.get_collection_item_mediafiles("entities", self._get_raw_id(entity))
+        mediafiles = self.storage.get_collection_item_mediafiles(
+            "entities", self._get_raw_id(entity)
+        )
         for mediafile in mediafiles:
             if "is_primary" in mediafile and mediafile["is_primary"] is True:
-                entity["primary_mediafile_location"] = mediafile["original_file_location"]
+                entity["primary_mediafile_location"] = mediafile[
+                    "original_file_location"
+                ]
             if (
-                    "is_primary_thumbnail" in mediafile
-                    and mediafile["is_primary_thumbnail"] is True
+                "is_primary_thumbnail" in mediafile
+                and mediafile["is_primary_thumbnail"] is True
             ):
-                entity["primary_thumbnail_location"] = mediafile["thumbnail_file_location"]
+                entity["primary_thumbnail_location"] = mediafile[
+                    "thumbnail_file_location"
+                ]
         return entity

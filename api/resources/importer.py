@@ -20,13 +20,13 @@ class ImporterStart(BaseResource):
             "id": message_id,
             "message_id": message_id,
             "type": "dams.import_start",
-            "source": "dams"
+            "source": "dams",
         }
         data = {
-                "upload_source": self.upload_source,
-                "upload_folder": upload_folder,
-                "collection_api_url": self.collection_api_url,
-                "storage_api_url": self.storage_api_url,
+            "upload_source": self.upload_source,
+            "upload_folder": upload_folder,
+            "collection_api_url": self.collection_api_url,
+            "storage_api_url": self.storage_api_url,
         }
         event = CloudEvent(attributes, data)
         message = json.loads(to_json(event))

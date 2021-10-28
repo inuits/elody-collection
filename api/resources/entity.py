@@ -80,7 +80,6 @@ class EntityDetail(BaseResource):
 
 
 class EntitySetPrimaryMediafile(BaseResource):
-
     @app.require_oauth()
     def put(self, id, mediafile_id):
         self.abort_if_item_doesnt_exist("entities", id)
@@ -89,11 +88,12 @@ class EntitySetPrimaryMediafile(BaseResource):
 
 
 class EntitySetPrimaryThumbnail(BaseResource):
-
     @app.require_oauth()
     def put(self, id, mediafile_id):
         self.abort_if_item_doesnt_exist("entities", id)
-        self.storage.set_primary_mediafile_for_entity("entities", id, mediafile_id, thumbnail=True)
+        self.storage.set_primary_mediafile_for_entity(
+            "entities", id, mediafile_id, thumbnail=True
+        )
         return 204
 
 
@@ -189,11 +189,16 @@ class EntityMediafilesCreate(BaseResource):
             mediafile["metadata"] = content["metadata"]
         mediafile = self.storage.save_item_to_collection("mediafiles", mediafile)
         upload_location = "{}/upload/{}?url={}/mediafiles/{}&action=postMD5".format(
-            self.storage_api_url, filename, self.collection_api_url, self._get_raw_id(mediafile)
+            self.storage_api_url,
+            filename,
+            self.collection_api_url,
+            self._get_raw_id(mediafile),
         )
         job_helper.progress_job(job)
         try:
-            self.storage.add_mediafile_to_collection_item("entities", id, mediafile["_id"])
+            self.storage.add_mediafile_to_collection_item(
+                "entities", id, mediafile["_id"]
+            )
             job_helper.finish_job(job)
         except Exception as ex:
             job_helper.fail_job(job, str(ex))

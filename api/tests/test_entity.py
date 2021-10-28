@@ -623,7 +623,9 @@ class EntityTest(BaseCase):
         self.assertEqual(200, response.status_code)
         self.assertEqual(list, type(response.json))
         self.assertEqual(1, len(response.json))
-        self.assertEqual([{"key": entities[0]["_id"], "type": "authored"}], response.json)
+        self.assertEqual(
+            [{"key": entities[0]["_id"], "type": "authored"}], response.json
+        )
 
         response = self.app.get(
             "/entities/{}/relations".format(self._get_item_id(entities[2])),
@@ -632,7 +634,9 @@ class EntityTest(BaseCase):
         self.assertEqual(200, response.status_code)
         self.assertEqual(list, type(response.json))
         self.assertEqual(1, len(response.json))
-        self.assertEqual([{"key": entities[0]["_id"], "type": "contains"}], response.json)
+        self.assertEqual(
+            [{"key": entities[0]["_id"], "type": "contains"}], response.json
+        )
 
     def test_update_entity_relations(self):
         entities = []
@@ -679,7 +683,9 @@ class EntityTest(BaseCase):
         self.assertEqual(200, response.status_code)
         self.assertEqual(list, type(response.json))
         self.assertEqual(1, len(response.json))
-        self.assertEqual([{"key": entities[0]["_id"], "type": "authored"}], response.json)
+        self.assertEqual(
+            [{"key": entities[0]["_id"], "type": "authored"}], response.json
+        )
 
         response = self.app.get(
             "/entities/{}/relations".format(self._get_item_id(entities[1])),
@@ -739,7 +745,9 @@ class EntityTest(BaseCase):
         self.assertEqual(200, response.status_code)
         self.assertEqual(list, type(response.json))
         self.assertEqual(1, len(response.json))
-        self.assertEqual([{"key": entities[0]["_id"], "type": "contains"}], response.json)
+        self.assertEqual(
+            [{"key": entities[0]["_id"], "type": "contains"}], response.json
+        )
 
         response = self.app.get(
             "/entities/{}/relations".format(self._get_item_id(entities[1])),
@@ -748,7 +756,9 @@ class EntityTest(BaseCase):
         self.assertEqual(200, response.status_code)
         self.assertEqual(list, type(response.json))
         self.assertEqual(1, len(response.json))
-        self.assertEqual([{"key": entities[0]["_id"], "type": "authored"}], response.json)
+        self.assertEqual(
+            [{"key": entities[0]["_id"], "type": "authored"}], response.json
+        )
 
     def test_patch_entity_relations_overwrite(self):
         entities = []
@@ -794,7 +804,9 @@ class EntityTest(BaseCase):
         self.assertEqual(200, response.status_code)
         self.assertEqual(list, type(response.json))
         self.assertEqual(1, len(response.json))
-        self.assertEqual([{"key": entities[0]["_id"], "type": "authored"}], response.json)
+        self.assertEqual(
+            [{"key": entities[0]["_id"], "type": "authored"}], response.json
+        )
 
         response = self.app.get(
             "/entities/{}/relations".format(self._get_item_id(entities[2])),
@@ -803,7 +815,9 @@ class EntityTest(BaseCase):
         self.assertEqual(200, response.status_code)
         self.assertEqual(list, type(response.json))
         self.assertEqual(1, len(response.json))
-        self.assertEqual([{"key": entities[0]["_id"], "type": "contains"}], response.json)
+        self.assertEqual(
+            [{"key": entities[0]["_id"], "type": "contains"}], response.json
+        )
 
     def test_get_entities_from_collection_by_type(self):
         entities = []
