@@ -34,10 +34,8 @@ class Entity(BaseResource):
         ids = request.args.get("ids")
         if ids:
             ids = ids.split(",")
-            return self.storage.get_items_from_collection_by_ids("entities", ids)
-        entities = self.storage.get_items_from_collection(
-            "entities", skip, limit, item_type
-        )
+            return self.storage.get_entities(skip, limit, ids=ids)
+        entities = self.storage.get_entities(skip, limit, item_type)
         count = entities["count"]
         entities["limit"] = limit
         if skip + limit < count:
@@ -48,12 +46,6 @@ class Entity(BaseResource):
             entities["previous"] = "/{}?{}skip={}&limit={}".format(
                 "entities", type_var, max(0, skip - limit), limit
             )
-        updated_entities = list()
-        for entity in entities["results"]:
-            updated_entities.append(
-                self._set_entity_mediafile_and_thumbnail(entity)
-            )
-        entities["results"] = updated_entities
         return entities
 
 
