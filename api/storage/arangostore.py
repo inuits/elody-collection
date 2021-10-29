@@ -1,8 +1,9 @@
+import logging
 import os
 import uuid
 
 from .py_arango_connection_extension import PyArangoConnection as Connection
-from pyArango.theExceptions import DocumentNotFoundError
+from pyArango.theExceptions import DocumentNotFoundError, CreationError
 
 
 class ArangoStorageManager:
@@ -373,8 +374,7 @@ FOR c IN @@collection
         return self.db.AQLQuery(aql, rawResults=True, bindVars=bind)
 
     def _create_database_if_not_exists(self, arango_db_name):
-        if not self.conn.hasDatabase(arango_db_name):
-            self.conn.createDatabase(arango_db_name)
+        try:
             for collection in ["entities", "tenants", "jobs", "mediafiles"]:
                 self.conn.createCollection(collection, arango_db_name)
             for edge in [
@@ -440,4 +440,7 @@ FOR c IN @@collection
                     "orphanCollections": [],
                 },
             )
+        except CreationError:
+            return self.conn[arango_db_name]
         return self.conn[arango_db_name]
+
