@@ -374,18 +374,26 @@ FOR c IN @@collection
         return self.db.AQLQuery(aql, rawResults=True, bindVars=bind)
 
     def _create_database_if_not_exists(self, arango_db_name):
-        try:
-            for collection in ["entities", "tenants", "jobs", "mediafiles"]:
+        if not self.conn.hasDatabase(arango_db_name):
+            self.conn.createDatabase(arango_db_name)
+        for collection in ["entities", "tenants", "jobs", "mediafiles"]:
+            try:
                 self.conn.createCollection(collection, arango_db_name)
-            for edge in [
-                "authoredBy",
-                "contains",
-                "isIn",
-                "authored",
-                "components",
-                "parent",
-            ]:
+            except CreationError:
+                continue
+        for edge in [
+            "authoredBy",
+            "contains",
+            "isIn",
+            "authored",
+            "components",
+            "parent",
+        ]:
+            try:
                 self.conn.createEdge(edge, arango_db_name)
+            except CreationError:
+                continue
+        try:
             self.conn.createGraph(
                 self.default_graph_name,
                 arango_db_name,
@@ -443,4 +451,3 @@ FOR c IN @@collection
         except CreationError:
             return self.conn[arango_db_name]
         return self.conn[arango_db_name]
-
