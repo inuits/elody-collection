@@ -6,29 +6,42 @@ from copy import deepcopy
 class MemoryStorageManager:
     collections = {"entities": {}, "mediafiles": {}, "tenants": {}, "jobs": {}}
 
-    def get_items_from_collection(self, collection, skip=0, limit=20, item_type=None):
+    def get_entities(self, skip=0, limit=20, item_type=None, ids=None):
         items = dict()
+        items["results"] = list(self.collections["entities"].values())
+        if ids:
+            items["results"] = [
+                self.collections["entities"].get(id)
+                for id in ids
+                if id in self.collections["entities"]
+            ]
         if item_type:
             items["results"] = list(
-                filter(
-                    lambda elem: elem["type"] == item_type,
-                    self.collections["entities"].values(),
-                )
+                filter(lambda elem: elem["type"] == item_type, items["results"])
             )
-        else:
-            items["results"] = list(self.collections[collection].values())
+        for entity in items["results"]:
+            mediafiles = self.get_collection_item_mediafiles("entities", entity["_id"])
+            for mediafile in mediafiles:
+                if "is_primary" in mediafile and mediafile["is_primary"] is True:
+                    entity["primary_mediafile_location"] = mediafile[
+                        "original_file_location"
+                    ]
+                if (
+                    "is_primary_thumbnail" in mediafile
+                    and mediafile["is_primary_thumbnail"] is True
+                ):
+                    entity["primary_thumbnail_location"] = mediafile[
+                        "thumbnail_file_location"
+                    ]
         items["count"] = len(items["results"])
-        items["results"] = list(items["results"])[skip : skip + limit]
+        items["results"] = items["results"][skip : skip + limit]
         return deepcopy(items)
 
-    def get_items_from_collection_by_ids(self, collection, ids):
+    def get_items_from_collection(self, collection, skip=0, limit=20):
         items = dict()
-        items["results"] = [
-            self.collections[collection].get(id)
-            for id in ids
-            if id in self.collections[collection]
-        ]
-        items["count"] = len(items["results"])
+        results = list(self.collections[collection].values())
+        items["count"] = len(results)
+        items["results"] = results[skip : skip + limit]
         return deepcopy(items)
 
     def get_item_from_collection_by_id(self, collection, obj_id):
