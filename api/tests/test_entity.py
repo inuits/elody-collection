@@ -854,41 +854,6 @@ class EntityTest(BaseCase):
         self.assertEqual(list, type(response.json["results"]))
         self.assertEqual(0, len(response.json["results"]))
 
-    def test_get_entities_from_collection_by_type(self):
-        entities = []
-        for i in range(3):
-            entities.append(self.create_entity().json)
-
-        response = self.app.get(
-            "/entities?type=entity", headers={"Content-Type": "application/json"}
-        )
-        self.assertEqual(200, response.status_code)
-        self.assertEqual(dict, type(response.json))
-        self.assertEqual(list, type(response.json["results"]))
-        self.assertEqual(3, len(response.json["results"]))
-
-        entities[-1]["type"] = "asset"
-        response = self.app.put(
-            "/entities/{}".format(entities[-1]["_id"]),
-            headers={"Content-Type": "application/json"},
-            data=json.dumps(entities[-1]),
-        )
-        self.assertEqual(201, response.status_code)
-
-        response = self.app.get(
-            "/entities?type=asset", headers={"Content-Type": "application/json"}
-        )
-        self.assertEqual(dict, type(response.json))
-        self.assertEqual(list, type(response.json["results"]))
-        self.assertEqual(1, len(response.json["results"]))
-
-        response = self.app.get(
-            "/entities?type=person", headers={"Content-Type": "application/json"}
-        )
-        self.assertEqual(dict, type(response.json))
-        self.assertEqual(list, type(response.json["results"]))
-        self.assertEqual(0, len(response.json["results"]))
-
     def valid_entity(self, entity, identifier_count, metadata_count):
         self.assertEqual(str, type(self._get_item_id(entity)))
         self.assertEqual(str, type(entity["metadata"][0]["value"]))
