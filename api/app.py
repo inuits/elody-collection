@@ -44,7 +44,7 @@ ramq.run_consumer()
 require_oauth = MyResourceProtector(
     os.getenv("STATIC_JWT", False),
     {},
-    True if os.getenv("REQUIRE_TOKEN", True) == ("True" or "true" or True) else False
+    os.getenv("REQUIRE_TOKEN", True) == ("True" or "true" or True),
 )
 validator = JWTValidator(
     logger,
@@ -52,7 +52,7 @@ validator = JWTValidator(
     os.getenv("STATIC_ISSUER", False),
     os.getenv("STATIC_PUBLIC_KEY", False),
     os.getenv("REALMS", "").split(","),
-    True if os.getenv("REQUIRE_TOKEN", True) == ("True" or "true" or True) else False
+    os.getenv("REQUIRE_TOKEN", True) == ("True" or "true" or True),
 )
 require_oauth.register_token_validator(validator)
 
