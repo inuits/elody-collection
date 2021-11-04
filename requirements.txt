@@ -10,7 +10,7 @@ cloudevents==1.2.0
 cryptography==3.4.7
 DateTime==4.3
 deprecation==2.1.0
-flask-rabmq==0.0.22
+flask-rabmq==0.0.21
 Flask-RESTful==0.3.8
 flask-swagger-ui==3.36.0
 Flask==1.1.2
