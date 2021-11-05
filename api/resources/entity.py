@@ -53,7 +53,8 @@ class EntityDetail(BaseResource):
     @app.require_oauth()
     def get(self, id):
         entity = self.abort_if_item_doesnt_exist("entities", id)
-        return self._set_entity_mediafile_and_thumbnail(entity)
+        entity = self._set_entity_mediafile_and_thumbnail(entity)
+        return self._add_relations_to_metadata(entity)
 
     @app.require_oauth()
     def put(self, id):

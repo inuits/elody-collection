@@ -115,3 +115,12 @@ class BaseResource(Resource):
                     "thumbnail_file_location"
                 ]
         return entity
+
+    def _add_relations_to_metadata(self, entity):
+        relations = self.storage.get_collection_item_relations("entities", self._get_raw_id(entity))
+        if relations:
+            if "metadata" in entity:
+                entity["metadata"].append({"relations": relations})
+            else:
+                entity["metadata"] = [{"relations": relations}]
+        return entity
