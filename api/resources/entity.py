@@ -262,7 +262,7 @@ class EntityComponents(BaseResource):
     def post(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
-        self._abort_if_incorrect_type(content)
+        self._abort_if_incorrect_type(content, "components")
         components = self.storage.add_relations_to_collection_item(
             "entities", id, content
         )
@@ -272,7 +272,7 @@ class EntityComponents(BaseResource):
     def put(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
-        self._abort_if_incorrect_type(content)
+        self._abort_if_incorrect_type(content, "components")
         components = self.storage.update_collection_item_relations(
             "entities", id, content
         )
@@ -282,17 +282,11 @@ class EntityComponents(BaseResource):
     def patch(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
-        self._abort_if_incorrect_type(content)
+        self._abort_if_incorrect_type(content, "components")
         components = self.storage.patch_collection_item_relations(
             "entities", id, content
         )
         return components, 201
-
-    @staticmethod
-    def _abort_if_incorrect_type(items):
-        for item in items:
-            if item["type"] != "components":
-                abort(400, message="Invalid relation type: '" + item["type"] + "'")
 
 
 class EntityParent(BaseResource):
@@ -311,7 +305,7 @@ class EntityParent(BaseResource):
     def post(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
-        self._abort_if_incorrect_type(content)
+        self._abort_if_incorrect_type(content, "parent")
         components = self.storage.add_relations_to_collection_item(
             "entities", id, content
         )
@@ -321,7 +315,7 @@ class EntityParent(BaseResource):
     def put(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
-        self._abort_if_incorrect_type(content)
+        self._abort_if_incorrect_type(content, "parent")
         components = self.storage.update_collection_item_relations(
             "entities", id, content
         )
@@ -331,17 +325,11 @@ class EntityParent(BaseResource):
     def patch(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
-        self._abort_if_incorrect_type(content)
+        self._abort_if_incorrect_type(content, "parent")
         components = self.storage.patch_collection_item_relations(
             "entities", id, content
         )
         return components, 201
-
-    @staticmethod
-    def _abort_if_incorrect_type(items):
-        for item in items:
-            if item["type"] != "parent":
-                abort(400, message="Invalid relation type: '" + item["type"] + "'")
 
 
 class EntityTypes(BaseResource):
@@ -360,7 +348,7 @@ class EntityTypes(BaseResource):
     def post(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
-        self._abort_if_incorrect_type(content)
+        self._abort_if_incorrect_type(content, "isTypeOf")
         components = self.storage.add_relations_to_collection_item(
             "entities", id, content
         )
@@ -370,7 +358,7 @@ class EntityTypes(BaseResource):
     def put(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
-        self._abort_if_incorrect_type(content)
+        self._abort_if_incorrect_type(content, "isTypeOf")
         components = self.storage.update_collection_item_relations(
             "entities", id, content
         )
@@ -380,17 +368,11 @@ class EntityTypes(BaseResource):
     def patch(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
-        self._abort_if_incorrect_type(content)
+        self._abort_if_incorrect_type(content, "isTypeOf")
         components = self.storage.patch_collection_item_relations(
             "entities", id, content
         )
         return components, 201
-
-    @staticmethod
-    def _abort_if_incorrect_type(items):
-        for item in items:
-            if item["type"] != "isTypeOf":
-                abort(400, message="Invalid relation type: '" + item["type"] + "'")
 
 
 class EntityUsage(BaseResource):
@@ -409,7 +391,7 @@ class EntityUsage(BaseResource):
     def post(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
-        self._abort_if_incorrect_type(content)
+        self._abort_if_incorrect_type(content, "isUsedIn")
         components = self.storage.add_relations_to_collection_item(
             "entities", id, content
         )
@@ -419,7 +401,7 @@ class EntityUsage(BaseResource):
     def put(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
-        self._abort_if_incorrect_type(content)
+        self._abort_if_incorrect_type(content, "isUsedIn")
         components = self.storage.update_collection_item_relations(
             "entities", id, content
         )
@@ -429,14 +411,8 @@ class EntityUsage(BaseResource):
     def patch(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
-        self._abort_if_incorrect_type(content)
+        self._abort_if_incorrect_type(content, "isUsedIn")
         components = self.storage.patch_collection_item_relations(
             "entities", id, content
         )
         return components, 201
-
-    @staticmethod
-    def _abort_if_incorrect_type(items):
-        for item in items:
-            if item["type"] != "isUsedIn":
-                abort(400, message="Invalid relation type: '" + item["type"] + "'")

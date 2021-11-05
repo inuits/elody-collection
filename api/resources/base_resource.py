@@ -61,6 +61,11 @@ class BaseResource(Resource):
                 ),
             )
 
+    def _abort_if_incorrect_type(self, items, relation_type):
+        for item in items:
+            if item["type"] != relation_type:
+                abort(400, message="Expected relation type '{}'. got '{}'".format(item["type"], relation_type))
+
     def _inject_api_urls(self, mediafiles):
         for mediafile in mediafiles:
             if "original_file_location" in mediafile:
