@@ -30,6 +30,7 @@ class Entity(BaseResource):
         skip = int(request.args.get("skip", 0))
         limit = int(request.args.get("limit", 20))
         item_type = request.args.get("type", None)
+        with_relations = request.args.get("with_relations", None)
         type_var = "type={}&".format(item_type) if item_type else ""
         ids = request.args.get("ids")
         if ids:
@@ -46,6 +47,9 @@ class Entity(BaseResource):
             entities["previous"] = "/{}?{}skip={}&limit={}".format(
                 "entities", type_var, max(0, skip - limit), limit
             )
+        if with_relations:
+            for entity in entities["results"]:
+                self._add_relations_to_metadata(entity)
         return entities
 
 
