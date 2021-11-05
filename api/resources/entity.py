@@ -50,6 +50,7 @@ class Entity(BaseResource):
         if with_relations:
             for entity in entities["results"]:
                 self._add_relations_to_metadata(entity)
+        entities["results"] = self._inject_api_urls_into_entities(entities["results"])
         return entities
 
 
@@ -58,7 +59,8 @@ class EntityDetail(BaseResource):
     def get(self, id):
         entity = self.abort_if_item_doesnt_exist("entities", id)
         entity = self._set_entity_mediafile_and_thumbnail(entity)
-        return self._add_relations_to_metadata(entity)
+        entity = self._add_relations_to_metadata(entity)
+        return self._inject_api_urls_into_entities([entity])[0]
 
     @app.require_oauth()
     def put(self, id):
@@ -157,7 +159,7 @@ class EntityMediafiles(BaseResource):
             response.headers["Access-Control-Allow-Origin"] = "*"
             return response
 
-        return self._inject_api_urls(mediafiles)
+        return self._inject_api_urls_into_mediafiles(mediafiles)
 
     @app.require_oauth()
     def post(self, id):

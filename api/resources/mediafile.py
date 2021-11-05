@@ -28,7 +28,9 @@ class Mediafile(BaseResource):
             mediafiles["previous"] = "/{}?skip={}&limit={}".format(
                 "mediafiles", max(0, skip - limit), limit
             )
-        mediafiles["results"] = self._inject_api_urls(mediafiles["results"])
+        mediafiles["results"] = self._inject_api_urls_into_mediafiles(
+            mediafiles["results"]
+        )
         return mediafiles
 
 
@@ -38,7 +40,7 @@ class MediafileDetail(BaseResource):
         mediafile = self.abort_if_item_doesnt_exist("mediafiles", id)
         if request.args.get("raw", None):
             return mediafile
-        return self._inject_api_urls([mediafile])[0]
+        return self._inject_api_urls_into_mediafiles([mediafile])[0]
 
     @app.require_oauth()
     def patch(self, id):

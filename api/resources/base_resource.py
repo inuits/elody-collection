@@ -64,9 +64,26 @@ class BaseResource(Resource):
     def _abort_if_incorrect_type(self, items, relation_type):
         for item in items:
             if item["type"] != relation_type:
-                abort(400, message="Expected relation type '{}'. got '{}'".format(item["type"], relation_type))
+                abort(
+                    400,
+                    message="Expected relation type '{}'. got '{}'".format(
+                        item["type"], relation_type
+                    ),
+                )
 
-    def _inject_api_urls(self, mediafiles):
+    def _inject_api_urls_into_entities(self, entities):
+        for entity in entities:
+            if "primary_mediafile_location" in entity:
+                entity["primary_mediafile_location"] = (
+                    self.storage_api_url + entity["primary_mediafile_location"]
+                )
+            if "primary_thumbnail_location" in entity:
+                entity["primary_thumbnail_location"] = (
+                    self.cantaloupe_api_url + entity["primary_thumbnail_location"]
+                )
+        return entities
+
+    def _inject_api_urls_into_mediafiles(self, mediafiles):
         for mediafile in mediafiles:
             if "original_file_location" in mediafile:
                 mediafile["original_file_location"] = (
@@ -117,7 +134,9 @@ class BaseResource(Resource):
         return entity
 
     def _add_relations_to_metadata(self, entity):
-        relations = self.storage.get_collection_item_relations("entities", self._get_raw_id(entity))
+        relations = self.storage.get_collection_item_relations(
+            "entities", self._get_raw_id(entity)
+        )
         if relations:
             if "metadata" in entity:
                 entity["metadata"].append({"relations": relations})
