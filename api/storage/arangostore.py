@@ -41,13 +41,14 @@ class ArangoStorageManager:
 FOR c IN entities
     {}
     {}
+""".format(ids_filter, type_filter)
+        aql2 = """
     LET new_metadata = (
         FOR item,edge IN OUTBOUND c GRAPH 'assets'
             FILTER edge._id NOT LIKE 'hasMediafile%'
-            RETURN edge
+            LET relation = {'key': edge._to, 'type': FIRST(SPLIT(edge._id, '/'))}
+            RETURN HAS(edge, 'label') ? MERGE(relation, {'label': edge.label.`@value`}) : relation
     )
-""".format(ids_filter, type_filter)
-        aql2 = """
     LET all_metadata = {'metadata': APPEND(c.metadata, new_metadata)}
     LET primary_items = (
         FOR item, edge IN OUTBOUND c hasMediafile
