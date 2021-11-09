@@ -114,6 +114,7 @@ class EntityMetadata(BaseResource):
         metadata = self.storage.add_sub_item_to_collection_item(
             "entities", id, "metadata", content
         )
+        self._index_entity(id)
         return metadata, 201
 
     @app.require_oauth()
@@ -123,6 +124,7 @@ class EntityMetadata(BaseResource):
         metadata = self.storage.update_collection_item_sub_item(
             "entities", id, "metadata", content
         )
+        self._index_entity(id)
         return metadata, 201
 
 
@@ -141,6 +143,7 @@ class EntityMetadataKey(BaseResource):
         self.storage.delete_collection_item_sub_item_key(
             "entities", id, "metadata", key
         )
+        self._index_entity(id)
         return "", 204
 
 
@@ -228,6 +231,7 @@ class EntityRelations(BaseResource):
         relations = self.storage.add_relations_to_collection_item(
             "entities", id, content
         )
+        self._index_entity(id)
         return relations, 201
 
     @app.require_oauth()
@@ -237,6 +241,7 @@ class EntityRelations(BaseResource):
         relations = self.storage.update_collection_item_relations(
             "entities", id, content
         )
+        self._index_entity(id)
         return relations, 201
 
     @app.require_oauth()
@@ -246,6 +251,7 @@ class EntityRelations(BaseResource):
         relations = self.storage.patch_collection_item_relations(
             "entities", id, content
         )
+        self._index_entity(id)
         return relations, 201
 
 
@@ -269,6 +275,7 @@ class EntityComponents(BaseResource):
         components = self.storage.add_relations_to_collection_item(
             "entities", id, content
         )
+        self._index_entity(id)
         return components, 201
 
     @app.require_oauth()
@@ -279,6 +286,7 @@ class EntityComponents(BaseResource):
         components = self.storage.update_collection_item_relations(
             "entities", id, content
         )
+        self._index_entity(id)
         return components, 201
 
     @app.require_oauth()
@@ -289,6 +297,7 @@ class EntityComponents(BaseResource):
         components = self.storage.patch_collection_item_relations(
             "entities", id, content
         )
+        self._index_entity(id)
         return components, 201
 
 
@@ -312,6 +321,7 @@ class EntityParent(BaseResource):
         components = self.storage.add_relations_to_collection_item(
             "entities", id, content
         )
+        self._index_entity(id)
         return components, 201
 
     @app.require_oauth()
@@ -322,6 +332,7 @@ class EntityParent(BaseResource):
         components = self.storage.update_collection_item_relations(
             "entities", id, content
         )
+        self._index_entity(id)
         return components, 201
 
     @app.require_oauth()
@@ -332,6 +343,7 @@ class EntityParent(BaseResource):
         components = self.storage.patch_collection_item_relations(
             "entities", id, content
         )
+        self._index_entity(id)
         return components, 201
 
 
@@ -355,6 +367,7 @@ class EntityTypes(BaseResource):
         components = self.storage.add_relations_to_collection_item(
             "entities", id, content
         )
+        self._index_entity(id)
         return components, 201
 
     @app.require_oauth()
@@ -365,6 +378,7 @@ class EntityTypes(BaseResource):
         components = self.storage.update_collection_item_relations(
             "entities", id, content
         )
+        self._index_entity(id)
         return components, 201
 
     @app.require_oauth()
@@ -375,6 +389,7 @@ class EntityTypes(BaseResource):
         components = self.storage.patch_collection_item_relations(
             "entities", id, content
         )
+        self._index_entity(id)
         return components, 201
 
 
@@ -398,6 +413,7 @@ class EntityUsage(BaseResource):
         components = self.storage.add_relations_to_collection_item(
             "entities", id, content
         )
+        self._index_entity(id)
         return components, 201
 
     @app.require_oauth()
@@ -408,6 +424,7 @@ class EntityUsage(BaseResource):
         components = self.storage.update_collection_item_relations(
             "entities", id, content
         )
+        self._index_entity(id)
         return components, 201
 
     @app.require_oauth()
@@ -418,4 +435,5 @@ class EntityUsage(BaseResource):
         components = self.storage.patch_collection_item_relations(
             "entities", id, content
         )
+        self._index_entity(id)
         return components, 201
