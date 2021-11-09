@@ -38,45 +38,35 @@ class ArangoStorageManager:
         ids_filter = "FILTER c._key IN @ids" if ids else ""
         type_filter = 'FILTER c.type == "{}"'.format(item_type) if item_type else ""
         aql = """
-LET docs_with_edges = (
-    FOR c in entities
-        {}
-        FILTER c.type == "asset"
+FOR c IN entities
+    {}
+    {}
+    LET new_metadata = (
+        FOR item,edge IN OUTBOUND c GRAPH 'assets'
+            FILTER edge._id NOT LIKE 'hasMediafile%'
+            RETURN edge
+    )
+""".format(ids_filter, type_filter)
+        aql2 = """
+    LET all_metadata = {'metadata': APPEND(c.metadata, new_metadata)}
+    LET primary_items = (
         FOR item, edge IN OUTBOUND c hasMediafile
             FILTER edge.is_primary == true || edge.is_primary_thumbnail == true
-""".format(
-            ids_filter
-        )
-        aql2 = """
-            LET primary = edge.is_primary != true ? null : MERGE(c, {primary_mediafile_location: item.original_file_location})
-            LET primary_thumb = edge.is_primary_thumbnail != true ? null : MERGE(c, {primary_thumbnail_location: item.thumbnail_file_location})
+            LET primary = edge.is_primary != true ? null : {primary_mediafile_location: item.original_file_location}
+            LET primary_thumb = edge.is_primary_thumbnail != true ? null : {primary_thumbnail_location: item.thumbnail_file_location}
             RETURN primary != null AND primary_thumb != null ? MERGE(primary, primary_thumb) : (primary ? primary : primary_thumb)
-)
-
-LET docs_with_edges_ids = (
-    FOR c in docs_with_edges
-        RETURN c._id
-)
+    )
+    LET merged_primary_items = COUNT(primary_items) > 1 ? MERGE(FIRST(primary_items), LAST(primary_items)) : FIRST(primary_items)
+    LIMIT @skip, @limit
+    RETURN merged_primary_items == null ? MERGE(c, all_metadata) : MERGE(c, all_metadata, merged_primary_items)
 """
-        aql3 = """
-LET docs_without_edges = (
-    FOR c in entities
-        {}
-        {}
-        FILTER c._id NOT IN docs_with_edges_ids
-        RETURN c
-)
-
-RETURN APPEND(docs_without_edges, docs_with_edges)
-""".format(
-            ids_filter, type_filter
-        )
-        bind = {"ids": ids} if ids else {}
-        results = self.db.AQLQuery(aql + aql2 + aql3, rawResults=True, bindVars=bind)
+        bind = {"skip": skip, "limit": limit}
+        if ids:
+            bind["ids"] = ids
+        results = self.db.AQLQuery(aql + aql2, rawResults=True, bindVars=bind, fullCount=True)
         items = dict()
-        results_list = list(results)[0]
-        items["count"] = len(results_list)
-        items["results"] = results_list[skip : skip + limit]
+        items["count"] = results.extra["stats"]["fullCount"]
+        items["results"] = list(results)
         return items
 
     def get_items_from_collection(self, collection, skip=0, limit=20):
