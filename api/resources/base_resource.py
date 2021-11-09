@@ -139,7 +139,7 @@ class BaseResource(Resource):
         )
         if relations:
             if "metadata" in entity:
-                entity["metadata"].append({"relations": relations})
+                entity["metadata"] = entity["metadata"] + relations
             else:
-                entity["metadata"] = [{"relations": relations}]
+                entity["metadata"] = relations
         return entity
