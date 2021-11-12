@@ -194,7 +194,7 @@ class EntityMediafilesCreate(BaseResource):
         if "metadata" in content:
             mediafile["metadata"] = content["metadata"]
         mediafile = self.storage.save_item_to_collection("mediafiles", mediafile)
-        upload_location = "{}/upload/{}?url={}/mediafiles/{}&action=postMD5".format(
+        upload_location = "{}/upload/{}?url={}/mediafiles/{}".format(
             self.storage_api_url,
             filename,
             self.collection_api_url,
