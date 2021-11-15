@@ -7,7 +7,7 @@ from storage.mongostore import MongoStorageManager
 
 class StorageManager:
     def __init__(self):
-        self.storage_engine = os.getenv("DB_ENGINE")
+        self.storage_engine = os.getenv("DB_ENGINE", "arango")
 
     def get_db_engine(self):
         if self.storage_engine == "arango":
