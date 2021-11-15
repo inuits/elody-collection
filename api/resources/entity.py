@@ -31,11 +31,10 @@ class Entity(BaseResource):
         limit = int(request.args.get("limit", 20))
         item_type = request.args.get("type", None)
         type_var = "type={}&".format(item_type) if item_type else ""
-        ids = request.args.get("ids")
+        ids = request.args.get("ids", None)
         if ids:
             ids = ids.split(",")
-            return self.storage.get_entities(skip, limit, ids=ids)
-        entities = self.storage.get_entities(skip, limit, item_type)
+        entities = self.storage.get_entities(skip, limit, item_type, ids)
         count = entities["count"]
         entities["limit"] = limit
         if skip + limit < count:
