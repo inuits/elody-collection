@@ -23,7 +23,6 @@ class BaseResource(Resource):
         self.cantaloupe_api_url = os.getenv(
             "CANTALOUPE_API_URL", "http://localhost:8182"
         )
-        self.elastic_url = os.getenv("ELASTIC_URL", "es")
         self.upload_source = os.getenv("UPLOAD_SOURCE", "/mnt/media-import")
         self.req = reqparse.RequestParser()
 
@@ -104,7 +103,6 @@ class BaseResource(Resource):
             "source": "dams",
         }
         data = {
-            "elastic_url": self.elastic_url,
             "entities_url": "{}/entities/{}".format(self.collection_api_url, entity_id),
         }
         event = CloudEvent(attributes, data)
