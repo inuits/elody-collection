@@ -23,7 +23,6 @@ class BaseResource(Resource):
         self.cantaloupe_api_url = os.getenv(
             "CANTALOUPE_API_URL", "http://localhost:8182"
         )
-        self.upload_source = os.getenv("UPLOAD_SOURCE", "/mnt/media-import")
         self.req = reqparse.RequestParser()
 
     def get_request_body(self):

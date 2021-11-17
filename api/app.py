@@ -73,10 +73,6 @@ from resources.entity import (
     EntityTypes,
     EntityUsage,
 )
-from resources.importer import (
-    ImporterDirectories,
-    ImporterStart,
-)
 from resources.job import Job, JobDetail
 from resources.mediafile import Mediafile, MediafileDetail
 from resources.spec import AsyncAPISpec, OpenAPISpec
@@ -102,9 +98,6 @@ api.add_resource(EntityParent, "/entities/<string:id>/parent")
 api.add_resource(EntityRelations, "/entities/<string:id>/relations")
 api.add_resource(EntityTypes, "/entities/<string:id>/types")
 api.add_resource(EntityUsage, "/entities/<string:id>/usage")
-
-api.add_resource(ImporterDirectories, "/importer/directories")
-api.add_resource(ImporterStart, "/importer/start")
 
 api.add_resource(Job, "/jobs")
 api.add_resource(JobDetail, "/jobs/<string:id>")
