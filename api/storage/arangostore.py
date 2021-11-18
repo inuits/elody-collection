@@ -1,4 +1,5 @@
 import os
+import sys
 import uuid
 
 from .py_arango_connection_extension import PyArangoConnection as Connection
@@ -47,7 +48,7 @@ FOR c IN entities
         FOR item,edge IN OUTBOUND c GRAPH 'assets'
             FILTER edge._id NOT LIKE 'hasMediafile%'
             LET relation = {'key': edge._to, 'type': FIRST(SPLIT(edge._id, '/'))}
-            RETURN HAS(edge, 'label') ? MERGE(relation, {'label': edge.label.`@value`}) : relation
+            RETURN HAS(edge, 'label') ? MERGE(relation, {'label': IS_NULL(edge.label.`@value`) ? edge.label : edge.label.`@value`}) : relation
     )
     LET all_metadata = {'metadata': APPEND(c.metadata, new_metadata)}
     LET primary_items = (
@@ -139,7 +140,10 @@ FOR c IN @@collection
             for edge in entity.getOutEdges(self.db[relation]):
                 relationobject = {"key": edge["_to"], "type": relation}
                 if "label" in edge:
-                    relationobject["label"] = edge["label"]["@value"]
+                    if "@value" in edge["label"]:
+                        relationobject["label"] = edge["label"]["@value"]
+                    else:
+                        relationobject["label"] = edge["label"]
                 relations.append(relationobject)
         return relations
 
@@ -245,16 +249,16 @@ FOR c IN @@collection
         if not entity:
             return None
         for relation in relations:
-            extraData = {}
+            extra_data = {}
             if "order" in relation.keys() and relation["type"] == "components":
-                extraData["order"] = relation["order"]
-            if "label" in relation.keys() and relation["type"] == "isTypeOf":
-                extraData["label"] = relation["label"]
+                extra_data["order"] = relation["order"]
+            if "label" in relation.keys():
+                extra_data["label"] = relation["label"]
             self.db.graphs[self.default_graph_name].createEdge(
                 relation["type"],
                 entity["_id"],
                 relation["key"],
-                extraData,
+                extra_data
             )
             self.db.graphs[self.default_graph_name].createEdge(
                 self._map_entity_relation(relation["type"]),
