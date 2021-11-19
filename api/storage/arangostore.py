@@ -110,12 +110,18 @@ FOR c IN @@collection
             item = item.getStore()
         return item
 
-    def get_raw_item_from_collection_by_id(self, collection, id):
+    def _try_get_item_from_collection_by_key(self, collection, key):
         try:
-            key = self._get_key_for_id(collection, id)
             item = self.db[collection][key]
         except DocumentNotFoundError:
             item = None
+        return item
+
+    def get_raw_item_from_collection_by_id(self, collection, id):
+        item = self._try_get_item_from_collection_by_key(collection, id)
+        if not item:
+            if key := self._get_key_for_id(collection, id):
+                item = self._try_get_item_from_collection_by_key(collection, key)
         return item
 
     def get_collection_item_sub_item(self, collection, id, sub_item):
