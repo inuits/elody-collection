@@ -24,18 +24,3 @@ class PyArangoConnection(Connection, ABC):
 
     def createGraph(self, name, db_name, args=None):
         return self.create_helper(name, db_name, "gharial", args, 202)
-
-    def updateDocumentEdge(self, db_name, edge_name, data):
-        data.pop("_rev", None)
-        url = "{}/_db/{}/_api/document/{}?returnNew=true".format(
-            self.getEndpointURL(), db_name, edge_name
-        )
-        datalist = list()
-        datalist.append(data)
-        datalist = json.dumps(datalist, default=str)
-        r = self.session.put(url, data=datalist)
-        data = r.json()
-        if r.status_code == 202 and "error" not in data:
-            return True
-        else:
-            raise CreationError(data["errorMessage"], r.content)

@@ -38,7 +38,9 @@ class ArangoStorageManager:
 FOR c IN entities
     {}
     {}
-""".format(ids_filter, type_filter)
+""".format(
+            ids_filter, type_filter
+        )
         aql2 = """
     LET new_metadata = (
         FOR item,edge IN OUTBOUND c GRAPH 'assets'
@@ -61,7 +63,9 @@ FOR c IN entities
         bind = {"skip": skip, "limit": limit}
         if ids:
             bind["ids"] = ids
-        results = self.db.AQLQuery(aql + aql2, rawResults=True, bindVars=bind, fullCount=True)
+        results = self.db.AQLQuery(
+            aql + aql2, rawResults=True, bindVars=bind, fullCount=True
+        )
         items = dict()
         items["count"] = results.extra["stats"]["fullCount"]
         items["results"] = list(results)
@@ -199,19 +203,18 @@ FOR c IN @@collection
             mediafiles.append(mediafile)
         return mediafiles
 
-    def set_primary_mediafile_for_entity(
-        self, collection, entity_id, mediafile_id, thumbnail=False
+    def set_primary_field_collection_item(
+        self, collection, entity_id, mediafile_id, field
     ):
         entity = self.get_raw_item_from_collection_by_id(collection, entity_id)
-        field = "is_primary" if not thumbnail else "is_primary_thumbnail"
         for edge in entity.getOutEdges(self.db[self.mediafile_edge_name]):
-            if edge["_to"] == "mediafiles/" + mediafile_id:
-                edge[field] = True
-            else:
+            new_primary_id = "mediafiles/{}".format(mediafile_id)
+            if edge["_to"] != new_primary_id and edge[field]:
                 edge[field] = False
-            self.conn.updateDocumentEdge(
-                self.arango_db_name, "hasMediafile", edge.getStore()
-            )
+                edge.save()
+            elif edge["_to"] == new_primary_id and not edge["field"]:
+                edge[field] = True
+                edge.save()
 
     def add_mediafile_to_collection_item(self, collection, id, mediafile_id):
         entity = self.get_raw_item_from_collection_by_id(collection, id)
@@ -257,10 +260,7 @@ FOR c IN @@collection
             if "label" in relation.keys():
                 extra_data["label"] = relation["label"]
             self.db.graphs[self.default_graph_name].createEdge(
-                relation["type"],
-                entity["_id"],
-                relation["key"],
-                extra_data
+                relation["type"], entity["_id"], relation["key"], extra_data
             )
             self.db.graphs[self.default_graph_name].createEdge(
                 self._map_entity_relation(relation["type"]),

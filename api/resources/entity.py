@@ -85,7 +85,9 @@ class EntitySetPrimaryMediafile(BaseResource):
     @app.require_oauth()
     def put(self, id, mediafile_id):
         self.abort_if_item_doesnt_exist("entities", id)
-        self.storage.set_primary_mediafile_for_entity("entities", id, mediafile_id)
+        self.storage.set_primary_field_collection_item(
+            "entities", id, mediafile_id, "is_primary"
+        )
         return 204
 
 
@@ -93,8 +95,8 @@ class EntitySetPrimaryThumbnail(BaseResource):
     @app.require_oauth()
     def put(self, id, mediafile_id):
         self.abort_if_item_doesnt_exist("entities", id)
-        self.storage.set_primary_mediafile_for_entity(
-            "entities", id, mediafile_id, thumbnail=True
+        self.storage.set_primary_field_collection_item(
+            "entities", id, mediafile_id, "is_primary_thumbnail"
         )
         return 204
 
