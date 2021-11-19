@@ -284,8 +284,7 @@ FOR c IN @@collection
         return item.getStore()
 
     def update_item_from_collection(self, collection, id, content):
-        key = self._get_key_for_id(collection, id)
-        item = self.db[collection][key]
+        item = self.get_raw_item_from_collection_by_id(collection, id)
         item.set(content)
         item.save()
         return item.getStore()
@@ -312,15 +311,13 @@ FOR c IN @@collection
         return self.add_relations_to_collection_item(collection, id, content)
 
     def patch_item_from_collection(self, collection, id, content):
-        key = self._get_key_for_id(collection, id)
-        item = self.db[collection][key]
+        item = self.get_raw_item_from_collection_by_id(collection, id)
         item.set(content)
         item.patch()
         return item.getStore()
 
     def delete_item_from_collection(self, collection, id):
-        key = self._get_key_for_id(collection, id)
-        item = self.db[collection][key]
+        item = self.get_raw_item_from_collection_by_id(collection, id)
         for edge_name in self.edges:
             for edge in item.getEdges(self.db[edge_name]):
                 edge.delete()
