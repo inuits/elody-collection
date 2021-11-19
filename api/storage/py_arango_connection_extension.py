@@ -1,5 +1,4 @@
 import json
-import sys
 
 from abc import ABC
 from pyArango.connection import Connection
@@ -21,12 +20,6 @@ class PyArangoConnection(Connection, ABC):
             raise CreationError(data["errorMessage"], r.content)
 
     def createCollection(self, name, db_name, args=None):
-        return self.create_helper(name, db_name, "collection", args, 200)
-
-    def createEdge(self, name, db_name, args=None):
-        if args is None:
-            args = {}
-        args["type"] = 3
         return self.create_helper(name, db_name, "collection", args, 200)
 
     def createGraph(self, name, db_name, args=None):

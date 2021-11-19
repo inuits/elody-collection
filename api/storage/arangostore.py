@@ -11,8 +11,6 @@ class ArangoStorageManager:
         self.arango_username = os.getenv("ARANGO_DB_USERNAME")
         self.arango_password = os.getenv("ARANGO_DB_PASSWORD")
         self.arango_db_name = os.getenv("ARANGO_DB_NAME")
-        self.entity_collection_name = os.getenv("ENTITY_COLLECTION", "entities")
-        self.mediafile_collection_name = os.getenv("MEDIAFILE_COLLECTION", "mediafiles")
         self.mediafile_edge_name = os.getenv("MEDIAFILE_EDGE", "hasMediafile")
         self.default_graph_name = os.getenv("DEFAULT_GRAPH", "assets")
         self.entity_relations = [
@@ -26,7 +24,6 @@ class ArangoStorageManager:
             "isUsedIn",
         ]
         self.edges = self.entity_relations + ["hasMediafile"]
-
         self.conn = Connection(
             arangoURL=self.arango_host,
             username=self.arango_username,
@@ -373,18 +370,6 @@ FOR c IN @@collection
         for collection in ["entities", "tenants", "jobs", "mediafiles"]:
             try:
                 self.conn.createCollection(collection, arango_db_name)
-            except CreationError:
-                continue
-        for edge in [
-            "authoredBy",
-            "contains",
-            "isIn",
-            "authored",
-            "components",
-            "parent",
-        ]:
-            try:
-                self.conn.createEdge(edge, arango_db_name)
             except CreationError:
                 continue
         try:
