@@ -1,5 +1,4 @@
 import os
-import sys
 import uuid
 
 from .py_arango_connection_extension import PyArangoConnection as Connection
@@ -120,12 +119,12 @@ FOR c IN @@collection
     def get_raw_item_from_collection_by_id(self, collection, id):
         item = self._try_get_item_from_collection_by_key(collection, id)
         if not item:
-            if key := self._get_key_for_id(collection, id):
+            if key := self._get_field_for_id(collection, id, "_key"):
                 item = self._try_get_item_from_collection_by_key(collection, key)
         return item
 
     def get_collection_item_sub_item(self, collection, id, sub_item):
-        return list(self._get_field_for_id(collection, id, sub_item))[0]
+        return self._get_field_for_id(collection, id, sub_item)
 
     def get_collection_item_sub_item_key(self, collection, id, sub_item, key):
         aql = """
@@ -358,17 +357,15 @@ FOR c IN @@collection
         }
         return mapping.get(relation)
 
-    def _get_key_for_id(self, collection, id):
-        key = None
-        queryResult = self._get_field_for_id(collection, id, "_key")
-        if queryResult:
-            key = queryResult[0]
-        return key
-
     def _get_field_for_id(self, collection, id, field):
         aql = "FOR c in @@collection FILTER @id IN c.identifiers OR c._key == @id RETURN c.@field"
         bind = {"id": id, "@collection": collection, "field": field}
-        return self.db.AQLQuery(aql, rawResults=True, bindVars=bind)
+        result = self.db.AQLQuery(aql, rawResults=True, bindVars=bind)
+        if result.__len__():
+            if result.__len__() > 1:
+                return list(result)
+            return result[0]
+        return None
 
     def _create_database_if_not_exists(self, arango_db_name):
         if not self.conn.hasDatabase(arango_db_name):
