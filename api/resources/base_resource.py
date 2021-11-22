@@ -5,7 +5,7 @@ import uuid
 
 from cloudevents.http import CloudEvent, to_json
 from flask import request
-from flask_restful import Resource, abort, reqparse
+from flask_restful import Resource, abort
 from storage.storagemanager import StorageManager
 from validator import validate_json
 from werkzeug.exceptions import BadRequest
@@ -21,7 +21,6 @@ class BaseResource(Resource):
         self.cantaloupe_api_url = os.getenv(
             "CANTALOUPE_API_URL", "http://localhost:8182"
         )
-        self.req = reqparse.RequestParser()
 
     def get_request_body(self):
         try:
