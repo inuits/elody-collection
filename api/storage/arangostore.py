@@ -212,7 +212,9 @@ FOR c IN @@collection
             if edge["_to"] != new_primary_id and edge[field]:
                 edge[field] = False
                 edge.save()
-            elif edge["_to"] == new_primary_id and not edge["field"]:
+            elif edge["_to"] == new_primary_id and (
+                field not in edge or not edge[field]
+            ):
                 edge[field] = True
                 edge.save()
 
