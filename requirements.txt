@@ -20,7 +20,7 @@ idna==2.10
 inuits-jwt-auth==0.0.15
 itsdangerous==1.1.0
 Jinja2==2.11.2
-job_helper==0.1.7
+job_helper==0.1.8
 jsonschema==3.2.0
 kombu==5.1.0
 MarkupSafe==2.0.1
