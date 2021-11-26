@@ -1296,67 +1296,6 @@
         }
       }
     },
-    "/importer/start": {
-      "post": {
-        "tags": [
-          "importer"
-        ],
-        "summary": "Start import job",
-        "operationId": "startImport",
-        "requestBody": {
-          "description": "Folder in source location to import from",
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "upload_folder": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "successful operation",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/message"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/importer/directories": {
-      "get": {
-        "tags": [
-          "importer"
-        ],
-        "summary": "List of possible directories in source location to import from",
-        "operationId": "importDirectoryList",
-        "responses": {
-          "200": {
-            "description": "successful operation",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/jobs": {
       "post": {
         "tags": [
@@ -1402,7 +1341,7 @@
         "description": "Get all parent jobs",
         "operationId": "getJobs",
         "parameters": [
-           {
+          {
             "name": "type",
             "in": "query",
             "description": "Filter by type of job",
@@ -1627,43 +1566,47 @@
   "components": {
     "schemas": {
       "job": {
-      "type": "object",
-      "default": {},
-      "required": ["job_type", "job_info", "status", "start_time"],
-      "properties": {
+        "type": "object",
+        "default": {},
+        "required": [
+          "job_type",
+          "job_info",
+          "status",
+          "start_time"
+        ],
+        "properties": {
           "job_type": {
-              "type": "string"
+            "type": "string"
           },
           "job_info": {
-              "type": "string"
+            "type": "string"
           },
           "start_time": {
-              "type": "string"
+            "type": "string"
           },
           "user": {
-              "type": "string"
+            "type": "string"
           },
           "asset": {
-              "type": "string"
+            "type": "string"
           },
           "mediafile_id": {
-              "type": "string"
+            "type": "string"
           },
           "parent_job_id": {
-              "type": "string"
+            "type": "string"
           },
           "status": {
-              "type": "string"
+            "type": "string"
           },
           "sub_jobs": {
-              "type": "array",
-              "items":{
-                "$ref": "#/components/schemas/job"
-
-              }
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/job"
+            }
           }
-      }
-  },
+        }
+      },
       "tenant": {
         "type": "object",
         "description": "Tenant object",
