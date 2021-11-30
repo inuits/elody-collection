@@ -21,13 +21,10 @@ class Mediafile(BaseResource):
         count = mediafiles["count"]
         mediafiles["limit"] = limit
         if skip + limit < count:
-            mediafiles["next"] = "/{}?skip={}&limit={}".format(
-                "entities", skip + limit, limit
-            )
-        if skip > 0:
-            mediafiles["previous"] = "/{}?skip={}&limit={}".format(
-                "mediafiles", max(0, skip - limit), limit
-            )
+            mediafiles["next"] = f"/mediafiles?skip={skip + limit}&limit={limit}"
+        if skip:
+            skip = max(0, skip - limit)
+            mediafiles["previous"] = f"/mediafiles?skip={skip}&limit={limit}"
         mediafiles["results"] = self._inject_api_urls_into_mediafiles(
             mediafiles["results"]
         )
