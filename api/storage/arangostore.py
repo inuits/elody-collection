@@ -177,10 +177,16 @@ FOR c IN @@collection
         entity = self.get_raw_item_from_collection_by_id(collection, id)
         relations = []
         for edge in entity.getOutEdges(self.db["components"]):
+            relation = {}
+            for key in edge.getStore().keys():
+                if key[0] != "_":
+                    relation[key] = edge[key]
+            relation["key"] = edge["_to"]
+            relation["type"] = "components"
             relations.append(
-                {"key": edge["_to"], "type": "components", "order": edge["order"]}
+                relation
             )
-            relations = sorted(relations, key=lambda tup: tup["order"])
+            # relations = sorted(relations, key=lambda tup: tup["order"])
         return relations
 
     def get_collection_item_parent(self, collection, id):
@@ -257,10 +263,9 @@ FOR c IN @@collection
             return None
         for relation in relations:
             extra_data = {}
-            if "order" in relation.keys() and relation["type"] == "components":
-                extra_data["order"] = relation["order"]
-            if "label" in relation.keys():
-                extra_data["label"] = relation["label"]
+            for key in relation.keys():
+                if key[0] != "_":
+                    extra_data[key] = relation[key]
             self.db.graphs[self.default_graph_name].createEdge(
                 relation["type"], entity["_id"], relation["key"], extra_data
             )
