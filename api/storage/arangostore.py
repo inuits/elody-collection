@@ -1,6 +1,8 @@
 import os
 import uuid
 
+from pyArango.document import DocumentStore
+
 from .py_arango_connection_extension import PyArangoConnection as Connection
 from pyArango.theExceptions import DocumentNotFoundError, CreationError
 
@@ -178,7 +180,8 @@ FOR c IN @@collection
         relations = []
         for edge in entity.getOutEdges(self.db["components"]):
             relation = {}
-            for key in edge.getStore().keys():
+            edge = edge.getStore()
+            for key in edge.keys():
                 if key[0] != "_":
                     relation[key] = edge[key]
             relation["key"] = edge["_to"]
@@ -374,7 +377,7 @@ FOR c IN @@collection
     def _create_database_if_not_exists(self, arango_db_name):
         if not self.conn.hasDatabase(arango_db_name):
             self.conn.createDatabase(arango_db_name)
-        for collection in ["entities", "tenants", "jobs", "mediafiles"]:
+        for collection in ["entities", "tenants", "jobs", "mediafiles", "key_value_store"]:
             try:
                 self.conn.createCollection(collection, arango_db_name)
             except CreationError:

@@ -150,6 +150,20 @@ tenant_schema = {
         },
     },
 }
+key_value_store_schema = {
+    "type": "object",
+    "properties": {
+        "identifiers": {
+            "type": "array",
+            "default": [],
+            "items": {"$id": "#/properties/identifiers/items"},
+        },
+        "items": {
+            "type": "object",
+            "default": {},
+        },
+    }
+}
 
 
 def validate_json(json, schema):
