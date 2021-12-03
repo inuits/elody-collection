@@ -1,8 +1,6 @@
 import os
 import uuid
 
-from pyArango.document import DocumentStore
-
 from .py_arango_connection_extension import PyArangoConnection as Connection
 from pyArango.theExceptions import DocumentNotFoundError, CreationError
 
@@ -380,6 +378,11 @@ FOR c IN @@collection
         for collection in ["entities", "tenants", "jobs", "mediafiles", "key_value_store"]:
             try:
                 self.conn.createCollection(collection, arango_db_name)
+            except CreationError:
+                continue
+        for edge in self.edges:
+            try:
+                self.conn.createEdge(edge, arango_db_name)
             except CreationError:
                 continue
         try:
