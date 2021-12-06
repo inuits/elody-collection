@@ -31,17 +31,16 @@ class ArangoStorageManager:
         )
         self.db = self._create_database_if_not_exists(self.arango_db_name)
 
-    def get_entities(self, skip, limit, item_type=None, ids=None):
+    def get_entities(self, skip, limit, item_type=None, ids=None, with_mediafile=None):
         ids_filter = "FILTER c._key IN @ids" if ids else ""
         type_filter = 'FILTER c.type == "{}"'.format(item_type) if item_type else ""
+        mediafiles_filter = (
+            "FILTER COUNT(FOR item, edge IN OUTBOUND c hasMediafile return item) > 0"
+            if with_mediafile
+            else ""
+        )
         aql = """
 FOR c IN entities
-    {}
-    {}
-""".format(
-            ids_filter, type_filter
-        )
-        aql2 = """
     LET new_metadata = (
         FOR item,edge IN OUTBOUND c GRAPH 'assets'
             FILTER edge._id NOT LIKE 'hasMediafile%'
@@ -57,6 +56,11 @@ FOR c IN entities
             RETURN primary != null AND primary_thumb != null ? MERGE(primary, primary_thumb) : (primary ? primary : primary_thumb)
     )
     LET merged_primary_items = COUNT(primary_items) > 1 ? MERGE(FIRST(primary_items), LAST(primary_items)) : FIRST(primary_items)
+"""
+        aql2 = f"""
+    {ids_filter}
+    {type_filter}
+    {mediafiles_filter}
     LIMIT @skip, @limit
     RETURN merged_primary_items == null ? MERGE(c, all_metadata) : MERGE(c, all_metadata, merged_primary_items)
 """
