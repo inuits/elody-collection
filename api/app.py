@@ -74,10 +74,11 @@ from resources.entity import (
     EntityUsage,
 )
 from resources.job import Job, JobDetail
+from resources.key_value_store import KeyValueStore, KeyValueStoreDetail
 from resources.mediafile import Mediafile, MediafileDetail
 from resources.spec import AsyncAPISpec, OpenAPISpec
 from resources.tenant import Tenant, TenantDetail
-from resources.key_value_store import KeyValueStore, KeyValueStoreDetail
+
 api.add_resource(Entity, "/entities")
 api.add_resource(EntityComponents, "/entities/<string:id>/components")
 api.add_resource(EntityDetail, "/entities/<string:id>")
@@ -102,6 +103,9 @@ api.add_resource(EntityUsage, "/entities/<string:id>/usage")
 api.add_resource(Job, "/jobs")
 api.add_resource(JobDetail, "/jobs/<string:id>")
 
+api.add_resource(KeyValueStore, "/key_value_store")
+api.add_resource(KeyValueStoreDetail, "/key_value_store/<string:id>")
+
 api.add_resource(Mediafile, "/mediafiles")
 api.add_resource(MediafileDetail, "/mediafiles/<string:id>")
 
@@ -110,9 +114,6 @@ api.add_resource(OpenAPISpec, "/spec/dams-collection-api.json")
 
 api.add_resource(Tenant, "/tenants")
 api.add_resource(TenantDetail, "/tenants/<string:id>")
-
-api.add_resource(KeyValueStore, "/key_value_store")
-api.add_resource(KeyValueStoreDetail, "/key_value_store/<string:id>")
 
 if __name__ == "__main__":
     app.run(debug=True)

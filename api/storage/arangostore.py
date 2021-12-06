@@ -188,9 +188,7 @@ FOR c IN @@collection
                     relation[key] = edge[key]
             relation["key"] = edge["_to"]
             relation["type"] = "components"
-            relations.append(
-                relation
-            )
+            relations.append(relation)
             # relations = sorted(relations, key=lambda tup: tup["order"])
         return relations
 
@@ -379,7 +377,13 @@ FOR c IN @@collection
     def _create_database_if_not_exists(self, arango_db_name):
         if not self.conn.hasDatabase(arango_db_name):
             self.conn.createDatabase(arango_db_name)
-        for collection in ["entities", "tenants", "jobs", "mediafiles", "key_value_store"]:
+        for collection in [
+            "entities",
+            "tenants",
+            "jobs",
+            "mediafiles",
+            "key_value_store",
+        ]:
             try:
                 self.conn.createCollection(collection, arango_db_name)
             except CreationError:

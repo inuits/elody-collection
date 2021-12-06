@@ -23,7 +23,9 @@ class KeyValueStoreDetail(BaseResource):
         self.abort_if_item_doesnt_exist("key_value_store", id)
         content = self.get_request_body()
         self.abort_if_not_valid_json("KeyValueStore", content, key_value_store_schema)
-        KeyValueStore = self.storage.patch_item_from_collection("key_value_store", id, content)
+        KeyValueStore = self.storage.patch_item_from_collection(
+            "key_value_store", id, content
+        )
         return KeyValueStore, 201
 
     @app.require_oauth()
@@ -31,7 +33,9 @@ class KeyValueStoreDetail(BaseResource):
         self.abort_if_item_doesnt_exist("key_value_store", id)
         content = self.get_request_body()
         self.abort_if_not_valid_json("KeyValueStore", content, key_value_store_schema)
-        KeyValueStore = self.storage.update_item_from_collection("key_value_store", id, content)
+        KeyValueStore = self.storage.update_item_from_collection(
+            "key_value_store", id, content
+        )
         return KeyValueStore, 201
 
     @app.require_oauth()

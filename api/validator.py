@@ -162,7 +162,7 @@ key_value_store_schema = {
             "type": "object",
             "default": {},
         },
-    }
+    },
 }
 
 
