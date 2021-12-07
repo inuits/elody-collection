@@ -110,7 +110,9 @@ class MemoryStorageManager:
     def save_item_to_collection(self, collection, content):
         gen_id = str(uuid.uuid4())
         content["_id"] = gen_id
-        if "identifiers" in content:
+        if "identifiers" not in content:
+            content["identifiers"] = [gen_id]
+        else:
             content["identifiers"].insert(0, gen_id)
         self.collections[collection][gen_id] = content
         return self.collections[collection][gen_id]

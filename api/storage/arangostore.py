@@ -279,7 +279,9 @@ FOR c IN @@collection
     def save_item_to_collection(self, collection, content):
         _id = str(uuid.uuid4())
         content["_key"] = _id
-        if "identifiers" in content:
+        if "identifiers" not in content:
+            content["identifiers"] = [_id]
+        else:
             content["identifiers"].insert(0, _id)
         item = self.db[collection].createDocument(content)
         item.save()
