@@ -31,26 +31,21 @@ class Entity(BaseResource):
         skip = int(request.args.get("skip", 0))
         limit = int(request.args.get("limit", 20))
         item_type = request.args.get("type", None)
-        with_mediafile = request.args.get("with_mediafile", None)
-        params = ""
-        if item_type:
-            params = f"type={item_type}&"
-        if with_mediafile:
-            params = f"{params}with_mediafile={with_mediafile}&"
+        type_var = "type={}&".format(item_type) if item_type else ""
         ids = request.args.get("ids", None)
         if ids:
             ids = ids.split(",")
-        entities = self.storage.get_entities(
-            skip, limit, item_type, ids, with_mediafile
-        )
+        entities = self.storage.get_entities(skip, limit, item_type, ids)
         count = entities["count"]
         entities["limit"] = limit
         if skip + limit < count:
-            entities["next"] = f"/entities?{params}skip={skip + limit}&limit={limit}"
+            entities["next"] = "/{}?{}skip={}&limit={}".format(
+                "entities", type_var, skip + limit, limit
+            )
         if skip > 0:
-            entities[
-                "previous"
-            ] = f"/entities?{params}skip={max(0, skip - limit)}&limit={limit}"
+            entities["previous"] = "/{}?{}skip={}&limit={}".format(
+                "entities", type_var, max(0, skip - limit), limit
+            )
         entities["results"] = self._inject_api_urls_into_entities(entities["results"])
         return entities
 
