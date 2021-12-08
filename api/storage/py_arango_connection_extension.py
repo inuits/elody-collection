@@ -1,4 +1,5 @@
 import json
+import sys
 
 from abc import ABC
 from pyArango.connection import Connection
@@ -36,6 +37,7 @@ class PyArangoConnection(Connection, ABC):
         url = "{}/_db/{}/_api/gharial/{}/edge".format(self.getEndpointURL(), db_name, graph, )
         r = self.session.post(url, data=payload)
         data = r.json()
+        print("data: "+ str(data), file=sys.stderr)
         if r.status_code == 202 and not data["error"]:
             return True
         else:

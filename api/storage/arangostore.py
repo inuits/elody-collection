@@ -417,13 +417,15 @@ FOR c IN @@collection
             else:
                 to = ["entities"]
             edge_definition = {
-                                  "collection": "hasMediafile",
+                                  "collection": edge_name,
                                   "from": ["entities"],
                                   "to": to,
-                              },
+                              }
+            print(edge_definition, file=sys.stderr)
             try:
                 self.conn.addEdgeDefinitionToGraph(db_name="dams", graph="assets", edge_definition=edge_definition)
-            except CreationError:
+            except CreationError as ex:
+                print("EdgeDef creation: "+ ex.message)
                 continue
 
         return self.conn[arango_db_name]
