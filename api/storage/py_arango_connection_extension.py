@@ -1,5 +1,5 @@
+import app
 import json
-import sys
 
 from abc import ABC
 from pyArango.connection import Connection
@@ -34,12 +34,14 @@ class PyArangoConnection(Connection, ABC):
 
     def addEdgeDefinitionToGraph(self, db_name, graph, edge_definition):
         payload = json.dumps(edge_definition, default=str)
-        url = "{}/_db/{}/_api/gharial/{}/edge".format(self.getEndpointURL(), db_name, graph)
+        url = "{}/_db/{}/_api/gharial/{}/edge".format(
+            self.getEndpointURL(), db_name, graph
+        )
         r = self.session.post(url, data=payload)
         data = r.json()
+        app.logger.info(f"STATUS CODE {r.status_code}")
+        app.logger.info(f"DATA {data}")
         if r.status_code == 202 and not data["error"]:
             return True
         else:
             raise CreationError(data["errorMessage"], r.content)
-
-
