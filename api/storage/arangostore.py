@@ -1,4 +1,5 @@
 import os
+import sys
 import uuid
 
 from .py_arango_connection_extension import PyArangoConnection as Connection
@@ -22,6 +23,8 @@ class ArangoStorageManager:
             "parent",
             "isTypeOf",
             "isUsedIn",
+            "carriedOutBy",
+            "hasCarriedOut"
         ]
         self.edges = self.entity_relations + ["hasMediafile"]
         self.conn = Connection(
@@ -84,11 +87,11 @@ FOR c IN entities
         extra_query = ""
         for field_name, field_value in fields.items():
             extra_query = (
-                extra_query
-                + """FILTER c.{} == \"{}\"
+                    extra_query
+                    + """FILTER c.{} == \"{}\"
             """.format(
-                    field_name, field_value
-                )
+                field_name, field_value
+            )
             )
         aql = """
 FOR c IN @@collection
@@ -209,7 +212,7 @@ FOR c IN @@collection
         return mediafiles
 
     def set_primary_field_collection_item(
-        self, collection, entity_id, mediafile_id, field
+            self, collection, entity_id, mediafile_id, field
     ):
         entity = self.get_raw_item_from_collection_by_id(collection, entity_id)
         for edge in entity.getOutEdges(self.db[self.mediafile_edge_name]):
@@ -218,7 +221,7 @@ FOR c IN @@collection
                 edge[field] = False
                 edge.save()
             elif edge["_to"] == new_primary_id and (
-                field not in edge or not edge[field]
+                    field not in edge or not edge[field]
             ):
                 edge[field] = True
                 edge.save()
@@ -359,6 +362,8 @@ FOR c IN @@collection
             "parent": "components",
             "isTypeOf": "isUsedIn",
             "isUsedIn": "isTypeOf",
+            "carriedOutBy": "hasCarriedOut",
+            "hasCarriedOut": "carriedOutBy"
         }
         return mapping.get(relation)
 
@@ -389,7 +394,8 @@ FOR c IN @@collection
         for edge in self.edges:
             try:
                 self.conn.createEdge(edge, arango_db_name)
-            except CreationError:
+            except CreationError as ex:
+                print(ex.message, file=sys.stderr)
                 continue
         try:
             self.conn.createGraph(
@@ -397,55 +403,27 @@ FOR c IN @@collection
                 arango_db_name,
                 {
                     "edgeDefinitions": [
-                        {
-                            "collection": "authored",
-                            "from": ["entities"],
-                            "to": ["entities"],
-                        },
-                        {
-                            "collection": "authoredBy",
-                            "from": ["entities"],
-                            "to": ["entities"],
-                        },
-                        {
-                            "collection": "components",
-                            "from": ["entities"],
-                            "to": ["entities"],
-                        },
-                        {
-                            "collection": "parent",
-                            "from": ["entities"],
-                            "to": ["entities"],
-                        },
-                        {
-                            "collection": "contains",
-                            "from": ["entities"],
-                            "to": ["entities"],
-                        },
-                        {
-                            "collection": "isIn",
-                            "from": ["entities"],
-                            "to": ["entities"],
-                        },
-                        {
-                            "collection": "isTypeOf",
-                            "from": ["entities"],
-                            "to": ["entities"],
-                        },
-                        {
-                            "collection": "isUsedIn",
-                            "from": ["entities"],
-                            "to": ["entities"],
-                        },
-                        {
-                            "collection": "hasMediafile",
-                            "from": ["entities"],
-                            "to": ["mediafiles"],
-                        },
                     ],
                     "orphanCollections": [],
                 },
             )
         except CreationError:
-            return self.conn[arango_db_name]
+            # skip error
+            nothing = "nothing"
+
+        for edge_name in self.edges:
+            if edge_name == "hasMediafile":
+                to = ["mediafiles"]
+            else:
+                to = ["entities"]
+            edge_definition = {
+                                  "collection": "hasMediafile",
+                                  "from": ["entities"],
+                                  "to": to,
+                              },
+            try:
+                self.conn.addEdgeDefinitionToGraph(db_name="dams", graph="assets", edge_definition=edge_definition)
+            except CreationError:
+                continue
+
         return self.conn[arango_db_name]

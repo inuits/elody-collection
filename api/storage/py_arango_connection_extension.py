@@ -30,3 +30,15 @@ class PyArangoConnection(Connection, ABC):
 
     def createGraph(self, name, db_name, args=None):
         return self.create_helper(name, db_name, "gharial", args, 202)
+
+    def addEdgeDefinitionToGraph(self, db_name, graph, edge_definition):
+        payload = json.dumps(edge_definition, default=str)
+        url = "{}/_db/{}/_api/gharial/{}/edge".format(self.getEndpointURL(), db_name, graph, )
+        r = self.session.post(url, data=payload)
+        data = r.json()
+        if r.status_code == 202 and not data["error"]:
+            return True
+        else:
+            raise CreationError(data["errorMessage"], r.content)
+
+
