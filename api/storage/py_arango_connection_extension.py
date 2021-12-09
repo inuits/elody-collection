@@ -1,4 +1,3 @@
-import app
 import json
 
 from abc import ABC
@@ -39,8 +38,6 @@ class PyArangoConnection(Connection, ABC):
         )
         r = self.session.post(url, data=payload)
         data = r.json()
-        app.logger.info(f"STATUS CODE {r.status_code}")
-        app.logger.info(f"DATA {data}")
         if r.status_code == 202 and not data["error"]:
             return True
         else:

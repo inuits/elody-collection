@@ -1,4 +1,3 @@
-import app
 import os
 import uuid
 
@@ -395,7 +394,6 @@ FOR c IN @@collection
             try:
                 self.conn.createEdge(edge, arango_db_name)
             except CreationError as ex:
-                app.logger.error(f"Error while trying to create edge {edge}: {ex}")
                 continue
         try:
             self.conn.createGraph(
@@ -407,9 +405,6 @@ FOR c IN @@collection
                 },
             )
         except CreationError as ex:
-            app.logger.error(
-                f"Error while trying to create graph {self.default_graph_name}: {ex}"
-            )
             pass
         for edge_name in self.edges:
             to = ["entities"]
@@ -421,8 +416,5 @@ FOR c IN @@collection
                     arango_db_name, self.default_graph_name, edge_definition
                 )
             except CreationError as ex:
-                app.logger.error(
-                    f"Error while trying to add edge {edge_name} to graph {self.default_graph_name}: {ex}"
-                )
                 continue
         return self.conn[arango_db_name]
