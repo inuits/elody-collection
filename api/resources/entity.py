@@ -1,5 +1,6 @@
 import app
 import os
+
 from flask import request, after_this_request
 from flask_restful import abort
 from inuits_jwt_auth.authorization import current_token
@@ -188,19 +189,14 @@ class EntityMediafilesCreate(BaseResource):
         filename = content["filename"]
         mediafile = {
             "filename": filename,
-            "original_file_location": "/download/{}".format(filename),
-            "thumbnail_file_location": "/iiif/3/{}/full/,150/0/default.jpg".format(
-                filename
-            ),
+            "original_file_location": f"/download/{filename}",
+            "thumbnail_file_location": f"/iiif/3/{filename}/full/,150/0/default.jpg",
         }
         if "metadata" in content:
             mediafile["metadata"] = content["metadata"]
         mediafile = self.storage.save_item_to_collection("mediafiles", mediafile)
-        upload_location = "{}/upload/{}?url={}/mediafiles/{}".format(
-            self.storage_api_url,
-            filename,
-            self.collection_api_url,
-            self._get_raw_id(mediafile),
+        upload_location = (
+            f"{self.storage_api_url}/upload/{filename}?id={self._get_raw_id(mediafile)}"
         )
         job_helper.progress_job(job)
         try:
