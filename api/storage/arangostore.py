@@ -225,21 +225,20 @@ FOR c IN @@collection
                 edge[field] = True
                 edge.save()
 
-    def add_mediafile_to_collection_item(self, collection, id, mediafile_id):
+    def add_mediafile_to_collection_item(self, collection, id, mediafile_id, mediafile_public):
         entity = self.get_raw_item_from_collection_by_id(collection, id)
         if not entity:
             return None
-        extra_data = {"is_primary": True, "is_primary_thumbnail": True}
-        for edge in entity.getOutEdges(self.db["hasMediafile"]):
-            if "is_primary" in edge and edge["is_primary"] is True:
-                extra_data["is_primary"] = False
-            if "is_primary_thumbnail" in edge and edge["is_primary_thumbnail"] is True:
-                extra_data["is_primary_thumbnail"] = False
-
+        extra_data = {"is_primary": mediafile_public, "is_primary_thumbnail": mediafile_public}
+        if mediafile_public:
+            for edge in entity.getOutEdges(self.db["hasMediafile"]):
+                if "is_primary" in edge and edge["is_primary"] is True:
+                    extra_data["is_primary"] = False
+                if "is_primary_thumbnail" in edge and edge["is_primary_thumbnail"] is True:
+                    extra_data["is_primary_thumbnail"] = False
         self.db.graphs[self.default_graph_name].createEdge(
             self.mediafile_edge_name, entity["_id"], mediafile_id, extra_data
         )
-
         return self.db.fetchDocument(mediafile_id).getStore()
 
     def add_sub_item_to_collection_item(self, collection, id, sub_item, content):

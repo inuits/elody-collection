@@ -79,7 +79,7 @@ class MongoStorageManager:
             mediafiles.append(mediafile)
         return mediafiles
 
-    def add_mediafile_to_collection_item(self, collection, id, mediafile_id):
+    def add_mediafile_to_collection_item(self, collection, id, mediafile_id, mediafile_public):
         mediafile = None
         identifiers = self.db[collection].find_one(
             self._get_id_query(id), {"identifiers": 1}

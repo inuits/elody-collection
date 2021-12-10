@@ -137,3 +137,11 @@ class BaseResource(Resource):
             else:
                 entity["metadata"] = relations
         return entity
+
+    def _mediafile_is_public(self, mediafile):
+        if "metadata" not in mediafile:
+            return True
+        for metadata in mediafile["metadata"]:
+            if metadata["key"] == "publication_status" and metadata["value"] == "niet-publiek":
+                return False
+        return True

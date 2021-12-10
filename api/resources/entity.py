@@ -170,7 +170,7 @@ class EntityMediafiles(BaseResource):
         self.abort_if_not_valid_json("Mediafile", content, mediafile_schema)
         mediafile_id = content["_id"]
         mediafile = self.storage.add_mediafile_to_collection_item(
-            "entities", id, mediafile_id
+            "entities", id, mediafile_id, self._mediafile_is_public(content)
         )
         return mediafile, 201
 
@@ -201,7 +201,7 @@ class EntityMediafilesCreate(BaseResource):
         job_helper.progress_job(job)
         try:
             self.storage.add_mediafile_to_collection_item(
-                "entities", id, mediafile["_id"]
+                "entities", id, mediafile["_id"], self._mediafile_is_public(mediafile)
             )
             job_helper.finish_job(job)
         except Exception as ex:
