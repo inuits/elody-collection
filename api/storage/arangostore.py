@@ -146,26 +146,28 @@ FOR c IN @@collection
         relations = []
         for relation in self.entity_relations:
             for edge in entity.getOutEdges(self.db[relation]):
-                relationobject = {"key": edge["_to"], "type": relation}
-                if "label" in edge:
-                    if "@value" in edge["label"]:
-                        relationobject["label"] = edge["label"]["@value"]
-                    else:
-                        relationobject["label"] = edge["label"]
-                relations.append(relationobject)
+                relation_object = {}
+                edge = edge.getStore()
+                for key in edge.keys():
+                    if key[0] != "_":
+                        relation_object[key] = edge[key]
+                relation_object["key"] = edge["_to"]
+                relation_object["type"] = relation
+                relations.append(relation_object)
         return relations
 
     def get_collection_item_types(self, collection, id):
         entity = self.get_raw_item_from_collection_by_id(collection, id)
         types = []
         for edge in entity.getOutEdges(self.db["isTypeOf"]):
-            types.append(
-                {
-                    "key": edge["_to"],
-                    "type": "isTypeOf",
-                    "label": edge["label"]["@value"],
-                }
-            )
+            relation = {}
+            edge = edge.getStore()
+            for key in edge.keys():
+                if key[0] != "_":
+                    relation[key] = edge[key]
+            relation["key"] = edge["_to"]
+            relation["type"] = "isTypeOf"
+            types.append(relation)
         return types
 
     def get_collection_item_usage(self, collection, id):
