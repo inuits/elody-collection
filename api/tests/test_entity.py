@@ -97,7 +97,7 @@ class EntityTest(BaseCase):
         self.assertTrue(
             response.json.startswith("{}/upload/".format(os.environ["STORAGE_API_URL"]))
         )
-        self.assertEqual(129, len(response.json))
+        self.assertEqual(90, len(response.json))
         self.assertEqual(201, response.status_code)
 
         response = self.app.get(
@@ -139,7 +139,7 @@ class EntityTest(BaseCase):
         self.assertTrue(
             response.json.startswith("{}/upload/".format(os.environ["STORAGE_API_URL"]))
         )
-        self.assertEqual(129, len(response.json))
+        self.assertEqual(90, len(response.json))
         self.assertEqual(201, response.status_code)
 
         response = self.app.get(
