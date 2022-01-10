@@ -368,7 +368,7 @@ FOR c IN @@collection
         return mapping.get(relation)
 
     def _get_field_for_id(self, collection, id, field):
-        aql = "FOR c in @@collection FILTER @id IN c.identifiers OR c._key == @id RETURN c.@field"
+        aql = "FOR c in @@collection FILTER c.object_id == @id OR @id IN c.identifiers OR c._key == @id RETURN c.@field"
         bind = {"id": id, "@collection": collection, "field": field}
         result = self.db.AQLQuery(aql, rawResults=True, bindVars=bind)
         if result.__len__():

@@ -1,3 +1,5 @@
+from pyArango.theExceptions import CreationError
+
 import app
 import os
 
@@ -23,7 +25,10 @@ class Entity(BaseResource):
             content["user"] = current_token["Email"]
         else:
             content["user"] = "default_uploader"
-        entity = self.storage.save_item_to_collection("entities", content)
+        try:
+            entity = self.storage.save_item_to_collection("entities", content)
+        except CreationError as ex:
+            return ex.errors["errorMessage"], 409
         self._index_entity(self._get_raw_id(entity))
         return entity, 201
 
