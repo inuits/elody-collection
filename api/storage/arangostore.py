@@ -391,6 +391,9 @@ FOR c IN @@collection
                 self.conn.createCollection(collection, arango_db_name)
             except CreationError:
                 continue
+            if collection == "entities":
+                self.conn[arango_db_name]['entities'].ensureIndex(fields=["object_id"], index_type="hash", unique=True,
+                                                                  sparse=True)
         for edge in self.edges:
             try:
                 self.conn.createEdge(edge, arango_db_name)
