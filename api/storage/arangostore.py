@@ -389,11 +389,10 @@ FOR c IN @@collection
         ]:
             try:
                 self.conn.createCollection(collection, arango_db_name)
+                self.create_unique_indexes(collection, arango_db_name)
             except CreationError:
+                self.create_unique_indexes(collection, arango_db_name)
                 continue
-            if collection == "entities":
-                self.conn[arango_db_name]['entities'].ensureIndex(fields=["object_id"], index_type="hash", unique=True,
-                                                                  sparse=True)
         for edge in self.edges:
             try:
                 self.conn.createEdge(edge, arango_db_name)
@@ -422,3 +421,8 @@ FOR c IN @@collection
             except CreationError as ex:
                 continue
         return self.conn[arango_db_name]
+
+    def create_unique_indexes(self, collection, arango_db_name):
+        if collection == "entities":
+            self.conn[arango_db_name]['entities'].ensureIndex(fields=["object_id", "data.dcterms:isVersionOf"],
+                                                              index_type="hash", unique=True, sparse=True)
