@@ -424,5 +424,7 @@ FOR c IN @@collection
 
     def create_unique_indexes(self, collection, arango_db_name):
         if collection == "entities":
-            self.conn[arango_db_name]['entities'].ensureIndex(fields=["object_id", "data.dcterms:isVersionOf"],
+            self.conn[arango_db_name]['entities'].ensureIndex(fields=["object_id"],
+                                                              index_type="hash", unique=True, sparse=True)
+            self.conn[arango_db_name]['entities'].ensureIndex(fields=["data.dcterms:isVersionOf"],
                                                               index_type="hash", unique=True, sparse=True)
