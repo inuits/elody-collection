@@ -1,6 +1,7 @@
 import os
 import uuid
 
+import app
 from .py_arango_connection_extension import PyArangoConnection as Connection
 from pyArango.theExceptions import DocumentNotFoundError, CreationError
 
@@ -424,7 +425,10 @@ FOR c IN @@collection
 
     def create_unique_indexes(self, collection, arango_db_name):
         if collection == "entities":
-            self.conn[arango_db_name]['entities'].ensureIndex(fields=["object_id"],
-                                                              index_type="hash", unique=True, sparse=True)
-            self.conn[arango_db_name]['entities'].ensureIndex(fields=["data.dcterms:isVersionOf"],
-                                                              index_type="hash", unique=True, sparse=True)
+            try:
+                self.conn[arango_db_name]['entities'].ensureIndex(fields=["object_id"],
+                                                                  index_type="hash", unique=True, sparse=True)
+                self.conn[arango_db_name]['entities'].ensureIndex(fields=["data.dcterms:isVersionOf"],
+                                                                  index_type="hash", unique=True, sparse=True)
+            except Exception as ex:
+                app.logger.error("Could not create unique index: " + str(ex))
