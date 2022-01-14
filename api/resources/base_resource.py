@@ -35,9 +35,9 @@ class BaseResource(Resource):
             )
         return request_body
 
-    def abort_if_item_doesnt_exist(self, collection, id):
+    def abort_if_item_doesnt_exist(self, collection, id, entity_type=None):
         item = self.storage.get_item_from_collection_by_id(collection, id)
-        if item is None:
+        if item is None or (entity_type is None and "box_visit" == item["type"]):
             abort(
                 404,
                 message="Item with id {} doesn't exist in collection {}".format(

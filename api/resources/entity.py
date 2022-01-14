@@ -37,6 +37,8 @@ class Entity(BaseResource):
         skip = int(request.args.get("skip", 0))
         limit = int(request.args.get("limit", 20))
         item_type = request.args.get("type", None)
+        if item_type == "box_visit":
+            item_type = "nothing"
         type_var = "type={}&".format(item_type) if item_type else ""
         ids = request.args.get("ids", None)
         if ids:
@@ -84,6 +86,79 @@ class EntityDetail(BaseResource):
     @app.require_oauth()
     def delete(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
+        self.storage.delete_item_from_collection("entities", id)
+        return "", 204
+
+class BoxVisit(BaseResource):
+    @app.require_oauth()
+    def post(self):
+        content = self.get_request_body()
+        self.abort_if_not_valid_json("Entity", content, entity_schema)
+        if "Email" in current_token:
+            content["user"] = current_token["Email"]
+        else:
+            content["user"] = "default_uploader"
+        try:
+            if "type" in content and content["type"] == "box_visit":
+                entity = self.storage.save_item_to_collection("entities", content)
+            else:
+                return "Only box_visit type is allowed", 400
+        except CreationError as ex:
+            return ex.errors["errorMessage"], 409
+        self._index_entity(self._get_raw_id(entity))
+        return entity, 201
+
+    @app.require_oauth()
+    def get(self):
+        skip = int(request.args.get("skip", 0))
+        limit = int(request.args.get("limit", 20))
+        item_type = "box_visit"
+        ids = request.args.get("ids", None)
+        if ids:
+            ids = ids.split(",")
+        entities = self.storage.get_entities(skip, limit, item_type, ids)
+        count = entities["count"]
+        entities["limit"] = limit
+        if skip + limit < count:
+            entities["next"] = "/{}?skip={}&limit={}".format(
+                "entities", skip + limit, limit
+            )
+        if skip > 0:
+            entities["previous"] = "/{}?skip={}&limit={}".format(
+                "entities", max(0, skip - limit), limit
+            )
+        entities["results"] = self._inject_api_urls_into_entities(entities["results"])
+        return entities
+
+
+class BoxVisitDetail(BaseResource):
+    @app.require_oauth()
+    def get(self, id):
+        entity = self.abort_if_item_doesnt_exist("entities", id, "box_visit")
+        entity = self._set_entity_mediafile_and_thumbnail(entity)
+        entity = self._add_relations_to_metadata(entity)
+        return self._inject_api_urls_into_entities([entity])[0]
+
+    @app.require_oauth()
+    def put(self, id):
+        self.abort_if_item_doesnt_exist("entities", id, "box_visit")
+        content = self.get_request_body()
+        self.abort_if_not_valid_json("Entity", content, entity_schema)
+        entity = self.storage.update_item_from_collection("entities", id, content)
+        self._index_entity(id)
+        return entity, 201
+
+    @app.require_oauth()
+    def patch(self, id):
+        self.abort_if_item_doesnt_exist("entities", id, "box_visit")
+        content = self.get_request_body()
+        entity = self.storage.patch_item_from_collection("entities", id, content)
+        self._index_entity(id)
+        return entity, 201
+
+    @app.require_oauth()
+    def delete(self, id):
+        self.abort_if_item_doesnt_exist("entities", id, "box_visit")
         self.storage.delete_item_from_collection("entities", id)
         return "", 204
 
