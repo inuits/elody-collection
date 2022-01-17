@@ -428,7 +428,8 @@ FOR c IN @@collection
             try:
                 self.conn[arango_db_name]['entities'].ensureIndex(fields=["object_id"],
                                                                   index_type="hash", unique=True, sparse=True)
-                self.conn[arango_db_name]['entities'].ensureIndex(fields=["data.dcterms:isVersionOf"],
-                                                                  index_type="hash", unique=True, sparse=True)
+                # conflicts for object numbers with different versions, archiefgent:OA_535_125_12_E_TE vs archiefgent:OA_535_125_12_B_TE
+                # self.conn[arango_db_name]['entities'].ensureIndex(fields=["data.dcterms:isVersionOf"],
+                #                                                   index_type="hash", unique=True, sparse=True)
             except Exception as ex:
                 app.logger.error("Could not create unique index: " + str(ex))
