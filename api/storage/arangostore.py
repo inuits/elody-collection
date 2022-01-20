@@ -1,4 +1,5 @@
 import os
+import sys
 import uuid
 
 import app
@@ -155,6 +156,18 @@ FOR c IN @@collection
                 relation_object["key"] = edge["_to"]
                 relation_object["type"] = relation
                 relations.append(relation_object)
+                if "value" in relation_object and relation_object["value"] == "Productie":
+                    sub_entity = self.get_raw_item_from_collection_by_id(collection, relation_object["key"].split("entities/")[1])
+                    for sub_edge in sub_entity.getOutEdges(self.db[relation]):
+                        relation_object = {}
+                        sub_edge = sub_edge.getStore()
+                        for key in sub_edge.keys():
+                            if key[0] != "_":
+                                relation_object[key] = sub_edge[key]
+                        relation_object["key"] = sub_edge["_to"]
+                        relation_object["type"] = relation
+                        relations.append(relation_object)
+
         return relations
 
     def get_collection_item_types(self, collection, id):
