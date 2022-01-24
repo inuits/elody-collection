@@ -235,6 +235,8 @@ class EntityMediafiles(BaseResource):
     def get(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         mediafiles = self.storage.get_collection_item_mediafiles("entities", id)
+        if not request.args.get("non_public"):
+            mediafiles = [mediafile for mediafile in mediafiles if self._mediafile_is_public(mediafile)]
 
         @after_this_request
         def add_header(response):
