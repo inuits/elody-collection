@@ -140,8 +140,8 @@ class BaseResource(Resource):
 
     def _mediafile_is_public(self, mediafile):
         if "metadata" not in mediafile:
-            return True
+            return False
         for metadata in mediafile["metadata"]:
-            if metadata["key"] == "publication_status" and metadata["value"] == "niet-publiek":
-                return False
-        return True
+            if metadata["key"] == "publication_status":
+                return metadata["value"] == "publiek"
+        return False
