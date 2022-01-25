@@ -21,11 +21,7 @@ class ArangoStorageManager:
             "isIn",
             "contains",
             "components",
-            "parent",
-            "isTypeOf",
-            "isUsedIn",
-            "carriedOutBy",
-            "hasCarriedOut",
+            "parent"
         ]
         self.edges = self.entity_relations + ["hasMediafile"]
         self.conn = Connection(
@@ -155,9 +151,15 @@ FOR c IN @@collection
                         relation_object[key] = edge[key]
                 relation_object["key"] = edge["_to"]
                 relation_object["type"] = relation
-                relations.append(relation_object)
-                if "value" in relation_object and (relation_object["value"] == "Productie" or relation_object["value"] == "InformatieObject"):
-                    sub_entity = self.get_raw_item_from_collection_by_id(collection, relation_object["key"].split("entities/")[1])
+                if relation_object not in relations:
+                    relations.append(relation_object)
+                if "value" in relation_object and (
+                        relation_object["value"] == "Productie" or
+                        relation_object["value"] == "InformatieObject" or
+                        relation_object["value"] == "ConceptueelDing"):
+                    sub_entity = self.get_raw_item_from_collection_by_id(collection,
+                                                                         relation_object["key"].split("entities/")[1])
+
                     for sub_edge in sub_entity.getOutEdges(self.db[relation]):
                         relation_object = {}
                         sub_edge = sub_edge.getStore()
@@ -166,7 +168,25 @@ FOR c IN @@collection
                                 relation_object[key] = sub_edge[key]
                         relation_object["key"] = sub_edge["_to"]
                         relation_object["type"] = relation
-                        relations.append(relation_object)
+                        if relation_object["value"] == "Creatie":
+
+                            sub_entity2 = self.get_raw_item_from_collection_by_id(collection,
+                                                                                  relation_object["key"].split(
+                                                                                      "entities/")[1])
+                            for sub_edge2 in sub_entity2.getOutEdges(self.db[relation]):
+                                relation_object = {}
+                                sub_edge2 = sub_edge2.getStore()
+                                for key in sub_edge2.keys():
+                                    if key[0] != "_":
+                                        relation_object[key] = sub_edge2[key]
+                                relation_object["key"] = sub_edge2["_to"]
+                                relation_object["type"] = relation
+                                if relation_object not in relations:
+                                    relations.append(relation_object)
+
+                        else:
+                            if relation_object not in relations:
+                                relations.append(relation_object)
 
         return relations
 
@@ -227,7 +247,7 @@ FOR c IN @@collection
         return mediafiles
 
     def set_primary_field_collection_item(
-        self, collection, entity_id, mediafile_id, field
+            self, collection, entity_id, mediafile_id, field
     ):
         entity = self.get_raw_item_from_collection_by_id(collection, entity_id)
         for edge in entity.getOutEdges(self.db[self.mediafile_edge_name]):
@@ -236,7 +256,7 @@ FOR c IN @@collection
                 edge[field] = False
                 edge.save()
             elif edge["_to"] == new_primary_id and (
-                field not in edge or not edge[field]
+                    field not in edge or not edge[field]
             ):
                 edge[field] = True
                 edge.save()
