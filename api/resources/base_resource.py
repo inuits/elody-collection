@@ -106,6 +106,9 @@ class BaseResource(Resource):
         message = json.loads(to_json(event))
         app.ramq.send(message, routing_key="dams.entity_changed", exchange_name="dams")
 
+    def _signal_entity_deleted(self, entity):
+        pass
+
     def _get_raw_id(self, item):
         return item["_key"] if "_key" in item else item["_id"]
 
