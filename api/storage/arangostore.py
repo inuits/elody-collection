@@ -305,11 +305,20 @@ FOR c IN @@collection
             self.db.graphs[self.default_graph_name].createEdge(
                 relation["type"], entity["_id"], relation["key"], extra_data
             )
+            optional_label = self._map_entity_relation_parent_label(relation["label"])
+            if optional_label is not None:
+                extra_data = {
+                        "label":self._map_entity_relation_parent_label(relation["label"]),
+                        "value": entity["data"]["MensgemaaktObject.titel"]["@value"]
+                    }
+            else:
+                extra_data = {}
+
             self.db.graphs[self.default_graph_name].createEdge(
                 self._map_entity_relation(relation["type"]),
                 relation["key"],
                 entity["_id"],
-                {},
+                extra_data,
             )
         return relations
 
@@ -398,6 +407,12 @@ FOR c IN @@collection
             "isUsedIn": "isTypeOf",
             "carriedOutBy": "hasCarriedOut",
             "hasCarriedOut": "carriedOutBy",
+        }
+        return mapping.get(relation)
+
+    def _map_entity_relation_parent_label(self, relation):
+        mapping = {
+            "GecureerdeCollectie.bestaatUit":"Collectie.naam"
         }
         return mapping.get(relation)
 
