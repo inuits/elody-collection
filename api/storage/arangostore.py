@@ -184,7 +184,7 @@ FOR c IN @@collection
                                 if relation_object not in relations:
                                     relations.append(relation_object)
 
-                        else:
+                        elif relation_object["label"] != "vervaardiger.rol":
                             if relation_object not in relations:
                                 relations.append(relation_object)
 
