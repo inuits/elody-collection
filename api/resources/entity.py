@@ -29,7 +29,7 @@ class Entity(BaseResource):
             entity = self.storage.save_item_to_collection("entities", content)
         except CreationError as ex:
             return ex.errors["errorMessage"], 409
-        self._index_entity(self._get_raw_id(entity))
+        self._signal_entity_changed(entity)
         return entity, 201
 
     @app.require_oauth()
@@ -72,7 +72,7 @@ class EntityDetail(BaseResource):
         content = self.get_request_body()
         self.abort_if_not_valid_json("Entity", content, entity_schema)
         entity = self.storage.update_item_from_collection("entities", id, content)
-        self._index_entity(id)
+        self._signal_entity_changed(entity)
         return entity, 201
 
     @app.require_oauth()
@@ -80,14 +80,16 @@ class EntityDetail(BaseResource):
         self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
         entity = self.storage.patch_item_from_collection("entities", id, content)
-        self._index_entity(id)
+        self._signal_entity_changed(entity)
         return entity, 201
 
     @app.require_oauth()
     def delete(self, id):
-        self.abort_if_item_doesnt_exist("entities", id)
+        entity = self.abort_if_item_doesnt_exist("entities", id)
         self.storage.delete_item_from_collection("entities", id)
+        self._signal_entity_deleted(entity)
         return "", 204
+
 
 class BoxVisit(BaseResource):
     @app.require_oauth()
@@ -105,7 +107,7 @@ class BoxVisit(BaseResource):
                 return "Only box_visit type is allowed", 400
         except CreationError as ex:
             return ex.errors["errorMessage"], 409
-        self._index_entity(self._get_raw_id(entity))
+        self._signal_entity_changed(entity)
         return entity, 201
 
     @app.require_oauth()
@@ -145,7 +147,7 @@ class BoxVisitDetail(BaseResource):
         content = self.get_request_body()
         self.abort_if_not_valid_json("Entity", content, entity_schema)
         entity = self.storage.update_item_from_collection("entities", id, content)
-        self._index_entity(id)
+        self._signal_entity_changed(entity)
         return entity, 201
 
     @app.require_oauth()
@@ -153,13 +155,14 @@ class BoxVisitDetail(BaseResource):
         self.abort_if_item_doesnt_exist("entities", id, "box_visit")
         content = self.get_request_body()
         entity = self.storage.patch_item_from_collection("entities", id, content)
-        self._index_entity(id)
+        self._signal_entity_changed(entity)
         return entity, 201
 
     @app.require_oauth()
     def delete(self, id):
-        self.abort_if_item_doesnt_exist("entities", id, "box_visit")
+        entity = self.abort_if_item_doesnt_exist("entities", id, "box_visit")
         self.storage.delete_item_from_collection("entities", id)
+        self._signal_entity_changed(entity)
         return "", 204
 
 
@@ -192,22 +195,22 @@ class EntityMetadata(BaseResource):
 
     @app.require_oauth()
     def post(self, id):
-        self.abort_if_item_doesnt_exist("entities", id)
+        entity = self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
         metadata = self.storage.add_sub_item_to_collection_item(
             "entities", id, "metadata", content
         )
-        self._index_entity(id)
+        self._signal_entity_changed(entity)
         return metadata, 201
 
     @app.require_oauth()
     def put(self, id):
-        self.abort_if_item_doesnt_exist("entities", id)
+        entity = self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
         metadata = self.storage.update_collection_item_sub_item(
             "entities", id, "metadata", content
         )
-        self._index_entity(id)
+        self._signal_entity_changed(entity)
         return metadata, 201
 
 
@@ -222,11 +225,11 @@ class EntityMetadataKey(BaseResource):
 
     @app.require_oauth()
     def delete(self, id, key):
-        self.abort_if_item_doesnt_exist("entities", id)
+        entity = self.abort_if_item_doesnt_exist("entities", id)
         self.storage.delete_collection_item_sub_item_key(
             "entities", id, "metadata", key
         )
-        self._index_entity(id)
+        self._signal_entity_changed(entity)
         return "", 204
 
 
@@ -260,7 +263,7 @@ class EntityMediafiles(BaseResource):
 class EntityMediafilesCreate(BaseResource):
     @app.require_oauth()
     def post(self, id):
-        self.abort_if_item_doesnt_exist("entities", id)
+        entity = self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
         if "filename" not in content:
             abort(
@@ -289,6 +292,7 @@ class EntityMediafilesCreate(BaseResource):
         except Exception as ex:
             job_helper.fail_job(job, str(ex))
             return str(ex), 400
+        self._signal_entity_changed(entity)
         return upload_location, 201
 
 
@@ -306,32 +310,32 @@ class EntityRelations(BaseResource):
 
     @app.require_oauth()
     def post(self, id):
-        self.abort_if_item_doesnt_exist("entities", id)
+        entity = self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
         relations = self.storage.add_relations_to_collection_item(
             "entities", id, content
         )
-        self._index_entity(id)
+        self._signal_entity_changed(entity)
         return relations, 201
 
     @app.require_oauth()
     def put(self, id):
-        self.abort_if_item_doesnt_exist("entities", id)
+        entity = self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
         relations = self.storage.update_collection_item_relations(
             "entities", id, content
         )
-        self._index_entity(id)
+        self._signal_entity_changed(entity)
         return relations, 201
 
     @app.require_oauth()
     def patch(self, id):
-        self.abort_if_item_doesnt_exist("entities", id)
+        entity = self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
         relations = self.storage.patch_collection_item_relations(
             "entities", id, content
         )
-        self._index_entity(id)
+        self._signal_entity_changed(entity)
         return relations, 201
 
 
@@ -349,35 +353,35 @@ class EntityComponents(BaseResource):
 
     @app.require_oauth()
     def post(self, id):
-        self.abort_if_item_doesnt_exist("entities", id)
+        entity = self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
         self._abort_if_incorrect_type(content, "components")
         components = self.storage.add_relations_to_collection_item(
             "entities", id, content
         )
-        self._index_entity(id)
+        self._signal_entity_changed(entity)
         return components, 201
 
     @app.require_oauth()
     def put(self, id):
-        self.abort_if_item_doesnt_exist("entities", id)
+        entity = self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
         self._abort_if_incorrect_type(content, "components")
         components = self.storage.update_collection_item_relations(
             "entities", id, content
         )
-        self._index_entity(id)
+        self._signal_entity_changed(entity)
         return components, 201
 
     @app.require_oauth()
     def patch(self, id):
-        self.abort_if_item_doesnt_exist("entities", id)
+        entity = self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
         self._abort_if_incorrect_type(content, "components")
         components = self.storage.patch_collection_item_relations(
             "entities", id, content
         )
-        self._index_entity(id)
+        self._signal_entity_changed(entity)
         return components, 201
 
 
@@ -395,35 +399,35 @@ class EntityParent(BaseResource):
 
     @app.require_oauth()
     def post(self, id):
-        self.abort_if_item_doesnt_exist("entities", id)
+        entity = self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
         self._abort_if_incorrect_type(content, "parent")
         components = self.storage.add_relations_to_collection_item(
             "entities", id, content
         )
-        self._index_entity(id)
+        self._signal_entity_changed(entity)
         return components, 201
 
     @app.require_oauth()
     def put(self, id):
-        self.abort_if_item_doesnt_exist("entities", id)
+        entity = self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
         self._abort_if_incorrect_type(content, "parent")
         components = self.storage.update_collection_item_relations(
             "entities", id, content
         )
-        self._index_entity(id)
+        self._signal_entity_changed(entity)
         return components, 201
 
     @app.require_oauth()
     def patch(self, id):
-        self.abort_if_item_doesnt_exist("entities", id)
+        entity = self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
         self._abort_if_incorrect_type(content, "parent")
         components = self.storage.patch_collection_item_relations(
             "entities", id, content
         )
-        self._index_entity(id)
+        self._signal_entity_changed(entity)
         return components, 201
 
 
@@ -441,35 +445,35 @@ class EntityTypes(BaseResource):
 
     @app.require_oauth()
     def post(self, id):
-        self.abort_if_item_doesnt_exist("entities", id)
+        entity = self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
         self._abort_if_incorrect_type(content, "isTypeOf")
         components = self.storage.add_relations_to_collection_item(
             "entities", id, content
         )
-        self._index_entity(id)
+        self._signal_entity_changed(entity)
         return components, 201
 
     @app.require_oauth()
     def put(self, id):
-        self.abort_if_item_doesnt_exist("entities", id)
+        entity = self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
         self._abort_if_incorrect_type(content, "isTypeOf")
         components = self.storage.update_collection_item_relations(
             "entities", id, content
         )
-        self._index_entity(id)
+        self._signal_entity_changed(entity)
         return components, 201
 
     @app.require_oauth()
     def patch(self, id):
-        self.abort_if_item_doesnt_exist("entities", id)
+        entity = self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
         self._abort_if_incorrect_type(content, "isTypeOf")
         components = self.storage.patch_collection_item_relations(
             "entities", id, content
         )
-        self._index_entity(id)
+        self._signal_entity_changed(entity)
         return components, 201
 
 
@@ -487,33 +491,33 @@ class EntityUsage(BaseResource):
 
     @app.require_oauth()
     def post(self, id):
-        self.abort_if_item_doesnt_exist("entities", id)
+        entity = self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
         self._abort_if_incorrect_type(content, "isUsedIn")
         components = self.storage.add_relations_to_collection_item(
             "entities", id, content
         )
-        self._index_entity(id)
+        self._signal_entity_changed(entity)
         return components, 201
 
     @app.require_oauth()
     def put(self, id):
-        self.abort_if_item_doesnt_exist("entities", id)
+        entity = self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
         self._abort_if_incorrect_type(content, "isUsedIn")
         components = self.storage.update_collection_item_relations(
             "entities", id, content
         )
-        self._index_entity(id)
+        self._signal_entity_changed(entity)
         return components, 201
 
     @app.require_oauth()
     def patch(self, id):
-        self.abort_if_item_doesnt_exist("entities", id)
+        entity = self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
         self._abort_if_incorrect_type(content, "isUsedIn")
         components = self.storage.patch_collection_item_relations(
             "entities", id, content
         )
-        self._index_entity(id)
+        self._signal_entity_changed(entity)
         return components, 201

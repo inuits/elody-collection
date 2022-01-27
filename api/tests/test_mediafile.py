@@ -4,7 +4,7 @@ from tests.base_case import BaseCase
 from unittest.mock import Mock, patch
 
 
-@patch("resources.base_resource.BaseResource._index_entity", new=Mock())
+@patch("resources.base_resource.BaseResource._signal_entity_changed", new=Mock())
 @patch("resources.entity.job_helper", new=Mock())
 class MediafileTest(BaseCase):
     def test_successful_mediafile_create(self):

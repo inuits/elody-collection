@@ -90,21 +90,21 @@ class BaseResource(Resource):
                 )
         return mediafiles
 
-    def _index_entity(self, entity_id):
+    def _signal_entity_changed(self, entity):
         message_id = str(uuid.uuid4())
         attributes = {
             "id": message_id,
             "message_id": message_id,
-            "type": "dams.index_start",
+            "type": "dams.entity_changed",
             "source": "dams",
         }
         data = {
-            "entities_url": "{}/entities/{}".format(self.collection_api_url, entity_id),
+            "location": "/entities/{}".format(self._get_raw_id(entity)),
+            "type": entity["type"] if "type" in entity else "unspecified",
         }
         event = CloudEvent(attributes, data)
         message = json.loads(to_json(event))
-        app.ramq.send(message, routing_key="dams.index_start", exchange_name="dams")
-        return message
+        app.ramq.send(message, routing_key="dams.entity_changed", exchange_name="dams")
 
     def _get_raw_id(self, item):
         return item["_key"] if "_key" in item else item["_id"]
