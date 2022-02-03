@@ -181,7 +181,7 @@ FOR c IN @@collection
                                         relation_object[key] = sub_edge2[key]
                                 relation_object["key"] = sub_edge2["_to"]
                                 relation_object["type"] = relation
-                                if relation_object not in relations:
+                                if relation_object not in relations and relation_object["label"] != "vervaardiger.rol":
                                     relations.append(relation_object)
 
                         elif relation_object["label"] != "vervaardiger.rol":
