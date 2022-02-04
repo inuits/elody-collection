@@ -37,7 +37,7 @@ class Entity(BaseResource):
         skip = int(request.args.get("skip", 0))
         limit = int(request.args.get("limit", 20))
         item_type = request.args.get("type", None)
-        skip_relations = int(request.args.get("skipRelations", 0))
+        skip_relations = int(request.args.get("skip_relations", 0))
         if item_type == "box_visit":
             item_type = "nothing"
         type_var = "type={}&".format(item_type) if item_type else ""
@@ -48,12 +48,12 @@ class Entity(BaseResource):
         count = entities["count"]
         entities["limit"] = limit
         if skip + limit < count:
-            entities["next"] = "/{}?{}skip={}&limit={}".format(
-                "entities", type_var, skip + limit, limit
+            entities["next"] = "/{}?{}skip={}&limit={}&skip_relations={}".format(
+                "entities", type_var, skip + limit, limit, 1 if skip_relations else 0
             )
         if skip > 0:
-            entities["previous"] = "/{}?{}skip={}&limit={}".format(
-                "entities", type_var, max(0, skip - limit), limit
+            entities["previous"] = "/{}?{}skip={}&limit={}&skip_relations={}".format(
+                "entities", type_var, max(0, skip - limit), limit, 1 if skip_relations else 0
             )
         entities["results"] = self._inject_api_urls_into_entities(entities["results"])
         return entities
