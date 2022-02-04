@@ -37,13 +37,14 @@ class Entity(BaseResource):
         skip = int(request.args.get("skip", 0))
         limit = int(request.args.get("limit", 20))
         item_type = request.args.get("type", None)
+        skip_relations = int(request.args.get("skipRelations", 0))
         if item_type == "box_visit":
             item_type = "nothing"
         type_var = "type={}&".format(item_type) if item_type else ""
         ids = request.args.get("ids", None)
         if ids:
             ids = ids.split(",")
-        entities = self.storage.get_entities(skip, limit, item_type, ids)
+        entities = self.storage.get_entities(skip, limit, item_type, ids, skip_relations)
         count = entities["count"]
         entities["limit"] = limit
         if skip + limit < count:

@@ -31,7 +31,7 @@ class ArangoStorageManager:
         )
         self.db = self._create_database_if_not_exists(self.arango_db_name)
 
-    def get_entities(self, skip, limit, item_type=None, ids=None):
+    def get_entities(self, skip, limit, item_type=None, ids=None, skip_relations=0):
         ids_filter = "FILTER c._key IN @ids" if ids else ""
         type_filter = 'FILTER c.type == "{}"'.format(item_type) if item_type else ""
         aql = """
@@ -41,30 +41,37 @@ FOR c IN entities
 """.format(
             ids_filter, type_filter
         )
-        aql2 = """
-    LET new_metadata = (
-        FOR item,edge IN OUTBOUND c GRAPH 'assets'
-            FILTER edge._id NOT LIKE 'hasMediafile%'
-            LET relation = {'key': edge._to, 'type': FIRST(SPLIT(edge._id, '/'))}
-            RETURN HAS(edge, 'label') ? MERGE(relation, {'label': IS_NULL(edge.label.`@value`) ? edge.label : edge.label.`@value`}) : relation
-    )
-    LET all_metadata = {'metadata': APPEND(c.metadata, new_metadata)}
-    LET primary_items = (
-        FOR item, edge IN OUTBOUND c hasMediafile
-            FILTER edge.is_primary == true || edge.is_primary_thumbnail == true
-            LET primary = edge.is_primary != true ? null : {primary_mediafile_location: item.original_file_location, primary_mediafile: item.filename}
-            LET primary_thumb = edge.is_primary_thumbnail != true ? null : {primary_thumbnail_location: item.thumbnail_file_location}
-            RETURN primary != null AND primary_thumb != null ? MERGE(primary, primary_thumb) : (primary ? primary : primary_thumb)
-    )
-    LET merged_primary_items = COUNT(primary_items) > 1 ? MERGE(FIRST(primary_items), LAST(primary_items)) : FIRST(primary_items)
-    LIMIT @skip, @limit
-    RETURN merged_primary_items == null ? MERGE(c, all_metadata) : MERGE(c, all_metadata, merged_primary_items)
-"""
+        if skip_relations == 1:
+            aql2 = """       
+            LET all_metadata = {'metadata': c.metadata}
+                """
+        else:
+            aql2 = """
+            LET new_metadata = (
+                FOR item,edge IN OUTBOUND c GRAPH 'assets'
+                    FILTER edge._id NOT LIKE 'hasMediafile%'
+                    LET relation = {'key': edge._to, 'type': FIRST(SPLIT(edge._id, '/'))}
+                    RETURN HAS(edge, 'label') ? MERGE(relation, {'label': IS_NULL(edge.label.`@value`) ? edge.label : edge.label.`@value`}) : relation
+            )
+            LET all_metadata = {'metadata': APPEND(c.metadata, new_metadata)}
+            """
+        aql3 = """    
+        LET primary_items = (
+            FOR item, edge IN OUTBOUND c hasMediafile
+                FILTER edge.is_primary == true || edge.is_primary_thumbnail == true
+                LET primary = edge.is_primary != true ? null : {primary_mediafile_location: item.original_file_location, primary_mediafile: item.filename}
+                LET primary_thumb = edge.is_primary_thumbnail != true ? null : {primary_thumbnail_location: item.thumbnail_file_location}
+                RETURN primary != null AND primary_thumb != null ? MERGE(primary, primary_thumb) : (primary ? primary : primary_thumb)
+        )
+        LET merged_primary_items = COUNT(primary_items) > 1 ? MERGE(FIRST(primary_items), LAST(primary_items)) : FIRST(primary_items)
+        LIMIT @skip, @limit
+        RETURN merged_primary_items == null ? MERGE(c, all_metadata) : MERGE(c, all_metadata, merged_primary_items)
+    """
         bind = {"skip": skip, "limit": limit}
         if ids:
             bind["ids"] = ids
         results = self.db.AQLQuery(
-            aql + aql2, rawResults=True, bindVars=bind, fullCount=True
+            aql + aql2 + aql3, rawResults=True, bindVars=bind, fullCount=True
         )
         items = dict()
         items["count"] = results.extra["stats"]["fullCount"]
@@ -84,11 +91,11 @@ FOR c IN entities
         extra_query = ""
         for field_name, field_value in fields.items():
             extra_query = (
-                extra_query
-                + """FILTER c.{} == \"{}\"
+                    extra_query
+                    + """FILTER c.{} == \"{}\"
             """.format(
-                    field_name, field_value
-                )
+                field_name, field_value
+            )
             )
         aql = """
 FOR c IN @@collection
@@ -139,11 +146,11 @@ FOR c IN @@collection
         results = self.db.AQLQuery(aql, rawResults=True, bindVars=bind)
         return list(results)
 
-    def get_collection_item_relations(self, collection, id, include_sub_relations = False):
+    def get_collection_item_relations(self, collection, id, include_sub_relations=False):
         entity = self.get_raw_item_from_collection_by_id(collection, id)
         relations = []
         if entity["type"] == "asset":
-            entity_relations =["isIn", "components", "parent"]
+            entity_relations = ["isIn", "components", "parent"]
         elif entity["type"] in ["thesaurus", "museum"]:
             entity_relations = []
         else:
@@ -315,9 +322,9 @@ FOR c IN @@collection
             optional_label = self._map_entity_relation_parent_label(relation["label"])
             if optional_label is not None:
                 extra_data = {
-                        "label":self._map_entity_relation_parent_label(relation["label"]),
-                        "value": entity["data"]["MensgemaaktObject.titel"]["@value"]
-                    }
+                    "label": self._map_entity_relation_parent_label(relation["label"]),
+                    "value": entity["data"]["MensgemaaktObject.titel"]["@value"]
+                }
             else:
                 extra_data = {}
 
@@ -419,7 +426,7 @@ FOR c IN @@collection
 
     def _map_entity_relation_parent_label(self, relation):
         mapping = {
-            "GecureerdeCollectie.bestaatUit":"Collectie.naam"
+            "GecureerdeCollectie.bestaatUit": "Collectie.naam"
         }
         return mapping.get(relation)
 
