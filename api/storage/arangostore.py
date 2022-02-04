@@ -139,7 +139,7 @@ FOR c IN @@collection
         results = self.db.AQLQuery(aql, rawResults=True, bindVars=bind)
         return list(results)
 
-    def get_collection_item_relations(self, collection, id):
+    def get_collection_item_relations(self, collection, id, include_sub_relations = False):
         entity = self.get_raw_item_from_collection_by_id(collection, id)
         relations = []
         for relation in self.entity_relations:
@@ -153,7 +153,7 @@ FOR c IN @@collection
                 relation_object["type"] = relation
                 if relation_object not in relations:
                     relations.append(relation_object)
-                if "value" in relation_object and (
+                if include_sub_relations and "value" in relation_object and (
                         relation_object["value"] == "Productie" or
                         relation_object["value"] == "InformatieObject" or
                         relation_object["value"] == "ConceptueelDing"):

@@ -72,6 +72,7 @@ from resources.entity import (
     EntityMetadataKey,
     EntityParent,
     EntityRelations,
+    EntityRelationsAll,
     EntityTypes,
     EntityUsage,
 )
@@ -101,6 +102,7 @@ api.add_resource(EntityMetadata, "/entities/<string:id>/metadata")
 api.add_resource(EntityMetadataKey, "/entities/<string:id>/metadata/<string:key>")
 api.add_resource(EntityParent, "/entities/<string:id>/parent")
 api.add_resource(EntityRelations, "/entities/<string:id>/relations")
+api.add_resource(EntityRelationsAll, "/entities/<string:id>/relations/all")
 api.add_resource(EntityTypes, "/entities/<string:id>/types")
 api.add_resource(EntityUsage, "/entities/<string:id>/usage")
 

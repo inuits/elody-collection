@@ -295,6 +295,17 @@ class EntityMediafilesCreate(BaseResource):
         self._signal_entity_changed(entity)
         return upload_location, 201
 
+class EntityRelationsAll(BaseResource):
+    @app.require_oauth()
+    def get(self, id):
+        self.abort_if_item_doesnt_exist("entities", id)
+
+        @after_this_request
+        def add_header(response):
+            response.headers["Access-Control-Allow-Origin"] = "*"
+            return response
+
+        return self.storage.get_collection_item_relations("entities", id, include_sub_relations=True)
 
 class EntityRelations(BaseResource):
     @app.require_oauth()
