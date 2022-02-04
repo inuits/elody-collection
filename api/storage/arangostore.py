@@ -142,7 +142,14 @@ FOR c IN @@collection
     def get_collection_item_relations(self, collection, id, include_sub_relations = False):
         entity = self.get_raw_item_from_collection_by_id(collection, id)
         relations = []
-        for relation in self.entity_relations:
+        if entity["type"] == "asset":
+            entity_relations =["isIn", "components", "parent"]
+        elif entity["type"] in ["thesaurus", "museum"]:
+            entity_relations = []
+        else:
+            entity_relations = ["components"]
+
+        for relation in entity_relations:
             for edge in entity.getOutEdges(self.db[relation]):
                 relation_object = {}
                 edge = edge.getStore()
