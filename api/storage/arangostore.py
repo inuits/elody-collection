@@ -75,7 +75,10 @@ FOR c IN entities
         )
         items = dict()
         items["count"] = results.extra["stats"]["fullCount"]
-        items["results"] = list(results)
+        results = list(results)
+        results_sorted = [result_item for i in ids for result_item in results if result_item["_key"] == i]
+        items["results"] = results_sorted
+
         return items
 
     def get_items_from_collection(self, collection, skip=0, limit=20):
