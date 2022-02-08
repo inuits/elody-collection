@@ -76,7 +76,7 @@ FOR c IN entities
         items = dict()
         items["count"] = results.extra["stats"]["fullCount"]
         results = list(results)
-        results_sorted = [result_item for i in ids for result_item in results if result_item["_key"] == i]
+        results_sorted = [result_item for i in ids for result_item in results if result_item["_key"] == i] if ids else results
         items["results"] = results_sorted
 
         return items
