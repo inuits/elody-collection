@@ -76,7 +76,8 @@ FOR c IN entities
         items = dict()
         items["count"] = results.extra["stats"]["fullCount"]
         results = list(results)
-        results_sorted = [result_item for i in ids for result_item in results if result_item["_key"] == i] if ids else results
+        results_sorted = [result_item for i in ids for result_item in results if
+                          result_item["_key"] == i] if ids else results
         items["results"] = results_sorted
 
         return items
@@ -171,9 +172,8 @@ FOR c IN @@collection
                 if relation_object not in relations:
                     relations.append(relation_object)
                 if include_sub_relations and "value" in relation_object and (
-                        relation_object["value"] == "Productie" or
-                        relation_object["value"] == "InformatieObject" or
-                        relation_object["value"] == "ConceptueelDing"):
+                        relation_object["value"] in ["Productie", "InformatieObject", "ConceptueelDing",
+                                                     "InformatieObject"]):
                     sub_entity = self.get_raw_item_from_collection_by_id(collection,
                                                                          relation_object["key"].split("entities/")[1])
 
@@ -403,6 +403,9 @@ FOR c IN @@collection
 """
         bind = {"@collection": collection, "id": id, "sub_item": sub_item, "key": key}
         self.db.AQLQuery(aql, rawResults=True, bindVars=bind)
+
+    def get_custom_query(self, aql, variables):
+        self.db.AQLQuery(aql, rawResults=True, bindVars=variables)
 
     def drop_all_collections(self):
         self.db["entities"].truncate()
