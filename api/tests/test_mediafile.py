@@ -59,7 +59,7 @@ class MediafileTest(BaseCase):
             data=self.filename_with_metadata,
         )
         response = self.app.get(
-            "/entities/{}/mediafiles".format(_id),
+            "/entities/{}/mediafiles?non_public=1".format(_id),
             headers={"Content-Type": "application/json"},
         )
 

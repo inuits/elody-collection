@@ -101,7 +101,7 @@ class EntityTest(BaseCase):
         self.assertEqual(201, response.status_code)
 
         response = self.app.get(
-            "/entities/{}/mediafiles".format(_id),
+            "/entities/{}/mediafiles?non_public=1".format(_id),
             headers={"Content-Type": "application/json"},
         )
 
@@ -143,7 +143,7 @@ class EntityTest(BaseCase):
         self.assertEqual(201, response.status_code)
 
         response = self.app.get(
-            "/entities/{}/mediafiles".format(_id),
+            "/entities/{}/mediafiles?non_public=1".format(_id),
             headers={"Content-Type": "application/json"},
         )
 
@@ -551,7 +551,7 @@ class EntityTest(BaseCase):
             )
 
         response = self.app.get(
-            "/entities/{}/mediafiles".format(_id),
+            "/entities/{}/mediafiles?non_public=1".format(_id),
             headers={"Content-Type": "application/json"},
         )
 
