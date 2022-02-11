@@ -14,7 +14,9 @@ class MongoStorageManager:
         client = MongoClient(mongo_host, mongo_port)
         self.db = client[mongo_db]
 
-    def get_entities(self, skip=0, limit=20, item_type=None, ids=None):
+    def get_entities(
+        self, skip=0, limit=20, item_type=None, ids=None, skip_relations=0
+    ):
         if ids:
             return self.get_items_from_collection_by_ids("entities", ids)
         return self.get_items_from_collection("entities", skip, limit, item_type)

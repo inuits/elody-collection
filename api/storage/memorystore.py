@@ -6,7 +6,9 @@ from copy import deepcopy
 class MemoryStorageManager:
     collections = {"entities": {}, "mediafiles": {}, "tenants": {}, "jobs": {}}
 
-    def get_entities(self, skip=0, limit=20, item_type=None, ids=None):
+    def get_entities(
+        self, skip=0, limit=20, item_type=None, ids=None, skip_relations=0
+    ):
         items = dict()
         items["results"] = list(self.collections["entities"].values())
         if ids:
