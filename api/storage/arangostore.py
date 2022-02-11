@@ -14,6 +14,8 @@ class ArangoStorageManager:
         self.arango_password = os.getenv("ARANGO_DB_PASSWORD")
         self.arango_db_name = os.getenv("ARANGO_DB_NAME")
         self.mediafile_edge_name = os.getenv("MEDIAFILE_EDGE", "hasMediafile")
+        self.stories_edge_name = os.getenv("MEDIAFILE_EDGE", "stories")
+
         self.default_graph_name = os.getenv("DEFAULT_GRAPH", "assets")
         self.entity_relations = [
             "authoredBy",
@@ -22,6 +24,10 @@ class ArangoStorageManager:
             "contains",
             "components",
             "parent",
+<<<<<<< HEAD
+=======
+            "stories"
+>>>>>>> 060cd26 (Fixes #88468)
         ]
         self.edges = self.entity_relations + ["hasMediafile"]
         self.conn = Connection(
@@ -30,6 +36,43 @@ class ArangoStorageManager:
             password=self.arango_password,
         )
         self.db = self._create_database_if_not_exists(self.arango_db_name)
+
+    def get_box_visits(self, skip, limit, item_type=None, ids=None, skip_relations=0):
+        ids_filter = "FILTER c._key IN @ids" if ids else ""
+        type_filter = 'FILTER c.type == "{}"'.format(item_type) if item_type else ""
+        aql = """
+    FOR c IN box_visits
+        {}
+        {}
+    """.format(
+            ids_filter, type_filter
+        )
+
+        aql1 = """
+            LET new_metadata = (
+                FOR item,edge IN OUTBOUND c GRAPH 'assets'
+                    FILTER edge._id NOT LIKE 'hasMediafile%'
+                    LET relation = {'key': edge._to, 'type': FIRST(SPLIT(edge._id, '/'))}
+                    RETURN HAS(edge, 'label') ? MERGE(relation, {'label': IS_NULL(edge.label.`@value`) ? edge.label : edge.label.`@value`}) : relation
+            )
+            LET all_metadata = {'metadata': APPEND(c.metadata, new_metadata)}
+            LIMIT @skip, @limit
+            RETURN MERGE(c, all_metadata)
+            """
+        bind = {"skip": skip, "limit": limit}
+        if ids:
+            bind["ids"] = ids
+        results = self.db.AQLQuery(
+            aql + aql1, rawResults=True, bindVars=bind, fullCount=True
+        )
+        items = dict()
+        items["count"] = results.extra["stats"]["fullCount"]
+        results = list(results)
+        results_sorted = [result_item for i in ids for result_item in results if
+                          result_item["_key"] == i] if ids else results
+        items["results"] = results_sorted
+
+        return items
 
     def get_entities(self, skip, limit, item_type=None, ids=None, skip_relations=0):
         ids_filter = "FILTER c._key IN @ids" if ids else ""
@@ -167,6 +210,8 @@ FOR c IN @@collection
             entity_relations = ["isIn", "components", "parent"]
         elif entity["type"] in ["thesaurus", "museum"]:
             entity_relations = []
+        elif entity["type"] == "box_visit":
+            entity_relations = ["stories"]
         else:
             entity_relations = ["components"]
 
@@ -342,7 +387,7 @@ FOR c IN @@collection
         self.db.AQLQuery(aql, rawResults=True, bindVars=bind)
         return content
 
-    def add_relations_to_collection_item(self, collection, id, relations):
+    def add_relations_to_collection_item(self, collection, id, relations, parent=True):
         entity = self.get_raw_item_from_collection_by_id(collection, id)
         if not entity:
             return None
@@ -362,12 +407,12 @@ FOR c IN @@collection
                 }
             else:
                 extra_data = {}
-
-            self.db.graphs[self.default_graph_name].createEdge(
-                self._map_entity_relation(relation["type"]),
-                relation["key"],
-                entity["_id"],
-                extra_data,
+            if parent:
+                self.db.graphs[self.default_graph_name].createEdge(
+                    self._map_entity_relation(relation["type"]),
+                    relation["key"],
+                    entity["_id"],
+                    extra_data,
             )
         return relations
 
@@ -393,21 +438,21 @@ FOR c IN @@collection
         item = self.patch_item_from_collection(collection, id, patch_data)
         return item[sub_item]
 
-    def update_collection_item_relations(self, collection, id, content):
+    def update_collection_item_relations(self, collection, id, content, parent=True):
         entity = self.get_raw_item_from_collection_by_id(collection, id)
         for relation in self.entity_relations:
             for edge in entity.getEdges(self.db[relation]):
                 edge.delete()
-        return self.add_relations_to_collection_item(collection, id, content)
+        return self.add_relations_to_collection_item(collection, id, content, parent)
 
-    def patch_collection_item_relations(self, collection, id, content):
+    def patch_collection_item_relations(self, collection, id, content, parent=True):
         entity = self.get_raw_item_from_collection_by_id(collection, id)
         for item in content:
             for relation in self.entity_relations:
                 for edge in entity.getEdges(self.db[relation]):
                     if edge["_from"] == item["key"] or edge["_to"] == item["key"]:
                         edge.delete()
-        return self.add_relations_to_collection_item(collection, id, content)
+        return self.add_relations_to_collection_item(collection, id, content, parent)
 
     def patch_item_from_collection(self, collection, id, content):
         item = self.get_raw_item_from_collection_by_id(collection, id)
@@ -437,7 +482,7 @@ FOR c IN @@collection
         self.db.AQLQuery(aql, rawResults=True, bindVars=bind)
 
     def get_custom_query(self, aql, variables):
-        self.db.AQLQuery(aql, rawResults=True, bindVars=variables)
+        return self.db.AQLQuery(aql, rawResults=True, bindVars=variables)
 
     def drop_all_collections(self):
         self.db["entities"].truncate()
@@ -485,6 +530,7 @@ FOR c IN @@collection
             "jobs",
             "mediafiles",
             "key_value_store",
+            "box_visits"
         ]:
             try:
                 self.conn.createCollection(collection, arango_db_name)
@@ -510,9 +556,13 @@ FOR c IN @@collection
             pass
         for edge_name in self.edges:
             to = ["entities"]
+            fr = ["entities"]
             if edge_name == "hasMediafile":
                 to = ["mediafiles"]
-            edge_definition = {"collection": edge_name, "from": ["entities"], "to": to}
+            elif edge_name == "stories":
+                fr = ["box_visits"]
+                to = ["entities"]
+            edge_definition = {"collection": edge_name, "from": fr, "to": to}
             try:
                 self.conn.addEdgeDefinitionToGraph(
                     arango_db_name, self.default_graph_name, edge_definition
@@ -524,9 +574,16 @@ FOR c IN @@collection
     def create_unique_indexes(self, collection, arango_db_name):
         if collection == "entities":
             try:
+<<<<<<< HEAD
                 self.conn[arango_db_name]["entities"].ensureIndex(
                     fields=["object_id"], index_type="hash", unique=True, sparse=True
                 )
+=======
+                self.conn[arango_db_name]['entities'].ensureIndex(fields=["object_id"],
+                                                                  index_type="hash", unique=True, sparse=True)
+                self.conn[arango_db_name]['box_visits'].ensureIndex(fields=["code"],
+                                                                   index_type="hash", unique=True, sparse=True)
+>>>>>>> 060cd26 (Fixes #88468)
                 # disabled for now due to conflict in LDES
                 # self.conn[arango_db_name]['entities'].ensureIndex(fields=["data.dcterms:isVersionOf"],
                 #                                                   index_type="hash", unique=True, sparse=True)

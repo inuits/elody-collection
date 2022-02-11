@@ -165,6 +165,44 @@ key_value_store_schema = {
     },
 }
 
+box_visit_schema = {
+    "type": "object",
+    "default": {},
+    "required": ["code", "start_time"],
+    "properties": {
+        "_id": {
+            "type": "string"
+        },
+        "identifiers": {
+            "type": "array",
+            "default": [],
+            "items": {"$id": "#/properties/identifiers/items"},
+        },
+        "type": {
+            "type": "string",
+            "default": "",
+        },
+        "metadata": {
+            "type": "array",
+            "default": [],
+            "additionalItems": True,
+            "items": {"$id": "#/properties/metadata/items"},
+        },
+        "code": {
+            "type": "string",
+        },
+        "start_time": {
+            "type": "string",
+        },
+        "touch_table_time": {
+            "type": "string",
+        },
+        "frames_seen_last_visit": {
+            "type": "string",
+        },
+    },
+}
+
 
 def validate_json(json, schema):
     try:

@@ -62,8 +62,6 @@ from resources.entity import (
     Entity,
     EntityComponents,
     EntityDetail,
-    BoxVisit,
-    BoxVisitDetail,
     EntityMediafiles,
     EntitySetPrimaryMediafile,
     EntitySetPrimaryThumbnail,
@@ -77,6 +75,7 @@ from resources.entity import (
     EntityUsage,
 )
 from resources.job import Job, JobDetail
+from resources.box_visit import BoxVisit, BoxVisitDetail, BoxVisitRelations, BoxVisitRelationsAll
 from resources.key_value_store import KeyValueStore, KeyValueStoreDetail
 from resources.mediafile import Mediafile, MediafileDetail
 from resources.spec import AsyncAPISpec, OpenAPISpec
@@ -85,8 +84,10 @@ from resources.tenant import Tenant, TenantDetail
 api.add_resource(Entity, "/entities")
 api.add_resource(EntityComponents, "/entities/<string:id>/components")
 api.add_resource(EntityDetail, "/entities/<string:id>")
-api.add_resource(BoxVisit, "/box_visit")
-api.add_resource(BoxVisitDetail, "/box_visit/<string:id>")
+api.add_resource(BoxVisit, "/box_visits")
+api.add_resource(BoxVisitDetail, "/box_visits/<string:id>")
+api.add_resource(BoxVisitRelations, "/box_visits/<string:id>/relations")
+api.add_resource(BoxVisitRelationsAll, "/box_visits/<string:id>/relations/all")
 api.add_resource(
     EntitySetPrimaryMediafile,
     "/entities/<string:id>/set_primary_mediafile/<string:mediafile_id>",
