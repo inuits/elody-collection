@@ -24,10 +24,7 @@ class ArangoStorageManager:
             "contains",
             "components",
             "parent",
-<<<<<<< HEAD
-=======
             "stories"
->>>>>>> 060cd26 (Fixes #88468)
         ]
         self.edges = self.entity_relations + ["hasMediafile"]
         self.conn = Connection(
@@ -574,16 +571,10 @@ FOR c IN @@collection
     def create_unique_indexes(self, collection, arango_db_name):
         if collection == "entities":
             try:
-<<<<<<< HEAD
-                self.conn[arango_db_name]["entities"].ensureIndex(
-                    fields=["object_id"], index_type="hash", unique=True, sparse=True
-                )
-=======
                 self.conn[arango_db_name]['entities'].ensureIndex(fields=["object_id"],
                                                                   index_type="hash", unique=True, sparse=True)
                 self.conn[arango_db_name]['box_visits'].ensureIndex(fields=["code"],
                                                                    index_type="hash", unique=True, sparse=True)
->>>>>>> 060cd26 (Fixes #88468)
                 # disabled for now due to conflict in LDES
                 # self.conn[arango_db_name]['entities'].ensureIndex(fields=["data.dcterms:isVersionOf"],
                 #                                                   index_type="hash", unique=True, sparse=True)

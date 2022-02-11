@@ -38,8 +38,6 @@ class Entity(BaseResource):
         limit = int(request.args.get("limit", 20))
         item_type = request.args.get("type", None)
         skip_relations = int(request.args.get("skip_relations", 0))
-        if item_type == "box_visit":
-            item_type = "nothing"
         type_var = "type={}&".format(item_type) if item_type else ""
         ids = request.args.get("ids", None)
         if ids:
