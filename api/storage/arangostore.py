@@ -21,7 +21,7 @@ class ArangoStorageManager:
             "isIn",
             "contains",
             "components",
-            "parent"
+            "parent",
         ]
         self.edges = self.entity_relations + ["hasMediafile"]
         self.conn = Connection(
@@ -76,8 +76,16 @@ FOR c IN entities
         items = dict()
         items["count"] = results.extra["stats"]["fullCount"]
         results = list(results)
-        results_sorted = [result_item for i in ids for result_item in results if
-                          result_item["_key"] == i] if ids else results
+        results_sorted = (
+            [
+                result_item
+                for i in ids
+                for result_item in results
+                if result_item["_key"] == i
+            ]
+            if ids
+            else results
+        )
         items["results"] = results_sorted
 
         return items
@@ -95,11 +103,11 @@ FOR c IN entities
         extra_query = ""
         for field_name, field_value in fields.items():
             extra_query = (
-                    extra_query
-                    + """FILTER c.{} == \"{}\"
+                extra_query
+                + """FILTER c.{} == \"{}\"
             """.format(
-                field_name, field_value
-            )
+                    field_name, field_value
+                )
             )
         aql = """
 FOR c IN @@collection
@@ -150,7 +158,9 @@ FOR c IN @@collection
         results = self.db.AQLQuery(aql, rawResults=True, bindVars=bind)
         return list(results)
 
-    def get_collection_item_relations(self, collection, id, include_sub_relations=False):
+    def get_collection_item_relations(
+        self, collection, id, include_sub_relations=False
+    ):
         entity = self.get_raw_item_from_collection_by_id(collection, id)
         relations = []
         if entity["type"] == "asset":
@@ -171,11 +181,22 @@ FOR c IN @@collection
                 relation_object["type"] = relation
                 if relation_object not in relations:
                     relations.append(relation_object)
-                if include_sub_relations and "value" in relation_object and (
-                        relation_object["value"] in ["Productie", "InformatieObject", "ConceptueelDing",
-                                                     "InformatieObject"]):
-                    sub_entity = self.get_raw_item_from_collection_by_id(collection,
-                                                                         relation_object["key"].split("entities/")[1])
+                if (
+                    include_sub_relations
+                    and "value" in relation_object
+                    and (
+                        relation_object["value"]
+                        in [
+                            "Productie",
+                            "InformatieObject",
+                            "ConceptueelDing",
+                            "InformatieObject",
+                        ]
+                    )
+                ):
+                    sub_entity = self.get_raw_item_from_collection_by_id(
+                        collection, relation_object["key"].split("entities/")[1]
+                    )
 
                     for sub_edge in sub_entity.getOutEdges(self.db[relation]):
                         relation_object = {}
@@ -187,9 +208,9 @@ FOR c IN @@collection
                         relation_object["type"] = relation
                         if relation_object["value"] == "Creatie":
 
-                            sub_entity2 = self.get_raw_item_from_collection_by_id(collection,
-                                                                                  relation_object["key"].split(
-                                                                                      "entities/")[1])
+                            sub_entity2 = self.get_raw_item_from_collection_by_id(
+                                collection, relation_object["key"].split("entities/")[1]
+                            )
                             for sub_edge2 in sub_entity2.getOutEdges(self.db[relation]):
                                 relation_object = {}
                                 sub_edge2 = sub_edge2.getStore()
@@ -198,7 +219,10 @@ FOR c IN @@collection
                                         relation_object[key] = sub_edge2[key]
                                 relation_object["key"] = sub_edge2["_to"]
                                 relation_object["type"] = relation
-                                if relation_object not in relations and relation_object["label"] != "vervaardiger.rol":
+                                if (
+                                    relation_object not in relations
+                                    and relation_object["label"] != "vervaardiger.rol"
+                                ):
                                     relations.append(relation_object)
 
                         elif relation_object["label"] != "vervaardiger.rol":
@@ -264,7 +288,7 @@ FOR c IN @@collection
         return mediafiles
 
     def set_primary_field_collection_item(
-            self, collection, entity_id, mediafile_id, field
+        self, collection, entity_id, mediafile_id, field
     ):
         entity = self.get_raw_item_from_collection_by_id(collection, entity_id)
         for edge in entity.getOutEdges(self.db[self.mediafile_edge_name]):
@@ -273,21 +297,29 @@ FOR c IN @@collection
                 edge[field] = False
                 edge.save()
             elif edge["_to"] == new_primary_id and (
-                    field not in edge or not edge[field]
+                field not in edge or not edge[field]
             ):
                 edge[field] = True
                 edge.save()
 
-    def add_mediafile_to_collection_item(self, collection, id, mediafile_id, mediafile_public):
+    def add_mediafile_to_collection_item(
+        self, collection, id, mediafile_id, mediafile_public
+    ):
         entity = self.get_raw_item_from_collection_by_id(collection, id)
         if not entity:
             return None
-        extra_data = {"is_primary": mediafile_public, "is_primary_thumbnail": mediafile_public}
+        extra_data = {
+            "is_primary": mediafile_public,
+            "is_primary_thumbnail": mediafile_public,
+        }
         if mediafile_public:
             for edge in entity.getOutEdges(self.db["hasMediafile"]):
                 if "is_primary" in edge and edge["is_primary"] is True:
                     extra_data["is_primary"] = False
-                if "is_primary_thumbnail" in edge and edge["is_primary_thumbnail"] is True:
+                if (
+                    "is_primary_thumbnail" in edge
+                    and edge["is_primary_thumbnail"] is True
+                ):
                     extra_data["is_primary_thumbnail"] = False
         self.db.graphs[self.default_graph_name].createEdge(
             self.mediafile_edge_name, entity["_id"], mediafile_id, extra_data
@@ -326,7 +358,7 @@ FOR c IN @@collection
             if optional_label is not None:
                 extra_data = {
                     "label": self._map_entity_relation_parent_label(relation["label"]),
-                    "value": entity["data"]["MensgemaaktObject.titel"]["@value"]
+                    "value": entity["data"]["MensgemaaktObject.titel"]["@value"],
                 }
             else:
                 extra_data = {}
@@ -431,9 +463,7 @@ FOR c IN @@collection
         return mapping.get(relation)
 
     def _map_entity_relation_parent_label(self, relation):
-        mapping = {
-            "GecureerdeCollectie.bestaatUit": "Collectie.naam"
-        }
+        mapping = {"GecureerdeCollectie.bestaatUit": "Collectie.naam"}
         return mapping.get(relation)
 
     def _get_field_for_id(self, collection, id, field):
@@ -494,8 +524,9 @@ FOR c IN @@collection
     def create_unique_indexes(self, collection, arango_db_name):
         if collection == "entities":
             try:
-                self.conn[arango_db_name]['entities'].ensureIndex(fields=["object_id"],
-                                                                  index_type="hash", unique=True, sparse=True)
+                self.conn[arango_db_name]["entities"].ensureIndex(
+                    fields=["object_id"], index_type="hash", unique=True, sparse=True
+                )
                 # disabled for now due to conflict in LDES
                 # self.conn[arango_db_name]['entities'].ensureIndex(fields=["data.dcterms:isVersionOf"],
                 #                                                   index_type="hash", unique=True, sparse=True)

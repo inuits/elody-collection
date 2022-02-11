@@ -44,7 +44,9 @@ class Entity(BaseResource):
         ids = request.args.get("ids", None)
         if ids:
             ids = ids.split(",")
-        entities = self.storage.get_entities(skip, limit, item_type, ids, skip_relations)
+        entities = self.storage.get_entities(
+            skip, limit, item_type, ids, skip_relations
+        )
         count = entities["count"]
         entities["limit"] = limit
         if skip + limit < count:
@@ -53,7 +55,11 @@ class Entity(BaseResource):
             )
         if skip > 0:
             entities["previous"] = "/{}?{}skip={}&limit={}&skip_relations={}".format(
-                "entities", type_var, max(0, skip - limit), limit, 1 if skip_relations else 0
+                "entities",
+                type_var,
+                max(0, skip - limit),
+                limit,
+                1 if skip_relations else 0,
             )
         entities["results"] = self._inject_api_urls_into_entities(entities["results"])
         return entities
@@ -240,7 +246,11 @@ class EntityMediafiles(BaseResource):
         self.abort_if_item_doesnt_exist("entities", id)
         mediafiles = self.storage.get_collection_item_mediafiles("entities", id)
         if not request.args.get("non_public"):
-            mediafiles = [mediafile for mediafile in mediafiles if self._mediafile_is_public(mediafile)]
+            mediafiles = [
+                mediafile
+                for mediafile in mediafiles
+                if self._mediafile_is_public(mediafile)
+            ]
 
         @after_this_request
         def add_header(response):
@@ -296,6 +306,7 @@ class EntityMediafilesCreate(BaseResource):
         self._signal_entity_changed(entity)
         return upload_location, 201
 
+
 class EntityRelationsAll(BaseResource):
     @app.require_oauth()
     def get(self, id):
@@ -306,7 +317,10 @@ class EntityRelationsAll(BaseResource):
             response.headers["Access-Control-Allow-Origin"] = "*"
             return response
 
-        return self.storage.get_collection_item_relations("entities", id, include_sub_relations=True)
+        return self.storage.get_collection_item_relations(
+            "entities", id, include_sub_relations=True
+        )
+
 
 class EntityRelations(BaseResource):
     @app.require_oauth()

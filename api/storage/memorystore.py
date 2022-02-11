@@ -81,7 +81,9 @@ class MemoryStorageManager:
             )
         return None
 
-    def add_mediafile_to_collection_item(self, collection, obj_id, mediafile_id, mediafile_public):
+    def add_mediafile_to_collection_item(
+        self, collection, obj_id, mediafile_id, mediafile_public
+    ):
         if item := self.get_item_from_collection_by_id(collection, obj_id):
             identifiers = item["identifiers"]
             if collection not in self.collections["mediafiles"][mediafile_id]:
