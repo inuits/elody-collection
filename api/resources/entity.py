@@ -245,7 +245,6 @@ class EntityRelationsAll(BaseResource):
         )
 
 
-
 class EntityRelations(BaseResource):
     @app.require_oauth()
     def get(self, id):

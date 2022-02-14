@@ -31,7 +31,7 @@ class PyArangoConnection(Connection, ABC):
     def createGraph(self, name, db_name, args=None):
         return self.create_helper(name, db_name, "gharial", args, 202)
 
-    def addEdgeDefinitionToGraph(self, db_name, graph, edge_definition):
+    def addEdgeDefinitionToGraph(self, graph, db_name, edge_definition):
         payload = json.dumps(edge_definition, default=str)
         url = "{}/_db/{}/_api/gharial/{}/edge".format(
             self.getEndpointURL(), db_name, graph

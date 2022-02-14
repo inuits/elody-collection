@@ -1,10 +1,9 @@
+import app
 import os
-import sys
 import uuid
 
-import app
-from .py_arango_connection_extension import PyArangoConnection as Connection
 from pyArango.theExceptions import DocumentNotFoundError, CreationError
+from .py_arango_connection_extension import PyArangoConnection as Connection
 
 
 class ArangoStorageManager:
@@ -13,10 +12,15 @@ class ArangoStorageManager:
         self.arango_username = os.getenv("ARANGO_DB_USERNAME")
         self.arango_password = os.getenv("ARANGO_DB_PASSWORD")
         self.arango_db_name = os.getenv("ARANGO_DB_NAME")
-        self.mediafile_edge_name = os.getenv("MEDIAFILE_EDGE", "hasMediafile")
-        self.stories_edge_name = os.getenv("MEDIAFILE_EDGE", "stories")
-
         self.default_graph_name = os.getenv("DEFAULT_GRAPH", "assets")
+        self.collections = [
+            "box_visits",
+            "entities",
+            "jobs",
+            "key_value_store",
+            "mediafiles",
+            "tenants",
+        ]
         self.entity_relations = [
             "authoredBy",
             "authored",
@@ -24,7 +28,7 @@ class ArangoStorageManager:
             "contains",
             "components",
             "parent",
-            "stories"
+            "stories",
         ]
         self.edges = self.entity_relations + ["hasMediafile"]
         self.conn = Connection(
@@ -32,11 +36,11 @@ class ArangoStorageManager:
             username=self.arango_username,
             password=self.arango_password,
         )
-        self.db = self._create_database_if_not_exists(self.arango_db_name)
+        self.db = self._create_database_if_not_exists()
 
-    def get_box_visits(self, skip, limit, item_type=None, ids=None, skip_relations=0):
+    def get_box_visits(self, skip, limit, item_type=None, ids=None):
         ids_filter = "FILTER c._key IN @ids" if ids else ""
-        type_filter = 'FILTER c.type == "{}"'.format(item_type) if item_type else ""
+        type_filter = f'FILTER c.type == "{item_type}"' if item_type else ""
         aql = """
     FOR c IN box_visits
         {}
@@ -44,7 +48,6 @@ class ArangoStorageManager:
     """.format(
             ids_filter, type_filter
         )
-
         aql1 = """
             LET new_metadata = (
                 FOR item,edge IN OUTBOUND c GRAPH 'assets'
@@ -65,15 +68,23 @@ class ArangoStorageManager:
         items = dict()
         items["count"] = results.extra["stats"]["fullCount"]
         results = list(results)
-        results_sorted = [result_item for i in ids for result_item in results if
-                          result_item["_key"] == i] if ids else results
+        results_sorted = (
+            [
+                result_item
+                for i in ids
+                for result_item in results
+                if result_item["_key"] == i
+            ]
+            if ids
+            else results
+        )
         items["results"] = results_sorted
 
         return items
 
     def get_entities(self, skip, limit, item_type=None, ids=None, skip_relations=0):
         ids_filter = "FILTER c._key IN @ids" if ids else ""
-        type_filter = 'FILTER c.type == "{}"'.format(item_type) if item_type else ""
+        type_filter = f'FILTER c.type == "{item_type}"' if item_type else ""
         aql = """
 FOR c IN entities
     {}
@@ -143,11 +154,11 @@ FOR c IN entities
         extra_query = ""
         for field_name, field_value in fields.items():
             extra_query = (
-                    extra_query
-                    + """FILTER c.{} == \"{}\"
+                extra_query
+                + """FILTER c.{} == \"{}\"
             """.format(
-                field_name, field_value
-            )
+                    field_name, field_value
+                )
             )
         aql = """
 FOR c IN @@collection
@@ -199,7 +210,7 @@ FOR c IN @@collection
         return list(results)
 
     def get_collection_item_relations(
-            self, collection, id, include_sub_relations=False
+        self, collection, id, include_sub_relations=False
     ):
         entity = self.get_raw_item_from_collection_by_id(collection, id)
         relations = []
@@ -211,7 +222,6 @@ FOR c IN @@collection
             entity_relations = ["stories"]
         else:
             entity_relations = ["components"]
-
         for relation in entity_relations:
             for edge in entity.getOutEdges(self.db[relation]):
                 relation_object = {}
@@ -224,9 +234,9 @@ FOR c IN @@collection
                 if relation_object not in relations:
                     relations.append(relation_object)
                 if (
-                        include_sub_relations
-                        and "value" in relation_object
-                        and (
+                    include_sub_relations
+                    and "value" in relation_object
+                    and (
                         relation_object["value"]
                         in [
                             "Productie",
@@ -234,7 +244,7 @@ FOR c IN @@collection
                             "ConceptueelDing",
                             "InformatieObject",
                         ]
-                )
+                    )
                 ):
                     sub_entity = self.get_raw_item_from_collection_by_id(
                         collection, relation_object["key"].split("entities/")[1]
@@ -262,8 +272,8 @@ FOR c IN @@collection
                                 relation_object["key"] = sub_edge2["_to"]
                                 relation_object["type"] = relation
                                 if (
-                                        relation_object not in relations
-                                        and relation_object["label"] != "vervaardiger.rol"
+                                    relation_object not in relations
+                                    and relation_object["label"] != "vervaardiger.rol"
                                 ):
                                     relations.append(relation_object)
 
@@ -319,33 +329,32 @@ FOR c IN @@collection
     def get_collection_item_mediafiles(self, collection, id):
         entity = self.get_raw_item_from_collection_by_id(collection, id)
         mediafiles = list()
-        for edge in entity.getOutEdges(self.db[self.mediafile_edge_name]):
+        for edge in entity.getOutEdges(self.db["hasMediafile"]):
             mediafile = self.db.fetchDocument(edge["_to"]).getStore()
             if "is_primary" in edge:
                 mediafile["is_primary"] = edge["is_primary"]
             if "is_primary_thumbnail" in edge:
                 mediafile["is_primary_thumbnail"] = edge["is_primary_thumbnail"]
-
             mediafiles.append(mediafile)
         return mediafiles
 
     def set_primary_field_collection_item(
-            self, collection, entity_id, mediafile_id, field
+        self, collection, entity_id, mediafile_id, field
     ):
         entity = self.get_raw_item_from_collection_by_id(collection, entity_id)
-        for edge in entity.getOutEdges(self.db[self.mediafile_edge_name]):
-            new_primary_id = "mediafiles/{}".format(mediafile_id)
+        for edge in entity.getOutEdges(self.db["hasMediafile"]):
+            new_primary_id = f"mediafiles/{mediafile_id}"
             if edge["_to"] != new_primary_id and edge[field]:
                 edge[field] = False
                 edge.save()
             elif edge["_to"] == new_primary_id and (
-                    field not in edge or not edge[field]
+                field not in edge or not edge[field]
             ):
                 edge[field] = True
                 edge.save()
 
     def add_mediafile_to_collection_item(
-            self, collection, id, mediafile_id, mediafile_public
+        self, collection, id, mediafile_id, mediafile_public
     ):
         entity = self.get_raw_item_from_collection_by_id(collection, id)
         if not entity:
@@ -359,12 +368,12 @@ FOR c IN @@collection
                 if "is_primary" in edge and edge["is_primary"] is True:
                     extra_data["is_primary"] = False
                 if (
-                        "is_primary_thumbnail" in edge
-                        and edge["is_primary_thumbnail"] is True
+                    "is_primary_thumbnail" in edge
+                    and edge["is_primary_thumbnail"] is True
                 ):
                     extra_data["is_primary_thumbnail"] = False
         self.db.graphs[self.default_graph_name].createEdge(
-            self.mediafile_edge_name, entity["_id"], mediafile_id, extra_data
+            "hasMediafile", entity["_id"], mediafile_id, extra_data
         )
         return self.db.fetchDocument(mediafile_id).getStore()
 
@@ -531,38 +540,49 @@ FOR c IN @@collection
             return result[0]
         return None
 
-    def _create_database_if_not_exists(self, arango_db_name):
-        if not self.conn.hasDatabase(arango_db_name):
-            self.conn.createDatabase(arango_db_name)
-        for collection in [
-            "entities",
-            "tenants",
-            "jobs",
-            "mediafiles",
-            "key_value_store",
-            "box_visits"
-        ]:
+    def _create_unique_indexes(self, arango_db_name):
+        try:
+            self.conn[arango_db_name]["entities"].ensureIndex(
+                fields=["object_id"], index_type="hash", unique=True, sparse=True
+            )
+            """ Currently disabled because of LDES conflicts
+            self.conn[arango_db_name]["entities"].ensureIndex(
+                fields=["data.dcterms:isVersionOf"],
+                index_type="hash",
+                unique=True,
+                sparse=True,
+            )
+            """
+            self.conn[arango_db_name]["box_visits"].ensureIndex(
+                fields=["code"], index_type="hash", unique=True, sparse=True
+            )
+        except Exception as ex:
+            app.logger.error(f"Could not create unique index: {ex}")
+
+    def _create_database_if_not_exists(self):
+        if not self.conn.hasDatabase(self.arango_db_name):
+            self.conn.createDatabase(self.arango_db_name)
+        for collection in self.collections:
             try:
-                self.conn.createCollection(collection, arango_db_name)
-                self.create_unique_indexes(collection, arango_db_name)
+                self.conn.createCollection(collection, self.arango_db_name)
             except CreationError:
-                self.create_unique_indexes(collection, arango_db_name)
                 continue
+        self._create_unique_indexes(self.arango_db_name)
         for edge in self.edges:
             try:
-                self.conn.createEdge(edge, arango_db_name)
-            except CreationError as ex:
+                self.conn.createEdge(edge, self.arango_db_name)
+            except CreationError:
                 continue
         try:
             self.conn.createGraph(
                 self.default_graph_name,
-                arango_db_name,
+                self.arango_db_name,
                 {
                     "edgeDefinitions": [],
                     "orphanCollections": [],
                 },
             )
-        except CreationError as ex:
+        except CreationError:
             pass
         for edge_name in self.edges:
             to = ["entities"]
@@ -571,25 +591,12 @@ FOR c IN @@collection
                 to = ["mediafiles"]
             elif edge_name == "stories":
                 fr = ["box_visits"]
-                to = ["entities"]
-            edge_definition = {"collection": edge_name, "from": fr, "to": to}
             try:
                 self.conn.addEdgeDefinitionToGraph(
-                    arango_db_name, self.default_graph_name, edge_definition
+                    self.default_graph_name,
+                    self.arango_db_name,
+                    {"collection": edge_name, "from": fr, "to": to},
                 )
-            except CreationError as ex:
+            except CreationError:
                 continue
-        return self.conn[arango_db_name]
-
-    def create_unique_indexes(self, collection, arango_db_name):
-        if collection == "entities":
-            try:
-                self.conn[arango_db_name]['entities'].ensureIndex(fields=["object_id"],
-                                                                  index_type="hash", unique=True, sparse=True)
-                self.conn[arango_db_name]['box_visits'].ensureIndex(fields=["code"],
-                                                                    index_type="hash", unique=True, sparse=True)
-                # disabled for now due to conflict in LDES
-                # self.conn[arango_db_name]['entities'].ensureIndex(fields=["data.dcterms:isVersionOf"],
-                #                                                   index_type="hash", unique=True, sparse=True)
-            except Exception as ex:
-                app.logger.error("Could not create unique index: " + str(ex))
+        return self.conn[self.arango_db_name]

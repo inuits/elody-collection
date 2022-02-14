@@ -170,9 +170,7 @@ box_visit_schema = {
     "default": {},
     "required": ["code", "start_time"],
     "properties": {
-        "_id": {
-            "type": "string"
-        },
+        "_id": {"type": "string"},
         "identifiers": {
             "type": "array",
             "default": [],

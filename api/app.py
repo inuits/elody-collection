@@ -75,7 +75,12 @@ from resources.entity import (
     EntityUsage,
 )
 from resources.job import Job, JobDetail
-from resources.box_visit import BoxVisit, BoxVisitDetail, BoxVisitRelations, BoxVisitRelationsAll
+from resources.box_visit import (
+    BoxVisit,
+    BoxVisitDetail,
+    BoxVisitRelations,
+    BoxVisitRelationsAll,
+)
 from resources.key_value_store import KeyValueStore, KeyValueStoreDetail
 from resources.mediafile import Mediafile, MediafileDetail
 from resources.spec import AsyncAPISpec, OpenAPISpec

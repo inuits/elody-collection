@@ -14,7 +14,7 @@ class BoxVisit(BaseResource):
     def post(self):
         content = self.get_request_body()
         first_story_id = content["story_id"] if "story_id" in content else None
-        first_story = self.abort_if_item_doesnt_exist("entities",first_story_id)
+        first_story = self.abort_if_item_doesnt_exist("entities", first_story_id)
         code = self._get_unique_code()
 
         box_visit = {
@@ -24,7 +24,7 @@ class BoxVisit(BaseResource):
             "start_time": datetime.now().isoformat(),
             "metadata": [],
             "frames_seen_last_visit": 0,
-            "touch_table_time": None
+            "touch_table_time": None,
         }
         box_visit = self.storage.save_item_to_collection("box_visits", box_visit)
         relation = {
@@ -32,7 +32,7 @@ class BoxVisit(BaseResource):
             "label": "story",
             "key": first_story["_id"],
             "active": True,
-            "last_frame": ""
+            "last_frame": "",
         }
 
         self.storage.add_relations_to_collection_item(
@@ -45,7 +45,9 @@ class BoxVisit(BaseResource):
         random_codes = list()
         # try 5 random codes at once to limit requests to database
         for i in range(5):
-            random_codes.append(''.join(["{}".format(random.randint(0, 9)) for num in range(0, 8)]))
+            random_codes.append(
+                "".join(["{}".format(random.randint(0, 9)) for num in range(0, 8)])
+            )
         query = """
         FOR bv IN @@collection
             FILTER bv.code IN @code_list
@@ -107,6 +109,7 @@ class BoxVisitDetail(BaseResource):
         self.storage.delete_item_from_collection("box_visits", id)
         return "", 204
 
+
 class BoxVisitRelationsAll(BaseResource):
     @app.require_oauth()
     def get(self, id):
@@ -117,7 +120,9 @@ class BoxVisitRelationsAll(BaseResource):
             response.headers["Access-Control-Allow-Origin"] = "*"
             return response
 
-        return self.storage.get_collection_item_relations("box_visits", id, include_sub_relations=True)
+        return self.storage.get_collection_item_relations(
+            "box_visits", id, include_sub_relations=True
+        )
 
 
 class BoxVisitRelations(BaseResource):
