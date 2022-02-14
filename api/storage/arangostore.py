@@ -504,10 +504,8 @@ FOR c IN @@collection
         return self.db.AQLQuery(aql, rawResults=True, bindVars=variables)
 
     def drop_all_collections(self):
-        self.db["entities"].truncate()
-        self.db["jobs"].truncate()
-        self.db["mediafiles"].truncate()
-        self.db["tenants"].truncate()
+        for collection in self.collections:
+            self.db[collection].truncate()
         for edge in self.edges:
             self.db[edge].truncate()
 
