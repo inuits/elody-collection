@@ -178,6 +178,9 @@ class MemoryStorageManager:
     def drop_all_collections(self):
         [self.collections[collection].clear() for collection in self.collections]
 
+    def handle_mediafile_status_change(self, old_mediafile, mediafile):
+        return
+
     def _get_collection_item_gen_id_by_identifier(self, collection, obj_id):
         for item in self.collections[collection].values():
             if ("identifiers" in item and obj_id in item["identifiers"]) or item[

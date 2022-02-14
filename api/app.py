@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 
@@ -6,6 +7,7 @@ from flask_rabmq import RabbitMQ
 from flask_restful import Api
 from flask_swagger_ui import get_swaggerui_blueprint
 from inuits_jwt_auth.authorization import JWTValidator, MyResourceProtector
+from storage.storagemanager import StorageManager
 
 SWAGGER_URL = "/api/docs"  # URL for exposing Swagger UI (without trailing '/')
 API_URL = (
@@ -39,6 +41,20 @@ logger = logging.getLogger(__name__)
 
 ramq = RabbitMQ()
 ramq.init_app(app=app)
+
+
+@ramq.queue(exchange_name="dams", routing_key="dams.mediafile_changed")
+def mediafile_changed(body):
+    data = json.loads(body)["data"]
+    if "old_mediafile" not in data or "mediafile" not in data:
+        logger.error("Message malformed: missing 'old_mediafile' or 'mediafile'")
+        return True
+    StorageManager().get_db_engine().handle_mediafile_status_change(
+        data["old_mediafile"], data["mediafile"]
+    )
+    return True
+
+
 ramq.run_consumer()
 
 require_oauth = MyResourceProtector(

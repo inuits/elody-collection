@@ -509,6 +509,66 @@ FOR c IN @@collection
         for edge in self.edges:
             self.db[edge].truncate()
 
+    def _get_mediafile_publication_status(self, mediafile):
+        if "metadata" not in mediafile:
+            return ""
+        for metadata in mediafile["metadata"]:
+            if metadata["key"] == "publication_status":
+                return metadata["value"]
+        return ""
+
+    def _get_primary_items(self, raw_entity):
+        result = {"primary_mediafile": "", "primary_thumbnail": ""}
+        for edge in raw_entity.getOutEdges(self.db["hasMediafile"]):
+            if "is_primary" in edge and edge["is_primary"]:
+                result["primary_mediafile"] = edge["_to"]
+            if "is_primary_thumbnail" in edge and edge["is_primary_thumbnail"]:
+                result["primary_thumbnail"] = edge["_to"]
+        return result
+
+    def _set_new_primary(self, raw_entity, mediafile=False, thumbnail=False):
+        for edge in raw_entity.getOutEdges(self.db["hasMediafile"]):
+            potential_mediafile = self.db.fetchDocument(edge["_to"]).getStore()
+            if self._get_mediafile_publication_status(potential_mediafile) == "publiek":
+                if mediafile:
+                    edge["is_primary"] = True
+                if thumbnail:
+                    edge["is_primary_thumbnail"] = True
+                edge.save()
+                return
+
+    def handle_mediafile_status_change(self, old_mediafile, mediafile):
+        old_publication_status = self._get_mediafile_publication_status(old_mediafile)
+        new_publication_status = self._get_mediafile_publication_status(mediafile)
+        if old_publication_status == new_publication_status:
+            return
+        for edge in self.db.fetchDocument(mediafile["_id"]).getInEdges(
+            self.db["hasMediafile"]
+        ):
+            raw_entity = self.db.fetchDocument(edge["_from"])
+            primary_items = self._get_primary_items(raw_entity)
+            if new_publication_status == "publiek":
+                if not primary_items["primary_mediafile"]:
+                    edge["is_primary"] = True
+                    edge.save()
+                if not primary_items["primary_thumbnail"]:
+                    edge["is_primary_thumbnail"] = True
+                    edge.save()
+            else:
+                change_primary_mediafile = (
+                    primary_items["primary_mediafile"] == mediafile["_id"]
+                )
+                change_primary_thumbnail = (
+                    primary_items["primary_thumbnail"] == mediafile["_id"]
+                )
+                if change_primary_mediafile or change_primary_thumbnail:
+                    edge["is_primary"] = False
+                    edge["is_primary_thumbnail"] = False
+                    edge.save()
+                    self._set_new_primary(
+                        raw_entity, change_primary_mediafile, change_primary_thumbnail
+                    )
+
     def _map_entity_relation(self, relation):
         mapping = {
             "authoredBy": "authored",

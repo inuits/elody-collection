@@ -169,6 +169,9 @@ class MongoStorageManager:
         self.db.mediafiles.drop()
         self.db.tenants.drop()
 
+    def handle_mediafile_status_change(self, old_mediafile, mediafile):
+        return
+
     def _prepare_mongo_document(self, document, reversed, id=None):
         if id:
             document["_id"] = id
