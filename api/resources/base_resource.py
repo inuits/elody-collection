@@ -111,6 +111,24 @@ class BaseResource(Resource):
     def _signal_entity_deleted(self, entity):
         pass
 
+    def _signal_mediafile_changed(self, old_mediafile, mediafile):
+        message_id = str(uuid.uuid4())
+        attributes = {
+            "id": message_id,
+            "message_id": message_id,
+            "type": "dams.mediafile_changed",
+            "source": "dams",
+        }
+        data = {
+            "old_mediafile": old_mediafile,
+            "mediafile": mediafile,
+        }
+        event = CloudEvent(attributes, data)
+        message = json.loads(to_json(event))
+        app.ramq.send(
+            message, routing_key="dams.mediafile_changed", exchange_name="dams"
+        )
+
     def _get_raw_id(self, item):
         return item["_key"] if "_key" in item else item["_id"]
 
