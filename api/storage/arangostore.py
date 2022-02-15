@@ -434,22 +434,12 @@ FOR c IN @@collection
         return item.getStore()
 
     def update_item_from_collection(self, collection, id, content):
-        item = self.get_raw_item_from_collection_by_id(collection, id)
-        item.set(content)
-        item.save()
-        self._update_parent_relation_values(item.getStore())
-        return item.getStore()
-
-    def _update_parent_relation_values(self, entity):
-        if "metadata" in entity:
-            for metadata in entity["metadata"]:
-                if "key" in metadata and metadata["key"] == "title":
-                    for edge in entity.getEdges(self.db["components"]):
-                        patch = {"value": metadata["value"]}
-                        edge.set(patch)
-                        edge.patch()
-                    break
-        return True
+        raw_item = self.get_raw_item_from_collection_by_id(collection, id)
+        raw_item.set(content)
+        raw_item.save()
+        item = raw_item.getStore()
+        self._update_parent_relation_values(raw_item, item)
+        return item
 
     def update_collection_item_sub_item(self, collection, id, sub_item, content):
         patch_data = {sub_item: content}
@@ -473,11 +463,12 @@ FOR c IN @@collection
         return self.add_relations_to_collection_item(collection, id, content, parent)
 
     def patch_item_from_collection(self, collection, id, content):
-        item = self.get_raw_item_from_collection_by_id(collection, id)
-        item.set(content)
-        item.patch()
-        self._update_parent_relation_values(item)
-        return item.getStore()
+        raw_item = self.get_raw_item_from_collection_by_id(collection, id)
+        raw_item.set(content)
+        raw_item.patch()
+        item = raw_item.getStore()
+        self._update_parent_relation_values(raw_item, item)
+        return item
 
     def delete_item_from_collection(self, collection, id):
         item = self.get_raw_item_from_collection_by_id(collection, id)
@@ -568,6 +559,17 @@ FOR c IN @@collection
                     self._set_new_primary(
                         raw_entity, change_primary_mediafile, change_primary_thumbnail
                     )
+
+    def _update_parent_relation_values(self, raw_entity, entity):
+        if "metadata" not in entity:
+            return
+        for metadata in entity["metadata"]:
+            if "key" in metadata and metadata["key"] == "title":
+                for edge in raw_entity.getEdges(self.db["components"]):
+                    patch = {"value": metadata["value"]}
+                    edge.set(patch)
+                    edge.patch()
+                break
 
     def _map_entity_relation(self, relation):
         mapping = {
