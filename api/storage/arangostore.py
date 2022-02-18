@@ -29,6 +29,8 @@ class ArangoStorageManager:
             "components",
             "parent",
             "stories",
+            "visited",
+            "inBasket",
         ]
         self.edges = self.entity_relations + ["hasMediafile"]
         self.conn = Connection(
@@ -219,7 +221,7 @@ FOR c IN @@collection
         elif entity["type"] in ["thesaurus", "museum"]:
             entity_relations = []
         elif entity["type"] == "box_visit":
-            entity_relations = ["stories"]
+            entity_relations = ["stories", "visited", "inBasket"]
         else:
             entity_relations = ["components"]
         for relation in entity_relations:
