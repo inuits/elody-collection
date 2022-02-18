@@ -48,7 +48,7 @@ class JobDetail(BaseResource):
             job["status"] == Status.FINISHED.value
             or job["status"] == Status.FAILED.value
         ):
-            app.ramq.send(job, routing_key="dams.jobs")
+            app.rabbit.send(job, routing_key="dams.jobs")
 
     @app.require_oauth()
     def get(self, id):

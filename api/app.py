@@ -3,11 +3,11 @@ import logging
 import os
 
 from flask import Flask
-from flask_rabmq import RabbitMQ
 from flask_restful import Api
 from flask_swagger_ui import get_swaggerui_blueprint
 from inuits_jwt_auth.authorization import JWTValidator, MyResourceProtector
 from storage.storagemanager import StorageManager
+from rabbitmq_pika_flask import RabbitMQ
 
 SWAGGER_URL = "/api/docs"  # URL for exposing Swagger UI (without trailing '/')
 API_URL = (
@@ -22,9 +22,8 @@ api = Api(app)
 
 app.config.update(
     {
-        "RABMQ_RABBITMQ_URL": os.getenv("RABMQ_RABBITMQ_URL", "amqp://localhost:5672"),
-        "RABMQ_SEND_EXCHANGE_NAME": os.getenv("RABMQ_SEND_EXCHANGE_NAME", "dams"),
-        "RABMQ_SEND_EXCHANGE_TYPE": "topic",
+        "MQ_EXCHANGE": os.getenv("RABMQ_SEND_EXCHANGE_NAME", "dams"),
+        "MQ_URL": os.getenv("RABMQ_RABBITMQ_URL", "amqp://localhost:5672"),
         "SECRET_KEY": "SomethingNotEntirelySecret",
         "TESTING": True,
         "DEBUG": True,
@@ -39,13 +38,13 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-ramq = RabbitMQ()
-ramq.init_app(app=app)
+rabbit = RabbitMQ()
+rabbit.init_app(app, "basic", json.loads, json.dumps)
 
 
-@ramq.queue(exchange_name="dams", routing_key="dams.mediafile_changed")
-def mediafile_changed(body):
-    data = json.loads(body)["data"]
+@rabbit.queue("dams.mediafile_changed")
+def mediafile_changed(routing_key, body, message_id):
+    data = body["data"]
     if "old_mediafile" not in data or "mediafile" not in data:
         logger.error("Message malformed: missing 'old_mediafile' or 'mediafile'")
         return True
@@ -54,8 +53,6 @@ def mediafile_changed(body):
     )
     return True
 
-
-ramq.run_consumer()
 
 require_oauth = MyResourceProtector(
     os.getenv("STATIC_JWT", False),
