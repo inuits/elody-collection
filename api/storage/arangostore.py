@@ -27,6 +27,7 @@ class ArangoStorageManager:
             "isIn",
             "contains",
             "components",
+            "frames",
             "parent",
             "stories",
             "visited",
@@ -222,6 +223,8 @@ FOR c IN @@collection
             entity_relations = []
         elif entity["type"] == "box_visit":
             entity_relations = ["stories", "visited", "inBasket"]
+        elif entity["type"] == "story":
+            entity_relations = ["frames"]
         else:
             entity_relations = ["components"]
         for relation in entity_relations:
