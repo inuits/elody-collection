@@ -242,17 +242,22 @@ FOR c IN @@collection
                     relations.append(relation_object)
                 if (
                         include_sub_relations
-                        and "value" in relation_object
-                        and (
-                        relation_object["value"]
-                        in [
-                            "Productie",
-                            "InformatieObject",
-                            "ConceptueelDing",
-                            "InformatieObject",
-                        ]
-                )
-                ):
+                        and ("value" in relation_object
+                             and (
+                                     relation_object["value"]
+                                     in [
+                                         "Productie",
+                                         "InformatieObject",
+                                         "ConceptueelDing",
+                                         "InformatieObject",
+                                         "Classificatie"
+                                     ])
+                             or ("label" in relation_object
+                                 and (
+                                         relation_object["label"]
+                                         in ["MaterieelDing.bestaatUit"]
+                                 )
+                             ))):
                     sub_entity = self.get_raw_item_from_collection_by_id(
                         collection, relation_object["key"].split("entities/")[1]
                     )
