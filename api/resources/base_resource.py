@@ -75,7 +75,7 @@ class BaseResource(Resource):
                 entity[
                     "primary_thumbnail_location"
                 ] = f'{self.storage_api_url}{entity["primary_thumbnail_location"]}'
-            if "primary_mediafile_location" in entity:
+            if "primary_transcode_location" in entity:
                 entity[
                     "primary_transcode_location"
                 ] = f'{self.storage_api_url}{entity["primary_transcode_location"]}'
