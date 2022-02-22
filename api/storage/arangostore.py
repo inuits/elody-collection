@@ -30,6 +30,8 @@ class ArangoStorageManager:
             "frames",
             "parent",
             "stories",
+            "box_stories",
+            "box",
             "visited",
             "inBasket",
         ]
@@ -222,8 +224,10 @@ FOR c IN @@collection
             entity_relations = []
         elif entity["type"] == "box_visit":
             entity_relations = ["stories", "visited", "inBasket"]
+        elif entity["type"] == "box":
+            entity_relations = ["box_stories"]
         elif entity["type"] == "story":
-            entity_relations = ["frames"]
+            entity_relations = ["frames", "box"]
         elif entity["type"] == "frame":
             entity_relations = ["stories"]
         else:
@@ -594,6 +598,8 @@ FOR c IN @@collection
             "carriedOutBy": "hasCarriedOut",
             "hasCarriedOut": "carriedOutBy",
             "frames": "stories",
+            "box": "box_stories",
+            "box_stories": "box"
         }
         return mapping.get(relation)
 
