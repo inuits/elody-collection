@@ -68,25 +68,33 @@ class BaseResource(Resource):
     def _inject_api_urls_into_entities(self, entities):
         for entity in entities:
             if "primary_mediafile_location" in entity:
-                entity["primary_mediafile_location"] = (
-                    self.storage_api_url + entity["primary_mediafile_location"]
-                )
+                entity[
+                    "primary_mediafile_location"
+                ] = f'{self.storage_api_url}{entity["primary_mediafile_location"]}'
             if "primary_thumbnail_location" in entity:
-                entity["primary_thumbnail_location"] = (
-                    self.cantaloupe_api_url + entity["primary_thumbnail_location"]
-                )
+                entity[
+                    "primary_thumbnail_location"
+                ] = f'{self.storage_api_url}{entity["primary_thumbnail_location"]}'
+            if "primary_mediafile_location" in entity:
+                entity[
+                    "primary_transcode_location"
+                ] = f'{self.storage_api_url}{entity["primary_transcode_location"]}'
         return entities
 
     def _inject_api_urls_into_mediafiles(self, mediafiles):
         for mediafile in mediafiles:
             if "original_file_location" in mediafile:
-                mediafile["original_file_location"] = (
-                    self.storage_api_url + mediafile["original_file_location"]
-                )
+                mediafile[
+                    "original_file_location"
+                ] = f'{self.storage_api_url}{mediafile["original_file_location"]}'
             if "thumbnail_file_location" in mediafile:
-                mediafile["thumbnail_file_location"] = (
-                    self.cantaloupe_api_url + mediafile["thumbnail_file_location"]
-                )
+                mediafile[
+                    "thumbnail_file_location"
+                ] = f'{self.cantaloupe_api_url}{mediafile["thumbnail_file_location"]}'
+            if "transcode_file_location" in mediafile:
+                mediafile[
+                    "transcode_file_location"
+                ] = f'{self.storage_api_url}{mediafile["transcode_file_location"]}'
         return mediafiles
 
     def _signal_entity_changed(self, entity):
