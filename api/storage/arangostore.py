@@ -418,7 +418,7 @@ FOR c IN @@collection
                 }
             else:
                 extra_data = {}
-            if parent:
+            if parent and entity["type"] != "story":
                 self.db.graphs[self.default_graph_name].createEdge(
                     self._map_entity_relation(relation["type"]),
                     relation["key"],
