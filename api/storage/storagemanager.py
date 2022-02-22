@@ -5,6 +5,7 @@ from storage.memorystore import MemoryStorageManager
 from storage.mongostore import MongoStorageManager
 from singleton import Singleton
 
+
 class StorageManager(metaclass=Singleton):
     def __init__(self):
         self.storage_engine = os.getenv("DB_ENGINE", "arango")
