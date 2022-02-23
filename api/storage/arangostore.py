@@ -452,7 +452,7 @@ FOR c IN @@collection
         raw_item.set(content)
         raw_item.save()
         item = raw_item.getStore()
-        # self._update_parent_relation_values(raw_item, item)
+        self._update_parent_relation_values(raw_item, item)
         return item
 
     def update_collection_item_sub_item(self, collection, id, sub_item, content):
@@ -481,7 +481,7 @@ FOR c IN @@collection
         raw_item.set(content)
         raw_item.patch()
         item = raw_item.getStore()
-        # self._update_parent_relation_values(raw_item, item)
+        self._update_parent_relation_values(raw_item, item)
         return item
 
     def delete_item_from_collection(self, collection, id):
@@ -580,9 +580,10 @@ FOR c IN @@collection
         for metadata in entity["metadata"]:
             if "key" in metadata and metadata["key"] == "title":
                 for edge in raw_entity.getEdges(self.db["components"]):
-                    patch = {"value": metadata["value"]}
-                    edge.set(patch)
-                    edge.patch()
+                    if edge["key"] == entity["_id"]:
+                        patch = {"value": metadata["value"]}
+                        edge.set(patch)
+                        edge.patch()
                 break
 
     def _map_entity_relation(self, relation):
