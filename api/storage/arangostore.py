@@ -229,7 +229,7 @@ FOR c IN @@collection
         elif entity["type"] == "story":
             entity_relations = ["frames", "box"]
         elif entity["type"] == "frame":
-            entity_relations = ["stories"]
+            entity_relations = ["stories", "components"]
         else:
             entity_relations = ["components"]
         for relation in entity_relations:
