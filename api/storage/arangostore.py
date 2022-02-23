@@ -419,7 +419,7 @@ FOR c IN @@collection
             self.db.graphs[self.default_graph_name].createEdge(
                 relation["type"], entity["_id"], relation["key"], extra_data
             )
-            optional_label = self._map_entity_relation_parent_label(relation["label"])
+            optional_label = self._map_entity_relation_parent_label(relation["label"]) if "label" in relation else None
             if optional_label is not None:
                 extra_data = {
                     "label": optional_label,
