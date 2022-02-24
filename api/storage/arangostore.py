@@ -596,10 +596,14 @@ FOR c IN @@collection
                     patch = {"value": new_value}
                     edge.set(patch)
                     edge.patch()
-                    # todo should trigger index on the root entity
-                    # parent_id = edge["_to"] if edge["key"] == edge["_from"] else edge["_from"]
-                    # loop until root entity is found, (type:"asset" with only 1 x ":" in the object_id field)
-                    # should be queued via cloudevent, otherwise current patch call will take to long
+                    attributes = {"type": "dams.edge_changed", "source": "dams"}
+                    data = {
+                        "location": "/entities?ids={}&skip_relations=1".format(entity["_key"]),
+                    }
+                    event = CloudEvent(attributes, data)
+                    message = json.loads(to_json(event))
+                    app.rabbit.send(message, routing_key="dams.edge_changed")
+
 
     def _map_entity_relation(self, relation):
         mapping = {
