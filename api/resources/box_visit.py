@@ -15,6 +15,13 @@ class BoxVisit(BaseResource):
         content = self.get_request_body()
         first_story_id = content["story_id"] if "story_id" in content else None
         first_story = self.abort_if_item_doesnt_exist("entities", first_story_id)
+        first_story = self._add_relations_to_metadata(first_story, "entities")
+        count_frames = 0
+        print(first_story, file=sys.stderr)
+        for item in first_story["metadata"]:
+            if "type" in item and item["type"] == "frames":
+                count_frames = count_frames + 1
+
         code = self._get_unique_code()
 
         box_visit = {
@@ -32,13 +39,15 @@ class BoxVisit(BaseResource):
             "label": "story",
             "key": first_story["_id"],
             "active": True,
+            "total_frames": count_frames,
+            "order": 0,
             "last_frame": "",
         }
 
         self.storage.add_relations_to_collection_item(
             "box_visits", box_visit["_key"], [relation], False
         )
-        return self._add_relations_to_metadata(box_visit, "box_visits")
+        return self._add_relations_to_metadata(box_visit, "box_visits", sort_by="order")
 
     def _get_unique_code(self):
         sys.setrecursionlimit(10000)
@@ -85,7 +94,7 @@ class BoxVisitDetail(BaseResource):
     @app.require_oauth()
     def get(self, id):
         box_visit = self.abort_if_item_doesnt_exist("box_visits", id)
-        box_visit = self._add_relations_to_metadata(box_visit, "box_visits")
+        box_visit = self._add_relations_to_metadata(box_visit, "box_visits", sort_by="order")
         return box_visit
 
     @app.require_oauth()

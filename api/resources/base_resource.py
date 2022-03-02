@@ -138,11 +138,13 @@ class BaseResource(Resource):
                 ]
         return entity
 
-    def _add_relations_to_metadata(self, entity, collection="entities"):
+    def _add_relations_to_metadata(self, entity, collection="entities", sort_by=False):
         relations = self.storage.get_collection_item_relations(
             collection, self._get_raw_id(entity)
         )
         if relations:
+            if sort_by:
+                relations = sorted(relations, key=lambda tup: tup[sort_by])
             if "metadata" in entity:
                 entity["metadata"] = entity["metadata"] + relations
             else:
