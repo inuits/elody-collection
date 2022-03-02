@@ -17,7 +17,6 @@ class BoxVisit(BaseResource):
         first_story = self.abort_if_item_doesnt_exist("entities", first_story_id)
         first_story = self._add_relations_to_metadata(first_story, "entities")
         count_frames = 0
-        print(first_story, file=sys.stderr)
         for item in first_story["metadata"]:
             if "type" in item and item["type"] == "frames":
                 count_frames = count_frames + 1
