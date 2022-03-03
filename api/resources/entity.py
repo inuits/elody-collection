@@ -1,3 +1,5 @@
+import sys
+
 from pyArango.theExceptions import CreationError
 
 import app
@@ -17,7 +19,7 @@ job_helper = JobHelper(
 
 
 class Entity(BaseResource):
-    @app.require_oauth()
+    @app.require_oauth("create-entity")
     def post(self):
         content = self.get_request_body()
         self.abort_if_not_valid_json("Entity", content, entity_schema)
@@ -32,7 +34,7 @@ class Entity(BaseResource):
         self._signal_entity_changed(entity)
         return entity, 201
 
-    @app.require_oauth()
+    @app.require_oauth("read-entity")
     def get(self):
         skip = int(request.args.get("skip", 0))
         limit = int(request.args.get("limit", 20))
@@ -64,14 +66,14 @@ class Entity(BaseResource):
 
 
 class EntityDetail(BaseResource):
-    @app.require_oauth()
+    @app.require_oauth("read-entity")
     def get(self, id):
         entity = self.abort_if_item_doesnt_exist("entities", id)
         entity = self._set_entity_mediafile_and_thumbnail(entity)
         entity = self._add_relations_to_metadata(entity)
         return self._inject_api_urls_into_entities([entity])[0]
 
-    @app.require_oauth()
+    @app.require_oauth("update-entity")
     def put(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
@@ -80,7 +82,7 @@ class EntityDetail(BaseResource):
         self._signal_entity_changed(entity)
         return entity, 201
 
-    @app.require_oauth()
+    @app.require_oauth("patch-entity")
     def patch(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
@@ -88,7 +90,7 @@ class EntityDetail(BaseResource):
         self._signal_entity_changed(entity)
         return entity, 201
 
-    @app.require_oauth()
+    @app.require_oauth("delete-entity")
     def delete(self, id):
         entity = self.abort_if_item_doesnt_exist("entities", id)
         self.storage.delete_item_from_collection("entities", id)
@@ -97,7 +99,7 @@ class EntityDetail(BaseResource):
 
 
 class EntitySetPrimaryMediafile(BaseResource):
-    @app.require_oauth()
+    @app.require_oauth("set-entity-primary-mediafile")
     def put(self, id, mediafile_id):
         self.abort_if_item_doesnt_exist("entities", id)
         self.storage.set_primary_field_collection_item(
@@ -107,7 +109,7 @@ class EntitySetPrimaryMediafile(BaseResource):
 
 
 class EntitySetPrimaryThumbnail(BaseResource):
-    @app.require_oauth()
+    @app.require_oauth("set-entity-primary-thumbnail")
     def put(self, id, mediafile_id):
         self.abort_if_item_doesnt_exist("entities", id)
         self.storage.set_primary_field_collection_item(
@@ -117,13 +119,13 @@ class EntitySetPrimaryThumbnail(BaseResource):
 
 
 class EntityMetadata(BaseResource):
-    @app.require_oauth()
+    @app.require_oauth("read-entity-metadata")
     def get(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         metadata = self.storage.get_collection_item_sub_item("entities", id, "metadata")
         return metadata
 
-    @app.require_oauth()
+    @app.require_oauth("add-entity-metadata")
     def post(self, id):
         entity = self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
@@ -133,7 +135,7 @@ class EntityMetadata(BaseResource):
         self._signal_entity_changed(entity)
         return metadata, 201
 
-    @app.require_oauth()
+    @app.require_oauth("update-entity-metadata")
     def put(self, id):
         entity = self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
@@ -145,7 +147,7 @@ class EntityMetadata(BaseResource):
 
 
 class EntityMetadataKey(BaseResource):
-    @app.require_oauth()
+    @app.require_oauth("read-entity-metadata")
     def get(self, id, key):
         self.abort_if_item_doesnt_exist("entities", id)
         metadata = self.storage.get_collection_item_sub_item_key(
@@ -153,7 +155,7 @@ class EntityMetadataKey(BaseResource):
         )
         return metadata
 
-    @app.require_oauth()
+    @app.require_oauth("delete-entity-metadata")
     def delete(self, id, key):
         entity = self.abort_if_item_doesnt_exist("entities", id)
         self.storage.delete_collection_item_sub_item_key(
@@ -164,7 +166,7 @@ class EntityMetadataKey(BaseResource):
 
 
 class EntityMediafiles(BaseResource):
-    @app.require_oauth()
+    @app.require_oauth("read-entity-mediafiles")
     def get(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         mediafiles = self.storage.get_collection_item_mediafiles("entities", id)
@@ -182,7 +184,7 @@ class EntityMediafiles(BaseResource):
 
         return self._inject_api_urls_into_mediafiles(mediafiles)
 
-    @app.require_oauth()
+    @app.require_oauth("add-entity-mediafiles")
     def post(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
@@ -195,7 +197,7 @@ class EntityMediafiles(BaseResource):
 
 
 class EntityMediafilesCreate(BaseResource):
-    @app.require_oauth()
+    @app.require_oauth("create-entity-mediafile")
     def post(self, id):
         entity = self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
@@ -231,7 +233,7 @@ class EntityMediafilesCreate(BaseResource):
 
 
 class EntityRelationsAll(BaseResource):
-    @app.require_oauth()
+    @app.require_oauth("read-entity-relations")
     def get(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
 
@@ -246,7 +248,7 @@ class EntityRelationsAll(BaseResource):
 
 
 class EntityRelations(BaseResource):
-    @app.require_oauth()
+    @app.require_oauth("read-entity-relations")
     def get(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
 
@@ -257,7 +259,7 @@ class EntityRelations(BaseResource):
 
         return self.storage.get_collection_item_relations("entities", id)
 
-    @app.require_oauth()
+    @app.require_oauth("add-entity-relations")
     def post(self, id):
         entity = self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
@@ -267,7 +269,7 @@ class EntityRelations(BaseResource):
         self._signal_entity_changed(entity)
         return relations, 201
 
-    @app.require_oauth()
+    @app.require_oauth("update-entity-relations")
     def put(self, id):
         entity = self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
@@ -277,7 +279,7 @@ class EntityRelations(BaseResource):
         self._signal_entity_changed(entity)
         return relations, 201
 
-    @app.require_oauth()
+    @app.require_oauth("patch-entity-relations")
     def patch(self, id):
         entity = self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
@@ -286,187 +288,3 @@ class EntityRelations(BaseResource):
         )
         self._signal_entity_changed(entity)
         return relations, 201
-
-
-class EntityComponents(BaseResource):
-    @app.require_oauth()
-    def get(self, id):
-        self.abort_if_item_doesnt_exist("entities", id)
-
-        @after_this_request
-        def add_header(response):
-            response.headers["Access-Control-Allow-Origin"] = "*"
-            return response
-
-        return self.storage.get_collection_item_components("entities", id)
-
-    @app.require_oauth()
-    def post(self, id):
-        entity = self.abort_if_item_doesnt_exist("entities", id)
-        content = self.get_request_body()
-        self._abort_if_incorrect_type(content, "components")
-        components = self.storage.add_relations_to_collection_item(
-            "entities", id, content
-        )
-        self._signal_entity_changed(entity)
-        return components, 201
-
-    @app.require_oauth()
-    def put(self, id):
-        entity = self.abort_if_item_doesnt_exist("entities", id)
-        content = self.get_request_body()
-        self._abort_if_incorrect_type(content, "components")
-        components = self.storage.update_collection_item_relations(
-            "entities", id, content
-        )
-        self._signal_entity_changed(entity)
-        return components, 201
-
-    @app.require_oauth()
-    def patch(self, id):
-        entity = self.abort_if_item_doesnt_exist("entities", id)
-        content = self.get_request_body()
-        self._abort_if_incorrect_type(content, "components")
-        components = self.storage.patch_collection_item_relations(
-            "entities", id, content
-        )
-        self._signal_entity_changed(entity)
-        return components, 201
-
-
-class EntityParent(BaseResource):
-    @app.require_oauth()
-    def get(self, id):
-        self.abort_if_item_doesnt_exist("entities", id)
-
-        @after_this_request
-        def add_header(response):
-            response.headers["Access-Control-Allow-Origin"] = "*"
-            return response
-
-        return self.storage.get_collection_item_components("entities", id)
-
-    @app.require_oauth()
-    def post(self, id):
-        entity = self.abort_if_item_doesnt_exist("entities", id)
-        content = self.get_request_body()
-        self._abort_if_incorrect_type(content, "parent")
-        components = self.storage.add_relations_to_collection_item(
-            "entities", id, content
-        )
-        self._signal_entity_changed(entity)
-        return components, 201
-
-    @app.require_oauth()
-    def put(self, id):
-        entity = self.abort_if_item_doesnt_exist("entities", id)
-        content = self.get_request_body()
-        self._abort_if_incorrect_type(content, "parent")
-        components = self.storage.update_collection_item_relations(
-            "entities", id, content
-        )
-        self._signal_entity_changed(entity)
-        return components, 201
-
-    @app.require_oauth()
-    def patch(self, id):
-        entity = self.abort_if_item_doesnt_exist("entities", id)
-        content = self.get_request_body()
-        self._abort_if_incorrect_type(content, "parent")
-        components = self.storage.patch_collection_item_relations(
-            "entities", id, content
-        )
-        self._signal_entity_changed(entity)
-        return components, 201
-
-
-class EntityTypes(BaseResource):
-    @app.require_oauth()
-    def get(self, id):
-        self.abort_if_item_doesnt_exist("entities", id)
-
-        @after_this_request
-        def add_header(response):
-            response.headers["Access-Control-Allow-Origin"] = "*"
-            return response
-
-        return self.storage.get_collection_item_types("entities", id)
-
-    @app.require_oauth()
-    def post(self, id):
-        entity = self.abort_if_item_doesnt_exist("entities", id)
-        content = self.get_request_body()
-        self._abort_if_incorrect_type(content, "isTypeOf")
-        components = self.storage.add_relations_to_collection_item(
-            "entities", id, content
-        )
-        self._signal_entity_changed(entity)
-        return components, 201
-
-    @app.require_oauth()
-    def put(self, id):
-        entity = self.abort_if_item_doesnt_exist("entities", id)
-        content = self.get_request_body()
-        self._abort_if_incorrect_type(content, "isTypeOf")
-        components = self.storage.update_collection_item_relations(
-            "entities", id, content
-        )
-        self._signal_entity_changed(entity)
-        return components, 201
-
-    @app.require_oauth()
-    def patch(self, id):
-        entity = self.abort_if_item_doesnt_exist("entities", id)
-        content = self.get_request_body()
-        self._abort_if_incorrect_type(content, "isTypeOf")
-        components = self.storage.patch_collection_item_relations(
-            "entities", id, content
-        )
-        self._signal_entity_changed(entity)
-        return components, 201
-
-
-class EntityUsage(BaseResource):
-    @app.require_oauth()
-    def get(self, id):
-        self.abort_if_item_doesnt_exist("entities", id)
-
-        @after_this_request
-        def add_header(response):
-            response.headers["Access-Control-Allow-Origin"] = "*"
-            return response
-
-        return self.storage.get_collection_item_usage("entities", id)
-
-    @app.require_oauth()
-    def post(self, id):
-        entity = self.abort_if_item_doesnt_exist("entities", id)
-        content = self.get_request_body()
-        self._abort_if_incorrect_type(content, "isUsedIn")
-        components = self.storage.add_relations_to_collection_item(
-            "entities", id, content
-        )
-        self._signal_entity_changed(entity)
-        return components, 201
-
-    @app.require_oauth()
-    def put(self, id):
-        entity = self.abort_if_item_doesnt_exist("entities", id)
-        content = self.get_request_body()
-        self._abort_if_incorrect_type(content, "isUsedIn")
-        components = self.storage.update_collection_item_relations(
-            "entities", id, content
-        )
-        self._signal_entity_changed(entity)
-        return components, 201
-
-    @app.require_oauth()
-    def patch(self, id):
-        entity = self.abort_if_item_doesnt_exist("entities", id)
-        content = self.get_request_body()
-        self._abort_if_incorrect_type(content, "isUsedIn")
-        components = self.storage.patch_collection_item_relations(
-            "entities", id, content
-        )
-        self._signal_entity_changed(entity)
-        return components, 201

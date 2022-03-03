@@ -56,9 +56,9 @@ def mediafile_changed(routing_key, body, message_id):
 
 require_oauth = MyResourceProtector(
     os.getenv("STATIC_JWT", False),
-    {},
     os.getenv("REQUIRE_TOKEN", True) == ("True" or "true" or True),
 )
+
 validator = JWTValidator(
     logger,
     os.getenv("STATIC_JWT", False),
@@ -66,6 +66,8 @@ validator = JWTValidator(
     os.getenv("STATIC_PUBLIC_KEY", False),
     os.getenv("REALMS", "").split(","),
     os.getenv("REQUIRE_TOKEN", True) == ("True" or "true" or True),
+    os.getenv("ROLE_PERMISSION_FILE", "role_permission.json"),
+    os.getenv("SUPER_ADMIN_ROLE", "role_super_admin")
 )
 require_oauth.register_token_validator(validator)
 
@@ -73,7 +75,6 @@ app.register_blueprint(swaggerui_blueprint)
 
 from resources.entity import (
     Entity,
-    EntityComponents,
     EntityDetail,
     EntityMediafiles,
     EntitySetPrimaryMediafile,
@@ -81,11 +82,8 @@ from resources.entity import (
     EntityMediafilesCreate,
     EntityMetadata,
     EntityMetadataKey,
-    EntityParent,
     EntityRelations,
     EntityRelationsAll,
-    EntityTypes,
-    EntityUsage,
 )
 from resources.job import Job, JobDetail
 from resources.box_visit import (
@@ -100,7 +98,6 @@ from resources.spec import AsyncAPISpec, OpenAPISpec
 from resources.tenant import Tenant, TenantDetail
 
 api.add_resource(Entity, "/entities")
-api.add_resource(EntityComponents, "/entities/<string:id>/components")
 api.add_resource(EntityDetail, "/entities/<string:id>")
 api.add_resource(BoxVisit, "/box_visits")
 api.add_resource(BoxVisitDetail, "/box_visits/<string:id>")
@@ -119,11 +116,8 @@ api.add_resource(EntityMediafiles, "/entities/<string:id>/mediafiles")
 api.add_resource(EntityMediafilesCreate, "/entities/<string:id>/mediafiles/create")
 api.add_resource(EntityMetadata, "/entities/<string:id>/metadata")
 api.add_resource(EntityMetadataKey, "/entities/<string:id>/metadata/<string:key>")
-api.add_resource(EntityParent, "/entities/<string:id>/parent")
 api.add_resource(EntityRelations, "/entities/<string:id>/relations")
 api.add_resource(EntityRelationsAll, "/entities/<string:id>/relations/all")
-api.add_resource(EntityTypes, "/entities/<string:id>/types")
-api.add_resource(EntityUsage, "/entities/<string:id>/usage")
 
 api.add_resource(Job, "/jobs")
 api.add_resource(JobDetail, "/jobs/<string:id>")
