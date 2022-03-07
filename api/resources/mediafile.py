@@ -61,3 +61,10 @@ class MediafileDetail(BaseResource):
         self.abort_if_item_doesnt_exist("mediafiles", id)
         self.storage.delete_item_from_collection("mediafiles", id)
         return "", 204
+
+
+class MediafileCopyright(BaseResource):
+    @app.require_oauth("get-mediafile-copyright")
+    def get(self, id):
+        mediafile = self.abort_if_item_doesnt_exist("mediafiles", id)
+        return self._get_mediafile_access(mediafile), 200

@@ -93,7 +93,7 @@ from resources.box_visit import (
     BoxVisitRelationsAll,
 )
 from resources.key_value_store import KeyValueStore, KeyValueStoreDetail
-from resources.mediafile import Mediafile, MediafileDetail
+from resources.mediafile import Mediafile, MediafileDetail, MediafileCopyright
 from resources.spec import AsyncAPISpec, OpenAPISpec
 from resources.tenant import Tenant, TenantDetail
 
@@ -127,6 +127,7 @@ api.add_resource(KeyValueStoreDetail, "/key_value_store/<string:id>")
 
 api.add_resource(Mediafile, "/mediafiles")
 api.add_resource(MediafileDetail, "/mediafiles/<string:id>")
+api.add_resource(MediafileCopyright, "/mediafiles/<string:id>/copyright")
 
 api.add_resource(AsyncAPISpec, "/spec/dams-collection-api-events.html")
 api.add_resource(OpenAPISpec, "/spec/dams-collection-api.json")
