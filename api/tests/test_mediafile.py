@@ -5,6 +5,7 @@ from unittest.mock import Mock, patch
 
 
 @patch("resources.base_resource.BaseResource._signal_entity_changed", new=Mock())
+@patch("resources.base_resource.BaseResource._signal_mediafile_changed", new=Mock())
 @patch("resources.entity.job_helper", new=Mock())
 class MediafileTest(BaseCase):
     def test_successful_mediafile_create(self):
