@@ -144,7 +144,12 @@ class BaseResource(Resource):
         )
         if relations:
             if sort_by:
-                relations = sorted(relations, key=lambda tup: tup[sort_by])
+                sort = True
+                for relation in relations:
+                    if "order" not in relation:
+                        sort = False
+                if sort:
+                    relations = sorted(relations, key=lambda tup: tup[sort_by])
             if "metadata" in entity:
                 entity["metadata"] = entity["metadata"] + relations
             else:
