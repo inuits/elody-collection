@@ -93,7 +93,9 @@ class BoxVisitDetail(BaseResource):
     @app.require_oauth("read-box-visit")
     def get(self, id):
         box_visit = self.abort_if_item_doesnt_exist("box_visits", id)
-        box_visit = self._add_relations_to_metadata(box_visit, "box_visits", sort_by="order")
+        box_visit = self._add_relations_to_metadata(
+            box_visit, "box_visits", sort_by="order"
+        )
         return box_visit
 
     @app.require_oauth("update-box-visit")

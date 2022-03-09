@@ -68,7 +68,7 @@ validator = JWTValidator(
     os.getenv("REQUIRE_TOKEN", True) == ("True" or "true" or True),
     os.getenv("ROLE_PERMISSION_FILE", "role_permission.json"),
     os.getenv("SUPER_ADMIN_ROLE", "role_super_admin"),
-    os.getenv("REMOTE_TOKEN_VALIDATION", False)
+    os.getenv("REMOTE_TOKEN_VALIDATION", False),
 )
 require_oauth.register_token_validator(validator)
 

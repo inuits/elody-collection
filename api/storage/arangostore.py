@@ -163,11 +163,11 @@ FOR c IN entities
         extra_query = ""
         for field_name, field_value in fields.items():
             extra_query = (
-                    extra_query
-                    + """FILTER c.{} == \"{}\"
+                extra_query
+                + """FILTER c.{} == \"{}\"
             """.format(
-                field_name, field_value
-            )
+                    field_name, field_value
+                )
             )
         aql = """
 FOR c IN @@collection
@@ -219,7 +219,7 @@ FOR c IN @@collection
         return list(results)
 
     def get_collection_item_relations(
-            self, collection, id, include_sub_relations=False
+        self, collection, id, include_sub_relations=False
     ):
         entity = self.get_raw_item_from_collection_by_id(collection, id)
         relations = []
@@ -249,21 +249,21 @@ FOR c IN @@collection
                 if relation_object not in relations:
                     relations.append(relation_object)
                 if include_sub_relations and (
-                        "value" in relation_object
-                        and (
-                                relation_object["value"]
-                                in [
-                                    "Productie",
-                                    "InformatieObject",
-                                    "ConceptueelDing",
-                                    "InformatieObject",
-                                    "Classificatie",
-                                ]
-                        )
-                        or (
-                                "label" in relation_object
-                                and (relation_object["label"] in ["MaterieelDing.bestaatUit"])
-                        )
+                    "value" in relation_object
+                    and (
+                        relation_object["value"]
+                        in [
+                            "Productie",
+                            "InformatieObject",
+                            "ConceptueelDing",
+                            "InformatieObject",
+                            "Classificatie",
+                        ]
+                    )
+                    or (
+                        "label" in relation_object
+                        and (relation_object["label"] in ["MaterieelDing.bestaatUit"])
+                    )
                 ):
                     sub_entity = self.get_raw_item_from_collection_by_id(
                         collection, relation_object["key"].split("entities/")[1]
@@ -291,8 +291,8 @@ FOR c IN @@collection
                                 relation_object["key"] = sub_edge2["_to"]
                                 relation_object["type"] = relation
                                 if (
-                                        relation_object not in relations
-                                        and relation_object["label"] != "vervaardiger.rol"
+                                    relation_object not in relations
+                                    and relation_object["label"] != "vervaardiger.rol"
                                 ):
                                     relations.append(relation_object)
 
@@ -358,7 +358,7 @@ FOR c IN @@collection
         return mediafiles
 
     def set_primary_field_collection_item(
-            self, collection, entity_id, mediafile_id, field
+        self, collection, entity_id, mediafile_id, field
     ):
         entity = self.get_raw_item_from_collection_by_id(collection, entity_id)
         for edge in entity.getOutEdges(self.db["hasMediafile"]):
@@ -367,13 +367,13 @@ FOR c IN @@collection
                 edge[field] = False
                 edge.save()
             elif edge["_to"] == new_primary_id and (
-                    field not in edge or not edge[field]
+                field not in edge or not edge[field]
             ):
                 edge[field] = True
                 edge.save()
 
     def add_mediafile_to_collection_item(
-            self, collection, id, mediafile_id, mediafile_public
+        self, collection, id, mediafile_id, mediafile_public
     ):
         entity = self.get_raw_item_from_collection_by_id(collection, id)
         if not entity:
@@ -387,8 +387,8 @@ FOR c IN @@collection
                 if "is_primary" in edge and edge["is_primary"] is True:
                     extra_data["is_primary"] = False
                 if (
-                        "is_primary_thumbnail" in edge
-                        and edge["is_primary_thumbnail"] is True
+                    "is_primary_thumbnail" in edge
+                    and edge["is_primary_thumbnail"] is True
                 ):
                     extra_data["is_primary_thumbnail"] = False
         self.db.graphs[self.default_graph_name].createEdge(
@@ -424,7 +424,11 @@ FOR c IN @@collection
             self.db.graphs[self.default_graph_name].createEdge(
                 relation["type"], entity["_id"], relation["key"], extra_data
             )
-            optional_label = self._map_entity_relation_parent_label(relation["label"]) if "label" in relation else None
+            optional_label = (
+                self._map_entity_relation_parent_label(relation["label"])
+                if "label" in relation
+                else None
+            )
             if optional_label is not None:
                 extra_data = {
                     "label": optional_label,
@@ -553,7 +557,7 @@ FOR c IN @@collection
         if old_publication_status == new_publication_status:
             return
         for edge in self.db.fetchDocument(mediafile["_id"]).getInEdges(
-                self.db["hasMediafile"]
+            self.db["hasMediafile"]
         ):
             raw_entity = self.db.fetchDocument(edge["_from"])
             primary_items = self._get_primary_items(raw_entity)
@@ -566,10 +570,10 @@ FOR c IN @@collection
                     edge.save()
             else:
                 change_primary_mediafile = (
-                        primary_items["primary_mediafile"] == mediafile["_id"]
+                    primary_items["primary_mediafile"] == mediafile["_id"]
                 )
                 change_primary_thumbnail = (
-                        primary_items["primary_thumbnail"] == mediafile["_id"]
+                    primary_items["primary_thumbnail"] == mediafile["_id"]
                 )
                 if change_primary_mediafile or change_primary_thumbnail:
                     edge["is_primary"] = False
@@ -598,12 +602,13 @@ FOR c IN @@collection
                     edge.patch()
                     attributes = {"type": "dams.edge_changed", "source": "dams"}
                     data = {
-                        "location": "/entities?ids={}&skip_relations=1".format(entity["_key"]),
+                        "location": "/entities?ids={}&skip_relations=1".format(
+                            entity["_key"]
+                        ),
                     }
                     event = CloudEvent(attributes, data)
                     message = json.loads(to_json(event))
                     app.rabbit.send(message, routing_key="dams.edge_changed")
-
 
     def _map_entity_relation(self, relation):
         mapping = {
@@ -619,7 +624,7 @@ FOR c IN @@collection
             "hasCarriedOut": "carriedOutBy",
             "frames": "stories",
             "box": "box_stories",
-            "box_stories": "box"
+            "box_stories": "box",
         }
         return mapping.get(relation)
 

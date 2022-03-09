@@ -1,9 +1,9 @@
 import os
 
+from singleton import Singleton
 from storage.arangostore import ArangoStorageManager
 from storage.memorystore import MemoryStorageManager
 from storage.mongostore import MongoStorageManager
-from singleton import Singleton
 
 
 class StorageManager(metaclass=Singleton):
