@@ -51,6 +51,7 @@ def mediafile_changed(routing_key, body, message_id):
     StorageManager().get_db_engine().handle_mediafile_status_change(
         data["old_mediafile"], data["mediafile"]
     )
+    StorageManager().get_db_engine().reindex_mediafile_parents(data["mediafile"])
     return True
 
 

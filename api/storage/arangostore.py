@@ -583,6 +583,20 @@ FOR c IN @@collection
                         raw_entity, change_primary_mediafile, change_primary_thumbnail
                     )
 
+    def reindex_mediafile_parents(self, mediafile):
+        for edge in self.db.fetchDocument(mediafile["_id"]).getInEdges(
+            self.db["hasMediafile"]
+        ):
+            entity = self.db.fetchDocument(edge["_from"]).getStore()
+            attributes = {"type": "dams.entity_changed", "source": "dams"}
+            data = {
+                "location": f'/entities/{entity["_key"]}',
+                "type": entity["type"] if "type" in entity else "unspecified",
+            }
+            event = CloudEvent(attributes, data)
+            message = json.loads(to_json(event))
+            app.rabbit.send(message, routing_key="dams.entity_changed")
+
     def _update_parent_relation_values(self, raw_entity, entity):
         if "metadata" not in entity:
             return

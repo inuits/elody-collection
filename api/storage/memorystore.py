@@ -181,6 +181,9 @@ class MemoryStorageManager:
     def handle_mediafile_status_change(self, old_mediafile, mediafile):
         return
 
+    def reindex_mediafile_parents(self, mediafile):
+        return
+
     def _get_collection_item_gen_id_by_identifier(self, collection, obj_id):
         for item in self.collections[collection].values():
             if ("identifiers" in item and obj_id in item["identifiers"]) or item[

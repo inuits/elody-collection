@@ -172,6 +172,9 @@ class MongoStorageManager:
     def handle_mediafile_status_change(self, old_mediafile, mediafile):
         return
 
+    def reindex_mediafile_parents(self, mediafile):
+        return
+
     def _prepare_mongo_document(self, document, reversed, id=None):
         if id:
             document["_id"] = id
