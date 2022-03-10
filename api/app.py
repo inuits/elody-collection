@@ -5,7 +5,7 @@ import os
 from flask import Flask
 from flask_restful import Api
 from flask_swagger_ui import get_swaggerui_blueprint
-from inuits_jwt_auth.authorization import JWTValidator, MyResourceProtector
+from authorization import JWTValidator, MyResourceProtector
 from storage.storagemanager import StorageManager
 from rabbitmq_pika_flask import RabbitMQ
 
@@ -56,16 +56,16 @@ def mediafile_changed(routing_key, body, message_id):
 
 
 require_oauth = MyResourceProtector(
-    os.getenv("STATIC_JWT", False),
     os.getenv("REQUIRE_TOKEN", True) == ("True" or "true" or True),
 )
 validator = JWTValidator(
     logger,
-    os.getenv("STATIC_JWT", False),
     os.getenv("STATIC_ISSUER", False),
     os.getenv("STATIC_PUBLIC_KEY", False),
     os.getenv("REALMS", "").split(","),
-    os.getenv("REQUIRE_TOKEN", True) == ("True" or "true" or True),
+    os.getenv("ROLE_PERMISSION_FILE", "role_permission.json"),
+    os.getenv("SUPER_ADMIN_ROLE", "role_super_admin"),
+    os.getenv("REMOTE_TOKEN_VALIDATION", False),
 )
 require_oauth.register_token_validator(validator)
 
