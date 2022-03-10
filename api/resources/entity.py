@@ -1,7 +1,3 @@
-import sys
-
-from pyArango.theExceptions import CreationError
-
 import app
 import os
 
@@ -9,6 +5,7 @@ from flask import request, after_this_request
 from flask_restful import abort
 from inuits_jwt_auth.authorization import current_token
 from job_helper.job_helper import JobHelper
+from pyArango.theExceptions import CreationError
 from resources.base_resource import BaseResource
 from validator import entity_schema, mediafile_schema
 
@@ -19,7 +16,7 @@ job_helper = JobHelper(
 
 
 class Entity(BaseResource):
-    @app.require_oauth("create-entity")
+    @app.require_oauth()
     def post(self):
         content = self.get_request_body()
         self.abort_if_not_valid_json("Entity", content, entity_schema)
@@ -34,7 +31,7 @@ class Entity(BaseResource):
         self._signal_entity_changed(entity)
         return entity, 201
 
-    @app.require_oauth("read-entity")
+    @app.require_oauth()
     def get(self):
         skip = int(request.args.get("skip", 0))
         limit = int(request.args.get("limit", 20))
@@ -66,14 +63,14 @@ class Entity(BaseResource):
 
 
 class EntityDetail(BaseResource):
-    @app.require_oauth("read-entity")
+    @app.require_oauth()
     def get(self, id):
         entity = self.abort_if_item_doesnt_exist("entities", id)
         entity = self._set_entity_mediafile_and_thumbnail(entity)
         entity = self._add_relations_to_metadata(entity)
         return self._inject_api_urls_into_entities([entity])[0]
 
-    @app.require_oauth("update-entity")
+    @app.require_oauth()
     def put(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
@@ -82,7 +79,7 @@ class EntityDetail(BaseResource):
         self._signal_entity_changed(entity)
         return entity, 201
 
-    @app.require_oauth("patch-entity")
+    @app.require_oauth()
     def patch(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
@@ -90,7 +87,7 @@ class EntityDetail(BaseResource):
         self._signal_entity_changed(entity)
         return entity, 201
 
-    @app.require_oauth("delete-entity")
+    @app.require_oauth()
     def delete(self, id):
         entity = self.abort_if_item_doesnt_exist("entities", id)
         self.storage.delete_item_from_collection("entities", id)
@@ -99,7 +96,7 @@ class EntityDetail(BaseResource):
 
 
 class EntitySetPrimaryMediafile(BaseResource):
-    @app.require_oauth("set-entity-primary-mediafile")
+    @app.require_oauth()
     def put(self, id, mediafile_id):
         self.abort_if_item_doesnt_exist("entities", id)
         self.storage.set_primary_field_collection_item(
@@ -109,7 +106,7 @@ class EntitySetPrimaryMediafile(BaseResource):
 
 
 class EntitySetPrimaryThumbnail(BaseResource):
-    @app.require_oauth("set-entity-primary-thumbnail")
+    @app.require_oauth()
     def put(self, id, mediafile_id):
         self.abort_if_item_doesnt_exist("entities", id)
         self.storage.set_primary_field_collection_item(
@@ -119,13 +116,13 @@ class EntitySetPrimaryThumbnail(BaseResource):
 
 
 class EntityMetadata(BaseResource):
-    @app.require_oauth("read-entity-metadata")
+    @app.require_oauth()
     def get(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         metadata = self.storage.get_collection_item_sub_item("entities", id, "metadata")
         return metadata
 
-    @app.require_oauth("add-entity-metadata")
+    @app.require_oauth()
     def post(self, id):
         entity = self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
@@ -135,7 +132,7 @@ class EntityMetadata(BaseResource):
         self._signal_entity_changed(entity)
         return metadata, 201
 
-    @app.require_oauth("update-entity-metadata")
+    @app.require_oauth()
     def put(self, id):
         entity = self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
@@ -147,7 +144,7 @@ class EntityMetadata(BaseResource):
 
 
 class EntityMetadataKey(BaseResource):
-    @app.require_oauth("read-entity-metadata")
+    @app.require_oauth()
     def get(self, id, key):
         self.abort_if_item_doesnt_exist("entities", id)
         metadata = self.storage.get_collection_item_sub_item_key(
@@ -155,7 +152,7 @@ class EntityMetadataKey(BaseResource):
         )
         return metadata
 
-    @app.require_oauth("delete-entity-metadata")
+    @app.require_oauth()
     def delete(self, id, key):
         entity = self.abort_if_item_doesnt_exist("entities", id)
         self.storage.delete_collection_item_sub_item_key(
@@ -166,7 +163,7 @@ class EntityMetadataKey(BaseResource):
 
 
 class EntityMediafiles(BaseResource):
-    @app.require_oauth("read-entity-mediafiles")
+    @app.require_oauth()
     def get(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         mediafiles = self.storage.get_collection_item_mediafiles("entities", id)
@@ -184,7 +181,7 @@ class EntityMediafiles(BaseResource):
 
         return self._inject_api_urls_into_mediafiles(mediafiles)
 
-    @app.require_oauth("add-entity-mediafiles")
+    @app.require_oauth()
     def post(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
@@ -197,7 +194,7 @@ class EntityMediafiles(BaseResource):
 
 
 class EntityMediafilesCreate(BaseResource):
-    @app.require_oauth("create-entity-mediafile")
+    @app.require_oauth()
     def post(self, id):
         entity = self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
@@ -233,7 +230,7 @@ class EntityMediafilesCreate(BaseResource):
 
 
 class EntityRelationsAll(BaseResource):
-    @app.require_oauth("read-entity-relations")
+    @app.require_oauth()
     def get(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
 
@@ -248,7 +245,7 @@ class EntityRelationsAll(BaseResource):
 
 
 class EntityRelations(BaseResource):
-    @app.require_oauth("read-entity-relations")
+    @app.require_oauth()
     def get(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
 
@@ -259,7 +256,7 @@ class EntityRelations(BaseResource):
 
         return self.storage.get_collection_item_relations("entities", id)
 
-    @app.require_oauth("add-entity-relations")
+    @app.require_oauth()
     def post(self, id):
         entity = self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
@@ -269,7 +266,7 @@ class EntityRelations(BaseResource):
         self._signal_entity_changed(entity)
         return relations, 201
 
-    @app.require_oauth("update-entity-relations")
+    @app.require_oauth()
     def put(self, id):
         entity = self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
@@ -279,7 +276,7 @@ class EntityRelations(BaseResource):
         self._signal_entity_changed(entity)
         return relations, 201
 
-    @app.require_oauth("patch-entity-relations")
+    @app.require_oauth()
     def patch(self, id):
         entity = self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()

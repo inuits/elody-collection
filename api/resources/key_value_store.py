@@ -4,7 +4,7 @@ from resources.base_resource import BaseResource
 
 
 class KeyValueStore(BaseResource):
-    @app.require_oauth("create-key-value-store")
+    @app.require_oauth()
     def post(self):
         content = self.get_request_body()
         self.abort_if_not_valid_json("KeyValueStore", content, key_value_store_schema)
@@ -13,12 +13,12 @@ class KeyValueStore(BaseResource):
 
 
 class KeyValueStoreDetail(BaseResource):
-    @app.require_oauth("read-key-value-store")
+    @app.require_oauth()
     def get(self, id):
         KeyValueStore = self.abort_if_item_doesnt_exist("key_value_store", id)
         return KeyValueStore
 
-    @app.require_oauth("patch-key-value-store")
+    @app.require_oauth()
     def patch(self, id):
         self.abort_if_item_doesnt_exist("key_value_store", id)
         content = self.get_request_body()
@@ -28,7 +28,7 @@ class KeyValueStoreDetail(BaseResource):
         )
         return KeyValueStore, 201
 
-    @app.require_oauth("update-key-value-store")
+    @app.require_oauth()
     def put(self, id):
         self.abort_if_item_doesnt_exist("key_value_store", id)
         content = self.get_request_body()
@@ -38,7 +38,7 @@ class KeyValueStoreDetail(BaseResource):
         )
         return KeyValueStore, 201
 
-    @app.require_oauth("delete-key-value-store")
+    @app.require_oauth()
     def delete(self, id):
         self.abort_if_item_doesnt_exist("key_value_store", id)
         self.storage.delete_item_from_collection("key_value_store", id)
