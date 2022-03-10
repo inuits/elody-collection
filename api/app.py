@@ -5,7 +5,7 @@ import os
 from flask import Flask
 from flask_restful import Api
 from flask_swagger_ui import get_swaggerui_blueprint
-from authorization import JWTValidator, MyResourceProtector
+from inuits_jwt_auth.authorization import JWTValidator, MyResourceProtector
 from storage.storagemanager import StorageManager
 from rabbitmq_pika_flask import RabbitMQ
 
