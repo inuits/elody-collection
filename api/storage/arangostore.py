@@ -637,6 +637,7 @@ FOR c IN @@collection
             "carriedOutBy": "hasCarriedOut",
             "hasCarriedOut": "carriedOutBy",
             "frames": "stories",
+            "stories": "frames",
             "box": "box_stories",
             "box_stories": "box",
         }
