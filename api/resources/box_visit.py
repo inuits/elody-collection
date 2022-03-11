@@ -10,7 +10,7 @@ from datetime import datetime
 
 
 class BoxVisit(BaseResource):
-    @app.require_oauth()
+    @app.require_oauth("create-box-visit")
     def post(self):
         content = self.get_request_body()
         first_story_id = content["story_id"] if "story_id" in content else None
@@ -66,7 +66,7 @@ class BoxVisit(BaseResource):
         for code in random_codes:
             return code if code not in used_codes else self._get_unique_code()
 
-    @app.require_oauth()
+    @app.require_oauth("read-box-visit")
     def get(self):
         skip = int(request.args.get("skip", 0))
         limit = int(request.args.get("limit", 20))
@@ -90,7 +90,7 @@ class BoxVisit(BaseResource):
 
 
 class BoxVisitDetail(BaseResource):
-    @app.require_oauth()
+    @app.require_oauth("read-box-visit")
     def get(self, id):
         box_visit = self.abort_if_item_doesnt_exist("box_visits", id)
         box_visit = self._add_relations_to_metadata(
@@ -98,7 +98,7 @@ class BoxVisitDetail(BaseResource):
         )
         return box_visit
 
-    @app.require_oauth()
+    @app.require_oauth("update-box-visit")
     def put(self, id):
         self.abort_if_item_doesnt_exist("box_visits", id)
         content = self.get_request_body()
@@ -106,14 +106,14 @@ class BoxVisitDetail(BaseResource):
         box_visit = self.storage.update_item_from_collection("box_visits", id, content)
         return box_visit, 201
 
-    @app.require_oauth()
+    @app.require_oauth("patch-box-visit")
     def patch(self, id):
         self.abort_if_item_doesnt_exist("box_visits", id)
         content = self.get_request_body()
         box_visit = self.storage.patch_item_from_collection("box_visits", id, content)
         return box_visit, 201
 
-    @app.require_oauth()
+    @app.require_oauth("delete-box-visit")
     def delete(self, id):
         box_visit = self.abort_if_item_doesnt_exist("box_visits", id)
         self.storage.delete_item_from_collection("box_visits", id)
@@ -121,7 +121,7 @@ class BoxVisitDetail(BaseResource):
 
 
 class BoxVisitRelationsAll(BaseResource):
-    @app.require_oauth()
+    @app.require_oauth("get-box-visit-relations")
     def get(self, id):
         self.abort_if_item_doesnt_exist("box_visits", id)
 
@@ -136,7 +136,7 @@ class BoxVisitRelationsAll(BaseResource):
 
 
 class BoxVisitRelations(BaseResource):
-    @app.require_oauth()
+    @app.require_oauth("get-box-visit-relations")
     def get(self, id):
         self.abort_if_item_doesnt_exist("box_visits", id)
 
@@ -147,7 +147,7 @@ class BoxVisitRelations(BaseResource):
 
         return self.storage.get_collection_item_relations("box_visits", id)
 
-    @app.require_oauth()
+    @app.require_oauth("add-box-visit-relations")
     def post(self, id):
         box_visit = self.abort_if_item_doesnt_exist("box_visits", id)
         content = self.get_request_body()
@@ -156,7 +156,7 @@ class BoxVisitRelations(BaseResource):
         )
         return relations, 201
 
-    @app.require_oauth()
+    @app.require_oauth("update-box-visit-relations")
     def put(self, id):
         box_visit = self.abort_if_item_doesnt_exist("box_visits", id)
         content = self.get_request_body()
@@ -165,7 +165,7 @@ class BoxVisitRelations(BaseResource):
         )
         return relations, 201
 
-    @app.require_oauth()
+    @app.require_oauth("patch-box-visit-relations")
     def patch(self, id):
         box_visit = self.abort_if_item_doesnt_exist("box_visits", id)
         content = self.get_request_body()

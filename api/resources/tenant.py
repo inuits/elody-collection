@@ -13,19 +13,19 @@ class Tenant(BaseResource):
 
 
 class TenantDetail(BaseResource):
-    @app.require_oauth()
+    @app.require_oauth("create-tenant")
     def get(self, id):
         tenant = self.abort_if_item_doesnt_exist("tenants", id)
         return tenant
 
-    @app.require_oauth()
+    @app.require_oauth("patch-tenant")
     def patch(self, id):
         self.abort_if_item_doesnt_exist("tenants", id)
         content = self.get_request_body()
         tenant = self.storage.patch_item_from_collection("tenants", id, content)
         return tenant, 201
 
-    @app.require_oauth()
+    @app.require_oauth("update-tenant")
     def put(self, id):
         self.abort_if_item_doesnt_exist("tenants", id)
         content = self.get_request_body()
@@ -33,7 +33,7 @@ class TenantDetail(BaseResource):
         tenant = self.storage.update_item_from_collection("tenants", id, content)
         return tenant, 201
 
-    @app.require_oauth()
+    @app.require_oauth("delete-tenant")
     def delete(self, id):
         self.abort_if_item_doesnt_exist("tenants", id)
         self.storage.delete_item_from_collection("tenants", id)
