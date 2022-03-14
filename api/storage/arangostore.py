@@ -609,20 +609,21 @@ FOR c IN @@collection
             else:
                 break
         if new_value is not None:
-            for edge in raw_entity.getEdges(self.db["components"]):
-                if edge["key"] == entity["_id"]:
-                    patch = {"value": new_value}
-                    edge.set(patch)
-                    edge.patch()
-                    attributes = {"type": "dams.edge_changed", "source": "dams"}
-                    data = {
-                        "location": "/entities?ids={}&skip_relations=1".format(
-                            entity["_key"]
-                        ),
-                    }
-                    event = CloudEvent(attributes, data)
-                    message = json.loads(to_json(event))
-                    app.rabbit.send(message, routing_key="dams.edge_changed")
+            for edgeType in ["isIn", "components"]:
+                for edge in raw_entity.getEdges(self.db[edgeType]):
+                    if edge["key"] == entity["_id"]:
+                        patch = {"value": new_value}
+                        edge.set(patch)
+                        edge.patch()
+                        attributes = {"type": "dams.edge_changed", "source": "dams"}
+                        data = {
+                            "location": "/entities?ids={}&skip_relations=1".format(
+                                entity["_key"]
+                            ),
+                        }
+                        event = CloudEvent(attributes, data)
+                        message = json.loads(to_json(event))
+                        app.rabbit.send(message, routing_key="dams.edge_changed")
 
     def _map_entity_relation(self, relation):
         mapping = {
