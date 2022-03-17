@@ -74,7 +74,7 @@ class BaseResource(Resource):
             if "primary_thumbnail_location" in entity:
                 entity[
                     "primary_thumbnail_location"
-                ] = f'{self.storage_api_url}{entity["primary_thumbnail_location"]}'
+                ] = f'{self.cantaloupe_api_url}{entity["primary_thumbnail_location"]}'
             if "primary_transcode_location" in entity:
                 entity[
                     "primary_transcode_location"
