@@ -5,6 +5,7 @@ from validator import tenant_schema
 
 
 class Tenant(BaseResource):
+    @app.require_oauth("create-tenant")
     def post(self):
         content = self.get_request_body()
         self.abort_if_not_valid_json("Tenant", content, tenant_schema)
@@ -13,7 +14,7 @@ class Tenant(BaseResource):
 
 
 class TenantDetail(BaseResource):
-    @app.require_oauth("create-tenant")
+    @app.require_oauth("read-tenant")
     def get(self, id):
         tenant = self.abort_if_item_doesnt_exist("tenants", id)
         return tenant
