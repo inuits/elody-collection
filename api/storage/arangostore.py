@@ -609,7 +609,10 @@ FOR c IN @@collection
             else:
                 break
         if new_value is not None:
-            for edgeType in ["isIn", "components"]:
+            # todo async via rabbit, otherwise timeouts will happen for museum update (isIn relation)
+            # for edgeType in ["isIn", "components"]:
+
+            for edgeType in ["components"]:
                 for edge in raw_entity.getEdges(self.db[edgeType]):
                     if edge["key"] == entity["_id"]:
                         patch = {"value": new_value}
