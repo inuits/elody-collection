@@ -8,6 +8,7 @@ from flask_swagger_ui import get_swaggerui_blueprint
 from inuits_jwt_auth.authorization import JWTValidator, MyResourceProtector
 from storage.storagemanager import StorageManager
 from rabbitmq_pika_flask import RabbitMQ
+from healthcheck import HealthCheck
 
 SWAGGER_URL = "/api/docs"  # URL for exposing Swagger UI (without trailing '/')
 API_URL = (
@@ -42,6 +43,20 @@ rabbit = RabbitMQ()
 rabbit.init_app(app, "basic", json.loads, json.dumps)
 
 
+def database_available():
+    return True, StorageManager().get_db_engine().conn.getVersion()
+
+
+def rabbit_available():
+    return True, rabbit.get_connection().is_open
+
+
+health = HealthCheck()
+health.add_check(database_available)
+health.add_check(rabbit_available)
+app.add_url_rule("/health", "healthcheck", view_func=lambda: health.run())
+
+
 @rabbit.queue("dams.child_relation_changed")
 def child_relation_changed(routing_key, body, message_id):
     data = body["data"]
@@ -50,6 +65,7 @@ def child_relation_changed(routing_key, body, message_id):
         return True
     StorageManager().get_db_engine().update_parent_relation_values(data["collection"], data["parent_id"])
     return True
+
 
 @rabbit.queue("dams.mediafile_changed")
 def mediafile_changed(routing_key, body, message_id):
