@@ -10,7 +10,6 @@ import uuid
 from pyArango.theExceptions import DocumentNotFoundError, CreationError
 from .py_arango_connection_extension import PyArangoConnection as Connection
 
-
 class ArangoStorageManager:
     def __init__(self):
         self.arango_host = os.getenv("ARANGO_DB_HOST")
@@ -461,8 +460,18 @@ FOR c IN @@collection
         raw_item.set(content)
         raw_item.save()
         item = raw_item.getStore()
-        self._update_parent_relation_values(raw_item, item)
+        self._trigger_child_relation_changed(collection, id)
         return item
+
+    def _trigger_child_relation_changed(self, collection, id):
+        attributes = {"type": "dams.child_relation_changed", "source": "dams"}
+        data = {
+            "parent_id": id,
+            "collection": collection
+        }
+        event = CloudEvent(attributes, data)
+        message = json.loads(to_json(event))
+        app.rabbit.send(message, routing_key="dams.child_relation_changed")
 
     def update_collection_item_sub_item(self, collection, id, sub_item, content):
         patch_data = {sub_item: content}
@@ -490,7 +499,7 @@ FOR c IN @@collection
         raw_item.set(content)
         raw_item.patch()
         item = raw_item.getStore()
-        self._update_parent_relation_values(raw_item, item)
+        self._trigger_child_relation_changed(collection, id)
         return item
 
     def delete_item_from_collection(self, collection, id):
@@ -597,7 +606,9 @@ FOR c IN @@collection
             message = json.loads(to_json(event))
             app.rabbit.send(message, routing_key="dams.entity_changed")
 
-    def _update_parent_relation_values(self, raw_entity, entity):
+    def update_parent_relation_values(self, collection, parent_id):
+        raw_entity = self.get_raw_item_from_collection_by_id(collection, parent_id)
+        entity = raw_entity.getStore()
         if "metadata" not in entity:
             return
         new_value = None
@@ -609,24 +620,24 @@ FOR c IN @@collection
             else:
                 break
         if new_value is not None:
-            # todo async via rabbit, otherwise timeouts will happen for museum update (isIn relation)
-            # for edgeType in ["isIn", "components"]:
-
-            for edgeType in ["components"]:
+            for edgeType in ["isIn", "components"]:
                 for edge in raw_entity.getEdges(self.db[edgeType]):
                     if edge["key"] == entity["_id"]:
-                        patch = {"value": new_value}
-                        edge.set(patch)
-                        edge.patch()
-                        attributes = {"type": "dams.edge_changed", "source": "dams"}
-                        data = {
-                            "location": "/entities?ids={}&skip_relations=1".format(
-                                entity["_key"]
-                            ),
-                        }
-                        event = CloudEvent(attributes, data)
-                        message = json.loads(to_json(event))
-                        app.rabbit.send(message, routing_key="dams.edge_changed")
+                        # only patch if new value is different from old value
+                        if edge["value"] != new_value:
+                            patch = {"value": new_value}
+                            edge.set(patch)
+                            edge.patch()
+                            attributes = {"type": "dams.edge_changed", "source": "dams"}
+                            data = {
+                                "location": "/entities?ids={}&skip_relations=1".format(
+                                    entity["_key"]
+                                )
+                            }
+                            event = CloudEvent(attributes, data)
+                            message = json.loads(to_json(event))
+                            app.rabbit.send(message, routing_key="dams.edge_changed")
+
 
     def _map_entity_relation(self, relation):
         mapping = {

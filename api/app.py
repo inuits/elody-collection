@@ -42,6 +42,15 @@ rabbit = RabbitMQ()
 rabbit.init_app(app, "basic", json.loads, json.dumps)
 
 
+@rabbit.queue("dams.child_relation_changed")
+def child_relation_changed(routing_key, body, message_id):
+    data = body["data"]
+    if "collection" not in data or "parent_id" not in data:
+        logger.error("Message malformed: missing 'collection' or 'parent_id'")
+        return True
+    StorageManager().get_db_engine().update_parent_relation_values(data["collection"], data["parent_id"])
+    return True
+
 @rabbit.queue("dams.mediafile_changed")
 def mediafile_changed(routing_key, body, message_id):
     data = body["data"]
