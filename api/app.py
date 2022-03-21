@@ -5,10 +5,10 @@ import os
 from flask import Flask
 from flask_restful import Api
 from flask_swagger_ui import get_swaggerui_blueprint
+from healthcheck import HealthCheck
 from inuits_jwt_auth.authorization import JWTValidator, MyResourceProtector
 from storage.storagemanager import StorageManager
 from rabbitmq_pika_flask import RabbitMQ
-from healthcheck import HealthCheck
 
 SWAGGER_URL = "/api/docs"  # URL for exposing Swagger UI (without trailing '/')
 API_URL = (
@@ -63,7 +63,9 @@ def child_relation_changed(routing_key, body, message_id):
     if "collection" not in data or "parent_id" not in data:
         logger.error("Message malformed: missing 'collection' or 'parent_id'")
         return True
-    StorageManager().get_db_engine().update_parent_relation_values(data["collection"], data["parent_id"])
+    StorageManager().get_db_engine().update_parent_relation_values(
+        data["collection"], data["parent_id"]
+    )
     return True
 
 

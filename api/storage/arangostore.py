@@ -10,6 +10,7 @@ import uuid
 from pyArango.theExceptions import DocumentNotFoundError, CreationError
 from .py_arango_connection_extension import PyArangoConnection as Connection
 
+
 class ArangoStorageManager:
     def __init__(self):
         self.arango_host = os.getenv("ARANGO_DB_HOST")
@@ -344,6 +345,14 @@ FOR c IN @@collection
             relations.append({"key": edge["_to"], "type": "parent"})
         return relations
 
+    def __add_mediafile_to_list(self, mediafile, mediafiles):
+        if "is_primary" in mediafile and mediafile["is_primary"]:
+            mediafiles.insert(0, mediafile)
+        elif "is_primary_thumbnail" in mediafile and mediafile["is_primary_thumbnail"]:
+            mediafiles.insert(1, mediafile)
+        else:
+            mediafiles.append(mediafile)
+
     def get_collection_item_mediafiles(self, collection, id):
         entity = self.get_raw_item_from_collection_by_id(collection, id)
         mediafiles = list()
@@ -353,7 +362,7 @@ FOR c IN @@collection
                 mediafile["is_primary"] = edge["is_primary"]
             if "is_primary_thumbnail" in edge:
                 mediafile["is_primary_thumbnail"] = edge["is_primary_thumbnail"]
-            mediafiles.append(mediafile)
+            self.__add_mediafile_to_list(mediafile, mediafiles)
         return mediafiles
 
     def set_primary_field_collection_item(
@@ -465,10 +474,7 @@ FOR c IN @@collection
 
     def _trigger_child_relation_changed(self, collection, id):
         attributes = {"type": "dams.child_relation_changed", "source": "dams"}
-        data = {
-            "parent_id": id,
-            "collection": collection
-        }
+        data = {"parent_id": id, "collection": collection}
         event = CloudEvent(attributes, data)
         message = json.loads(to_json(event))
         app.rabbit.send(message, routing_key="dams.child_relation_changed")
@@ -637,7 +643,6 @@ FOR c IN @@collection
                             event = CloudEvent(attributes, data)
                             message = json.loads(to_json(event))
                             app.rabbit.send(message, routing_key="dams.edge_changed")
-
 
     def _map_entity_relation(self, relation):
         mapping = {
