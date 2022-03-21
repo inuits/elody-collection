@@ -109,7 +109,7 @@ FOR c IN entities
             aql2 = """
             LET new_metadata = (
                 FOR item,edge IN OUTBOUND c GRAPH 'assets'
-                    FILTER edge._id NOT LIKE 'hasMediafile%'
+                    FILTER edge._id NOT LIKE 'hasMediafile%' AND edge._id NOT LIKE 'contains%'
                     LET relation = {'key': edge._to, 'type': FIRST(SPLIT(edge._id, '/'))}
                     RETURN HAS(edge, 'label') ? MERGE(relation, {'label': IS_NULL(edge.label.`@value`) ? edge.label : edge.label.`@value`}) : relation
             )
