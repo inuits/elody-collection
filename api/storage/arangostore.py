@@ -1,5 +1,6 @@
 import json
 import sys
+from time import sleep
 
 from cloudevents.http import CloudEvent, to_json
 
@@ -18,6 +19,7 @@ class ArangoStorageManager:
         self.arango_password = os.getenv("ARANGO_DB_PASSWORD")
         self.arango_db_name = os.getenv("ARANGO_DB_NAME")
         self.default_graph_name = os.getenv("DEFAULT_GRAPH", "assets")
+        self.event_delay = os.getenv("EVENT_DELAY", 0.02)
         self.collections = [
             "box_visits",
             "entities",
@@ -643,6 +645,7 @@ FOR c IN @@collection
                             event = CloudEvent(attributes, data)
                             message = json.loads(to_json(event))
                             app.rabbit.send(message, routing_key="dams.edge_changed")
+                            sleep(self.event_delay)
 
     def _map_entity_relation(self, relation):
         mapping = {
