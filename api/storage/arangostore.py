@@ -19,8 +19,8 @@ class ArangoStorageManager:
         self.arango_password = os.getenv("ARANGO_DB_PASSWORD")
         self.arango_db_name = os.getenv("ARANGO_DB_NAME")
         self.default_graph_name = os.getenv("DEFAULT_GRAPH", "assets")
-        self.event_delay = os.getenv("EVENT_DELAY", 0.02)
-        self.event_batch_limit = os.getenv("EVENT_BATCH_LIMIT", 50)
+        self.event_delay = float(os.getenv("EVENT_DELAY", 0.02))
+        self.event_batch_limit = int(os.getenv("EVENT_BATCH_LIMIT", 50))
         self.collections = [
             "box_visits",
             "entities",
@@ -640,7 +640,7 @@ FOR c IN @@collection
                             edge.patch()
                             parent_ids_from_changed_edges.append(entity["_key"])
                             # send event message in batches
-                            if len(parent_ids_from_changed_edges) > int(self.event_batch_limit):
+                            if len(parent_ids_from_changed_edges) > self.event_batch_limit:
                                 self._send_edge_changed_message(parent_ids_from_changed_edges)
                                 parent_ids_from_changed_edges = []
             # send remaining messages
