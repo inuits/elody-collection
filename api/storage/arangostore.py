@@ -640,7 +640,7 @@ FOR c IN @@collection
                             edge.patch()
                             parent_ids_from_changed_edges.append(entity["_key"])
                             # send event message in batches
-                            if len(parent_ids_from_changed_edges) > self.event_batch_limit:
+                            if len(parent_ids_from_changed_edges) > int(self.event_batch_limit):
                                 self._send_edge_changed_message(parent_ids_from_changed_edges)
                                 parent_ids_from_changed_edges = []
             # send remaining messages
