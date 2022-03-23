@@ -20,6 +20,7 @@ class ArangoStorageManager:
         self.arango_db_name = os.getenv("ARANGO_DB_NAME")
         self.default_graph_name = os.getenv("DEFAULT_GRAPH", "assets")
         self.event_delay = os.getenv("EVENT_DELAY", 0.02)
+        self.event_batch_limit = os.getenv("EVENT_BATCH_LIMIT", 50)
         self.collections = [
             "box_visits",
             "entities",
@@ -628,6 +629,7 @@ FOR c IN @@collection
             else:
                 break
         if new_value is not None:
+            parent_ids_from_changed_edges = []
             for edgeType in ["isIn", "components"]:
                 for edge in raw_entity.getEdges(self.db[edgeType]):
                     if edge["key"] == entity["_id"]:
@@ -636,16 +638,26 @@ FOR c IN @@collection
                             patch = {"value": new_value}
                             edge.set(patch)
                             edge.patch()
-                            attributes = {"type": "dams.edge_changed", "source": "dams"}
-                            data = {
-                                "location": "/entities?ids={}&skip_relations=1".format(
-                                    entity["_key"]
-                                )
-                            }
-                            event = CloudEvent(attributes, data)
-                            message = json.loads(to_json(event))
-                            app.rabbit.send(message, routing_key="dams.edge_changed")
-                            sleep(self.event_delay)
+                            parent_ids_from_changed_edges.append(entity["_key"])
+                            # send event message in batches
+                            if len(parent_ids_from_changed_edges) > self.event_batch_limit:
+                                self._send_edge_changed_message(parent_ids_from_changed_edges)
+                                parent_ids_from_changed_edges = []
+            # send remaining messages
+            if parent_ids_from_changed_edges:
+                self._send_edge_changed_message(parent_ids_from_changed_edges)
+
+    def _send_edge_changed_message(self, parent_ids_from_changed_edges):
+        attributes = {"type": "dams.edge_changed", "source": "dams"}
+        data = {
+            "location": "/entities?ids={}&skip_relations=1".format(
+                ','.join(parent_ids_from_changed_edges)
+            )
+        }
+        event = CloudEvent(attributes, data)
+        message = json.loads(to_json(event))
+        app.rabbit.send(message, routing_key="dams.edge_changed")
+        sleep(self.event_delay)
 
     def _map_entity_relation(self, relation):
         mapping = {
