@@ -644,7 +644,7 @@ FOR c IN @@collection
                                 self._send_edge_changed_message(parent_ids_from_changed_edges)
                                 parent_ids_from_changed_edges = []
             # send remaining messages
-            if parent_ids_from_changed_edges:
+            if len(parent_ids_from_changed_edges) > 0:
                 self._send_edge_changed_message(parent_ids_from_changed_edges)
 
     def _send_edge_changed_message(self, parent_ids_from_changed_edges):
