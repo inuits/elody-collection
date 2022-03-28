@@ -165,12 +165,13 @@ class BaseResource(Resource):
         return False
 
     def _get_mediafile_access(self, mediafile):
-        if "metadata" not in mediafile or not self._mediafile_is_public(mediafile):
+        if "metadata" not in mediafile:
+            return "full"
+        if not self._mediafile_is_public(mediafile):
             return "none"
         for metadata in mediafile["metadata"]:
             if metadata["key"] == "rights":
-                if metadata["value"].lower() == "in copyright":
+                if "in copyright" in metadata["value"].lower():
                     return "limited"
-                else:
-                    return "full"
-        return "none"
+                return "full"
+        return "full"
