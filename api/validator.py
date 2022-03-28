@@ -2,6 +2,7 @@ from job_helper.job_helper import Status
 from jsonschema import validate, ValidationError
 
 entity_schema = {
+    "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
     "default": {},
     "required": ["type"],
@@ -55,6 +56,7 @@ entity_schema = {
 }
 
 job_schema = {
+    "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
     "default": {},
     "required": ["job_type", "job_info", "status", "start_time"],
@@ -93,6 +95,7 @@ job_schema = {
 }
 
 mediafile_schema = {
+    "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
     "default": {},
     "required": [
@@ -123,6 +126,7 @@ mediafile_schema = {
 }
 
 tenant_schema = {
+    "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
     "properties": {
         "_id": {"type": "string"},
@@ -151,6 +155,7 @@ tenant_schema = {
     },
 }
 key_value_store_schema = {
+    "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
     "properties": {
         "identifiers": {
@@ -166,6 +171,7 @@ key_value_store_schema = {
 }
 
 box_visit_schema = {
+    "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
     "default": {},
     "required": ["code", "start_time"],
