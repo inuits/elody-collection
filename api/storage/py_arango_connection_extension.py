@@ -43,6 +43,6 @@ class PyArangoConnection(Connection, ABC):
         else:
             raise CreationError(data["errorMessage"], r.content)
 
-    def get_cluster_health(self):
-        url = "{}/_admin/cluster/health".format(self.getEndpointURL())
+    def get_cluster_health(self, db_name):
+        url = "{}/_db/{}/_admin/cluster/health".format(self.getEndpointURL(), db_name)
         return self.session.get(url)

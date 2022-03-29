@@ -46,13 +46,15 @@ rabbit.init_app(app, "basic", json.loads, json.dumps)
 def database_available():
     return True, StorageManager().get_db_engine().check_health().json()
 
+
 def rabbit_available():
     return True, rabbit.get_connection().is_open
 
 
 health = HealthCheck()
-health.add_check(database_available)
-health.add_check(rabbit_available)
+if os.getenv("HEALTH_CHECK_EXTERNAL_SERVICES", True) in ["True", "true", True]:
+    health.add_check(database_available)
+    health.add_check(rabbit_available)
 app.add_url_rule("/health", "healthcheck", view_func=lambda: health.run())
 
 
@@ -164,6 +166,7 @@ api.add_resource(TenantDetail, "/tenants/<string:id>")
 def add_header(response):
     response.headers['Jaeger-trace-id'] = os.getenv("JAEGER_TRACE_ID", "default-id")
     return response
+
 
 if __name__ == "__main__":
     app.run(debug=True)
