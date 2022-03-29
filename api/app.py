@@ -44,8 +44,7 @@ rabbit.init_app(app, "basic", json.loads, json.dumps)
 
 
 def database_available():
-    return True, StorageManager().get_db_engine().conn.getVersion()
-
+    return True, StorageManager().get_db_engine().conn[StorageManager().get_db_engine().arango_db_name].connection.getVersion()
 
 def rabbit_available():
     return True, rabbit.get_connection().is_open
