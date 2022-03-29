@@ -15,7 +15,7 @@ class MongoStorageManager:
         self.db = client[mongo_db]
 
     def get_entities(
-        self, skip=0, limit=20, item_type=None, ids=None, skip_relations=0
+            self, skip=0, limit=20, item_type=None, ids=None, skip_relations=0
     ):
         if ids:
             return self.get_items_from_collection_by_ids("entities", ids)
@@ -82,7 +82,7 @@ class MongoStorageManager:
         return mediafiles
 
     def add_mediafile_to_collection_item(
-        self, collection, id, mediafile_id, mediafile_public
+            self, collection, id, mediafile_id, mediafile_public
     ):
         mediafile = None
         identifiers = self.db[collection].find_one(
@@ -233,3 +233,6 @@ class MongoStorageManager:
             self.add_sub_item_to_collection_item(
                 collection, dst_id, "relations", dst_content
             )
+
+    def check_health(self):
+        return True

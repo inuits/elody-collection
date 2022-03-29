@@ -752,3 +752,6 @@ FOR c IN @@collection
             except CreationError:
                 continue
         return self.conn[self.arango_db_name]
+
+    def check_health(self):
+        return self.conn.get_cluster_health()

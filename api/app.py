@@ -44,8 +44,7 @@ rabbit.init_app(app, "basic", json.loads, json.dumps)
 
 
 def database_available():
-    return True, StorageManager().get_db_engine().conn.get_cluster_health().json()
-
+    return True, StorageManager().get_db_engine().check_health().json()
 
 def rabbit_available():
     return True, rabbit.get_connection().is_open
