@@ -44,7 +44,8 @@ rabbit.init_app(app, "basic", json.loads, json.dumps)
 
 
 def database_available():
-    return True, StorageManager().get_db_engine().conn[StorageManager().get_db_engine().arango_db_name].connection.getVersion()
+    return True, StorageManager().get_db_engine().conn.get_cluster_health().json()
+
 
 def rabbit_available():
     return True, rabbit.get_connection().is_open
@@ -158,6 +159,12 @@ api.add_resource(OpenAPISpec, "/spec/dams-collection-api.json")
 
 api.add_resource(Tenant, "/tenants")
 api.add_resource(TenantDetail, "/tenants/<string:id>")
+
+
+@app.after_request
+def add_header(response):
+    response.headers['Jaeger-trace-id'] = os.getenv("JAEGER_TRACE_ID", "default-id")
+    return response
 
 if __name__ == "__main__":
     app.run(debug=True)

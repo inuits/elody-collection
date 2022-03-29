@@ -42,3 +42,7 @@ class PyArangoConnection(Connection, ABC):
             return True
         else:
             raise CreationError(data["errorMessage"], r.content)
+
+    def get_cluster_health(self):
+        url = "{}/_admin/cluster/health".format(self.getEndpointURL())
+        return self.session.get(url)
