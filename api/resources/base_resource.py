@@ -32,12 +32,10 @@ class BaseResource(Resource):
 
     def abort_if_item_doesnt_exist(self, collection, id):
         item = self.storage.get_item_from_collection_by_id(collection, id)
-        if item is None:
+        if not item:
             abort(
                 404,
-                message="Item with id {} doesn't exist in collection {}".format(
-                    id, collection
-                ),
+                message=f"Item with id {id} doesn't exist in collection {collection}",
             )
         return item
 
@@ -45,10 +43,7 @@ class BaseResource(Resource):
         validation_error = validate_json(json, schema)
         if validation_error:
             abort(
-                400,
-                message="{} doesn't have a valid format\n{}".format(
-                    type, validation_error
-                ),
+                400, message=f"{type} doesn't have a valid format. {validation_error}"
             )
 
     def _abort_if_incorrect_type(self, items, relation_type):
@@ -56,9 +51,7 @@ class BaseResource(Resource):
             if item["type"] != relation_type:
                 abort(
                     400,
-                    message="Expected relation type '{}'. got '{}'".format(
-                        item["type"], relation_type
-                    ),
+                    message=f'Expected relation type {item["type"]}, got {relation_type}',
                 )
 
     def _inject_api_urls_into_entities(self, entities):
@@ -96,7 +89,7 @@ class BaseResource(Resource):
     def _signal_entity_changed(self, entity):
         attributes = {"type": "dams.entity_changed", "source": "dams"}
         data = {
-            "location": "/entities/{}".format(self._get_raw_id(entity)),
+            "location": f"/entities/{self._get_raw_id(entity)}",
             "type": entity["type"] if "type" in entity else "unspecified",
         }
         event = CloudEvent(attributes, data)
