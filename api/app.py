@@ -63,11 +63,10 @@ def child_relation_changed(routing_key, body, message_id):
     data = body["data"]
     if "collection" not in data or "parent_id" not in data:
         logger.error("Message malformed: missing 'collection' or 'parent_id'")
-        return True
+        return
     StorageManager().get_db_engine().update_parent_relation_values(
         data["collection"], data["parent_id"]
     )
-    return True
 
 
 @rabbit.queue("dams.mediafile_changed")
@@ -75,12 +74,11 @@ def mediafile_changed(routing_key, body, message_id):
     data = body["data"]
     if "old_mediafile" not in data or "mediafile" not in data:
         logger.error("Message malformed: missing 'old_mediafile' or 'mediafile'")
-        return True
+        return
     StorageManager().get_db_engine().handle_mediafile_status_change(
         data["old_mediafile"], data["mediafile"]
     )
     StorageManager().get_db_engine().reindex_mediafile_parents(data["mediafile"])
-    return True
 
 
 require_oauth = MyResourceProtector(
