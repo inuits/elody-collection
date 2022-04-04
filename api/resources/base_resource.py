@@ -13,9 +13,10 @@ from werkzeug.exceptions import BadRequest
 class BaseResource(Resource):
     def __init__(self):
         self.storage = StorageManager().get_db_engine()
+        self.cantaloupe_api_url = os.getenv("CANTALOUPE_API_URL")
         self.collection_api_url = os.getenv("COLLECTION_API_URL")
         self.storage_api_url = os.getenv("STORAGE_API_URL")
-        self.cantaloupe_api_url = os.getenv("CANTALOUPE_API_URL")
+        self.storage_api_url_ext = os.getenv("STORAGE_API_URL_EXT")
 
     def get_request_body(self):
         try:
@@ -59,7 +60,7 @@ class BaseResource(Resource):
             if "primary_mediafile_location" in entity:
                 entity[
                     "primary_mediafile_location"
-                ] = f'{self.storage_api_url}{entity["primary_mediafile_location"]}'
+                ] = f'{self.storage_api_url_ext}{entity["primary_mediafile_location"]}'
             if "primary_thumbnail_location" in entity:
                 entity[
                     "primary_thumbnail_location"
@@ -67,7 +68,7 @@ class BaseResource(Resource):
             if "primary_transcode_location" in entity:
                 entity[
                     "primary_transcode_location"
-                ] = f'{self.storage_api_url}{entity["primary_transcode_location"]}'
+                ] = f'{self.storage_api_url_ext}{entity["primary_transcode_location"]}'
         return entities
 
     def _inject_api_urls_into_mediafiles(self, mediafiles):
@@ -75,7 +76,7 @@ class BaseResource(Resource):
             if "original_file_location" in mediafile:
                 mediafile[
                     "original_file_location"
-                ] = f'{self.storage_api_url}{mediafile["original_file_location"]}'
+                ] = f'{self.storage_api_url_ext}{mediafile["original_file_location"]}'
             if "thumbnail_file_location" in mediafile:
                 mediafile[
                     "thumbnail_file_location"
@@ -83,7 +84,7 @@ class BaseResource(Resource):
             if "transcode_file_location" in mediafile:
                 mediafile[
                     "transcode_file_location"
-                ] = f'{self.storage_api_url}{mediafile["transcode_file_location"]}'
+                ] = f'{self.storage_api_url_ext}{mediafile["transcode_file_location"]}'
         return mediafiles
 
     def _signal_entity_changed(self, entity):

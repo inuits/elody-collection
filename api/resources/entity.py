@@ -1,7 +1,3 @@
-import sys
-
-from pyArango.theExceptions import CreationError
-
 import app
 import os
 
@@ -9,6 +5,7 @@ from flask import request, after_this_request
 from flask_restful import abort
 from inuits_jwt_auth.authorization import current_token
 from job_helper.job_helper import JobHelper
+from pyArango.theExceptions import CreationError
 from resources.base_resource import BaseResource
 from validator import entity_schema, mediafile_schema
 
