@@ -116,9 +116,17 @@ class BaseResource(Resource):
         )
         for mediafile in mediafiles:
             if "is_primary" in mediafile and mediafile["is_primary"] is True:
+                entity["primary_mediafile"] = mediafile["filename"]
                 entity["primary_mediafile_location"] = mediafile[
                     "original_file_location"
                 ]
+                if "transcode_file_location" in mediafile:
+                    entity["primary_transcode_location"] = mediafile[
+                        "transcode_file_location"
+                    ]
+                if "img_width" in mediafile and "img_height" in mediafile:
+                    entity["primary_width"] = mediafile["img_width"]
+                    entity["primary_height"] = mediafile["img_height"]
             if (
                 "is_primary_thumbnail" in mediafile
                 and mediafile["is_primary_thumbnail"] is True
