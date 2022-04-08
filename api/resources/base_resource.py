@@ -121,6 +121,7 @@ class BaseResource(Resource):
                     "original_file_location"
                 ]
                 if "transcode_file_location" in mediafile:
+                    entity["primary_transcode"] = mediafile["transcode_filename"]
                     entity["primary_transcode_location"] = mediafile[
                         "transcode_file_location"
                     ]
