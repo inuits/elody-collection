@@ -98,7 +98,14 @@ class BaseResource(Resource):
         app.rabbit.send(message, routing_key="dams.entity_changed")
 
     def _signal_entity_deleted(self, entity):
-        pass
+        attributes = {"type": "dams.entity_deleted", "source": "dams"}
+        data = {
+            "location": f"/entities/{self._get_raw_id(entity)}",
+            "type": entity["type"] if "type" in entity else "unspecified",
+        }
+        event = CloudEvent(attributes, data)
+        message = json.loads(to_json(event))
+        app.rabbit.send(message, routing_key="dams.entity_deleted")
 
     def _signal_mediafile_changed(self, old_mediafile, mediafile):
         attributes = {"type": "dams.mediafile_changed", "source": "dams"}
