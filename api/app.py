@@ -81,6 +81,18 @@ def mediafile_changed(routing_key, body, message_id):
     StorageManager().get_db_engine().reindex_mediafile_parents(data["mediafile"])
 
 
+@rabbit.queue("dams.mediafile_deleted")
+def mediafile_deleted(routing_key, body, message_id):
+    data = body["data"]
+    if "mediafile" not in data or "linked_entities" not in data:
+        logger.error("Message malformed: missing 'mediafile' or 'linked_entities'")
+        return
+    StorageManager().get_db_engine().handle_mediafile_deleted(data["linked_entities"])
+    StorageManager().get_db_engine().reindex_mediafile_parents(
+        parents=data["linked_entities"]
+    )
+
+
 require_oauth = MyResourceProtector(
     os.getenv("REQUIRE_TOKEN", True) == ("True" or "true" or True),
 )

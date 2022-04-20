@@ -58,8 +58,10 @@ class MediafileDetail(BaseResource):
 
     @app.require_oauth("delete-mediafile")
     def delete(self, id):
-        self.abort_if_item_doesnt_exist("mediafiles", id)
+        mediafile = self.abort_if_item_doesnt_exist("mediafiles", id)
+        linked_entities = self.storage.get_mediafile_linked_entities(mediafile)
         self.storage.delete_item_from_collection("mediafiles", id)
+        self._signal_mediafile_deleted(mediafile, linked_entities)
         return "", 204
 
 

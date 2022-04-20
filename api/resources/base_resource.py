@@ -114,6 +114,13 @@ class BaseResource(Resource):
         message = json.loads(to_json(event))
         app.rabbit.send(message, routing_key="dams.mediafile_changed")
 
+    def _signal_mediafile_deleted(self, mediafile, linked_entities):
+        attributes = {"type": "dams.mediafile_deleted", "source": "dams"}
+        data = {"mediafile": mediafile, "linked_entities": linked_entities}
+        event = CloudEvent(attributes, data)
+        message = json.loads(to_json(event))
+        app.rabbit.send(message, routing_key="dams.mediafile_deleted")
+
     def _get_raw_id(self, item):
         return item["_key"] if "_key" in item else item["_id"]
 

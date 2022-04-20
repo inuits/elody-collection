@@ -181,6 +181,12 @@ class MemoryStorageManager:
     def handle_mediafile_status_change(self, old_mediafile, mediafile):
         return
 
+    def get_mediafile_linked_entities(self, mediafile):
+        return
+
+    def handle_mediafile_deleted(self, parents):
+        return
+
     def reindex_mediafile_parents(self, mediafile):
         return
 

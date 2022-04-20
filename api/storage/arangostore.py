@@ -598,19 +598,47 @@ FOR c IN @@collection
                         raw_entity, change_primary_mediafile, change_primary_thumbnail
                     )
 
-    def reindex_mediafile_parents(self, mediafile):
-        for edge in self.db.fetchDocument(mediafile["_id"]).getInEdges(
+    def handle_mediafile_deleted(self, parents):
+        for item in parents:
+            if item["primary_mediafile"] or item["primary_thumbnail"]:
+                raw_entity = self.db.fetchDocument(item["entity_id"])
+                self._set_new_primary(
+                    raw_entity, item["primary_mediafile"], item["primary_thumbnail"]
+                )
+
+    def get_mediafile_linked_entities(self, mediafile):
+        linked_entities = []
+        for edge in self.db["hasMediafile"].getEdges(mediafile["_id"]):
+            linked_entities.append(
+                {
+                    "entity_id": edge["_from"],
+                    "primary_mediafile": edge["is_primary"],
+                    "primary_thumbnail": edge["is_primary_thumbnail"],
+                }
+            )
+        return linked_entities
+
+    def __signal_entity_changed(self, entity):
+        attributes = {"type": "dams.entity_changed", "source": "dams"}
+        data = {
+            "location": f'/entities/{entity["_key"]}',
+            "type": entity["type"] if "type" in entity else "unspecified",
+        }
+        event = CloudEvent(attributes, data)
+        message = json.loads(to_json(event))
+        app.rabbit.send(message, routing_key="dams.entity_changed")
+
+    def reindex_mediafile_parents(self, mediafile=None, parents=None):
+        if parents:
+            for item in parents:
+                entity = self.db.fetchDocument(item["entity_id"]).getStore()
+                self.__signal_entity_changed(entity)
+        if mediafile:
+            for edge in self.db.fetchDocument(mediafile["_id"]).getInEdges(
                 self.db["hasMediafile"]
-        ):
-            entity = self.db.fetchDocument(edge["_from"]).getStore()
-            attributes = {"type": "dams.entity_changed", "source": "dams"}
-            data = {
-                "location": f'/entities/{entity["_key"]}',
-                "type": entity["type"] if "type" in entity else "unspecified",
-            }
-            event = CloudEvent(attributes, data)
-            message = json.loads(to_json(event))
-            app.rabbit.send(message, routing_key="dams.entity_changed")
+            ):
+                entity = self.db.fetchDocument(edge["_from"]).getStore()
+                self.__signal_entity_changed(entity)
 
     def update_parent_relation_values(self, collection, parent_id):
         raw_entity = self.get_raw_item_from_collection_by_id(collection, parent_id)
