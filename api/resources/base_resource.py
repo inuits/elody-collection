@@ -100,7 +100,7 @@ class BaseResource(Resource):
     def _signal_entity_deleted(self, entity):
         attributes = {"type": "dams.entity_deleted", "source": "dams"}
         data = {
-            "location": f"/entities/{self._get_raw_id(entity)}",
+            "_id": self._get_raw_id(entity),
             "type": entity["type"] if "type" in entity else "unspecified",
         }
         event = CloudEvent(attributes, data)
