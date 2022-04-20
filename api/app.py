@@ -162,7 +162,7 @@ api.add_resource(TenantDetail, "/tenants/<string:id>")
 
 @app.after_request
 def add_header(response):
-    response.headers['Jaeger-trace-id'] = os.getenv("JAEGER_TRACE_ID", "default-id")
+    response.headers["Jaeger-trace-id"] = os.getenv("JAEGER_TRACE_ID", "default-id")
     return response
 
 

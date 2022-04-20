@@ -7,7 +7,7 @@ class MemoryStorageManager:
     collections = {"entities": {}, "mediafiles": {}, "tenants": {}, "jobs": {}}
 
     def get_entities(
-            self, skip=0, limit=20, item_type=None, ids=None, skip_relations=0
+        self, skip=0, limit=20, item_type=None, ids=None, skip_relations=0
     ):
         items = dict()
         items["results"] = list(self.collections["entities"].values())
@@ -29,21 +29,21 @@ class MemoryStorageManager:
                         "original_file_location"
                     ]
                 if (
-                        "is_primary_thumbnail" in mediafile
-                        and mediafile["is_primary_thumbnail"] is True
+                    "is_primary_thumbnail" in mediafile
+                    and mediafile["is_primary_thumbnail"] is True
                 ):
                     entity["primary_thumbnail_location"] = mediafile[
                         "thumbnail_file_location"
                     ]
         items["count"] = len(items["results"])
-        items["results"] = items["results"][skip: skip + limit]
+        items["results"] = items["results"][skip : skip + limit]
         return deepcopy(items)
 
     def get_items_from_collection(self, collection, skip=0, limit=20):
         items = dict()
         results = list(self.collections[collection].values())
         items["count"] = len(results)
-        items["results"] = results[skip: skip + limit]
+        items["results"] = results[skip : skip + limit]
         return deepcopy(items)
 
     def get_item_from_collection_by_id(self, collection, obj_id):
@@ -84,7 +84,7 @@ class MemoryStorageManager:
         return None
 
     def add_mediafile_to_collection_item(
-            self, collection, obj_id, mediafile_id, mediafile_public
+        self, collection, obj_id, mediafile_id, mediafile_public
     ):
         if item := self.get_item_from_collection_by_id(collection, obj_id):
             identifiers = item["identifiers"]
