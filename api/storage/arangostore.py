@@ -687,7 +687,8 @@ FOR c IN @@collection
         event = CloudEvent(attributes, data)
         message = json.loads(to_json(event))
         app.rabbit.send(message, routing_key="dams.edge_changed")
-        sleep(self.event_delay)
+        if self.event_delay > 0:
+            sleep(self.event_delay)
 
     def _map_entity_relation(self, relation):
         mapping = {
