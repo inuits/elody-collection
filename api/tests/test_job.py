@@ -15,7 +15,7 @@ class JobTest(BaseCase):
         )
         self.assertEqual(str, type(response.json["message"]))
         self.assertEqual(
-            "Job doesn't have a valid format\n'garbage' is not one of ['queued', 'in-progress', 'finished', 'failed']",
+            "Job doesn't have a valid format. 'garbage' is not one of ['queued', 'in-progress', 'finished', 'failed']",
             response.json["message"],
         )
         self.assertEqual(400, response.status_code)

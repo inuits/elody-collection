@@ -26,7 +26,7 @@ class TenantTest(BaseCase):
 
         self.assertEqual(str, type(response.json["message"]))
         self.assertEqual(
-            "Tenant doesn't have a valid format\n'none' is not of type 'object'",
+            "Tenant doesn't have a valid format. 'none' is not of type 'object'",
             response.json["message"],
         )
         self.assertEqual(400, response.status_code)

@@ -219,7 +219,7 @@ class MediafileTest(BaseCase):
     def check_invalid_mediafile(self, response):
         self.assertEqual(str, type(response.json["message"]))
         self.assertEqual(
-            "Mediafile doesn't have a valid format\n'filename' is a required property",
+            "Mediafile doesn't have a valid format. 'filename' is a required property",
             response.json["message"],
         )
         self.assertEqual(400, response.status_code)
