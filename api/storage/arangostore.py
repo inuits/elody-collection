@@ -500,6 +500,13 @@ FOR c IN @@collection
                         edge.delete()
         return self.add_relations_to_collection_item(collection, id, content, parent)
 
+    def delete_collection_item_relation_by_id(self, collection, id, relation_id):
+        entity = self.get_raw_item_from_collection_by_id(collection, id)
+        for relation in self.entity_relations:
+            for edge in entity.getEdges(self.db[relation]):
+                if edge["_from"] == relation_id or edge["_to"] == relation_id:
+                    edge.delete()
+
     def patch_item_from_collection(self, collection, id, content):
         raw_item = self.get_raw_item_from_collection_by_id(collection, id)
         raw_item.set(content)

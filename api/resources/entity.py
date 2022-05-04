@@ -285,3 +285,12 @@ class EntityRelations(BaseResource):
         )
         self._signal_entity_changed(entity)
         return relations, 201
+
+
+class EntityRelationsDetail(BaseResource):
+    @app.require_oauth("delete-entity-relations")
+    def delete(self, id, relation_id):
+        entity = self.abort_if_item_doesnt_exist("entities", id)
+        self.storage.delete_collection_item_relation_by_id("entities", id, relation_id)
+        self._signal_entity_changed(entity)
+        return "", 204

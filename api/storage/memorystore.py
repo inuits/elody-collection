@@ -175,6 +175,9 @@ class MemoryStorageManager:
                 patch_data[sub_item].append(obj)
         self.patch_item_from_collection(collection, obj_id, patch_data)
 
+    def delete_collection_item_relation_by_id(self, collection, id, relation_id):
+        pass
+
     def drop_all_collections(self):
         [self.collections[collection].clear() for collection in self.collections]
 
