@@ -219,26 +219,24 @@ FOR c IN @@collection
         results = self.db.AQLQuery(aql, rawResults=True, bindVars=bind)
         return list(results)
 
+    def __get_relevant_relations(self, type):
+        return {
+            "asset": ["isIn", "components", "parent"],
+            "thesaurus": [],
+            "museum": [],
+            "box_visit": ["stories", "visited", "inBasket"],
+            "box": ["box_stories"],
+            "story": ["frames", "box"],
+            "frame": ["stories", "components"],
+        }.get(type, ["components"])
+
     def get_collection_item_relations(
         self, collection, id, include_sub_relations=False
     ):
         entity = self.get_raw_item_from_collection_by_id(collection, id)
+        relevant_relations = self.__get_relevant_relations(entity["type"])
         relations = []
-        if entity["type"] == "asset":
-            entity_relations = ["isIn", "components", "parent"]
-        elif entity["type"] in ["thesaurus", "museum"]:
-            entity_relations = []
-        elif entity["type"] == "box_visit":
-            entity_relations = ["stories", "visited", "inBasket"]
-        elif entity["type"] == "box":
-            entity_relations = ["box_stories"]
-        elif entity["type"] == "story":
-            entity_relations = ["frames", "box"]
-        elif entity["type"] == "frame":
-            entity_relations = ["stories", "components"]
-        else:
-            entity_relations = ["components"]
-        for relation in entity_relations:
+        for relation in relevant_relations:
             for edge in entity.getOutEdges(self.db[relation]):
                 relation_object = {}
                 edge = edge.getStore()
