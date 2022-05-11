@@ -96,6 +96,7 @@ class ArangoStorageManager:
         ids_filter = "FILTER c._key IN @ids" if ids else ""
         type_filter = f'FILTER c.type == "{item_type}"' if item_type else ""
         aql = """
+WITH mediafiles
 FOR c IN entities
     {}
     {}
