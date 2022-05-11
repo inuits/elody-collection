@@ -1,11 +1,11 @@
 import json
 
 from tests.base_case import BaseCase
-from unittest.mock import Mock, patch
+from unittest.mock import patch, MagicMock
 
 
-@patch("app.rabbit", new=Mock())
-@patch("resources.entity.job_helper", new=Mock())
+@patch("app.rabbit", new=MagicMock())
+@patch("resources.entity.job_helper", new=MagicMock())
 class MediafileTest(BaseCase):
     def test_successful_mediafile_create(self):
         response = self.create_mediafile()

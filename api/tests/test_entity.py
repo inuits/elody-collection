@@ -2,11 +2,11 @@ import json
 import os
 
 from tests.base_case import BaseCase
-from unittest.mock import patch, Mock
+from unittest.mock import patch, MagicMock
 
 
-@patch("app.rabbit", new=Mock())
-@patch("resources.entity.job_helper", new=Mock())
+@patch("app.rabbit", new=MagicMock())
+@patch("resources.entity.job_helper", new=MagicMock())
 class EntityTest(BaseCase):
     def test_successful_entity_create(self):
         response = self.create_entity()
