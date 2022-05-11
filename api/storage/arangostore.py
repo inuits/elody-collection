@@ -93,42 +93,36 @@ class ArangoStorageManager:
         return items
 
     def get_entities(self, skip, limit, item_type=None, ids=None, skip_relations=0):
-        ids_filter = "FILTER c._key IN @ids" if ids else ""
-        type_filter = f'FILTER c.type == "{item_type}"' if item_type else ""
-        aql = """
-WITH mediafiles
-FOR c IN entities
-    {}
-    {}
-""".format(
-            ids_filter, type_filter
-        )
+        aql = f"""
+            WITH mediafiles
+            FOR c IN entities
+                {"FILTER c._key IN @ids" if ids else ""}
+                {f'FILTER c.type == "{item_type}"' if item_type else ""}
+        """
         if skip_relations == 1:
-            aql2 = """       
-            LET all_metadata = {'metadata': c.metadata}
-                """
+            aql2 = "LET all_metadata = {'metadata': c.metadata}"
         else:
             aql2 = """
-            LET new_metadata = (
-                FOR item,edge IN OUTBOUND c GRAPH 'assets'
-                    FILTER edge._id NOT LIKE 'hasMediafile%' AND edge._id NOT LIKE 'contains%'
-                    LET relation = {'key': edge._to, 'type': FIRST(SPLIT(edge._id, '/'))}
-                    RETURN HAS(edge, 'label') ? MERGE(relation, {'label': IS_NULL(edge.label.`@value`) ? edge.label : edge.label.`@value`}) : relation
-            )
-            LET all_metadata = {'metadata': APPEND(c.metadata, new_metadata)}
+                LET new_metadata = (
+                    FOR item,edge IN OUTBOUND c GRAPH 'assets'
+                        FILTER edge._id NOT LIKE 'hasMediafile%' AND edge._id NOT LIKE 'contains%'
+                        LET relation = {'key': edge._to, 'type': FIRST(SPLIT(edge._id, '/'))}
+                        RETURN HAS(edge, 'label') ? MERGE(relation, {'label': IS_NULL(edge.label.`@value`) ? edge.label : edge.label.`@value`}) : relation
+                )
+                LET all_metadata = {'metadata': APPEND(c.metadata, new_metadata)}
             """
-        aql3 = """    
-        LET primary_items = (
-            FOR item, edge IN OUTBOUND c hasMediafile
-                FILTER edge.is_primary == true || edge.is_primary_thumbnail == true
-                LET primary = edge.is_primary != true ? null : {primary_mediafile_location: item.original_file_location, primary_mediafile: item.filename, primary_transcode: item.transcode_filename, primary_transcode_location: item.transcode_file_location, primary_width: item.img_width, primary_height: item.img_height}
-                LET primary_thumb = edge.is_primary_thumbnail != true ? null : {primary_thumbnail_location: item.thumbnail_file_location}
-                RETURN primary != null AND primary_thumb != null ? MERGE(primary, primary_thumb) : (primary ? primary : primary_thumb)
-        )
-        LET merged_primary_items = COUNT(primary_items) > 1 ? MERGE(FIRST(primary_items), LAST(primary_items)) : FIRST(primary_items)
-        LIMIT @skip, @limit
-        RETURN merged_primary_items == null ? MERGE(c, all_metadata) : MERGE(c, all_metadata, merged_primary_items)
-    """
+        aql3 = """
+            LET primary_items = (
+                FOR item, edge IN OUTBOUND c hasMediafile
+                    FILTER edge.is_primary == true || edge.is_primary_thumbnail == true
+                    LET primary = edge.is_primary != true ? null : {primary_mediafile_location: item.original_file_location, primary_mediafile: item.filename, primary_transcode: item.transcode_filename, primary_transcode_location: item.transcode_file_location, primary_width: item.img_width, primary_height: item.img_height}
+                    LET primary_thumb = edge.is_primary_thumbnail != true ? null : {primary_thumbnail_location: item.thumbnail_file_location}
+                    RETURN primary != null AND primary_thumb != null ? MERGE(primary, primary_thumb) : (primary ? primary : primary_thumb)
+            )
+            LET merged_primary_items = COUNT(primary_items) > 1 ? MERGE(FIRST(primary_items), LAST(primary_items)) : FIRST(primary_items)
+            LIMIT @skip, @limit
+            RETURN merged_primary_items == null ? MERGE(c, all_metadata) : MERGE(c, all_metadata, merged_primary_items)
+        """
         bind = {"skip": skip, "limit": limit}
         if ids:
             bind["ids"] = ids
@@ -137,18 +131,14 @@ FOR c IN entities
         )
         items = dict()
         items["count"] = results.extra["stats"]["fullCount"]
-        results = list(results)
-        results_sorted = (
-            [
+        items["results"] = list(results)
+        if ids:
+            items["results"] = [
                 result_item
                 for i in ids
-                for result_item in results
+                for result_item in items["results"]
                 if result_item["_key"] == i
             ]
-            if ids
-            else results
-        )
-        items["results"] = results_sorted
         return items
 
     def get_items_from_collection(self, collection, skip=0, limit=20):
