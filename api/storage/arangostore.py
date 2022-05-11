@@ -303,49 +303,6 @@ FOR c IN @@collection
 
         return relations
 
-    def get_collection_item_types(self, collection, id):
-        entity = self.get_raw_item_from_collection_by_id(collection, id)
-        types = []
-        for edge in entity.getOutEdges(self.db["isTypeOf"]):
-            relation = {}
-            edge = edge.getStore()
-            for key in edge.keys():
-                if key[0] != "_":
-                    relation[key] = edge[key]
-            relation["key"] = edge["_to"]
-            relation["type"] = "isTypeOf"
-            types.append(relation)
-        return types
-
-    def get_collection_item_usage(self, collection, id):
-        entity = self.get_raw_item_from_collection_by_id(collection, id)
-        usage = []
-        for edge in entity.getOutEdges(self.db["isUsedIn"]):
-            usage.append({"key": edge["_to"], "type": "isUsedIn"})
-        return usage
-
-    def get_collection_item_components(self, collection, id):
-        entity = self.get_raw_item_from_collection_by_id(collection, id)
-        relations = []
-        for edge in entity.getOutEdges(self.db["components"]):
-            relation = {}
-            edge = edge.getStore()
-            for key in edge.keys():
-                if key[0] != "_":
-                    relation[key] = edge[key]
-            relation["key"] = edge["_to"]
-            relation["type"] = "components"
-            relations.append(relation)
-            # relations = sorted(relations, key=lambda tup: tup["order"])
-        return relations
-
-    def get_collection_item_parent(self, collection, id):
-        entity = self.get_raw_item_from_collection_by_id(collection, id)
-        relations = []
-        for edge in entity.getOutEdges(self.db["parent"]):
-            relations.append({"key": edge["_to"], "type": "parent"})
-        return relations
-
     def __add_mediafile_to_list(self, mediafile, mediafiles):
         if "is_primary" in mediafile and mediafile["is_primary"]:
             mediafiles.insert(0, mediafile)
