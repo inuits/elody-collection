@@ -120,7 +120,6 @@ from resources.entity import (
     EntityMetadataKey,
     EntityRelations,
     EntityRelationsAll,
-    EntityRelationsDetail,
 )
 from resources.job import Job, JobDetail
 from resources.box_visit import (
@@ -155,9 +154,6 @@ api.add_resource(EntityMetadata, "/entities/<string:id>/metadata")
 api.add_resource(EntityMetadataKey, "/entities/<string:id>/metadata/<string:key>")
 api.add_resource(EntityRelations, "/entities/<string:id>/relations")
 api.add_resource(EntityRelationsAll, "/entities/<string:id>/relations/all")
-api.add_resource(
-    EntityRelationsDetail, "/entities/<string:id>/relations/<path:relation_id>"
-)
 
 api.add_resource(Job, "/jobs")
 api.add_resource(JobDetail, "/jobs/<string:id>")
