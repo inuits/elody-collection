@@ -5,7 +5,7 @@ from tests.base_case import BaseCase
 from unittest.mock import patch, Mock
 
 
-@patch("resources.base_resource.BaseResource._signal_entity_changed", new=Mock())
+@patch("app.rabbit", new=Mock())
 @patch("resources.entity.job_helper", new=Mock())
 class EntityTest(BaseCase):
     def test_successful_entity_create(self):
