@@ -49,47 +49,34 @@ class ArangoStorageManager:
         self.db = self._create_database_if_not_exists()
 
     def get_box_visits(self, skip, limit, item_type=None, ids=None):
-        ids_filter = "FILTER c._key IN @ids" if ids else ""
-        type_filter = f'FILTER c.type == "{item_type}"' if item_type else ""
-        aql = """
-    FOR c IN box_visits
-        {}
-        {}
-    """.format(
-            ids_filter, type_filter
-        )
-        aql1 = """
-            LET new_metadata = (
-                FOR item,edge IN OUTBOUND c GRAPH 'assets'
-                    FILTER edge._id NOT LIKE 'hasMediafile%'
-                    LET relation = {'key': edge._to, 'type': FIRST(SPLIT(edge._id, '/'))}
-                    RETURN HAS(edge, 'label') ? MERGE(relation, {'label': IS_NULL(edge.label.`@value`) ? edge.label : edge.label.`@value`}) : relation
-            )
-            LET all_metadata = {'metadata': APPEND(c.metadata, new_metadata)}
-            LIMIT @skip, @limit
-            RETURN MERGE(c, all_metadata)
-            """
+        aql = f"""
+            FOR c IN box_visits
+                {"FILTER c._key IN @ids" if ids else ""}
+                {f'FILTER c.type == "{item_type}"' if item_type else ""}
+                LET new_metadata = (
+                    FOR item,edge IN OUTBOUND c GRAPH 'assets'
+                        FILTER edge._id NOT LIKE 'hasMediafile%'
+                        LET relation = {'key': edge._to, 'type': FIRST(SPLIT(edge._id, '/'))}
+                        RETURN HAS(edge, 'label') ? MERGE(relation, {'label': IS_NULL(edge.label.`@value`) ? edge.label : edge.label.`@value`}) : relation
+                )
+                LET all_metadata = {'metadata': APPEND(c.metadata, new_metadata)}
+                LIMIT @skip, @limit
+                RETURN MERGE(c, all_metadata)
+        """
         bind = {"skip": skip, "limit": limit}
         if ids:
             bind["ids"] = ids
-        results = self.db.AQLQuery(
-            aql + aql1, rawResults=True, bindVars=bind, fullCount=True
-        )
+        results = self.db.AQLQuery(aql, rawResults=True, bindVars=bind, fullCount=True)
         items = dict()
         items["count"] = results.extra["stats"]["fullCount"]
-        results = list(results)
-        results_sorted = (
-            [
+        items["results"] = list(results)
+        if ids:
+            items["results"] = [
                 result_item
                 for i in ids
-                for result_item in results
+                for result_item in items["results"]
                 if result_item["_key"] == i
             ]
-            if ids
-            else results
-        )
-        items["results"] = results_sorted
-
         return items
 
     def get_entities(self, skip, limit, item_type=None, ids=None, skip_relations=0):
