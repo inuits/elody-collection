@@ -7,8 +7,12 @@ from flask_restful import Api
 from flask_swagger_ui import get_swaggerui_blueprint
 from healthcheck import HealthCheck
 from inuits_jwt_auth.authorization import JWTValidator, MyResourceProtector
+from inuits_otel_tracer.tracer import Tracer
 from storage.storagemanager import StorageManager
 from rabbitmq_pika_flask import RabbitMQ
+
+traceObject = Tracer(os.getenv("OTEL_IS_DISABLED", True) in ["True" or "true" or True], "Collection api", __name__)
+traceObject.configTracer(endpoint = os.getenv("OTLP_EXPORTER_ENDPOINT", "otel-collector:4317"), isInsecure=True)
 
 SWAGGER_URL = "/api/docs"  # URL for exposing Swagger UI (without trailing '/')
 API_URL = (
@@ -38,6 +42,8 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger(__name__)
+
+traceObject.startAutoInstrumentation(app)
 
 rabbit = RabbitMQ()
 rabbit.init_app(app, "basic", json.loads, json.dumps)
