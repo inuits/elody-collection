@@ -446,7 +446,7 @@ FOR c IN @@collection
         self.__remove_relations(entity, content, parent)
         return self.add_relations_to_collection_item(collection, id, content, parent)
 
-    def delete_collection_item_relation_by_id(self, collection, id, content):
+    def delete_collection_item_relations(self, collection, id, content):
         entity = self.get_raw_item_from_collection_by_id(collection, id)
         self.__remove_relations(entity, content)
 

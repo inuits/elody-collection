@@ -290,8 +290,6 @@ class EntityRelations(BaseResource):
     def delete(self, id):
         entity = self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
-        if "key" not in content or "type" not in content:
-            abort(405, message="Invalid content")
-        self.storage.delete_collection_item_relation_by_id("entities", id, content)
+        self.storage.delete_collection_item_relations("entities", id, content)
         self._signal_entity_changed(entity)
         return "", 204
