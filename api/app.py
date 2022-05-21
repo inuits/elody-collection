@@ -11,7 +11,7 @@ from inuits_otel_tracer.tracer import Tracer
 from storage.storagemanager import StorageManager
 from rabbitmq_pika_flask import RabbitMQ
 
-traceObject = Tracer(os.getenv("OTEL_IS_DISABLED", True) in ["True" or "true" or True], "Collection api", __name__)
+traceObject = Tracer(os.getenv("OTEL_ENABLED", False) in ["True" or "true" or True], "Collection api", __name__)
 traceObject.configTracer(endpoint = os.getenv("OTLP_EXPORTER_ENDPOINT", "otel-collector:4317"), isInsecure=True)
 
 SWAGGER_URL = "/api/docs"  # URL for exposing Swagger UI (without trailing '/')
