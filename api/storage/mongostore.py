@@ -163,7 +163,7 @@ class MongoStorageManager:
                 patch_data[sub_item].append(obj)
         self.patch_item_from_collection(collection, id, patch_data)
 
-    def delete_collection_item_relations(self, collection, id, content):
+    def delete_collection_item_relations(self, collection, id, content, parent=True):
         pass
 
     def drop_all_collections(self):

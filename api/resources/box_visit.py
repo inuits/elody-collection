@@ -173,3 +173,10 @@ class BoxVisitRelations(BaseResource):
             "box_visits", id, content, False
         )
         return relations, 201
+
+    @app.require_oauth("delete-box-visit-relations")
+    def delete(self, id):
+        box_visit = self.abort_if_item_doesnt_exist("box_visits", id)
+        content = self.get_request_body()
+        self.storage.delete_collection_item_relations("box_visits", id, content, False)
+        return "", 204
