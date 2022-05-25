@@ -183,13 +183,13 @@ class EntityMediafiles(BaseResource):
 
     @app.require_oauth("add-entity-mediafiles")
     def post(self, id):
-        self.abort_if_item_doesnt_exist("entities", id)
+        entity = self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
         self.abort_if_not_valid_json("Mediafile", content, mediafile_schema)
-        mediafile_id = content["_id"]
         mediafile = self.storage.add_mediafile_to_collection_item(
-            "entities", id, mediafile_id, self._mediafile_is_public(content)
+            "entities", id, content["_id"], self._mediafile_is_public(content)
         )
+        self._signal_entity_changed(entity)
         return mediafile, 201
 
 
