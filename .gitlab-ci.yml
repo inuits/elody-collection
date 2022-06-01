@@ -8,13 +8,12 @@ include:
     file: 'python-pipeline.yml'
     ref: 'v1.3.0'
   - project: 'customers/coghent/infra/coghent-infra-gitlab-templates'
-    file    : 'npm-pipeline.yml'
+    file    : 'dams-dev-deploy.yml'
     ref     : 'master'
     
 variables:
   CUSTOMER: 'inuits'
   APPLICATION: 'dams-collection'
-  SUB_SYSTEM: 'dams'
   TERRAFORM_IMAGE: 'dams-terraform'
   TERRAFORM_TAG: 'latest'
   SKIP_DEPLOY: 'true'
