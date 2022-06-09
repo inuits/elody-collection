@@ -1,18 +1,11 @@
 import app
-import os
 
 from flask import request, after_this_request
 from flask_restful import abort
 from inuits_jwt_auth.authorization import current_token
-from job_helper.job_helper import JobHelper
 from pyArango.theExceptions import CreationError
 from resources.base_resource import BaseResource
 from validator import entity_schema, mediafile_schema
-
-job_helper = JobHelper(
-    job_api_base_url=os.getenv("JOB_API_BASE_URL"),
-    static_jwt=os.getenv("STATIC_JWT", False),
-)
 
 
 class Entity(BaseResource):
@@ -203,7 +196,6 @@ class EntityMediafilesCreate(BaseResource):
                 405,
                 message="Invalid input",
             )
-        job = job_helper.create_new_job("Create mediafile", "mediafile")
         filename = content["filename"]
         mediafile = {
             "filename": filename,
@@ -216,15 +208,9 @@ class EntityMediafilesCreate(BaseResource):
         upload_location = (
             f"{self.storage_api_url}/upload/{filename}?id={self._get_raw_id(mediafile)}"
         )
-        job_helper.progress_job(job)
-        try:
-            self.storage.add_mediafile_to_collection_item(
-                "entities", id, mediafile["_id"], self._mediafile_is_public(mediafile)
-            )
-            job_helper.finish_job(job)
-        except Exception as ex:
-            job_helper.fail_job(job, str(ex))
-            return str(ex), 400
+        self.storage.add_mediafile_to_collection_item(
+            "entities", id, mediafile["_id"], self._mediafile_is_public(mediafile)
+        )
         self._signal_entity_changed(entity)
         return upload_location, 201
 
