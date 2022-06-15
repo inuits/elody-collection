@@ -14,7 +14,7 @@ class StoryBox(BaseResource):
 class StoryBoxLink(BaseResource):
     @app.require_oauth("link-story-box")
     def post(self, code):
-        box_visit = self.abort_if_item_doesnt_exist("entities", code)
+        box_visit = self.abort_if_item_doesnt_exist("box_visits", code)
         content = {
             "type": "frame",
             "metadata": {"key": "type", "value": "frame", "language": "en"},
