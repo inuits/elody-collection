@@ -7,6 +7,7 @@ from resources.base_resource import BaseResource
 class StoryBox(BaseResource):
     @app.require_oauth("get-story-box")
     def get(self):
+        app.logger.info(f'CURRENT TOKEN {current_token}')
         filters = {"type": "frame", "user": current_token["Email"]}
         return self.storage.get_items_from_collection_by_fields("entities", filters)
 
