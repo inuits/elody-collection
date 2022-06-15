@@ -13,10 +13,7 @@ class Entity(BaseResource):
     def post(self):
         content = self.get_request_body()
         self.abort_if_not_valid_json("Entity", content, entity_schema)
-        if "Email" in current_token:
-            content["user"] = current_token["Email"]
-        else:
-            content["user"] = "default_uploader"
+        content["user"] = current_token["email"] if "email" in current_token else "default_uploader"
         try:
             entity = self.storage.save_item_to_collection("entities", content)
         except CreationError as ex:

@@ -7,8 +7,7 @@ from resources.base_resource import BaseResource
 class StoryBox(BaseResource):
     @app.require_oauth("get-story-box")
     def get(self):
-        app.logger.info(f'CURRENT TOKEN {current_token}')
-        filters = {"type": "frame", "user": current_token["Email"]}
+        filters = {"type": "frame", "user": current_token["email"]}
         return self.storage.get_items_from_collection_by_fields("entities", filters)
 
 
@@ -19,7 +18,7 @@ class StoryBoxLink(BaseResource):
         content = {
             "type": "frame",
             "metadata": {"key": "type", "value": "frame", "language": "en"},
-            "user": current_token["Email"],
+            "user": current_token["email"],
         }
         frame = self.storage.save_item_to_collection("entities", content)
         relations = self.storage.get_collection_item_relations(
