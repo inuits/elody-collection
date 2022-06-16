@@ -6,7 +6,7 @@ from pyArango.theExceptions import CreationError
 
 
 class PyArangoConnection(Connection, ABC):
-    def create_helper(self, name, db_name, db_collection, args, expected_status):
+    def __create_helper(self, name, db_name, db_collection, args, expected_status):
         if not args:
             args = {}
         if name:
@@ -19,21 +19,19 @@ class PyArangoConnection(Connection, ABC):
             raise CreationError(data["errorMessage"], r.content)
 
     def createCollection(self, name, db_name, args=None):
-        return self.create_helper(name, db_name, "collection", args, 200)
+        self.__create_helper(name, db_name, "collection", args, 200)
 
     def createEdge(self, name, db_name, args=None):
         if not args:
             args = {}
         args["type"] = 3
-        return self.create_helper(name, db_name, "collection", args, 200)
+        self.__create_helper(name, db_name, "collection", args, 200)
 
     def createGraph(self, name, db_name, args=None):
-        return self.create_helper(name, db_name, "gharial", args, 202)
+        self.__create_helper(name, db_name, "gharial", args, 202)
 
     def define_edge_in_graph(self, graph, db_name, definition):
-        return self.create_helper(
-            None, db_name, f"gharial/{graph}/edge", definition, 202
-        )
+        self.__create_helper(None, db_name, f"gharial/{graph}/edge", definition, 202)
 
     def get_cluster_health(self, db_name):
         return self.session.get(
