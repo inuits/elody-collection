@@ -1,28 +1,24 @@
-import random
-import sys
-
 import app
 
+from datetime import datetime
 from flask import request, after_this_request
+from flask_restful import abort
 from resources.base_resource import BaseResource
 from validator import box_visit_schema
-from datetime import datetime
 
 
 class BoxVisit(BaseResource):
     @app.require_oauth("create-box-visit")
     def post(self):
         content = self.get_request_body()
-        first_story_id = content["story_id"] if "story_id" in content else None
-        first_story = self.abort_if_item_doesnt_exist("entities", first_story_id)
-        first_story = self._add_relations_to_metadata(first_story, "entities")
-        count_frames = 0
-        for item in first_story["metadata"]:
-            if "type" in item and item["type"] == "frames":
-                count_frames = count_frames + 1
-
-        code = self._get_unique_code()
-
+        if "story_id" not in content:
+            abort(405, message="Invalid input")
+        story = self.abort_if_item_doesnt_exist("entities", content["story_id"])
+        story = self._add_relations_to_metadata(story)
+        num_frames = sum(
+            map(lambda x: "type" in x and x["type"] == "frames", story["metadata"])
+        )
+        code = self.storage.generate_box_visit_code()
         box_visit = {
             "type": "box_visit",
             "identifiers": [code],
@@ -36,35 +32,16 @@ class BoxVisit(BaseResource):
         relation = {
             "type": "stories",
             "label": "story",
-            "key": first_story["_id"],
+            "key": story["_id"],
             "active": True,
-            "total_frames": count_frames,
+            "total_frames": num_frames,
             "order": 0,
             "last_frame": "",
         }
-
         self.storage.add_relations_to_collection_item(
             "box_visits", box_visit["_key"], [relation], False
         )
         return self._add_relations_to_metadata(box_visit, "box_visits", sort_by="order")
-
-    def _get_unique_code(self):
-        sys.setrecursionlimit(10000)
-        random_codes = list()
-        # try 5 random codes at once to limit requests to database
-        for i in range(5):
-            random_codes.append(
-                "".join(["{}".format(random.randint(0, 9)) for num in range(0, 8)])
-            )
-        query = """
-        FOR bv IN @@collection
-            FILTER bv.code IN @code_list
-            RETURN bv.code
-        """
-        variables = {"@collection": "box_visits", "code_list": random_codes}
-        used_codes = self.storage.get_custom_query(query, variables)
-        for code in random_codes:
-            return code if code not in used_codes else self._get_unique_code()
 
     @app.require_oauth("read-box-visit")
     def get(self):
