@@ -13,7 +13,9 @@ class Entity(BaseResource):
     def post(self):
         content = self.get_request_body()
         self.abort_if_not_valid_json("Entity", content, entity_schema)
-        content["user"] = current_token["email"] if "email" in current_token else "default_uploader"
+        content["user"] = "default_uploader"
+        if "email" in current_token:
+            content["user"] = current_token["email"]
         try:
             entity = self.storage.save_item_to_collection("entities", content)
         except CreationError as ex:
@@ -189,10 +191,7 @@ class EntityMediafilesCreate(BaseResource):
         entity = self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
         if "filename" not in content:
-            abort(
-                405,
-                message="Invalid input",
-            )
+            abort(405, message="Invalid input")
         filename = content["filename"]
         mediafile = {
             "filename": filename,
