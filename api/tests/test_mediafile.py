@@ -5,7 +5,6 @@ from unittest.mock import patch, MagicMock
 
 
 @patch("app.rabbit", new=MagicMock())
-@patch("resources.entity.job_helper", new=MagicMock())
 class MediafileTest(BaseCase):
     def test_successful_mediafile_create(self):
         response = self.create_mediafile()

@@ -32,11 +32,9 @@ class Job(BaseResource):
         count = jobs["count"]
         jobs["limit"] = limit
         if skip + limit < count:
-            jobs["next"] = "/{}?skip={}&limit={}".format("jobs", skip + limit, limit)
+            jobs["next"] = f"/jobs?skip={skip + limit}&limit={limit}"
         if skip > 0:
-            jobs["previous"] = "/{}?skip={}&limit={}".format(
-                "jobs", max(0, skip - limit), limit
-            )
+            jobs["previous"] = f"/jobs?skip={max(0, skip - limit)}&limit={limit}"
         return jobs
 
 

@@ -48,7 +48,7 @@ class BoxVisit(BaseResource):
         skip = int(request.args.get("skip", 0))
         limit = int(request.args.get("limit", 20))
         item_type = request.args.get("type", None)
-        type_var = "type={}&".format(item_type) if item_type else ""
+        type_filter = f"type={item_type}&" if item_type else ""
         ids = request.args.get("ids", None)
         if ids:
             ids = ids.split(",")
@@ -56,13 +56,13 @@ class BoxVisit(BaseResource):
         count = box_visits["count"]
         box_visits["limit"] = limit
         if skip + limit < count:
-            box_visits["next"] = "/{}?{}skip={}&limit={}".format(
-                "box_visits", type_var, skip + limit, limit
-            )
+            box_visits[
+                "next"
+            ] = f"/box_visits?{type_filter}skip={skip + limit}&limit={limit}"
         if skip > 0:
-            box_visits["previous"] = "/{}?{}skip={}&limit={}".format(
-                "box_visits", type_var, max(0, skip - limit), limit
-            )
+            box_visits[
+                "previous"
+            ] = f"/box_visits?{type_filter}skip={max(0, skip - limit)}&limit={limit}"
         return box_visits
 
 

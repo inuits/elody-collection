@@ -16,8 +16,7 @@ class Tenant(BaseResource):
 class TenantDetail(BaseResource):
     @app.require_oauth("read-tenant")
     def get(self, id):
-        tenant = self.abort_if_item_doesnt_exist("tenants", id)
-        return tenant
+        return self.abort_if_item_doesnt_exist("tenants", id)
 
     @app.require_oauth("patch-tenant")
     def patch(self, id):

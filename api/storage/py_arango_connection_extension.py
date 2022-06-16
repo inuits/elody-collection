@@ -7,23 +7,22 @@ from pyArango.theExceptions import CreationError
 
 class PyArangoConnection(Connection, ABC):
     def create_helper(self, name, db_name, db_collection, args, expected_status):
-        if args is None:
+        if not args:
             args = {}
-        args["name"] = name
+        if name:
+            args["name"] = name
         payload = json.dumps(args, default=str)
-        url = "{}/_db/{}/_api/{}".format(self.getEndpointURL(), db_name, db_collection)
+        url = f"{self.getEndpointURL()}/_db/{db_name}/_api/{db_collection}"
         r = self.session.post(url, data=payload)
         data = r.json()
-        if r.status_code == expected_status and not data["error"]:
-            return True
-        else:
+        if r.status_code != expected_status or data["error"]:
             raise CreationError(data["errorMessage"], r.content)
 
     def createCollection(self, name, db_name, args=None):
         return self.create_helper(name, db_name, "collection", args, 200)
 
     def createEdge(self, name, db_name, args=None):
-        if args is None:
+        if not args:
             args = {}
         args["type"] = 3
         return self.create_helper(name, db_name, "collection", args, 200)
@@ -31,18 +30,12 @@ class PyArangoConnection(Connection, ABC):
     def createGraph(self, name, db_name, args=None):
         return self.create_helper(name, db_name, "gharial", args, 202)
 
-    def addEdgeDefinitionToGraph(self, graph, db_name, edge_definition):
-        payload = json.dumps(edge_definition, default=str)
-        url = "{}/_db/{}/_api/gharial/{}/edge".format(
-            self.getEndpointURL(), db_name, graph
+    def define_edge_in_graph(self, graph, db_name, definition):
+        return self.create_helper(
+            None, db_name, f"gharial/{graph}/edge", definition, 202
         )
-        r = self.session.post(url, data=payload)
-        data = r.json()
-        if r.status_code == 202 and not data["error"]:
-            return True
-        else:
-            raise CreationError(data["errorMessage"], r.content)
 
     def get_cluster_health(self, db_name):
-        url = "{}/_db/{}/_admin/cluster/health".format(self.getEndpointURL(), db_name)
-        return self.session.get(url)
+        return self.session.get(
+            f"{self.getEndpointURL()}/_db/{db_name}/_admin/cluster/health"
+        )

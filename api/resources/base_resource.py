@@ -25,10 +25,7 @@ class BaseResource(Resource):
         except BadRequest:
             invalid_input = True
         if invalid_input:
-            abort(
-                405,
-                message="Invalid input",
-            )
+            abort(405, message="Invalid input")
         return request_body
 
     def abort_if_item_doesnt_exist(self, collection, id):
@@ -46,14 +43,6 @@ class BaseResource(Resource):
             abort(
                 400, message=f"{type} doesn't have a valid format. {validation_error}"
             )
-
-    def _abort_if_incorrect_type(self, items, relation_type):
-        for item in items:
-            if item["type"] != relation_type:
-                abort(
-                    400,
-                    message=f'Expected relation type {item["type"]}, got {relation_type}',
-                )
 
     def _inject_api_urls_into_entities(self, entities):
         for entity in entities:
@@ -172,9 +161,10 @@ class BaseResource(Resource):
     def _mediafile_is_public(self, mediafile):
         if "metadata" not in mediafile:
             return False
-        for metadata in mediafile["metadata"]:
-            if metadata["key"] == "publication_status":
-                return metadata["value"] == "publiek"
+        for item in [
+            x for x in mediafile["metadata"] if x["key"] == "publication_status"
+        ]:
+            return item["value"] == "publiek"
         return False
 
     def _get_mediafile_access(self, mediafile):
@@ -182,9 +172,8 @@ class BaseResource(Resource):
             return "full"
         if not self._mediafile_is_public(mediafile):
             return "none"
-        for metadata in mediafile["metadata"]:
-            if metadata["key"] == "rights":
-                if "in copyright" in metadata["value"].lower():
-                    return "limited"
-                return "full"
+        for item in [x for x in mediafile["metadata"] if x["key"] == "rights"]:
+            if "in copyright" in item["value"].lower():
+                return "limited"
+            return "full"
         return "full"

@@ -160,24 +160,15 @@ class ArangoStorageManager:
 
     def get_items_from_collection_by_fields(self, collection, fields, skip=0, limit=20):
         items = dict()
-        items["results"] = list()
         extra_query = ""
-        for field_name, field_value in fields.items():
-            extra_query = (
-                extra_query
-                + """FILTER c.{} == \"{}\"
-            """.format(
-                    field_name, field_value
-                )
-            )
-        aql = """
-FOR c IN @@collection
-    {}
-    LIMIT @skip, @limit
-    RETURN c
-""".format(
-            extra_query
-        )
+        for name, value in fields.items():
+            extra_query += f'FILTER c.{name} == "{value}"\n'
+        aql = f"""
+            FOR c IN @@collection
+                {extra_query}
+                LIMIT @skip, @limit
+                RETURN c
+        """
         bind = {"@collection": collection, "skip": skip, "limit": limit}
         results = self.db.AQLQuery(aql, rawResults=True, bindVars=bind, fullCount=True)
         items["count"] = results.extra["stats"]["fullCount"]
@@ -209,12 +200,12 @@ FOR c IN @@collection
 
     def get_collection_item_sub_item_key(self, collection, id, sub_item, key):
         aql = """
-FOR c IN @@collection
-    FILTER @id IN c.identifiers OR c._key == @id
-    FOR obj IN c.@sub_item
-        FILTER obj.key == @key
-        RETURN obj
-"""
+            FOR c IN @@collection
+                FILTER @id IN c.identifiers OR c._key == @id
+                FOR obj IN c.@sub_item
+                    FILTER obj.key == @key
+                    RETURN obj
+        """
         bind = {"@collection": collection, "id": id, "sub_item": sub_item, "key": key}
         results = self.db.AQLQuery(aql, rawResults=True, bindVars=bind)
         return list(results)
@@ -646,9 +637,7 @@ FOR c IN @@collection
     def _send_edge_changed_message(self, parent_ids_from_changed_edges):
         attributes = {"type": "dams.edge_changed", "source": "dams"}
         data = {
-            "location": "/entities?ids={}&skip_relations=1".format(
-                ",".join(parent_ids_from_changed_edges)
-            )
+            "location": f'/entities?ids={",".join(parent_ids_from_changed_edges)}&skip_relations=1'
         }
         event = CloudEvent(attributes, data)
         message = json.loads(to_json(event))
@@ -741,7 +730,7 @@ FOR c IN @@collection
             elif edge_name == "stories":
                 fr = ["box_visits"]
             try:
-                self.conn.addEdgeDefinitionToGraph(
+                self.conn.define_edge_in_graph(
                     self.default_graph_name,
                     self.arango_db_name,
                     {"collection": edge_name, "from": fr, "to": to},

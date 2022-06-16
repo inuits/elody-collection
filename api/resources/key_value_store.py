@@ -1,6 +1,7 @@
 import app
-from validator import key_value_store_schema
+
 from resources.base_resource import BaseResource
+from validator import key_value_store_schema
 
 
 class KeyValueStore(BaseResource):
@@ -8,35 +9,36 @@ class KeyValueStore(BaseResource):
     def post(self):
         content = self.get_request_body()
         self.abort_if_not_valid_json("KeyValueStore", content, key_value_store_schema)
-        KeyValueStore = self.storage.save_item_to_collection("key_value_store", content)
-        return KeyValueStore, 201
+        key_value_store = self.storage.save_item_to_collection(
+            "key_value_store", content
+        )
+        return key_value_store, 201
 
 
 class KeyValueStoreDetail(BaseResource):
     @app.require_oauth("read-key-value-store")
     def get(self, id):
-        KeyValueStore = self.abort_if_item_doesnt_exist("key_value_store", id)
-        return KeyValueStore
+        return self.abort_if_item_doesnt_exist("key_value_store", id)
 
     @app.require_oauth("patch-key-value-store")
     def patch(self, id):
         self.abort_if_item_doesnt_exist("key_value_store", id)
         content = self.get_request_body()
         self.abort_if_not_valid_json("KeyValueStore", content, key_value_store_schema)
-        KeyValueStore = self.storage.patch_item_from_collection(
+        key_value_store = self.storage.patch_item_from_collection(
             "key_value_store", id, content
         )
-        return KeyValueStore, 201
+        return key_value_store, 201
 
     @app.require_oauth("update-key-value-store")
     def put(self, id):
         self.abort_if_item_doesnt_exist("key_value_store", id)
         content = self.get_request_body()
         self.abort_if_not_valid_json("KeyValueStore", content, key_value_store_schema)
-        KeyValueStore = self.storage.update_item_from_collection(
+        key_value_store = self.storage.update_item_from_collection(
             "key_value_store", id, content
         )
-        return KeyValueStore, 201
+        return key_value_store, 201
 
     @app.require_oauth("delete-key-value-store")
     def delete(self, id):
