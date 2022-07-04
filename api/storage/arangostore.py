@@ -41,7 +41,7 @@ class ArangoStorageManager:
             "stories",
             "story_box",
             "visited",
-            "story_box_visits"
+            "story_box_visits",
         ]
         self.edges = [*self.entity_relations, "hasMediafile"]
         self.conn = Connection(
@@ -256,7 +256,9 @@ class ArangoStorageManager:
                         )
                         or (
                             "label" in relation_object
-                            and (relation_object["label"] in ["MaterieelDing.bestaatUit"])
+                            and (
+                                relation_object["label"] in ["MaterieelDing.bestaatUit"]
+                            )
                         )
                     ):
                         sub_entity = self.get_raw_item_from_collection_by_id(
@@ -274,9 +276,12 @@ class ArangoStorageManager:
                             if relation_object["value"] == "Creatie":
 
                                 sub_entity2 = self.get_raw_item_from_collection_by_id(
-                                    collection, relation_object["key"].split("entities/")[1]
+                                    collection,
+                                    relation_object["key"].split("entities/")[1],
                                 )
-                                for sub_edge2 in sub_entity2.getOutEdges(self.db[relation]):
+                                for sub_edge2 in sub_entity2.getOutEdges(
+                                    self.db[relation]
+                                ):
                                     relation_object = {}
                                     sub_edge2 = sub_edge2.getStore()
                                     for key in sub_edge2.keys():
@@ -286,7 +291,8 @@ class ArangoStorageManager:
                                     relation_object["type"] = relation
                                     if (
                                         relation_object not in relations
-                                        and relation_object["label"] != "vervaardiger.rol"
+                                        and relation_object["label"]
+                                        != "vervaardiger.rol"
                                     ):
                                         relations.append(relation_object)
 
