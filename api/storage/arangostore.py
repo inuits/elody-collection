@@ -29,20 +29,18 @@ class ArangoStorageManager:
             "tenants",
         ]
         self.entity_relations = [
-            "authoredBy",
-            "authored",
-            "isIn",
-            "contains",
+            "box",
+            "box_stories",
             "components",
+            "contains",
             "frames",
+            "inBasket",
+            "isIn",
             "parent",
             "stories",
-            "box_stories",
-            "box",
             "visited",
-            "inBasket",
         ]
-        self.edges = self.entity_relations + ["hasMediafile"]
+        self.edges = [*self.entity_relations, "hasMediafile"]
         self.conn = Connection(
             arangoURL=self.arango_host,
             username=self.arango_username,
@@ -647,20 +645,14 @@ FOR c IN @@collection
 
     def _map_entity_relation(self, relation):
         mapping = {
-            "authoredBy": "authored",
-            "isIn": "contains",
-            "authored": "authoredBy",
-            "contains": "isIn",
-            "components": "parent",
-            "parent": "components",
-            "isTypeOf": "isUsedIn",
-            "isUsedIn": "isTypeOf",
-            "carriedOutBy": "hasCarriedOut",
-            "hasCarriedOut": "carriedOutBy",
-            "frames": "stories",
-            "stories": "frames",
             "box": "box_stories",
             "box_stories": "box",
+            "components": "parent",
+            "contains": "isIn",
+            "frames": "stories",
+            "isIn": "contains",
+            "parent": "components",
+            "stories": "frames",
         }
         return mapping.get(relation)
 
