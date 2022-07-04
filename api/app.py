@@ -143,7 +143,7 @@ from resources.box_visit import (
 from resources.key_value_store import KeyValueStore, KeyValueStoreDetail
 from resources.mediafile import Mediafile, MediafileDetail, MediafileCopyright
 from resources.spec import AsyncAPISpec, OpenAPISpec
-from resources.story_box import StoryBox, StoryBoxLink
+from resources.story_box import StoryBox, StoryBoxLink, StoryBoxPublish
 from resources.tenant import Tenant, TenantDetail
 
 api.add_resource(Entity, "/entities")
@@ -183,6 +183,7 @@ api.add_resource(OpenAPISpec, "/spec/dams-collection-api.json")
 
 api.add_resource(StoryBox, "/story_box")
 api.add_resource(StoryBoxLink, "/story_box/link/<string:code>")
+api.add_resource(StoryBoxPublish, "/story_box/publish/<string:id>")
 
 api.add_resource(Tenant, "/tenants")
 api.add_resource(TenantDetail, "/tenants/<string:id>")

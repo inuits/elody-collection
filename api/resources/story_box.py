@@ -35,3 +35,25 @@ class StoryBoxLink(BaseResource):
                 "box_visits", self._get_raw_id(box_visit), content, False
             )
         return story_box, 201
+
+
+class StoryBoxPublish(BaseResource):
+    @app.require_oauth("publish-story-box")
+    def post(self, id):
+        story_box = self.abort_if_item_doesnt_exist("entities", id)
+        story = {
+            "type": "story",
+            "metadata": [
+                {"key": "type", "value": "story", "language": "en"},
+                {"key": "title", "value": "Storybox"},
+                {"key": "description", "value": "Storybox"},
+            ],
+        }
+        story = self.storage.save_item_to_collection("entities", story)
+        content = [
+            {"key": story_box["_id"], "label": "Frame", "type": "frames", "order": 1}
+        ]
+        self.storage.patch_collection_item_relations(
+            "entities", self._get_raw_id(story), content
+        )
+        return self._create_box_visit({"story_id": self._get_raw_id(story)}), 201
