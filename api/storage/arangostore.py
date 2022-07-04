@@ -38,6 +38,7 @@ class ArangoStorageManager:
             "isIn",
             "parent",
             "stories",
+            "story_box",
             "visited",
         ]
         self.edges = [*self.entity_relations, "hasMediafile"]
@@ -213,7 +214,7 @@ class ArangoStorageManager:
             "asset": ["isIn", "components", "parent"],
             "thesaurus": [],
             "museum": [],
-            "box_visit": ["stories", "visited", "inBasket"],
+            "box_visit": ["stories", "visited", "inBasket", "story_box"],
             "box": ["box_stories"],
             "story": ["frames", "box"],
             "frame": ["stories", "components"],
@@ -644,7 +645,7 @@ FOR c IN @@collection
             sleep(self.event_delay)
 
     def _map_entity_relation(self, relation):
-        mapping = {
+        return {
             "box": "box_stories",
             "box_stories": "box",
             "components": "parent",
@@ -653,8 +654,7 @@ FOR c IN @@collection
             "isIn": "contains",
             "parent": "components",
             "stories": "frames",
-        }
-        return mapping.get(relation)
+        }.get(relation)
 
     def _map_entity_relation_parent_label(self, relation):
         mapping = {"GecureerdeCollectie.bestaatUit": "Collectie.naam"}
@@ -719,7 +719,7 @@ FOR c IN @@collection
             fr = ["entities"]
             if edge_name == "hasMediafile":
                 to = ["mediafiles"]
-            elif edge_name == "stories":
+            elif edge_name in ["stories", "story_box"]:
                 fr = ["box_visits"]
             try:
                 self.conn.define_edge_in_graph(
