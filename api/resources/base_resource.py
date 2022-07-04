@@ -142,7 +142,7 @@ class BaseResource(Resource):
 
     def _add_relations_to_metadata(self, entity, collection="entities", sort_by=False):
         relations = self.storage.get_collection_item_relations(
-            collection, self._get_raw_id(entity)
+            collection, self._get_raw_id(entity), exclude_relations=["story_box_visits"]
         )
         if relations:
             if sort_by:

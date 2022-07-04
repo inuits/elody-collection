@@ -7,6 +7,7 @@ import uuid
 
 from cloudevents.http import CloudEvent, to_json
 from pyArango.theExceptions import DocumentNotFoundError, CreationError
+
 from storage.py_arango_connection_extension import PyArangoConnection as Connection
 from time import sleep
 
@@ -40,6 +41,7 @@ class ArangoStorageManager:
             "stories",
             "story_box",
             "visited",
+            "story_box_visits"
         ]
         self.edges = [*self.entity_relations, "hasMediafile"]
         self.conn = Connection(
@@ -216,78 +218,81 @@ class ArangoStorageManager:
             "museum": [],
             "box_visit": ["stories", "visited", "inBasket", "story_box"],
             "box": ["box_stories"],
-            "story": ["frames", "box"],
+            "story": ["frames", "box", "story_box_visits"],
             "frame": ["stories", "components"],
         }.get(type, ["components"])
 
     def get_collection_item_relations(
-        self, collection, id, include_sub_relations=False
+        self, collection, id, include_sub_relations=False, exclude_relations=None
     ):
+        if exclude_relations is None:
+            exclude_relations = []
         entity = self.get_raw_item_from_collection_by_id(collection, id)
         relevant_relations = self.__get_relevant_relations(entity["type"])
         relations = []
         for relation in relevant_relations:
-            for edge in entity.getOutEdges(self.db[relation]):
-                relation_object = {}
-                edge = edge.getStore()
-                for key in edge.keys():
-                    if key[0] != "_":
-                        relation_object[key] = edge[key]
-                relation_object["key"] = edge["_to"]
-                relation_object["type"] = relation
-                if relation_object not in relations:
-                    relations.append(relation_object)
-                if include_sub_relations and (
-                    "value" in relation_object
-                    and (
-                        relation_object["value"]
-                        in [
-                            "Productie",
-                            "InformatieObject",
-                            "ConceptueelDing",
-                            "InformatieObject",
-                            "Classificatie",
-                        ]
-                    )
-                    or (
-                        "label" in relation_object
-                        and (relation_object["label"] in ["MaterieelDing.bestaatUit"])
-                    )
-                ):
-                    sub_entity = self.get_raw_item_from_collection_by_id(
-                        collection, relation_object["key"].split("entities/")[1]
-                    )
+            if relation not in exclude_relations:
+                for edge in entity.getOutEdges(self.db[relation]):
+                    relation_object = {}
+                    edge = edge.getStore()
+                    for key in edge.keys():
+                        if key[0] != "_":
+                            relation_object[key] = edge[key]
+                    relation_object["key"] = edge["_to"]
+                    relation_object["type"] = relation
+                    if relation_object not in relations:
+                        relations.append(relation_object)
+                    if include_sub_relations and (
+                        "value" in relation_object
+                        and (
+                            relation_object["value"]
+                            in [
+                                "Productie",
+                                "InformatieObject",
+                                "ConceptueelDing",
+                                "InformatieObject",
+                                "Classificatie",
+                            ]
+                        )
+                        or (
+                            "label" in relation_object
+                            and (relation_object["label"] in ["MaterieelDing.bestaatUit"])
+                        )
+                    ):
+                        sub_entity = self.get_raw_item_from_collection_by_id(
+                            collection, relation_object["key"].split("entities/")[1]
+                        )
 
-                    for sub_edge in sub_entity.getOutEdges(self.db[relation]):
-                        relation_object = {}
-                        sub_edge = sub_edge.getStore()
-                        for key in sub_edge.keys():
-                            if key[0] != "_":
-                                relation_object[key] = sub_edge[key]
-                        relation_object["key"] = sub_edge["_to"]
-                        relation_object["type"] = relation
-                        if relation_object["value"] == "Creatie":
+                        for sub_edge in sub_entity.getOutEdges(self.db[relation]):
+                            relation_object = {}
+                            sub_edge = sub_edge.getStore()
+                            for key in sub_edge.keys():
+                                if key[0] != "_":
+                                    relation_object[key] = sub_edge[key]
+                            relation_object["key"] = sub_edge["_to"]
+                            relation_object["type"] = relation
+                            if relation_object["value"] == "Creatie":
 
-                            sub_entity2 = self.get_raw_item_from_collection_by_id(
-                                collection, relation_object["key"].split("entities/")[1]
-                            )
-                            for sub_edge2 in sub_entity2.getOutEdges(self.db[relation]):
-                                relation_object = {}
-                                sub_edge2 = sub_edge2.getStore()
-                                for key in sub_edge2.keys():
-                                    if key[0] != "_":
-                                        relation_object[key] = sub_edge2[key]
-                                relation_object["key"] = sub_edge2["_to"]
-                                relation_object["type"] = relation
-                                if (
-                                    relation_object not in relations
-                                    and relation_object["label"] != "vervaardiger.rol"
-                                ):
+                                sub_entity2 = self.get_raw_item_from_collection_by_id(
+                                    collection, relation_object["key"].split("entities/")[1]
+                                )
+                                for sub_edge2 in sub_entity2.getOutEdges(self.db[relation]):
+                                    relation_object = {}
+                                    sub_edge2 = sub_edge2.getStore()
+                                    for key in sub_edge2.keys():
+                                        if key[0] != "_":
+                                            relation_object[key] = sub_edge2[key]
+                                    relation_object["key"] = sub_edge2["_to"]
+                                    relation_object["type"] = relation
+                                    if (
+                                        relation_object not in relations
+                                        and relation_object["label"] != "vervaardiger.rol"
+                                    ):
+                                        relations.append(relation_object)
+
+                            elif relation_object["label"] != "vervaardiger.rol":
+                                if relation_object not in relations:
                                     relations.append(relation_object)
-
-                        elif relation_object["label"] != "vervaardiger.rol":
-                            if relation_object not in relations:
-                                relations.append(relation_object)
 
         return relations
 
@@ -721,6 +726,8 @@ FOR c IN @@collection
                 to = ["mediafiles"]
             elif edge_name in ["stories", "story_box"]:
                 fr = ["box_visits"]
+            elif edge_name == "story_box_visits":
+                to = ["box_visits"]
             try:
                 self.conn.define_edge_in_graph(
                     self.default_graph_name,
