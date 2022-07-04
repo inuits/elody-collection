@@ -39,18 +39,16 @@ class BoxVisit(BaseResource):
             "last_frame": "",
         }
         self.storage.add_relations_to_collection_item(
-            "box_visits", box_visit["_key"], [relation], False
+            "box_visits", self._get_raw_id(box_visit), [relation], False
         )
-
         relation = {
             "type": "story_box_visits",
             "label": "box_visit",
             "key": box_visit["_id"],
         }
         self.storage.add_relations_to_collection_item(
-            "entities", story["_key"], [relation], False
+            "entities", self._get_raw_id(story), [relation], False
         )
-
         return self._add_relations_to_metadata(box_visit, "box_visits", sort_by="order")
 
     @app.require_oauth("read-box-visit")
