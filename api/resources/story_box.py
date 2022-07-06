@@ -24,7 +24,7 @@ class StoryBoxLink(BaseResource):
         if story_box := next((x for x in relations if x["type"] == "story_box"), None):
             content = {"user": current_token["email"]}
             story_box = self.storage.patch_item_from_collection(
-                "entities", self._get_raw_id(story_box), content
+                "entities", story_box["key"].removeprefix("entities/"), content
             )
         else:
             content = {
