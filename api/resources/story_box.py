@@ -44,6 +44,24 @@ class StoryBoxPublish(BaseResource):
     @app.require_oauth("publish-story-box")
     def post(self, id):
         story_box = self.abort_if_item_doesnt_exist("entities", id)
+        story_box_relations = self.storage.get_collection_item_relations(
+            "entities", self._get_raw_id(story_box)
+        )
+        if story := next(
+            (x for x in story_box_relations if x["type"] == "stories"), None
+        ):
+            story_relations = self.storage.get_collection_item_relations(
+                "entities", story["key"].removeprefix("entities/")
+            )
+            if box_visit := next(
+                (x for x in story_relations if x["type"] == "story_box_visits"), None
+            ):
+                box_visit = self.storage.get_item_from_collection_by_id(
+                    "box_visits", box_visit["key"].removeprefix("box_visits/")
+                )
+                return self._add_relations_to_metadata(
+                    box_visit, "box_visits", sort_by="order"
+                )
         story = {
             "type": "story",
             "metadata": [
