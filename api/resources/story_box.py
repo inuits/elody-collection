@@ -1,5 +1,6 @@
 import app
 
+from flask_restful import abort
 from inuits_jwt_auth.authorization import current_token
 from resources.base_resource import BaseResource
 
@@ -7,6 +8,8 @@ from resources.base_resource import BaseResource
 class StoryBox(BaseResource):
     @app.require_oauth("get-story-box")
     def get(self):
+        if "email" not in current_token:
+            abort(400, message="You must be logged in to access this feature")
         filters = {"type": "frame", "user": current_token["email"]}
         return self.storage.get_items_from_collection_by_fields("entities", filters)
 
