@@ -45,6 +45,10 @@ class BaseResource(Resource):
                 400, message=f"{type} doesn't have a valid format. {validation_error}"
             )
 
+    def abort_if_not_logged_in(self, token):
+        if "email" not in token:
+            abort(400, message="You must be logged in to access this feature")
+
     def _inject_api_urls_into_entities(self, entities):
         for entity in entities:
             if "primary_mediafile_location" in entity:
