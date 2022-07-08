@@ -22,6 +22,12 @@ class StoryBoxLink(BaseResource):
             "box_visits", self._get_raw_id(box_visit)
         )
         if story_box := next((x for x in relations if x["type"] == "story_box"), None):
+            if "linked" in story_box and story_box["linked"]:
+                abort(400, message="Code has already been linked")
+            story_box["linked"] = True
+            self.storage.patch_collection_item_relations(
+                "box_visits", self._get_raw_id(box_visit), [story_box], False
+            )
             content = {"user": current_token["email"]}
             story_box = self.storage.patch_item_from_collection(
                 "entities", story_box["key"].removeprefix("entities/"), content
@@ -33,7 +39,7 @@ class StoryBoxLink(BaseResource):
                 "user": current_token["email"],
             }
             story_box = self.storage.save_item_to_collection("entities", content)
-            content = [{"key": story_box["_id"], "type": "story_box"}]
+            content = [{"key": story_box["_id"], "type": "story_box", "linked": True}]
             self.storage.patch_collection_item_relations(
                 "box_visits", self._get_raw_id(box_visit), content, False
             )
