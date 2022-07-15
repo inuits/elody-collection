@@ -6,8 +6,8 @@ import string
 import uuid
 
 from cloudevents.http import CloudEvent, to_json
-from pyArango.theExceptions import DocumentNotFoundError, CreationError
-
+from exceptions import NonUniqueException
+from pyArango.theExceptions import CreationError, DocumentNotFoundError, UpdateError
 from storage.py_arango_connection_extension import PyArangoConnection as Connection
 from time import sleep
 
@@ -417,15 +417,25 @@ FOR c IN @@collection
             content["identifiers"] = [_id]
         else:
             content["identifiers"].insert(0, _id)
-        item = self.db[collection].createDocument(content)
-        item.save()
+        try:
+            item = self.db[collection].createDocument(content)
+            item.save()
+        except CreationError as ce:
+            if ce.errors["code"] == 409:
+                raise NonUniqueException(ce.errors["errorMessage"])
+            raise ce
         return item.getStore()
 
     def update_item_from_collection(self, collection, id, content):
         raw_item = self.get_raw_item_from_collection_by_id(collection, id)
-        raw_item.set(content)
-        raw_item.save()
-        item = raw_item.getStore()
+        try:
+            raw_item.set(content)
+            raw_item.save()
+            item = raw_item.getStore()
+        except UpdateError as ue:
+            if ue.errors["code"] == 409:
+                raise NonUniqueException(ue.errors["errorMessage"])
+            raise ue
         self._trigger_child_relation_changed(collection, id)
         return item
 
@@ -472,9 +482,14 @@ FOR c IN @@collection
 
     def patch_item_from_collection(self, collection, id, content):
         raw_item = self.get_raw_item_from_collection_by_id(collection, id)
-        raw_item.set(content)
-        raw_item.patch()
-        item = raw_item.getStore()
+        try:
+            raw_item.set(content)
+            raw_item.patch()
+            item = raw_item.getStore()
+        except UpdateError as ue:
+            if ue.errors["code"] == 409:
+                raise NonUniqueException(ue.errors["errorMessage"])
+            raise ue
         self._trigger_child_relation_changed(collection, id)
         return item
 

@@ -1,9 +1,9 @@
 import app
 
+from exceptions import NonUniqueException
 from flask import request, after_this_request
 from flask_restful import abort
 from inuits_jwt_auth.authorization import current_token
-from pyArango.theExceptions import CreationError
 from resources.base_resource import BaseResource
 from validator import entity_schema, mediafile_schema
 
@@ -18,8 +18,8 @@ class Entity(BaseResource):
             content["user"] = current_token["email"]
         try:
             entity = self.storage.save_item_to_collection("entities", content)
-        except CreationError as ex:
-            return ex.errors["errorMessage"], 409
+        except NonUniqueException as ex:
+            return str(ex), 409
         self._signal_entity_changed(entity)
         return entity, 201
 
@@ -63,7 +63,10 @@ class EntityDetail(BaseResource):
         self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
         self.abort_if_not_valid_json("Entity", content, entity_schema)
-        entity = self.storage.update_item_from_collection("entities", id, content)
+        try:
+            entity = self.storage.update_item_from_collection("entities", id, content)
+        except NonUniqueException as ex:
+            return str(ex), 409
         self._signal_entity_changed(entity)
         return entity, 201
 
@@ -71,7 +74,10 @@ class EntityDetail(BaseResource):
     def patch(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
-        entity = self.storage.patch_item_from_collection("entities", id, content)
+        try:
+            entity = self.storage.patch_item_from_collection("entities", id, content)
+        except NonUniqueException as ex:
+            return str(ex), 409
         self._signal_entity_changed(entity)
         return entity, 201
 
