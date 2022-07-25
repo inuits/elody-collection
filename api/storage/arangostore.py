@@ -35,13 +35,12 @@ class ArangoStorageManager:
             "components",
             "contains",
             "frames",
-            "inBasket",
             "isIn",
             "parent",
             "stories",
             "story_box",
-            "visited",
             "story_box_visits",
+            "visited",
         ]
         self.edges = [*self.entity_relations, "hasMediafile"]
         self.conn = Connection(
@@ -216,7 +215,7 @@ class ArangoStorageManager:
             "asset": ["isIn", "components", "parent"],
             "thesaurus": [],
             "museum": [],
-            "box_visit": ["stories", "visited", "inBasket", "story_box"],
+            "box_visit": ["stories", "visited", "story_box"],
             "box": ["box_stories"],
             "story": ["frames", "box", "story_box_visits"],
             "frame": ["stories", "components"],
