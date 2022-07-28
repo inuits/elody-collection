@@ -102,12 +102,13 @@ class ArangoStorageManager:
             code = self.__generate_unique_code()
         return code
 
-    def get_entities(self, skip, limit, item_type=None, ids=None, skip_relations=0):
+    def get_entities(self, skip, limit, skip_relations=0, filters=None):
         aql = f"""
             WITH mediafiles
             FOR c IN entities
-                {"FILTER c._key IN @ids" if ids else ""}
-                {f'FILTER c.type == "{item_type}"' if item_type else ""}
+                {"FILTER c._key IN @ids" if "ids" in filters else ""}
+                {f'FILTER c.type == "{filters["type"]}"' if "type" in filters else ""}
+                {f'FILTER c.user == "{filters["user"]}"' if "user" in filters else ""}
         """
         if skip_relations == 1:
             aql2 = "LET all_metadata = {'metadata': c.metadata}"
@@ -134,18 +135,18 @@ class ArangoStorageManager:
             RETURN merged_primary_items == null ? MERGE(c, all_metadata) : MERGE(c, all_metadata, merged_primary_items)
         """
         bind = {"skip": skip, "limit": limit}
-        if ids:
-            bind["ids"] = ids
+        if "ids" in filters:
+            bind["ids"] = filters["ids"]
         results = self.db.AQLQuery(
             aql + aql2 + aql3, rawResults=True, bindVars=bind, fullCount=True
         )
         items = dict()
         items["count"] = results.extra["stats"]["fullCount"]
         items["results"] = list(results)
-        if ids:
+        if "ids" in filters:
             items["results"] = [
                 result_item
-                for i in ids
+                for i in filters["ids"]
                 for result_item in items["results"]
                 if result_item["_key"] == i
             ]

@@ -6,20 +6,18 @@ from copy import deepcopy
 class MemoryStorageManager:
     collections = {"entities": {}, "mediafiles": {}, "tenants": {}, "jobs": {}}
 
-    def get_entities(
-        self, skip=0, limit=20, item_type=None, ids=None, skip_relations=0
-    ):
+    def get_entities(self, skip=0, limit=20, skip_relations=0, filters=None):
         items = dict()
         items["results"] = list(self.collections["entities"].values())
-        if ids:
+        if "ids" in filters:
             items["results"] = [
                 self.collections["entities"].get(id)
-                for id in ids
+                for id in filters["ids"]
                 if id in self.collections["entities"]
             ]
-        if item_type:
+        if "type" in filters:
             items["results"] = list(
-                filter(lambda elem: elem["type"] == item_type, items["results"])
+                filter(lambda elem: elem["type"] == filters["type"], items["results"])
             )
         for entity in items["results"]:
             mediafiles = self.get_collection_item_mediafiles("entities", entity["_id"])
@@ -68,7 +66,7 @@ class MemoryStorageManager:
             )
         return None
 
-    def get_collection_item_relations(self, collection, obj_id):
+    def get_collection_item_relations(self, collection, obj_id, exclude_relations=[]):
         return self.get_collection_item_sub_item(collection, obj_id, "relations")
 
     def get_collection_item_mediafiles(self, collection, obj_id):

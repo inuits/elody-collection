@@ -27,25 +27,26 @@ class Entity(BaseResource):
     def get(self):
         skip = int(request.args.get("skip", 0))
         limit = int(request.args.get("limit", 20))
-        item_type = request.args.get("type", None)
+        filters = {}
+        if self._only_own_items(current_token):
+            filters["user"] = current_token["email"]
+        if item_type := request.args.get("type", None):
+            filters["type"] = item_type
+        if ids := request.args.get("ids", None):
+            filters["ids"] = ids.split(",")
         skip_relations = int(request.args.get("skip_relations", 0))
         type_filter = f"type={item_type}&" if item_type else ""
-        ids = request.args.get("ids", None)
-        if ids:
-            ids = ids.split(",")
-        entities = self.storage.get_entities(
-            skip, limit, item_type, ids, skip_relations
-        )
+        entities = self.storage.get_entities(skip, limit, skip_relations, filters)
         count = entities["count"]
         entities["limit"] = limit
         if skip + limit < count:
             entities[
                 "next"
-            ] = f"/entities?{type_filter}skip={skip + limit}&limit={limit}&skip_relations={1 if skip_relations else 0}"
+            ] = f"/entities?{type_filter}skip={skip + limit}&limit={limit}&skip_relations={skip_relations}"
         if skip > 0:
             entities[
                 "previous"
-            ] = f"/entities?{type_filter}skip={max(0, skip - limit)}&limit={limit}&skip_relations={1 if skip_relations else 0}"
+            ] = f"/entities?{type_filter}skip={max(0, skip - limit)}&limit={limit}&skip_relations={skip_relations}"
         entities["results"] = self._inject_api_urls_into_entities(entities["results"])
         return entities
 
@@ -54,15 +55,19 @@ class EntityDetail(BaseResource):
     @app.require_oauth("read-entity")
     def get(self, id):
         entity = self.abort_if_item_doesnt_exist("entities", id)
+        if self._only_own_items(current_token):
+            self.abort_if_not_own_item(entity, current_token)
         entity = self._set_entity_mediafile_and_thumbnail(entity)
         entity = self._add_relations_to_metadata(entity)
         return self._inject_api_urls_into_entities([entity])[0]
 
     @app.require_oauth("update-entity")
     def put(self, id):
-        self.abort_if_item_doesnt_exist("entities", id)
+        entity = self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
         self.abort_if_not_valid_json("Entity", content, entity_schema)
+        if self._only_own_items(current_token):
+            self.abort_if_not_own_item(entity, current_token)
         try:
             entity = self.storage.update_item_from_collection("entities", id, content)
         except NonUniqueException as ex:
@@ -72,8 +77,10 @@ class EntityDetail(BaseResource):
 
     @app.require_oauth("patch-entity")
     def patch(self, id):
-        self.abort_if_item_doesnt_exist("entities", id)
+        entity = self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
+        if self._only_own_items(current_token):
+            self.abort_if_not_own_item(entity, current_token)
         try:
             entity = self.storage.patch_item_from_collection("entities", id, content)
         except NonUniqueException as ex:
@@ -84,6 +91,8 @@ class EntityDetail(BaseResource):
     @app.require_oauth("delete-entity")
     def delete(self, id):
         entity = self.abort_if_item_doesnt_exist("entities", id)
+        if self._only_own_items(current_token):
+            self.abort_if_not_own_item(entity, current_token)
         self.storage.delete_item_from_collection("entities", id)
         self._signal_entity_deleted(entity)
         return "", 204
@@ -231,7 +240,9 @@ class EntityRelationsAll(BaseResource):
 class EntityRelations(BaseResource):
     @app.require_oauth("read-entity-relations")
     def get(self, id):
-        self.abort_if_item_doesnt_exist("entities", id)
+        entity = self.abort_if_item_doesnt_exist("entities", id)
+        if self._only_own_items(current_token):
+            self.abort_if_not_own_item(entity, current_token)
 
         @after_this_request
         def add_header(response):
@@ -244,6 +255,8 @@ class EntityRelations(BaseResource):
     def post(self, id):
         entity = self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
+        if self._only_own_items(current_token):
+            self.abort_if_not_own_item(entity, current_token)
         relations = self.storage.add_relations_to_collection_item(
             "entities", id, content
         )
@@ -254,6 +267,8 @@ class EntityRelations(BaseResource):
     def put(self, id):
         entity = self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
+        if self._only_own_items(current_token):
+            self.abort_if_not_own_item(entity, current_token)
         relations = self.storage.update_collection_item_relations(
             "entities", id, content
         )
@@ -264,6 +279,8 @@ class EntityRelations(BaseResource):
     def patch(self, id):
         entity = self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
+        if self._only_own_items(current_token):
+            self.abort_if_not_own_item(entity, current_token)
         relations = self.storage.patch_collection_item_relations(
             "entities", id, content
         )
@@ -274,6 +291,8 @@ class EntityRelations(BaseResource):
     def delete(self, id):
         entity = self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
+        if self._only_own_items(current_token):
+            self.abort_if_not_own_item(entity, current_token)
         self.storage.delete_collection_item_relations("entities", id, content)
         self._signal_entity_changed(entity)
         return "", 204

@@ -223,3 +223,15 @@ class BaseResource(Resource):
             "entities", self._get_raw_id(story), [relation], False
         )
         return self._add_relations_to_metadata(box_visit, "box_visits", sort_by="order")
+
+    def _only_own_items(self, token):
+        return not app.validator.token_cls.has_permissions(
+            token,
+            ["show-all"],
+            app.validator.role_permission_mapping,
+            app.validator.super_admin_role,
+        )
+
+    def abort_if_not_own_item(self, item, token):
+        if "user" not in item or item["user"] != token["email"]:
+            abort(403, message="Access denied")

@@ -14,11 +14,10 @@ class MongoStorageManager:
         client = MongoClient(mongo_host, mongo_port)
         self.db = client[mongo_db]
 
-    def get_entities(
-        self, skip=0, limit=20, item_type=None, ids=None, skip_relations=0
-    ):
-        if ids:
-            return self.get_items_from_collection_by_ids("entities", ids)
+    def get_entities(self, skip=0, limit=20, skip_relations=0, filters=None):
+        if "ids" in filters:
+            return self.get_items_from_collection_by_ids("entities", filters["ids"])
+        item_type = filters["type"] if "type" in filters else None
         return self.get_items_from_collection("entities", skip, limit, item_type)
 
     def get_items_from_collection(self, collection, skip=0, limit=20, item_type=None):
@@ -72,7 +71,7 @@ class MongoStorageManager:
                 ret.append(obj)
         return ret
 
-    def get_collection_item_relations(self, collection, id):
+    def get_collection_item_relations(self, collection, id, exclude_relations=[]):
         return self.get_collection_item_sub_item(collection, id, "relations")
 
     def get_collection_item_mediafiles(self, collection, id):
