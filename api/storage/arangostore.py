@@ -378,31 +378,27 @@ FOR c IN @@collection
             return None
         for relation in relations:
             extra_data = {}
-            for key in relation.keys():
-                if key[0] != "_":
-                    extra_data[key] = relation[key]
+            for key in [x for x in relation.keys() if x[0] != "_"]:
+                extra_data[key] = relation[key]
             self.db.graphs[self.default_graph_name].createEdge(
                 relation["type"], entity["_id"], relation["key"], extra_data
             )
-            optional_label = (
-                self._map_entity_relation_parent_label(relation["label"])
-                if "label" in relation
-                else None
-            )
-            if optional_label is not None:
+            if not parent:
+                continue
+            extra_data = {}
+            if "label" in relation and (
+                label := self._map_entity_relation_parent_label(relation["label"])
+            ):
                 extra_data = {
-                    "label": optional_label,
+                    "label": label,
                     "value": entity["data"]["MensgemaaktObject.titel"]["@value"],
                 }
-            else:
-                extra_data = {}
-            if parent:
-                self.db.graphs[self.default_graph_name].createEdge(
-                    self._map_entity_relation(relation["type"]),
-                    relation["key"],
-                    entity["_id"],
-                    extra_data,
-                )
+            self.db.graphs[self.default_graph_name].createEdge(
+                self._map_entity_relation(relation["type"]),
+                relation["key"],
+                entity["_id"],
+                extra_data,
+            )
         return relations
 
     def save_item_to_collection(self, collection, content):
