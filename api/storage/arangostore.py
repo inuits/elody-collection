@@ -674,8 +674,7 @@ FOR c IN @@collection
         }.get(relation)
 
     def _map_entity_relation_parent_label(self, relation):
-        mapping = {"GecureerdeCollectie.bestaatUit": "Collectie.naam"}
-        return mapping.get(relation)
+        return {"GecureerdeCollectie.bestaatUit": "Collectie.naam"}.get(relation)
 
     def _get_field_for_id(self, collection, id, field):
         aql = "FOR c in @@collection FILTER c.object_id == @id OR @id IN c.identifiers OR c._key == @id RETURN c.@field"
