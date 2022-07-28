@@ -144,12 +144,7 @@ class ArangoStorageManager:
         items["count"] = results.extra["stats"]["fullCount"]
         items["results"] = list(results)
         if "ids" in filters:
-            items["results"] = [
-                result_item
-                for i in filters["ids"]
-                for result_item in items["results"]
-                if result_item["_key"] == i
-            ]
+            items["results"].sort(key=lambda x: filters["ids"].index(x["_key"]))
         return items
 
     def get_items_from_collection(self, collection, skip=0, limit=20):
