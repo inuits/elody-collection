@@ -102,6 +102,17 @@ class ArangoStorageManager:
             code = self.__generate_unique_code()
         return code
 
+    def get_sixth_collection_id(self):
+        aql = f"""
+            FOR e IN entities
+                FILTER e.type == 'asset'
+                FILTER e.object_id LIKE 'cogent:%'
+                SORT e.object_id
+                RETURN TO_NUMBER(LAST(SPLIT(e.object_id, "_")))
+        """
+        used_ids = list(self.db.AQLQuery(aql, rawResults=True))
+        return f"cogent:CG_{str(min(set(range(1, max(used_ids)+1)) - set(used_ids))).rjust(5,'0')}"
+
     def get_entities(self, skip, limit, skip_relations=0, filters=None):
         aql = f"""
             WITH mediafiles

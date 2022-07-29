@@ -296,3 +296,9 @@ class EntityRelations(BaseResource):
         self.storage.delete_collection_item_relations("entities", id, content)
         self._signal_entity_changed(entity)
         return "", 204
+
+
+class EntitySixthCollectionId(BaseResource):
+    @app.require_oauth("get-entity-sixth-collection-id")
+    def get(self):
+        return self.storage.get_sixth_collection_id()

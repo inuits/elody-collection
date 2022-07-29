@@ -121,37 +121,45 @@ require_oauth.register_token_validator(validator)
 
 app.register_blueprint(swaggerui_blueprint)
 
-from resources.entity import (
-    Entity,
-    EntityDetail,
-    EntityMediafiles,
-    EntitySetPrimaryMediafile,
-    EntitySetPrimaryThumbnail,
-    EntityMediafilesCreate,
-    EntityMetadata,
-    EntityMetadataKey,
-    EntityRelations,
-    EntityRelationsAll,
-)
-from resources.job import Job, JobDetail
 from resources.box_visit import (
     BoxVisit,
     BoxVisitDetail,
     BoxVisitRelations,
     BoxVisitRelationsAll,
 )
+from resources.entity import (
+    Entity,
+    EntityDetail,
+    EntityMediafiles,
+    EntityMediafilesCreate,
+    EntityMetadata,
+    EntityMetadataKey,
+    EntityRelations,
+    EntityRelationsAll,
+    EntitySetPrimaryMediafile,
+    EntitySetPrimaryThumbnail,
+    EntitySixthCollectionId,
+)
+from resources.job import Job, JobDetail
 from resources.key_value_store import KeyValueStore, KeyValueStoreDetail
-from resources.mediafile import Mediafile, MediafileDetail, MediafileCopyright
+from resources.mediafile import Mediafile, MediafileCopyright, MediafileDetail
 from resources.spec import AsyncAPISpec, OpenAPISpec
 from resources.story_box import StoryBox, StoryBoxLink, StoryBoxPublish
 from resources.tenant import Tenant, TenantDetail
 
-api.add_resource(Entity, "/entities")
-api.add_resource(EntityDetail, "/entities/<string:id>")
 api.add_resource(BoxVisit, "/box_visits")
 api.add_resource(BoxVisitDetail, "/box_visits/<string:id>")
 api.add_resource(BoxVisitRelations, "/box_visits/<string:id>/relations")
 api.add_resource(BoxVisitRelationsAll, "/box_visits/<string:id>/relations/all")
+
+api.add_resource(Entity, "/entities")
+api.add_resource(EntityDetail, "/entities/<string:id>")
+api.add_resource(EntityMediafiles, "/entities/<string:id>/mediafiles")
+api.add_resource(EntityMediafilesCreate, "/entities/<string:id>/mediafiles/create")
+api.add_resource(EntityMetadata, "/entities/<string:id>/metadata")
+api.add_resource(EntityMetadataKey, "/entities/<string:id>/metadata/<string:key>")
+api.add_resource(EntityRelations, "/entities/<string:id>/relations")
+api.add_resource(EntityRelationsAll, "/entities/<string:id>/relations/all")
 api.add_resource(
     EntitySetPrimaryMediafile,
     "/entities/<string:id>/set_primary_mediafile/<string:mediafile_id>",
@@ -160,13 +168,7 @@ api.add_resource(
     EntitySetPrimaryThumbnail,
     "/entities/<string:id>/set_primary_thumbnail/<string:mediafile_id>",
 )
-
-api.add_resource(EntityMediafiles, "/entities/<string:id>/mediafiles")
-api.add_resource(EntityMediafilesCreate, "/entities/<string:id>/mediafiles/create")
-api.add_resource(EntityMetadata, "/entities/<string:id>/metadata")
-api.add_resource(EntityMetadataKey, "/entities/<string:id>/metadata/<string:key>")
-api.add_resource(EntityRelations, "/entities/<string:id>/relations")
-api.add_resource(EntityRelationsAll, "/entities/<string:id>/relations/all")
+api.add_resource(EntitySixthCollectionId, "/entities/sixthcollection/id")
 
 api.add_resource(Job, "/jobs")
 api.add_resource(JobDetail, "/jobs/<string:id>")
@@ -175,15 +177,15 @@ api.add_resource(KeyValueStore, "/key_value_store")
 api.add_resource(KeyValueStoreDetail, "/key_value_store/<string:id>")
 
 api.add_resource(Mediafile, "/mediafiles")
-api.add_resource(MediafileDetail, "/mediafiles/<string:id>")
 api.add_resource(MediafileCopyright, "/mediafiles/<string:id>/copyright")
-
-api.add_resource(AsyncAPISpec, "/spec/dams-collection-api-events.html")
-api.add_resource(OpenAPISpec, "/spec/dams-collection-api.json")
+api.add_resource(MediafileDetail, "/mediafiles/<string:id>")
 
 api.add_resource(StoryBox, "/story_box")
 api.add_resource(StoryBoxLink, "/story_box/link/<string:code>")
 api.add_resource(StoryBoxPublish, "/story_box/publish/<string:id>")
+
+api.add_resource(AsyncAPISpec, "/spec/dams-collection-api-events.html")
+api.add_resource(OpenAPISpec, "/spec/dams-collection-api.json")
 
 api.add_resource(Tenant, "/tenants")
 api.add_resource(TenantDetail, "/tenants/<string:id>")
