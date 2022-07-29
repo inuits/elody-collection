@@ -1,6 +1,7 @@
 import app
 
 from flask import request
+from inuits_jwt_auth.authorization import current_token
 from resources.base_resource import BaseResource
 from validator import mediafile_schema
 
@@ -10,6 +11,9 @@ class Mediafile(BaseResource):
     def post(self):
         content = self.get_request_body()
         self.abort_if_not_valid_json("Mediafile", content, mediafile_schema)
+        content["user"] = "default_uploader"
+        if "email" in current_token:
+            content["user"] = current_token["email"]
         mediafile = self.storage.save_item_to_collection("mediafiles", content)
         return mediafile, 201
 

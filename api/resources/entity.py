@@ -203,18 +203,15 @@ class EntityMediafilesCreate(BaseResource):
         content = self.get_request_body()
         if "filename" not in content:
             abort(405, message="Invalid input")
-        filename = content["filename"]
-        mediafile = {
-            "filename": filename,
-            "original_file_location": f"/download/{filename}",
-            "thumbnail_file_location": f"/iiif/3/{filename}/full/,150/0/default.jpg",
-        }
-        if "metadata" in content:
-            mediafile["metadata"] = content["metadata"]
-        mediafile = self.storage.save_item_to_collection("mediafiles", mediafile)
-        upload_location = (
-            f"{self.storage_api_url}/upload/{filename}?id={self._get_raw_id(mediafile)}"
-        )
+        content["original_file_location"] = f'/download/{content["filename"]}'
+        content[
+            "thumbnail_file_location"
+        ] = f'/iiif/3/{content["filename"]}/full/,150/0/default.jpg'
+        content["user"] = "default_uploader"
+        if "email" in current_token:
+            content["user"] = current_token["email"]
+        mediafile = self.storage.save_item_to_collection("mediafiles", content)
+        upload_location = f'{self.storage_api_url}/upload/{content["filename"]}?id={self._get_raw_id(mediafile)}'
         self.storage.add_mediafile_to_collection_item(
             "entities", id, mediafile["_id"], self._mediafile_is_public(mediafile)
         )
