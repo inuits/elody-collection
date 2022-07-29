@@ -168,7 +168,9 @@ class EntityMetadataKey(BaseResource):
 class EntityMediafiles(BaseResource):
     @app.require_oauth("read-entity-mediafiles")
     def get(self, id):
-        self.abort_if_item_doesnt_exist("entities", id)
+        entity = self.abort_if_item_doesnt_exist("entities", id)
+        if self._only_own_items(current_token):
+            self.abort_if_not_own_item(entity, current_token)
         mediafiles = self.storage.get_collection_item_mediafiles("entities", id)
         if not request.args.get("non_public"):
             mediafiles = [
@@ -187,6 +189,8 @@ class EntityMediafiles(BaseResource):
     @app.require_oauth("add-entity-mediafiles")
     def post(self, id):
         entity = self.abort_if_item_doesnt_exist("entities", id)
+        if self._only_own_items(current_token):
+            self.abort_if_not_own_item(entity, current_token)
         content = self.get_request_body()
         self.abort_if_not_valid_json("Mediafile", content, mediafile_schema)
         mediafile = self.storage.add_mediafile_to_collection_item(
@@ -203,6 +207,8 @@ class EntityMediafilesCreate(BaseResource):
         content = self.get_request_body()
         if "filename" not in content:
             abort(405, message="Invalid input")
+        if self._only_own_items(current_token):
+            self.abort_if_not_own_item(entity, current_token)
         content["original_file_location"] = f'/download/{content["filename"]}'
         content[
             "thumbnail_file_location"
