@@ -28,7 +28,9 @@ class Entity(BaseResource):
         skip = int(request.args.get("skip", 0))
         limit = int(request.args.get("limit", 20))
         filters = {}
+        app.logger.info(f"CURRENT TOKEN: {current_token}")
         if self._only_own_items(current_token):
+            app.logger.info("ONLY OWN ITEMS WILL BE RETURNED")
             filters["user"] = current_token["email"]
         if item_type := request.args.get("type", None):
             filters["type"] = item_type
