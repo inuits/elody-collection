@@ -225,6 +225,8 @@ class BaseResource(Resource):
         return self._add_relations_to_metadata(box_visit, "box_visits", sort_by="order")
 
     def _only_own_items(self, token):
+        if not app.require_oauth.require_token:
+            return False
         return not app.validator.token_cls.has_permissions(
             token,
             ["show-all"],
@@ -233,5 +235,7 @@ class BaseResource(Resource):
         )
 
     def abort_if_not_own_item(self, item, token):
-        if "user" not in item or item["user"] != token["email"]:
+        if app.require_oauth.require_token and (
+            "user" not in item or item["user"] != token["email"]
+        ):
             abort(403, message="Access denied")
