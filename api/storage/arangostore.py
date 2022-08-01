@@ -107,11 +107,11 @@ class ArangoStorageManager:
             FOR e IN entities
                 FILTER e.type == 'asset'
                 FILTER e.object_id LIKE 'cogent:%'
-                SORT e.object_id
                 RETURN TO_NUMBER(LAST(SPLIT(e.object_id, "_")))
         """
-        used_ids = list(self.db.AQLQuery(aql, rawResults=True))
-        return f"cogent:CG_{str(min(set(range(1, max(used_ids)+1)) - set(used_ids))).rjust(5,'0')}"
+        used_ids = [99999]
+        used_ids.extend(list(self.db.AQLQuery(aql, rawResults=True)))
+        return f"cogent:CG_{str(min(set(range(1, max(used_ids) + 1)) - set(used_ids))).rjust(5,'0')}"
 
     def get_entities(self, skip, limit, skip_relations=0, filters=None):
         aql = f"""
