@@ -35,7 +35,9 @@ class ArangoStorageManager:
             "components",
             "contains",
             "frames",
+            "hasTestimony",
             "isIn",
+            "isTestimonyFor",
             "parent",
             "stories",
             "story_box",
@@ -219,13 +221,14 @@ class ArangoStorageManager:
 
     def __get_relevant_relations(self, type):
         return {
-            "asset": ["isIn", "components", "parent"],
-            "thesaurus": [],
-            "museum": [],
-            "box_visit": ["stories", "visited", "story_box"],
+            "asset": ["isIn", "components", "parent", "hasTestimony"],
             "box": ["box_stories"],
-            "story": ["frames", "box", "story_box_visits"],
+            "box_visit": ["stories", "visited", "story_box"],
             "frame": ["stories", "components"],
+            "museum": [],
+            "story": ["frames", "box", "story_box_visits"],
+            "testimony": ["isTestimonyFor"],
+            "thesaurus": [],
         }.get(type, ["components"])
 
     def get_collection_item_relations(
@@ -679,7 +682,9 @@ FOR c IN @@collection
             "components": "parent",
             "contains": "isIn",
             "frames": "stories",
+            "hasTestimony": "isTestimonyFor",
             "isIn": "contains",
+            "isTestimonyFor": "hasTestimony",
             "parent": "components",
             "stories": "frames",
         }.get(relation)
