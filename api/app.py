@@ -2,6 +2,7 @@ import json
 import logging
 import os
 
+from apps.loader import load_apps
 from flask import Flask
 from flask_restful import Api
 from flask_swagger_ui import get_swaggerui_blueprint
@@ -190,6 +191,7 @@ api.add_resource(OpenAPISpec, "/spec/dams-collection-api.json")
 api.add_resource(Tenant, "/tenants")
 api.add_resource(TenantDetail, "/tenants/<string:id>")
 
+load_apps(app)
 
 @app.after_request
 def add_header(response):
