@@ -224,8 +224,11 @@ class BaseResource(Resource):
         )
         return self._add_relations_to_metadata(box_visit, "box_visits", sort_by="order")
 
-    def _only_own_items(self):
-        return not app.require_oauth.check_permission("show-all")
+    def _only_own_items(self, permissions=None):
+        if not permissions:
+            permissions = []
+        permissions.insert(0, "show-all")
+        return not any(app.require_oauth.check_permission(x) for x in permissions)
 
     def abort_if_not_own_item(self, item, token):
         if "user" not in item or item["user"] != token["email"]:

@@ -23,12 +23,12 @@ class Entity(BaseResource):
         self._signal_entity_changed(entity)
         return entity, 201
 
-    @app.require_oauth("read-entity")
+    @app.require_oauth("read-entity", "read-entity-all")
     def get(self):
         skip = int(request.args.get("skip", 0))
         limit = int(request.args.get("limit", 20))
         filters = {}
-        if self._only_own_items():
+        if self._only_own_items(["read-entity-all"]):
             app.logger.info(f"HEADERS: {request.headers}")
             filters["user"] = current_token["email"]
         if item_type := request.args.get("type", None):
@@ -53,10 +53,10 @@ class Entity(BaseResource):
 
 
 class EntityDetail(BaseResource):
-    @app.require_oauth("read-entity")
+    @app.require_oauth(permissions=["read-entity", "read-entity-all"])
     def get(self, id):
         entity = self.abort_if_item_doesnt_exist("entities", id)
-        if self._only_own_items():
+        if self._only_own_items(["read-entity-all"]):
             app.logger.info(f"HEADERS DETAIL: {request.headers}")
             self.abort_if_not_own_item(entity, current_token)
         entity = self._set_entity_mediafile_and_thumbnail(entity)
@@ -168,10 +168,12 @@ class EntityMetadataKey(BaseResource):
 
 
 class EntityMediafiles(BaseResource):
-    @app.require_oauth("read-entity-mediafiles")
+    @app.require_oauth(
+        permissions=["read-entity-mediafiles", "read-entity-mediafiles-all"]
+    )
     def get(self, id):
         entity = self.abort_if_item_doesnt_exist("entities", id)
-        if self._only_own_items():
+        if self._only_own_items(["read-entity-mediafiles-all"]):
             self.abort_if_not_own_item(entity, current_token)
         mediafiles = self.storage.get_collection_item_mediafiles("entities", id)
         if not request.args.get("non_public"):
@@ -228,9 +230,13 @@ class EntityMediafilesCreate(BaseResource):
 
 
 class EntityRelationsAll(BaseResource):
-    @app.require_oauth("read-entity-relations")
+    @app.require_oauth(
+        permissions=["read-entity-relations", "read-entity-relations-all"]
+    )
     def get(self, id):
-        self.abort_if_item_doesnt_exist("entities", id)
+        entity = self.abort_if_item_doesnt_exist("entities", id)
+        if self._only_own_items(["read-entity-relations-all"]):
+            self.abort_if_not_own_item(entity, current_token)
 
         @after_this_request
         def add_header(response):
@@ -243,10 +249,12 @@ class EntityRelationsAll(BaseResource):
 
 
 class EntityRelations(BaseResource):
-    @app.require_oauth("read-entity-relations")
+    @app.require_oauth(
+        permissions=["read-entity-relations", "read-entity-relations-all"]
+    )
     def get(self, id):
         entity = self.abort_if_item_doesnt_exist("entities", id)
-        if self._only_own_items():
+        if self._only_own_items(["read-entity-relations-all"]):
             self.abort_if_not_own_item(entity, current_token)
 
         @after_this_request
