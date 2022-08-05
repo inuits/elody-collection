@@ -224,17 +224,9 @@ class BaseResource(Resource):
         )
         return self._add_relations_to_metadata(box_visit, "box_visits", sort_by="order")
 
-    def _only_own_items(self, token):
-        require_token = app.require_oauth.require_token
-        app.logger.info(f"TOKEN REQUIRED: {require_token}")
-        has_permission_show_all = app.require_oauth.check_permission("show_all")
-        app.logger.info(f"HAS PERMISSION SHOW_ALL: {has_permission_show_all}")
-        has_permission_show_all_old = app.validator.token_cls.has_permissions(token, ["show-all"], app.validator.role_permission_mapping, app.validator.super_admin_role)
-        app.logger.info(f"HAS PERMISSION SHOW_ALL OLD: {has_permission_show_all_old}")
-        return False
+    def _only_own_items(self):
+        return not app.require_oauth.check_permission("show-all")
 
     def abort_if_not_own_item(self, item, token):
-        require_token = app.require_oauth.require_token
-        app.logger.info(f"TOKEN REQUIRED DETAIL: {require_token}")
-        not_own_item = "user" not in item or item["user"] != token["email"]
-        app.logger.info(f"NOT OWN ITEM {not_own_item}")
+        if "user" not in item or item["user"] != token["email"]:
+            abort(403, message="Access denied")
