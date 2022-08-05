@@ -21,7 +21,7 @@ class Mediafile(BaseResource):
     def get(self):
         skip = int(request.args.get("skip", 0))
         limit = int(request.args.get("limit", 20))
-        if self._only_own_items(current_token):
+        if self._only_own_items():
             mediafiles = self.storage.get_items_from_collection_by_fields(
                 "entities", {"user": current_token["email"]}, skip, limit
             )
@@ -47,7 +47,7 @@ class MediafileDetail(BaseResource):
     @app.require_oauth("read-mediafile")
     def get(self, id):
         mediafile = self.abort_if_item_doesnt_exist("mediafiles", id)
-        if self._only_own_items(current_token):
+        if self._only_own_items():
             self.abort_if_not_own_item(mediafile, current_token)
         if request.args.get("raw", None):
             return mediafile
@@ -57,7 +57,7 @@ class MediafileDetail(BaseResource):
     def patch(self, id):
         old_mediafile = self.abort_if_item_doesnt_exist("mediafiles", id)
         content = self.get_request_body()
-        if self._only_own_items(current_token):
+        if self._only_own_items():
             self.abort_if_not_own_item(old_mediafile, current_token)
         mediafile = self.storage.patch_item_from_collection("mediafiles", id, content)
         self._signal_mediafile_changed(old_mediafile, mediafile)
@@ -67,7 +67,7 @@ class MediafileDetail(BaseResource):
     def put(self, id):
         old_mediafile = self.abort_if_item_doesnt_exist("mediafiles", id)
         content = self.get_request_body()
-        if self._only_own_items(current_token):
+        if self._only_own_items():
             self.abort_if_not_own_item(old_mediafile, current_token)
         self.abort_if_not_valid_json("Mediafile", content, mediafile_schema)
         mediafile = self.storage.update_item_from_collection("mediafiles", id, content)
@@ -77,7 +77,7 @@ class MediafileDetail(BaseResource):
     @app.require_oauth("delete-mediafile")
     def delete(self, id):
         mediafile = self.abort_if_item_doesnt_exist("mediafiles", id)
-        if self._only_own_items(current_token):
+        if self._only_own_items():
             self.abort_if_not_own_item(mediafile, current_token)
         linked_entities = self.storage.get_mediafile_linked_entities(mediafile)
         self.storage.delete_item_from_collection("mediafiles", id)

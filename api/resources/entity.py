@@ -29,6 +29,7 @@ class Entity(BaseResource):
         limit = int(request.args.get("limit", 20))
         filters = {}
         if self._only_own_items():
+            app.logger.info(f"HEADERS: {request.headers}")
             filters["user"] = current_token["email"]
         if item_type := request.args.get("type", None):
             filters["type"] = item_type
@@ -56,6 +57,7 @@ class EntityDetail(BaseResource):
     def get(self, id):
         entity = self.abort_if_item_doesnt_exist("entities", id)
         if self._only_own_items():
+            app.logger.info(f"HEADERS DETAIL: {request.headers}")
             self.abort_if_not_own_item(entity, current_token)
         entity = self._set_entity_mediafile_and_thumbnail(entity)
         entity = self._add_relations_to_metadata(entity)
