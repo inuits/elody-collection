@@ -1,4 +1,5 @@
 import app
+import os
 
 from importlib import import_module
 from yaml import safe_load, YAMLError
@@ -12,8 +13,9 @@ def load_apps(flask_app):
 
 def parse_apps():
     apps = dict()
+    apps_manifest = os.getenv("APPS_MANIFEST")
     try:
-        with open("apps/app_list.yaml", "r") as stream:
+        with open(apps_manifest, "r") as stream:
             try:
                 apps = safe_load(stream)
             except YAMLError as ex:
