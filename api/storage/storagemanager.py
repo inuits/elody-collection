@@ -9,12 +9,12 @@ from storage.mongostore import MongoStorageManager
 class StorageManager(metaclass=Singleton):
     def __init__(self):
         self.storage_engine = os.getenv("DB_ENGINE", "arango")
-        self.__init_storage_managers()
+        self._init_storage_managers()
 
     def get_db_engine(self):
         return self.storage_manager
 
-    def __init_storage_managers(self):
+    def _init_storage_managers(self):
         if self.storage_engine == "arango":
             self.storage_manager = ArangoStorageManager()
         elif self.storage_engine == "memory":
