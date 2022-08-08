@@ -55,7 +55,7 @@ class EntityDetail(BaseResource):
     @app.require_oauth(permissions=["read-entity-detail", "read-entity-detail-all"])
     def get(self, id):
         entity = self.abort_if_item_doesnt_exist("entities", id)
-        if self._only_own_items(["read-entity-all"]):
+        if self._only_own_items(["read-entity-detail-all"]):
             self.abort_if_not_own_item(entity, current_token)
         entity = self._set_entity_mediafile_and_thumbnail(entity)
         entity = self._add_relations_to_metadata(entity)
