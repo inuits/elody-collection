@@ -23,7 +23,7 @@ class Entity(BaseResource):
         self._signal_entity_changed(entity)
         return entity, 201
 
-    @app.require_oauth("read-entity", "read-entity-all")
+    @app.require_oauth(permissions=["read-entity", "read-entity-all"])
     def get(self):
         skip = int(request.args.get("skip", 0))
         limit = int(request.args.get("limit", 20))
