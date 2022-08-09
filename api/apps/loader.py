@@ -15,7 +15,7 @@ def load_apps(flask_app):
 
 def parse_apps():
     apps = dict()
-    apps_manifest = os.getenv("APPS_MANIFEST")
+    apps_manifest = os.getenv("APPS_MANIFEST", "apps/app_list.yaml")
     if not os.path.exists(apps_manifest):
         app.logger.error(f"Applist not found")
         return apps
