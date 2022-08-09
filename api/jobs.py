@@ -27,7 +27,6 @@ class JobExtension:
         self,
         job_info: string,
         job_type: string,
-        identifier: uuid.uuid1,
         asset_id=None,
         mediafile_id=None,
         parent_job_id=None,
@@ -45,7 +44,7 @@ class JobExtension:
             "parent_job_id": "" if parent_job_id is None else parent_job_id,
             "completed_jobs": 0,
             "amount_of_jobs": 1,
-            "identifiers": [identifier],
+            "identifiers": [uuid.uuid1()],
         }
         self.send_cloud_event(new_job, "dams.job_created")
         return new_job
