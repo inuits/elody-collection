@@ -14,12 +14,12 @@ def load_apps(flask_app):
 def parse_apps():
     apps = dict()
     apps_manifest = os.getenv("APPS_MANIFEST")
-    try:
-        with open(apps_manifest, "r") as stream:
-            try:
-                apps = safe_load(stream)
-            except YAMLError as ex:
-                app.logger.error(f"Could not load applist: {ex}")
-    except FileNotFoundError as ex:
-        app.logger.error(f"Applist not found: {ex}")
+    if not os.path.exists(apps_manifest):
+        app.logger.error(f"Applist not found")
+        return apps
+    with open(apps_manifest, "r") as stream:
+        try:
+            apps = safe_load(stream)
+        except YAMLError as ex:
+            app.logger.error(f"Could not load applist: {ex}")
     return apps
