@@ -119,7 +119,7 @@ class EntitySetPrimaryThumbnail(BaseResource):
 
 
 class EntityMetadata(BaseResource):
-    @app.require_oauth("read-entity-metadata")
+    @app.require_oauth(permissions=["read-entity-metadata", "read-entity-metadata-all"])
     def get(self, id):
         self.abort_if_item_doesnt_exist("entities", id)
         metadata = self.storage.get_collection_item_sub_item("entities", id, "metadata")
@@ -129,6 +129,8 @@ class EntityMetadata(BaseResource):
     def post(self, id):
         entity = self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
+        if self._only_own_items():
+            self.abort_if_not_own_item(entity, current_token)
         metadata = self.storage.add_sub_item_to_collection_item(
             "entities", id, "metadata", content
         )
@@ -139,6 +141,8 @@ class EntityMetadata(BaseResource):
     def put(self, id):
         entity = self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
+        if self._only_own_items():
+            self.abort_if_not_own_item(entity, current_token)
         metadata = self.storage.update_collection_item_sub_item(
             "entities", id, "metadata", content
         )
@@ -147,17 +151,23 @@ class EntityMetadata(BaseResource):
 
 
 class EntityMetadataKey(BaseResource):
-    @app.require_oauth("read-entity-metadata")
+    @app.require_oauth(
+        permissions=["read-entity-metadata-key", "read-entity-metadata-key-all"]
+    )
     def get(self, id, key):
-        self.abort_if_item_doesnt_exist("entities", id)
+        entity = self.abort_if_item_doesnt_exist("entities", id)
+        if self._only_own_items():
+            self.abort_if_not_own_item(entity, current_token)
         metadata = self.storage.get_collection_item_sub_item_key(
             "entities", id, "metadata", key
         )
         return metadata
 
-    @app.require_oauth("delete-entity-metadata")
+    @app.require_oauth("delete-entity-metadata-key")
     def delete(self, id, key):
         entity = self.abort_if_item_doesnt_exist("entities", id)
+        if self._only_own_items():
+            self.abort_if_not_own_item(entity, current_token)
         self.storage.delete_collection_item_sub_item_key(
             "entities", id, "metadata", key
         )
