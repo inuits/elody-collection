@@ -226,9 +226,13 @@ class BaseResource(Resource):
 
     def _only_own_items(self, permissions=None):
         if not permissions:
-            permissions = []
-        permissions.insert(0, "show-all")
-        return not any(app.require_oauth.check_permission(x) for x in permissions)
+            permissions = ["show-all"]
+        else:
+            permissions = [*permissions, *["show-all"]]
+        for permission in permissions:
+            if app.require_oauth.check_permission(permission):
+                return False
+        return True
 
     def abort_if_not_own_item(self, item, token):
         if "user" not in item or item["user"] != token["email"]:
