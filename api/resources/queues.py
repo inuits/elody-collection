@@ -14,6 +14,20 @@ def child_relation_changed(routing_key, body, message_id):
     )
 
 
+@app.rabbit.queue("dams.job_changed")
+def job_changed(routing_key, body, message_id):
+    StorageManager().get_db_engine().patch_item_from_collection(
+        "jobs",
+        body["data"]["identifiers"][0],
+        body["data"],
+    )
+
+
+@app.rabbit.queue("dams.job_created")
+def job_created(routing_key, body, message_id):
+    StorageManager().get_db_engine().save_item_to_collection("jobs", body["data"])
+
+
 @app.rabbit.queue("dams.mediafile_changed")
 def mediafile_changed(routing_key, body, message_id):
     data = body["data"]
