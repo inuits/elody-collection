@@ -1,4 +1,3 @@
-from job_helper.job_helper import Status
 from jsonschema import validate, ValidationError
 
 entity_schema = {
@@ -55,44 +54,6 @@ entity_schema = {
     "additionalProperties": True,
 }
 
-job_schema = {
-    "$schema": "http://json-schema.org/draft-07/schema#",
-    "type": "object",
-    "default": {},
-    "required": ["job_type", "job_info", "status", "start_time"],
-    "properties": {
-        "job_type": {
-            "type": "string",
-        },
-        "job_info": {
-            "type": "string",
-        },
-        "start_time": {
-            "type": "string",
-        },
-        "user": {
-            "type": "string",
-        },
-        "asset": {
-            "type": "string",
-        },
-        "mediafile_id": {
-            "type": "string",
-        },
-        "parent_job_id": {
-            "type": "string",
-        },
-        "status": {
-            "enum": [
-                Status.QUEUED.value,
-                Status.IN_PROGRESS.value,
-                Status.FINISHED.value,
-                Status.FAILED.value,
-            ]
-        },
-        "sub_jobs": {"type": "array"},
-    },
-}
 
 mediafile_schema = {
     "$schema": "http://json-schema.org/draft-07/schema#",
