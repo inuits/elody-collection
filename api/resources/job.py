@@ -2,14 +2,14 @@ import app
 
 from flask import request
 from resources.base_resource import BaseResource
-from validator import job_schema
+#from validator import job_schema
 
 
 class Job(BaseResource):
     @app.require_oauth("create-job")
     def post(self):
         content = self.get_request_body()
-        self.abort_if_not_valid_json("Job", content, job_schema)
+        #self.abort_if_not_valid_json("Job", content, job_schema)
         job = self.storage.save_item_to_collection("jobs", content)
         return job, 201
 
