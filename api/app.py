@@ -1,7 +1,7 @@
 import json
 import logging
-import time
 import os
+import time
 
 from apps.loader import load_apps
 from flask import Flask, g, request
@@ -10,8 +10,8 @@ from flask_swagger_ui import get_swaggerui_blueprint
 from healthcheck import HealthCheck
 from inuits_jwt_auth.authorization import JWTValidator, MyResourceProtector
 from inuits_otel_tracer.tracer import Tracer
-from storage.storagemanager import StorageManager
 from rabbitmq_pika_flask import RabbitMQ
+from storage.storagemanager import StorageManager
 
 traceObject = Tracer(
     os.getenv("OTEL_ENABLED", False) in ["True" or "true" or True],
@@ -106,15 +106,19 @@ def mediafile_deleted(routing_key, body, message_id):
         parents=data["linked_entities"]
     )
 
+
 @app.before_request
 def logging_before():
     g.start_time = time.perf_counter()
+
 
 @app.after_request
 def logging_after(response):
     total_time = time.perf_counter() - g.start_time
     time_in_ms = int(total_time * 1000)
-    app.logger.info(f'{time_in_ms} ms {request.method} {request.path} {dict(request.args)} {request.headers}')
+    app.logger.info(
+        f"{time_in_ms} ms {request.method} {request.path} {dict(request.args)} {request.headers}"
+    )
     return response
 
 
