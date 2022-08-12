@@ -43,6 +43,6 @@ ENV APP_ENV=prod
 
 COPY --from=build-stage /app /app
 
-ENV GUNICORN_CMD_ARGS="--workers=3"
+ENV GUNICORN_CMD_ARGS="--workers=1"
 
 EXPOSE 8000
