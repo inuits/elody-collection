@@ -107,6 +107,7 @@ def mediafile_deleted(routing_key, body, message_id):
 
 
 require_oauth = MyResourceProtector(
+    logger,
     os.getenv("REQUIRE_TOKEN", True) in ["True" or "true" or True],
 )
 validator = JWTValidator(
