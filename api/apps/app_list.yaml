@@ -1,0 +1,9 @@
+coghent:
+  name: coghent
+  description: "Coghent specific extensions"
+  version: 0.1
+  author: "Bram Oosterlynck"
+  author_email: "booster@inuits.eu"
+  license: "GPLv2"
+  resources:
+    - box_visit

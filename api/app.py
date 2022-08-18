@@ -124,12 +124,6 @@ require_oauth.register_token_validator(validator)
 
 app.register_blueprint(swaggerui_blueprint)
 
-from resources.box_visit import (
-    BoxVisit,
-    BoxVisitDetail,
-    BoxVisitRelations,
-    BoxVisitRelationsAll,
-)
 from resources.entity import (
     Entity,
     EntityDetail,
@@ -149,11 +143,6 @@ from resources.mediafile import Mediafile, MediafileCopyright, MediafileDetail
 from resources.spec import AsyncAPISpec, OpenAPISpec
 from resources.story_box import StoryBox, StoryBoxLink, StoryBoxPublish
 from resources.tenant import Tenant, TenantDetail
-
-api.add_resource(BoxVisit, "/box_visits")
-api.add_resource(BoxVisitDetail, "/box_visits/<string:id>")
-api.add_resource(BoxVisitRelations, "/box_visits/<string:id>/relations")
-api.add_resource(BoxVisitRelationsAll, "/box_visits/<string:id>/relations/all")
 
 api.add_resource(Entity, "/entities")
 api.add_resource(EntityDetail, "/entities/<string:id>")
