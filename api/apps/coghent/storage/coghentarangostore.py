@@ -4,6 +4,7 @@ import random
 
 from storage.arangostore import ArangoStorageManager
 
+
 class CoghentArangoStorageManager(ArangoStorageManager):
     def get_box_visits(self, skip, limit, item_type=None, ids=None):
         aql = f"""
