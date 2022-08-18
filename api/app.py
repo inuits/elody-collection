@@ -70,42 +70,6 @@ if os.getenv("HEALTH_CHECK_EXTERNAL_SERVICES", True) in ["True", "true", True]:
     health.add_check(rabbit_available)
 app.add_url_rule("/health", "healthcheck", view_func=lambda: health.run())
 
-
-@rabbit.queue("dams.child_relation_changed")
-def child_relation_changed(routing_key, body, message_id):
-    data = body["data"]
-    if "collection" not in data or "parent_id" not in data:
-        logger.error("Message malformed: missing 'collection' or 'parent_id'")
-        return
-    StorageManager().get_db_engine().update_parent_relation_values(
-        data["collection"], data["parent_id"]
-    )
-
-
-@rabbit.queue("dams.mediafile_changed")
-def mediafile_changed(routing_key, body, message_id):
-    data = body["data"]
-    if "old_mediafile" not in data or "mediafile" not in data:
-        logger.error("Message malformed: missing 'old_mediafile' or 'mediafile'")
-        return
-    StorageManager().get_db_engine().handle_mediafile_status_change(
-        data["old_mediafile"], data["mediafile"]
-    )
-    StorageManager().get_db_engine().reindex_mediafile_parents(data["mediafile"])
-
-
-@rabbit.queue("dams.mediafile_deleted")
-def mediafile_deleted(routing_key, body, message_id):
-    data = body["data"]
-    if "mediafile" not in data or "linked_entities" not in data:
-        logger.error("Message malformed: missing 'mediafile' or 'linked_entities'")
-        return
-    StorageManager().get_db_engine().handle_mediafile_deleted(data["linked_entities"])
-    StorageManager().get_db_engine().reindex_mediafile_parents(
-        parents=data["linked_entities"]
-    )
-
-
 require_oauth = MyResourceProtector(
     logger,
     os.getenv("REQUIRE_TOKEN", True) in ["True" or "true" or True],
@@ -143,6 +107,7 @@ from resources.mediafile import Mediafile, MediafileCopyright, MediafileDetail
 from resources.spec import AsyncAPISpec, OpenAPISpec
 from resources.story_box import StoryBox, StoryBoxLink, StoryBoxPublish
 from resources.tenant import Tenant, TenantDetail
+import resources.queues
 
 api.add_resource(Entity, "/entities")
 api.add_resource(EntityDetail, "/entities/<string:id>")
