@@ -15,9 +15,9 @@ class Job(BaseResource):
             ids = ids.split(",")
             return self.storage.get_items_from_collection_by_ids("jobs", ids)
         if job_type:
-            fields = {"job_type": job_type, "parent_job_id": ""}
+            fields = {"job_type": job_type, "parent_job_id": None}
         else:
-            fields = {"parent_job_id": ""}
+            fields = {"parent_job_id": None}
         jobs = self.storage.get_items_from_collection_by_fields(
             "jobs", fields, skip, limit
         )
@@ -34,7 +34,7 @@ class JobDetail(BaseResource):
     @app.require_oauth("read-job")
     def get(self, id):
         job = self.abort_if_item_doesnt_exist("jobs", id)
-        if "parent_job_id" in job and job["parent_job_id"] == "":
+        if "parent_job_id" in job and job["parent_job_id"] is None:
             sub_jobs = self.storage.get_items_from_collection_by_fields(
                 "jobs",
                 {"parent_job_id": job["identifiers"][0]},
