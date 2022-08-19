@@ -2,7 +2,8 @@ import app
 import json
 import os
 
-from cloudevents.http import CloudEvent, to_json
+from cloudevents.conversion import to_json
+from cloudevents.http import CloudEvent
 from datetime import datetime
 from flask import request
 from flask_restful import Resource, abort
