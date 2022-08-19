@@ -15,8 +15,8 @@ from werkzeug.exceptions import BadRequest
 class BaseResource(Resource):
     def __init__(self):
         self.storage = StorageManager().get_db_engine()
-        self.cantaloupe_api_url = os.getenv("CANTALOUPE_API_URL")
         self.collection_api_url = os.getenv("COLLECTION_API_URL")
+        self.image_api_url_ext = os.getenv("IMAGE_API_URL_EXT")
         self.storage_api_url = os.getenv("STORAGE_API_URL")
         self.storage_api_url_ext = os.getenv("STORAGE_API_URL_EXT")
 
@@ -59,7 +59,7 @@ class BaseResource(Resource):
             if "primary_thumbnail_location" in entity:
                 entity[
                     "primary_thumbnail_location"
-                ] = f'{self.cantaloupe_api_url}{entity["primary_thumbnail_location"]}'
+                ] = f'{self.image_api_url_ext}{entity["primary_thumbnail_location"]}'
             if "primary_transcode_location" in entity:
                 entity[
                     "primary_transcode_location"
@@ -75,7 +75,7 @@ class BaseResource(Resource):
             if "thumbnail_file_location" in mediafile:
                 mediafile[
                     "thumbnail_file_location"
-                ] = f'{self.cantaloupe_api_url}{mediafile["thumbnail_file_location"]}'
+                ] = f'{self.image_api_url_ext}{mediafile["thumbnail_file_location"]}'
             if "transcode_file_location" in mediafile:
                 mediafile[
                     "transcode_file_location"
