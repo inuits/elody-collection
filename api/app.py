@@ -70,6 +70,7 @@ require_oauth.register_token_validator(validator)
 
 app.register_blueprint(swaggerui_blueprint)
 
+
 def database_available():
     return True, StorageManager().get_db_engine().check_health().json()
 

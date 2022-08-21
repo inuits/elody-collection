@@ -28,7 +28,9 @@ class Entity(BaseResource):
         skip = int(request.args.get("skip", 0))
         limit = int(request.args.get("limit", 20))
         filters = {}
-        if self._only_own_items(["read-entity-all"]):
+        if int(request.args.get("only_own", 0)) or self._only_own_items(
+            ["read-entity-all"]
+        ):
             filters["user"] = current_token["email"]
         if item_type := request.args.get("type", None):
             filters["type"] = item_type
