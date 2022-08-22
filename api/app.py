@@ -102,7 +102,6 @@ from resources.job import Job, JobDetail
 from resources.key_value_store import KeyValueStore, KeyValueStoreDetail
 from resources.mediafile import Mediafile, MediafileCopyright, MediafileDetail
 from resources.spec import AsyncAPISpec, OpenAPISpec
-from resources.story_box import StoryBox, StoryBoxLink, StoryBoxPublish
 from resources.tenant import Tenant, TenantDetail
 import resources.queues
 
@@ -133,10 +132,6 @@ api.add_resource(KeyValueStoreDetail, "/key_value_store/<string:id>")
 api.add_resource(Mediafile, "/mediafiles")
 api.add_resource(MediafileCopyright, "/mediafiles/<string:id>/copyright")
 api.add_resource(MediafileDetail, "/mediafiles/<string:id>")
-
-api.add_resource(StoryBox, "/story_box")
-api.add_resource(StoryBoxLink, "/story_box/link/<string:code>")
-api.add_resource(StoryBoxPublish, "/story_box/publish/<string:id>")
 
 api.add_resource(AsyncAPISpec, "/spec/dams-collection-api-events.html")
 api.add_resource(OpenAPISpec, "/spec/dams-collection-api.json")

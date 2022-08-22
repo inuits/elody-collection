@@ -1,4 +1,4 @@
-from apps.coghent.storage.coghentarangostore import CoghentArangoStorageManager
+from apps.coghent.storage.arangostore import CoghentArangoStorageManager
 from singleton import Singleton
 from storage.storagemanager import StorageManager
 

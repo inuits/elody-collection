@@ -1,19 +1,15 @@
 import app
 
-from apps.coghent.storage.storagemanager import CoghentStorageManager
+from apps.coghent.resources.base_resource import CoghentBaseResource
 from flask import Blueprint, request, after_this_request
 from flask_restful import Api
-from resources.base_resource import BaseResource
 from validator import box_visit_schema
 
 api_bp = Blueprint("box_visit", __name__)
 api = Api(api_bp)
 
 
-class BoxVisit(BaseResource):
-    def __init__(self):
-        self.storage = CoghentStorageManager().get_db_engine()
-
+class BoxVisit(CoghentBaseResource):
     @app.require_oauth("create-box-visit")
     def post(self):
         content = self.get_request_body()
@@ -42,10 +38,7 @@ class BoxVisit(BaseResource):
         return box_visits
 
 
-class BoxVisitDetail(BaseResource):
-    def __init__(self):
-        self.storage = CoghentStorageManager().get_db_engine()
-
+class BoxVisitDetail(CoghentBaseResource):
     @app.require_oauth("read-box-visit")
     def get(self, id):
         box_visit = self.abort_if_item_doesnt_exist("box_visits", id)
@@ -76,7 +69,7 @@ class BoxVisitDetail(BaseResource):
         return "", 204
 
 
-class BoxVisitRelations(BaseResource):
+class BoxVisitRelations(CoghentBaseResource):
     @app.require_oauth("get-box-visit-relations")
     def get(self, id):
         self.abort_if_item_doesnt_exist("box_visits", id)
@@ -123,7 +116,7 @@ class BoxVisitRelations(BaseResource):
         return "", 204
 
 
-class BoxVisitRelationsAll(BaseResource):
+class BoxVisitRelationsAll(CoghentBaseResource):
     @app.require_oauth("get-box-visit-relations")
     def get(self, id):
         self.abort_if_item_doesnt_exist("box_visits", id)

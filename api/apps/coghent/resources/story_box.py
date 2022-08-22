@@ -1,19 +1,24 @@
 import app
 
-from flask_restful import abort
+from apps.coghent.resources.base_resource import CoghentBaseResource
+from flask import Blueprint
+from flask_restful import abort, Api
 from inuits_jwt_auth.authorization import current_token
-from resources.base_resource import BaseResource
+
+api_bp = Blueprint("story_box", __name__)
+api = Api(api_bp)
 
 
-class StoryBox(BaseResource):
+class StoryBox(CoghentBaseResource):
     @app.require_oauth("get-story-box")
     def get(self):
         self.abort_if_not_logged_in(current_token)
         filters = {"type": "frame", "user": current_token["email"]}
-        return self.storage.get_items_from_collection_by_fields("entities", filters)
+        # FIXME: Add pagination
+        return self.storage.get_items_from_collection("entities", 0, 0, filters)
 
 
-class StoryBoxLink(BaseResource):
+class StoryBoxLink(CoghentBaseResource):
     @app.require_oauth("link-story-box")
     def post(self, code):
         self.abort_if_not_logged_in(current_token)
@@ -46,7 +51,7 @@ class StoryBoxLink(BaseResource):
         return story_box, 201
 
 
-class StoryBoxPublish(BaseResource):
+class StoryBoxPublish(CoghentBaseResource):
     @app.require_oauth("publish-story-box")
     def post(self, id):
         self.abort_if_not_logged_in(current_token)
@@ -85,3 +90,8 @@ class StoryBoxPublish(BaseResource):
             "entities", self._get_raw_id(story), content
         )
         return self._create_box_visit({"story_id": self._get_raw_id(story)}), 201
+
+
+api.add_resource(StoryBox, "/story_box")
+api.add_resource(StoryBoxLink, "/story_box/link/<string:code>")
+api.add_resource(StoryBoxPublish, "/story_box/publish/<string:id>")
