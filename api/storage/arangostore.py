@@ -82,6 +82,8 @@ class ArangoStorageManager:
         return f"cogent:CG_{str(min(set(range(1, max(used_ids) + 1)) - set(used_ids))).rjust(5,'0')}"
 
     def get_entities(self, skip, limit, skip_relations=0, filters=None):
+        if not filters:
+            filters = {}
         aql = f"""
             WITH mediafiles
             FOR c IN entities
@@ -126,11 +128,15 @@ class ArangoStorageManager:
             items["results"].sort(key=lambda x: filters["ids"].index(x["_key"]))
         return items
 
-    def get_items_from_collection(self, collection, skip=0, limit=20, fields=None, filters=None):
+    def get_items_from_collection(
+        self, collection, skip=0, limit=20, fields=None, filters=None
+    ):
         items = dict()
         extra_query = ""
         if not fields:
             fields = {}
+        if not filters:
+            filters = {}
         for name, value in fields.items():
             extra_query += f'FILTER c.{name} == "{value}"\n'
         aql = f"""
