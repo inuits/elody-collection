@@ -36,3 +36,26 @@ def mediafile_deleted(routing_key, body, message_id):
     StorageManager().get_db_engine().reindex_mediafile_parents(
         parents=data["linked_entities"]
     )
+
+
+@app.rabbit.queue("dams.virus_detected")
+def mediafile_deleted(routing_key, body, message_id):
+    data = body["data"]
+    if (
+        "filename" not in data
+        or "mediafile_id" not in data
+        or "scan_result" not in data
+    ):
+        app.logger.error("Message malformed: missing 'filename' or 'mediafile_id'")
+        return
+    metadata = (
+        StorageManager()
+        .get_db_engine()
+        .get_collection_item_sub_item("mediafiles", data["mediafile_id"], "metadata")
+    )
+    for item in [x for x in metadata if x["key"] == "publication_status"]:
+        item["value"] = "infected"
+        item["label"] = data["scan_result"]
+    StorageManager().get_db_engine().patch_item_from_collection(
+        "mediafile", data["metadata_id"], {"metadata": metadata}
+    )
