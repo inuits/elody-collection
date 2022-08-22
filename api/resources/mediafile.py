@@ -22,8 +22,8 @@ class Mediafile(BaseResource):
         skip = int(request.args.get("skip", 0))
         limit = int(request.args.get("limit", 20))
         if self._only_own_items():
-            mediafiles = self.storage.get_items_from_collection_by_fields(
-                "entities", {"user": current_token["email"]}, skip, limit
+            mediafiles = self.storage.get_items_from_collection(
+                "entities", skip, limit, {"user": current_token["email"]}
             )
         else:
             mediafiles = self.storage.get_items_from_collection(

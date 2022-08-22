@@ -126,16 +126,11 @@ class ArangoStorageManager:
             items["results"].sort(key=lambda x: filters["ids"].index(x["_key"]))
         return items
 
-    def get_items_from_collection(self, collection, skip=0, limit=20):
-        items = dict()
-        results = self.db[collection].fetchAll(skip=skip, limit=limit, rawResults=True)
-        items["count"] = self.db[collection].count()
-        items["results"] = list(results)
-        return items
-
-    def get_items_from_collection_by_fields(self, collection, fields, skip=0, limit=20):
+    def get_items_from_collection(self, collection, skip=0, limit=20, fields=None):
         items = dict()
         extra_query = ""
+        if not fields:
+            fields = {}
         for name, value in fields.items():
             extra_query += f'FILTER c.{name} == "{value}"\n'
         aql = f"""
