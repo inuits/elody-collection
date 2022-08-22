@@ -30,7 +30,7 @@ class Mediafile(BaseResource):
             )
         else:
             mediafiles = self.storage.get_items_from_collection(
-                "mediafiles", skip, limit, {}, filters
+                "mediafiles", skip, limit, filters=filters
             )
         count = mediafiles["count"]
         mediafiles["limit"] = limit
