@@ -7,3 +7,4 @@ coghent:
   license: "GPLv2"
   resources:
     - box_visit
+    - story_box
