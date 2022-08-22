@@ -1,7 +1,7 @@
 import app
 
 from apps.coghent.resources.base_resource import CoghentBaseResource
-from flask import Blueprint
+from flask import Blueprint, request
 from flask_restful import abort, Api
 from inuits_jwt_auth.authorization import current_token
 
@@ -13,9 +13,10 @@ class StoryBox(CoghentBaseResource):
     @app.require_oauth("get-story-box")
     def get(self):
         self.abort_if_not_logged_in(current_token)
-        filters = {"type": "frame", "user": current_token["email"]}
-        # FIXME: Add pagination
-        return self.storage.get_items_from_collection("entities", 0, 0, filters)
+        fields = {"type": "frame", "user": current_token["email"]}
+        skip = int(request.args.get("skip", 0))
+        limit = int(request.args.get("limit", 20))
+        return self.storage.get_items_from_collection("entities", skip, limit, fields)
 
 
 class StoryBoxLink(CoghentBaseResource):
