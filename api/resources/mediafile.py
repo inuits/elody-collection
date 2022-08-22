@@ -21,13 +21,16 @@ class Mediafile(BaseResource):
     def get(self):
         skip = int(request.args.get("skip", 0))
         limit = int(request.args.get("limit", 20))
+        filters = {}
+        if ids := request.args.get("ids", None):
+            filters["ids"] = ids.split(",")
         if self._only_own_items():
             mediafiles = self.storage.get_items_from_collection(
-                "entities", skip, limit, {"user": current_token["email"]}
+                "mediafiles", skip, limit, {"user": current_token["email"]}, filters
             )
         else:
             mediafiles = self.storage.get_items_from_collection(
-                "mediafiles", skip, limit
+                "mediafiles", skip, limit, {}, filters
             )
         count = mediafiles["count"]
         mediafiles["limit"] = limit

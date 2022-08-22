@@ -126,7 +126,7 @@ class ArangoStorageManager:
             items["results"].sort(key=lambda x: filters["ids"].index(x["_key"]))
         return items
 
-    def get_items_from_collection(self, collection, skip=0, limit=20, fields=None):
+    def get_items_from_collection(self, collection, skip=0, limit=20, fields=None, filters=None):
         items = dict()
         extra_query = ""
         if not fields:
@@ -135,11 +135,14 @@ class ArangoStorageManager:
             extra_query += f'FILTER c.{name} == "{value}"\n'
         aql = f"""
             FOR c IN @@collection
+                {"FILTER c._key IN @ids" if "ids" in filters else ""}
                 {extra_query}
                 LIMIT @skip, @limit
                 RETURN c
         """
         bind = {"@collection": collection, "skip": skip, "limit": limit}
+        if "ids" in filters:
+            bind["ids"] = filters["ids"]
         results = self.db.AQLQuery(aql, rawResults=True, bindVars=bind, fullCount=True)
         items["count"] = results.extra["stats"]["fullCount"]
         items["results"] = list(results)
