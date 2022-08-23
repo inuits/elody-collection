@@ -1,8 +1,7 @@
 import app
-import json
 import os
 
-from cloudevents.conversion import to_json
+from cloudevents.conversion import to_dict
 from cloudevents.http import CloudEvent
 from flask import request
 from flask_restful import Resource, abort
@@ -81,39 +80,32 @@ class BaseResource(Resource):
                 ] = f'{self.storage_api_url_ext}{mediafile["transcode_file_location"]}'
         return mediafiles
 
+    def __send_cloudevent(self, routing_key, data):
+        attributes = {"type": routing_key, "source": "dams"}
+        event = to_dict(CloudEvent(attributes, data))
+        app.rabbit.send(event, routing_key=routing_key)
+
     def _signal_entity_changed(self, entity):
-        attributes = {"type": "dams.entity_changed", "source": "dams"}
         data = {
             "location": f"/entities/{self._get_raw_id(entity)}",
             "type": entity["type"] if "type" in entity else "unspecified",
         }
-        event = CloudEvent(attributes, data)
-        message = json.loads(to_json(event))
-        app.rabbit.send(message, routing_key="dams.entity_changed")
+        self.__send_cloudevent("dams.entity_changed", data)
 
     def _signal_entity_deleted(self, entity):
-        attributes = {"type": "dams.entity_deleted", "source": "dams"}
         data = {
             "_id": self._get_raw_id(entity),
             "type": entity["type"] if "type" in entity else "unspecified",
         }
-        event = CloudEvent(attributes, data)
-        message = json.loads(to_json(event))
-        app.rabbit.send(message, routing_key="dams.entity_deleted")
+        self.__send_cloudevent("dams.entity_deleted", data)
 
     def _signal_mediafile_changed(self, old_mediafile, mediafile):
-        attributes = {"type": "dams.mediafile_changed", "source": "dams"}
         data = {"old_mediafile": old_mediafile, "mediafile": mediafile}
-        event = CloudEvent(attributes, data)
-        message = json.loads(to_json(event))
-        app.rabbit.send(message, routing_key="dams.mediafile_changed")
+        self.__send_cloudevent("dams.mediafile_changed", data)
 
     def _signal_mediafile_deleted(self, mediafile, linked_entities):
-        attributes = {"type": "dams.mediafile_deleted", "source": "dams"}
         data = {"mediafile": mediafile, "linked_entities": linked_entities}
-        event = CloudEvent(attributes, data)
-        message = json.loads(to_json(event))
-        app.rabbit.send(message, routing_key="dams.mediafile_deleted")
+        self.__send_cloudevent("dams.mediafile_deleted", data)
 
     def _get_raw_id(self, item):
         return item["_key"] if "_key" in item else item["_id"]
