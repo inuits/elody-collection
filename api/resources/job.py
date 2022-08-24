@@ -9,17 +9,16 @@ class Job(BaseResource):
     def get(self):
         skip = int(request.args.get("skip", 0))
         limit = int(request.args.get("limit", 20))
-        ids = request.args.get("ids")
-        job_type = request.args.get("type")
-        if ids:
-            ids = ids.split(",")
-            return self.storage.get_items_from_collection_by_ids("jobs", ids)
-        if job_type:
+        fields = {}
+        filters = {}
+        if ids := request.args.get("ids"):
+            filters["ids"] = ids.split(",")
+        elif job_type := request.args.get("type"):
             fields = {"job_type": job_type, "parent_job_id": None}
         else:
             fields = {"parent_job_id": None}
-        jobs = self.storage.get_items_from_collection_by_fields(
-            "jobs", fields, skip, limit
+        jobs = self.storage.get_items_from_collection(
+            "jobs", skip, limit, fields, filters
         )
         count = jobs["count"]
         jobs["limit"] = limit
@@ -35,10 +34,9 @@ class JobDetail(BaseResource):
     def get(self, id):
         job = self.abort_if_item_doesnt_exist("jobs", id)
         if "parent_job_id" in job and job["parent_job_id"] is None:
-            sub_jobs = self.storage.get_items_from_collection_by_fields(
+            job["sub_jobs"] = self.storage.get_items_from_collection(
                 "jobs",
-                {"parent_job_id": job["identifiers"][0]},
                 limit=job["amount_of_jobs"],
+                fields={"parent_job_id": job["identifiers"][0]},
             )
-            job["sub_jobs"] = sub_jobs["results"]
         return job
