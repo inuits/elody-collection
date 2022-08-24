@@ -138,7 +138,10 @@ class ArangoStorageManager:
         if not filters:
             filters = {}
         for name, value in fields.items():
-            extra_query += f'FILTER c.{name} == "{value}"\n'
+            if value is None:
+                extra_query += f"FILTER c.{name} == null\n"
+            else:
+                extra_query += f'FILTER c.{name} == "{value}"\n'
         aql = f"""
             FOR c IN @@collection
                 {"FILTER c._key IN @ids" if "ids" in filters else ""}
