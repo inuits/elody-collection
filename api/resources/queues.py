@@ -14,6 +14,32 @@ def child_relation_changed(routing_key, body, message_id):
     )
 
 
+@app.rabbit.queue("dams.file_scanned")
+def handle_file_scanned(routing_key, body, message_id):
+    data = body["data"]
+    if any(x not in data for x in ["mediafile_id", "clamav_version", "infected"]):
+        app.logger.error(
+            "Message malformed: missing 'mediafile_id', 'clamav_version' or 'infected'"
+        )
+        return
+    storage = StorageManager().get_db_engine()
+    content = {
+        "scan_info": {
+            "clamav_version": data["clamav_version"],
+            "datetime": body["attributes"]["time"],
+            "infected": data["infected"],
+        }
+    }
+    if data["infected"]:
+        metadata = storage.get_collection_item_sub_item(
+            "mediafiles", data["mediafile_id"], "metadata"
+        )
+        for item in [x for x in metadata if x["key"] == "publication_status"]:
+            item["value"] = "infected"
+        content["metadata"] = metadata
+    storage.patch_item_from_collection("mediafile", data["metadata_id"], content)
+
+
 @app.rabbit.queue("dams.job_changed")
 def job_changed(routing_key, body, message_id):
     StorageManager().get_db_engine().patch_item_from_collection(
@@ -48,25 +74,3 @@ def mediafile_deleted(routing_key, body, message_id):
     storage = StorageManager().get_db_engine()
     storage.handle_mediafile_deleted(data["linked_entities"])
     storage.reindex_mediafile_parents(parents=data["linked_entities"])
-
-
-@app.rabbit.queue("dams.virus_detected")
-def mediafile_deleted(routing_key, body, message_id):
-    data = body["data"]
-    if (
-        "filename" not in data
-        or "mediafile_id" not in data
-        or "scan_result" not in data
-    ):
-        app.logger.error("Message malformed: missing 'filename' or 'mediafile_id'")
-        return
-    storage = StorageManager().get_db_engine()
-    metadata = storage.get_collection_item_sub_item(
-        "mediafiles", data["mediafile_id"], "metadata"
-    )
-    for item in [x for x in metadata if x["key"] == "publication_status"]:
-        item["value"] = "infected"
-        item["label"] = data["scan_result"]
-    storage.patch_item_from_collection(
-        "mediafile", data["metadata_id"], {"metadata": metadata}
-    )
