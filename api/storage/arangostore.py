@@ -5,7 +5,7 @@ import random
 import string
 import uuid
 
-from cloudevents.conversion import to_json
+from cloudevents.conversion import to_dict
 from cloudevents.http import CloudEvent
 from exceptions import NonUniqueException
 from pyArango.theExceptions import CreationError, DocumentNotFoundError, UpdateError
@@ -414,15 +414,17 @@ FOR c IN @@collection
             if ue.errors["code"] == 409:
                 raise NonUniqueException(ue.errors["errorMessage"])
             raise ue
-        self._trigger_child_relation_changed(collection, id)
+        self.__signal_child_relation_changed(collection, id)
         return item
 
-    def _trigger_child_relation_changed(self, collection, id):
-        attributes = {"type": "dams.child_relation_changed", "source": "dams"}
+    def __send_cloudevent(self, routing_key, data):
+        attributes = {"type": routing_key, "source": "dams"}
+        event = to_dict(CloudEvent(attributes, data))
+        app.rabbit.send(event, routing_key=routing_key)
+
+    def __signal_child_relation_changed(self, collection, id):
         data = {"parent_id": id, "collection": collection}
-        event = CloudEvent(attributes, data)
-        message = json.loads(to_json(event))
-        app.rabbit.send(message, routing_key="dams.child_relation_changed")
+        self.__send_cloudevent("dams.child_relation_changed", data)
 
     def update_collection_item_sub_item(self, collection, id, sub_item, content):
         patch_data = {sub_item: content}
@@ -468,7 +470,7 @@ FOR c IN @@collection
             if ue.errors["code"] == 409:
                 raise NonUniqueException(ue.errors["errorMessage"])
             raise ue
-        self._trigger_child_relation_changed(collection, id)
+        self.__signal_child_relation_changed(collection, id)
         return item
 
     def delete_item_from_collection(self, collection, id):
@@ -579,14 +581,11 @@ FOR c IN @@collection
         return linked_entities
 
     def __signal_entity_changed(self, entity):
-        attributes = {"type": "dams.entity_changed", "source": "dams"}
         data = {
             "location": f'/entities/{entity["_key"]}',
             "type": entity["type"] if "type" in entity else "unspecified",
         }
-        event = CloudEvent(attributes, data)
-        message = json.loads(to_json(event))
-        app.rabbit.send(message, routing_key="dams.entity_changed")
+        self.__send_cloudevent("dams.entity_changed", data)
 
     def reindex_mediafile_parents(self, mediafile=None, parents=None):
         if parents:
@@ -629,22 +628,19 @@ FOR c IN @@collection
                                 len(parent_ids_from_changed_edges)
                                 > self.event_batch_limit
                             ):
-                                self._send_edge_changed_message(
+                                self.__signal_edge_changed(
                                     parent_ids_from_changed_edges
                                 )
                                 parent_ids_from_changed_edges = []
             # send remaining messages
             if len(parent_ids_from_changed_edges) > 0:
-                self._send_edge_changed_message(parent_ids_from_changed_edges)
+                self.__signal_edge_changed(parent_ids_from_changed_edges)
 
-    def _send_edge_changed_message(self, parent_ids_from_changed_edges):
-        attributes = {"type": "dams.edge_changed", "source": "dams"}
+    def __signal_edge_changed(self, parent_ids_from_changed_edges):
         data = {
             "location": f'/entities?ids={",".join(parent_ids_from_changed_edges)}&skip_relations=1'
         }
-        event = CloudEvent(attributes, data)
-        message = json.loads(to_json(event))
-        app.rabbit.send(message, routing_key="dams.edge_changed")
+        self.__send_cloudevent("dams.edge_changed", data)
         if self.event_delay > 0:
             sleep(self.event_delay)
 
