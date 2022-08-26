@@ -171,7 +171,6 @@ class MongoStorageManager:
         self.db.entities.drop()
         self.db.jobs.drop()
         self.db.mediafiles.drop()
-        self.db.tenants.drop()
 
     def handle_mediafile_status_change(self, old_mediafile, mediafile):
         return

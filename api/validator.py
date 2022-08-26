@@ -86,35 +86,6 @@ mediafile_schema = {
     },
 }
 
-tenant_schema = {
-    "$schema": "http://json-schema.org/draft-07/schema#",
-    "type": "object",
-    "properties": {
-        "_id": {"type": "string"},
-        "_key": {"type": "string"},
-        "_from": {"type": "string"},
-        "_to": {"type": "string"},
-        "@context": {"type": ["object", "string", "array", "null"]},
-        "@type": {"type": "string"},
-        "security": {
-            "type": "object",
-            "properties": {
-                "@context": {"type": ["object", "string", "array", "null"]},
-                "@type": {"type": "string"},
-                "list": {
-                    "type": "array",
-                },
-            },
-        },
-        "data": {
-            "type": "object",
-            "properties": {
-                "@context": {"type": ["object", "string", "array", "null"]},
-                "@type": {"type": "string"},
-            },
-        },
-    },
-}
 key_value_store_schema = {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",

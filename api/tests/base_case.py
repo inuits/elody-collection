@@ -52,14 +52,6 @@ class BaseCase(unittest.TestCase):
         }
     )
 
-    tenant = json.dumps(
-        {
-            "identifiers": ["12345", "abcde"],
-            "type": "tenant",
-            "name": "Een museum",
-        }
-    )
-
     filename = json.dumps(
         {
             "filename": "test.jpg",
@@ -108,29 +100,12 @@ class BaseCase(unittest.TestCase):
     def create_mediafile_get_id(self):
         return self._get_item_id(self.create_mediafile().json)
 
-    def create_tenant(self):
-        return self.app.post(
-            "/tenants",
-            headers={"Content-Type": "application/json"},
-            data=self.tenant,
-        )
-
     def _get_item_id(self, item):
         return item["_key"] if "_key" in item else item["_id"]
-
-    def create_tenant_get_id(self):
-        return self._get_item_id(self.create_tenant().json)
 
     def valid_mediafile(self, mediafile):
         self.assertEqual(str, type(self._get_item_id(mediafile)))
         self.assertEqual(str, type(mediafile["filename"]))
-
-    def valid_tenant(self, tenant):
-        self.assertEqual(str, type(self._get_item_id(tenant)))
-        self.assertEqual(str, type(tenant["name"]))
-        self.assertEqual("Een museum", tenant["name"])
-        self.assertEqual(str, type(tenant["type"]))
-        self.assertEqual("tenant", tenant["type"])
 
     def invalid_input(self, response):
         self.assertEqual(str, type(response.json["message"]))

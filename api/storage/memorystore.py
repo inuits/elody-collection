@@ -4,7 +4,7 @@ from copy import deepcopy
 
 
 class MemoryStorageManager:
-    collections = {"entities": {}, "mediafiles": {}, "tenants": {}, "jobs": {}}
+    collections = {"entities": {}, "mediafiles": {}, "jobs": {}}
 
     def get_entities(self, skip=0, limit=20, skip_relations=0, filters=None):
         items = dict()

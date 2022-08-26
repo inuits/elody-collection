@@ -102,7 +102,6 @@ from resources.job import Job, JobDetail
 from resources.key_value_store import KeyValueStore, KeyValueStoreDetail
 from resources.mediafile import Mediafile, MediafileCopyright, MediafileDetail
 from resources.spec import AsyncAPISpec, OpenAPISpec
-from resources.tenant import Tenant, TenantDetail
 import resources.queues
 
 api.add_resource(Entity, "/entities")
@@ -135,9 +134,6 @@ api.add_resource(MediafileDetail, "/mediafiles/<string:id>")
 
 api.add_resource(AsyncAPISpec, "/spec/dams-collection-api-events.html")
 api.add_resource(OpenAPISpec, "/spec/dams-collection-api.json")
-
-api.add_resource(Tenant, "/tenants")
-api.add_resource(TenantDetail, "/tenants/<string:id>")
 
 load_apps(app)
 

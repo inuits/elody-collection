@@ -27,7 +27,6 @@ class ArangoStorageManager:
             "jobs",
             "key_value_store",
             "mediafiles",
-            "tenants",
         ]
         self.entity_relations = [
             "box",
