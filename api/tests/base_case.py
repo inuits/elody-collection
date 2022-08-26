@@ -60,23 +60,6 @@ class BaseCase(unittest.TestCase):
         }
     )
 
-    job = json.dumps(
-        {
-            "job_type": "download",
-            "job_info": "Some info about download",
-            "status": "queued",
-            "start_time": "25-08-2021-04:30:00",
-        }
-    )
-    invalid_job = json.dumps(
-        {
-            "job_type": "download",
-            "job_info": "Some info about download",
-            "status": "garbage",
-            "start_time": "25-08-2021-04:30:00",
-        }
-    )
-
     filename = json.dumps(
         {
             "filename": "test.jpg",
@@ -112,14 +95,6 @@ class BaseCase(unittest.TestCase):
             "/entities", headers={"Content-Type": "application/json"}, data=self.entity
         )
 
-    def create_job(self):
-        return self.app.post(
-            "/jobs", headers={"Content-Type": "application/json"}, data=self.job
-        )
-
-    def create_job_get_id(self):
-        return self._get_item_id(self.create_job().json)
-
     def create_entity_get_id(self):
         return self._get_item_id(self.create_entity().json)
 
@@ -149,13 +124,6 @@ class BaseCase(unittest.TestCase):
     def valid_mediafile(self, mediafile):
         self.assertEqual(str, type(self._get_item_id(mediafile)))
         self.assertEqual(str, type(mediafile["filename"]))
-
-    def valid_job(self, job):
-        self.assertEqual(str, type(self._get_item_id(job)))
-        self.assertEqual(str, type(job["job_type"]))
-        self.assertEqual(str, type(job["job_info"]))
-        self.assertEqual(str, type(job["status"]))
-        self.assertEqual(str, type(job["start_time"]))
 
     def valid_tenant(self, tenant):
         self.assertEqual(str, type(self._get_item_id(tenant)))
