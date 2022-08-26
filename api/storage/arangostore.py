@@ -80,7 +80,7 @@ class ArangoStorageManager:
         used_ids.extend(list(self.db.AQLQuery(aql, rawResults=True)))
         return f"cogent:CG_{str(min(set(range(1, max(used_ids) + 1)) - set(used_ids))).rjust(5,'0')}"
 
-    def get_entities(self, skip, limit, skip_relations=0, filters=None):
+    def get_entities(self, skip=0, limit=20, skip_relations=0, filters=None):
         if not filters:
             filters = {}
         aql = f"""

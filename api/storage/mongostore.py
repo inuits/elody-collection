@@ -20,14 +20,16 @@ class MongoStorageManager:
         item_type = filters["type"] if "type" in filters else None
         return self.get_items_from_collection("entities", skip, limit, item_type)
 
-    def get_items_from_collection(self, collection, skip=0, limit=20, item_type=None):
+    def get_items_from_collection(
+        self, collection, skip=0, limit=20, fields=None, filters=None
+    ):
         items = dict()
-        if item_type:
+        if "type" in fields:
             documents = self.db[collection].find(
-                self._get_entities_by_type_query(item_type), skip=skip, limit=limit
+                self._get_entities_by_type_query(fields["type"]), skip=skip, limit=limit
             )
             count = self.db[collection].count_documents(
-                self._get_entities_by_type_query(item_type)
+                self._get_entities_by_type_query(fields["type"])
             )
         else:
             documents = self.db[collection].find(skip=skip, limit=limit)

@@ -37,7 +37,9 @@ class MemoryStorageManager:
         items["results"] = items["results"][skip : skip + limit]
         return deepcopy(items)
 
-    def get_items_from_collection(self, collection, skip=0, limit=20):
+    def get_items_from_collection(
+        self, collection, skip=0, limit=20, fields=None, filters=None
+    ):
         items = dict()
         results = list(self.collections[collection].values())
         items["count"] = len(results)
