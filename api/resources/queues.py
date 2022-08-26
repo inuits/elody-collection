@@ -26,7 +26,7 @@ def handle_file_scanned(routing_key, body, message_id):
     content = {
         "scan_info": {
             "clamav_version": data["clamav_version"],
-            "datetime": body["attributes"]["time"],
+            "datetime": body["time"],
             "infected": data["infected"],
         }
     }
@@ -37,7 +37,7 @@ def handle_file_scanned(routing_key, body, message_id):
         for item in [x for x in metadata if x["key"] == "publication_status"]:
             item["value"] = "infected"
         content["metadata"] = metadata
-    storage.patch_item_from_collection("mediafile", data["metadata_id"], content)
+    storage.patch_item_from_collection("mediafiles", data["mediafile_id"], content)
 
 
 @app.rabbit.queue("dams.job_changed")
