@@ -23,5 +23,5 @@ else
   echo "Starting gunicorn server..."
   export FLASK_ENV=production
   cd ~/api
-  exec ~/.local/bin/gunicorn -b 0.0.0.0 --timeout 0 "app:app" --log-level debug --access-logfile -
+  exec ~/.local/bin/gunicorn -b 0.0.0.0 --timeout 0 "app:app" --log-level debug --access-logfile - --keep-alive 30
 fi
