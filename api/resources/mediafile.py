@@ -103,3 +103,20 @@ class MediafileCopyright(BaseResource):
             if "in copyright" in item["value"].lower():
                 return "limited", 200
         return "full", 200
+
+
+class MediafileAssets(BaseResource):
+    @app.require_oauth("get-mediafile-assets")
+    def get(self, id):
+        mediafile = self.abort_if_item_doesnt_exist("mediafiles", id)
+        if self._only_own_items():
+            self.abort_if_not_own_item(mediafile, current_token)
+        entities = []
+        for item in self.storage.get_mediafile_linked_entities(mediafile):
+            entity = self.storage.get_item_from_collection_by_id(
+                "entities", item["entity_id"].removeprefix("entities/")
+            )
+            entity = self._set_entity_mediafile_and_thumbnail(entity)
+            entity = self._add_relations_to_metadata(entity)
+            entities.append(self._inject_api_urls_into_entities([entity])[0])
+        return entities, 200

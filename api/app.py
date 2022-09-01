@@ -100,7 +100,12 @@ from resources.entity import (
 )
 from resources.job import Job, JobDetail
 from resources.key_value_store import KeyValueStore, KeyValueStoreDetail
-from resources.mediafile import Mediafile, MediafileCopyright, MediafileDetail
+from resources.mediafile import (
+    Mediafile,
+    MediafileAssets,
+    MediafileCopyright,
+    MediafileDetail,
+)
 from resources.spec import AsyncAPISpec, OpenAPISpec
 import resources.queues
 
@@ -129,6 +134,7 @@ api.add_resource(KeyValueStore, "/key_value_store")
 api.add_resource(KeyValueStoreDetail, "/key_value_store/<string:id>")
 
 api.add_resource(Mediafile, "/mediafiles")
+api.add_resource(MediafileAssets, "/mediafiles/<string:id>/assets")
 api.add_resource(MediafileCopyright, "/mediafiles/<string:id>/copyright")
 api.add_resource(MediafileDetail, "/mediafiles/<string:id>")
 
