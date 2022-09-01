@@ -92,4 +92,14 @@ class MediafileCopyright(BaseResource):
     @app.require_oauth("get-mediafile-copyright")
     def get(self, id):
         mediafile = self.abort_if_item_doesnt_exist("mediafiles", id)
-        return self._get_mediafile_access(mediafile), 200
+        only_own = self._only_own_items()
+        if "metadata" not in mediafile:
+            return "full", 200
+        if not only_own or (only_own and mediafile["user"] == current_token["email"]):
+            return "full", 200
+        if not self._mediafile_is_public(mediafile):
+            return "none", 200
+        for item in [x for x in mediafile["metadata"] if x["key"] == "rights"]:
+            if "in copyright" in item["value"].lower():
+                return "limited", 200
+        return "full", 200

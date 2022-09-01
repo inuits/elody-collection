@@ -164,17 +164,6 @@ class BaseResource(Resource):
             return item["value"] == "publiek"
         return False
 
-    def _get_mediafile_access(self, mediafile):
-        if "metadata" not in mediafile:
-            return "full"
-        if not self._mediafile_is_public(mediafile):
-            return "none"
-        for item in [x for x in mediafile["metadata"] if x["key"] == "rights"]:
-            if "in copyright" in item["value"].lower():
-                return "limited"
-            return "full"
-        return "full"
-
     def _only_own_items(self, permissions=None):
         if not permissions:
             permissions = ["show-all"]
