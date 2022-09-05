@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import sentry_sdk
 
 from apps.loader import load_apps
 from flask import Flask
@@ -10,6 +11,7 @@ from healthcheck import HealthCheck
 from inuits_jwt_auth.authorization import JWTValidator, MyResourceProtector
 from inuits_otel_tracer.tracer import Tracer
 from rabbitmq_pika_flask import RabbitMQ
+from sentry_sdk.integrations.flask import FlaskIntegration
 from storage.storagemanager import StorageManager
 
 traceObject = Tracer(
@@ -84,6 +86,9 @@ if os.getenv("HEALTH_CHECK_EXTERNAL_SERVICES", True) in ["True", "true", True]:
     health.add_check(database_available)
     health.add_check(rabbit_available)
 app.add_url_rule("/health", "healthcheck", view_func=lambda: health.run())
+
+if os.getenv("SENTRY_ENABLED", False):
+    sentry_sdk.init(dsn=os.getenv("SENTRY_DSN"), integrations=[FlaskIntegration()])
 
 from resources.entity import (
     Entity,
