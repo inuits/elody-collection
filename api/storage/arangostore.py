@@ -49,17 +49,6 @@ class ArangoStorageManager:
         )
         self.db = self._create_database_if_not_exists()
 
-    def get_sixth_collection_id(self):
-        aql = f"""
-            FOR e IN entities
-                FILTER e.type == 'asset'
-                FILTER e.object_id LIKE 'cogent:CG_%'
-                RETURN TO_NUMBER(LAST(SPLIT(e.object_id, "_")))
-        """
-        used_ids = {*list(range(1000)), 100000}
-        used_ids.update(list(self.db.AQLQuery(aql, rawResults=True)))
-        return f"cogent:CG_{str(min(set(range(1, max(used_ids) + 1)) - used_ids)).rjust(5,'0')}"
-
     def get_entities(self, skip=0, limit=20, skip_relations=0, filters=None):
         if not filters:
             filters = {}

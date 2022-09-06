@@ -101,7 +101,6 @@ from resources.entity import (
     EntityRelationsAll,
     EntitySetPrimaryMediafile,
     EntitySetPrimaryThumbnail,
-    EntitySixthCollectionId,
 )
 from resources.job import Job, JobDetail
 from resources.key_value_store import KeyValueStore, KeyValueStoreDetail
@@ -130,7 +129,6 @@ api.add_resource(
     EntitySetPrimaryThumbnail,
     "/entities/<string:id>/set_primary_thumbnail/<string:mediafile_id>",
 )
-api.add_resource(EntitySixthCollectionId, "/entities/sixthcollection/id")
 
 api.add_resource(Job, "/jobs")
 api.add_resource(JobDetail, "/jobs/<string:id>")
