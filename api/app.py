@@ -23,6 +23,9 @@ traceObject.configTracer(
     endpoint=os.getenv("OTLP_EXPORTER_ENDPOINT", "otel-collector:4317"), isInsecure=True
 )
 
+if os.getenv("SENTRY_ENABLED", False):
+    sentry_sdk.init(dsn=os.getenv("SENTRY_DSN"), integrations=[FlaskIntegration()])
+
 SWAGGER_URL = "/api/docs"  # URL for exposing Swagger UI (without trailing '/')
 API_URL = (
     "/spec/dams-collection-api.json"  # Our API url (can of course be a local resource)
@@ -86,9 +89,6 @@ if os.getenv("HEALTH_CHECK_EXTERNAL_SERVICES", True) in ["True", "true", True]:
     health.add_check(database_available)
     health.add_check(rabbit_available)
 app.add_url_rule("/health", "healthcheck", view_func=lambda: health.run())
-
-if os.getenv("SENTRY_ENABLED", False):
-    sentry_sdk.init(dsn=os.getenv("SENTRY_DSN"), integrations=[FlaskIntegration()])
 
 from resources.entity import (
     Entity,
