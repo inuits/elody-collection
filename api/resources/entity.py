@@ -218,11 +218,11 @@ class EntityMediafilesCreate(BaseResource):
     @app.require_oauth("create-entity-mediafile")
     def post(self, id):
         entity = self.abort_if_item_doesnt_exist("entities", id)
+        if self._only_own_items():
+            self._abort_if_no_access(entity, current_token)
         content = self.get_request_body()
         if "filename" not in content:
             abort(405, message="Invalid input")
-        if self._only_own_items():
-            self._abort_if_no_access(entity, current_token)
         content["original_file_location"] = f'/download/{content["filename"]}'
         content[
             "thumbnail_file_location"
