@@ -2,9 +2,10 @@ import json
 import logging
 import os
 import sentry_sdk
+import time
 
 from apps.loader import load_apps
-from flask import Flask
+from flask import Flask, g, request
 from flask_restful import Api
 from flask_swagger_ui import get_swaggerui_blueprint
 from healthcheck import HealthCheck
@@ -56,6 +57,20 @@ traceObject.startAutoInstrumentation(app)
 
 rabbit = RabbitMQ()
 rabbit.init_app(app, "basic", json.loads, json.dumps)
+
+
+@app.before_request
+def logging_before():
+    g.start_time = time.perf_counter()
+
+
+@app.after_request
+def logging_after(response):
+    total_time = time.perf_counter() - g.start_time
+    time_in_ms = int(total_time * 1000)
+    app.logger.info(f'{time_in_ms} ms {request.method} {request.path} {dict(request.args)} {request.headers}')
+    return response
+
 
 require_oauth = MyResourceProtector(
     logger,
