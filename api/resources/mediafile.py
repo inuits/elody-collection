@@ -51,7 +51,7 @@ class MediafileDetail(BaseResource):
     def get(self, id):
         mediafile = self.abort_if_item_doesnt_exist("mediafiles", id)
         if self._only_own_items():
-            self.abort_if_not_own_item(mediafile, current_token)
+            self._abort_if_no_access(mediafile, current_token, "mediafiles")
         if request.args.get("raw", None):
             return mediafile
         return self._inject_api_urls_into_mediafiles([mediafile])[0]
@@ -61,7 +61,7 @@ class MediafileDetail(BaseResource):
         old_mediafile = self.abort_if_item_doesnt_exist("mediafiles", id)
         content = self.get_request_body()
         if self._only_own_items():
-            self.abort_if_not_own_item(old_mediafile, current_token)
+            self._abort_if_no_access(old_mediafile, current_token, "mediafiles")
         mediafile = self.storage.patch_item_from_collection("mediafiles", id, content)
         self._signal_mediafile_changed(old_mediafile, mediafile)
         return mediafile, 201
@@ -71,7 +71,7 @@ class MediafileDetail(BaseResource):
         old_mediafile = self.abort_if_item_doesnt_exist("mediafiles", id)
         content = self.get_request_body()
         if self._only_own_items():
-            self.abort_if_not_own_item(old_mediafile, current_token)
+            self._abort_if_no_access(old_mediafile, current_token, "mediafiles")
         self.abort_if_not_valid_json("Mediafile", content, mediafile_schema)
         mediafile = self.storage.update_item_from_collection("mediafiles", id, content)
         self._signal_mediafile_changed(old_mediafile, mediafile)
@@ -81,7 +81,7 @@ class MediafileDetail(BaseResource):
     def delete(self, id):
         mediafile = self.abort_if_item_doesnt_exist("mediafiles", id)
         if self._only_own_items():
-            self.abort_if_not_own_item(mediafile, current_token)
+            self._abort_if_no_access(mediafile, current_token, "mediafiles")
         linked_entities = self.storage.get_mediafile_linked_entities(mediafile)
         self.storage.delete_item_from_collection("mediafiles", id)
         self._signal_mediafile_deleted(mediafile, linked_entities)
@@ -110,7 +110,7 @@ class MediafileAssets(BaseResource):
     def get(self, id):
         mediafile = self.abort_if_item_doesnt_exist("mediafiles", id)
         if self._only_own_items():
-            self.abort_if_not_own_item(mediafile, current_token)
+            self._abort_if_no_access(mediafile, current_token, "mediafiles")
         entities = []
         for item in self.storage.get_mediafile_linked_entities(mediafile):
             entity = self.storage.get_item_from_collection_by_id(

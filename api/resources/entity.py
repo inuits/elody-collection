@@ -58,7 +58,7 @@ class EntityDetail(BaseResource):
     def get(self, id):
         entity = self.abort_if_item_doesnt_exist("entities", id)
         if self._only_own_items(["read-entity-detail-all"]):
-            self.abort_if_not_own_item(entity, current_token)
+            self._abort_if_no_access(entity, current_token)
         entity = self._set_entity_mediafile_and_thumbnail(entity)
         entity = self._add_relations_to_metadata(entity)
         return self._inject_api_urls_into_entities([entity])[0]
@@ -69,7 +69,7 @@ class EntityDetail(BaseResource):
         content = self.get_request_body()
         self.abort_if_not_valid_json("Entity", content, entity_schema)
         if self._only_own_items():
-            self.abort_if_not_own_item(entity, current_token)
+            self._abort_if_no_access(entity, current_token)
         try:
             entity = self.storage.update_item_from_collection("entities", id, content)
         except NonUniqueException as ex:
@@ -82,7 +82,7 @@ class EntityDetail(BaseResource):
         entity = self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
         if self._only_own_items():
-            self.abort_if_not_own_item(entity, current_token)
+            self._abort_if_no_access(entity, current_token)
         try:
             entity = self.storage.patch_item_from_collection("entities", id, content)
         except NonUniqueException as ex:
@@ -94,7 +94,7 @@ class EntityDetail(BaseResource):
     def delete(self, id):
         entity = self.abort_if_item_doesnt_exist("entities", id)
         if self._only_own_items():
-            self.abort_if_not_own_item(entity, current_token)
+            self._abort_if_no_access(entity, current_token)
         self.storage.delete_item_from_collection("entities", id)
         self._signal_entity_deleted(entity)
         return "", 204
@@ -132,7 +132,7 @@ class EntityMetadata(BaseResource):
         entity = self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
         if self._only_own_items():
-            self.abort_if_not_own_item(entity, current_token)
+            self._abort_if_no_access(entity, current_token)
         metadata = self.storage.add_sub_item_to_collection_item(
             "entities", id, "metadata", content
         )
@@ -144,7 +144,7 @@ class EntityMetadata(BaseResource):
         entity = self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
         if self._only_own_items():
-            self.abort_if_not_own_item(entity, current_token)
+            self._abort_if_no_access(entity, current_token)
         metadata = self.storage.update_collection_item_sub_item(
             "entities", id, "metadata", content
         )
@@ -159,7 +159,7 @@ class EntityMetadataKey(BaseResource):
     def get(self, id, key):
         entity = self.abort_if_item_doesnt_exist("entities", id)
         if self._only_own_items():
-            self.abort_if_not_own_item(entity, current_token)
+            self._abort_if_no_access(entity, current_token)
         metadata = self.storage.get_collection_item_sub_item_key(
             "entities", id, "metadata", key
         )
@@ -169,7 +169,7 @@ class EntityMetadataKey(BaseResource):
     def delete(self, id, key):
         entity = self.abort_if_item_doesnt_exist("entities", id)
         if self._only_own_items():
-            self.abort_if_not_own_item(entity, current_token)
+            self._abort_if_no_access(entity, current_token)
         self.storage.delete_collection_item_sub_item_key(
             "entities", id, "metadata", key
         )
@@ -184,7 +184,7 @@ class EntityMediafiles(BaseResource):
     def get(self, id):
         entity = self.abort_if_item_doesnt_exist("entities", id)
         if self._only_own_items(["read-entity-mediafiles-all"]):
-            self.abort_if_not_own_item(entity, current_token)
+            self._abort_if_no_access(entity, current_token)
         mediafiles = self.storage.get_collection_item_mediafiles("entities", id)
         if not request.args.get("non_public"):
             mediafiles = [
@@ -204,7 +204,7 @@ class EntityMediafiles(BaseResource):
     def post(self, id):
         entity = self.abort_if_item_doesnt_exist("entities", id)
         if self._only_own_items():
-            self.abort_if_not_own_item(entity, current_token)
+            self._abort_if_no_access(entity, current_token)
         content = self.get_request_body()
         self.abort_if_not_valid_json("Mediafile", content, mediafile_schema)
         mediafile = self.storage.add_mediafile_to_collection_item(
@@ -222,7 +222,7 @@ class EntityMediafilesCreate(BaseResource):
         if "filename" not in content:
             abort(405, message="Invalid input")
         if self._only_own_items():
-            self.abort_if_not_own_item(entity, current_token)
+            self._abort_if_no_access(entity, current_token)
         content["original_file_location"] = f'/download/{content["filename"]}'
         content[
             "thumbnail_file_location"
@@ -246,7 +246,7 @@ class EntityRelationsAll(BaseResource):
     def get(self, id):
         entity = self.abort_if_item_doesnt_exist("entities", id)
         if self._only_own_items(["read-entity-relations-all"]):
-            self.abort_if_not_own_item(entity, current_token)
+            self._abort_if_no_access(entity, current_token)
 
         @after_this_request
         def add_header(response):
@@ -265,7 +265,7 @@ class EntityRelations(BaseResource):
     def get(self, id):
         entity = self.abort_if_item_doesnt_exist("entities", id)
         if self._only_own_items(["read-entity-relations-all"]):
-            self.abort_if_not_own_item(entity, current_token)
+            self._abort_if_no_access(entity, current_token)
 
         @after_this_request
         def add_header(response):
@@ -279,7 +279,7 @@ class EntityRelations(BaseResource):
         entity = self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
         if self._only_own_items():
-            self.abort_if_not_own_item(entity, current_token)
+            self._abort_if_no_access(entity, current_token)
         relations = self.storage.add_relations_to_collection_item(
             "entities", id, content
         )
@@ -291,7 +291,7 @@ class EntityRelations(BaseResource):
         entity = self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
         if self._only_own_items():
-            self.abort_if_not_own_item(entity, current_token)
+            self._abort_if_no_access(entity, current_token)
         relations = self.storage.update_collection_item_relations(
             "entities", id, content
         )
@@ -303,7 +303,7 @@ class EntityRelations(BaseResource):
         entity = self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
         if self._only_own_items():
-            self.abort_if_not_own_item(entity, current_token)
+            self._abort_if_no_access(entity, current_token)
         relations = self.storage.patch_collection_item_relations(
             "entities", id, content
         )
@@ -315,7 +315,7 @@ class EntityRelations(BaseResource):
         entity = self.abort_if_item_doesnt_exist("entities", id)
         content = self.get_request_body()
         if self._only_own_items():
-            self.abort_if_not_own_item(entity, current_token)
+            self._abort_if_no_access(entity, current_token)
         self.storage.delete_collection_item_relations("entities", id, content)
         self._signal_entity_changed(entity)
         return "", 204
