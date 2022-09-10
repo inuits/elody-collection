@@ -6,7 +6,6 @@ from cloudevents.http import CloudEvent
 from flask import request
 from flask_restful import Resource, abort
 from fuzzywuzzy import process
-from inuits_jwt_auth.authorization import current_token
 from storage.storagemanager import StorageManager
 from validator import validate_json
 from werkzeug.exceptions import BadRequest
@@ -167,24 +166,17 @@ class BaseResource(Resource):
         return False
 
     def _only_own_items(self, permissions=None):
-        app.logger.info(f"REQUEST HEADERS {request.headers}")
-        app.logger.info(f"TOKEN {current_token}")
-        app.logger.info(f"ONLY OWN: {permissions}")
         if not permissions:
             permissions = ["show-all"]
         else:
             permissions = [*permissions, *["show-all"]]
         for permission in permissions:
             if app.require_oauth.check_permission(permission):
-                app.logger.info("ONLY OWN RET FALSE")
                 return False
-        app.logger.info("ONLY OWN RET TRUE")
         return True
 
     def _abort_if_no_access(self, item, token, collection="entities"):
-        app.logger.info(f"ABORT ACCESS: {collection} {item} {token}")
         if "user" in item and item["user"] == token["email"]:
-            app.logger.info(f"ABORT ACCESS USER AND CREATOR ARE THE SAME")
             return
         mapping = {}
         mapping.update(
