@@ -176,6 +176,7 @@ class BaseResource(Resource):
         return True
 
     def _abort_if_no_access(self, item, token, collection="entities"):
+        app.logger.info(f"Checking if {token} has access to {item}")
         if "user" in item and item["user"] == token["email"]:
             return
         mapping = {}
