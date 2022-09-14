@@ -5,7 +5,6 @@ from cloudevents.conversion import to_dict
 from cloudevents.http import CloudEvent
 from flask import request
 from flask_restful import Resource, abort
-from fuzzywuzzy import process
 from storage.storagemanager import StorageManager
 from validator import validate_json
 from werkzeug.exceptions import BadRequest
@@ -178,34 +177,9 @@ class BaseResource(Resource):
                 return False
         return True
 
-    def _abort_if_no_access(self, item, token, collection="entities"):
+    def _abort_if_no_access(self, item, token, collection="entities", do_abort=True):
         app.logger.info(f"Checking if {token} has access to {item}")
-        if self._is_owner_of_item(item, token):
-            return
-        mapping = {}
-        mapping.update(
-            dict.fromkeys(["Archief Gent", "archiefgent:"], "all-archiefgent")
-        )
-        mapping.update(dict.fromkeys(["Design Museum Gent", "dmg:"], "all-dmg"))
-        mapping.update(dict.fromkeys(["Huis van Alijn", "hva:"], "all-hva"))
-        mapping.update(
-            dict.fromkeys(
-                ["Industriemuseum", "industriemuseum:"], "all-industriemuseum"
-            )
-        )
-        mapping.update(dict.fromkeys(["STAM", "stam:"], "all-stam"))
-        mapping.update(dict.fromkeys(["Zesde Collectie", "cogent:"], "all-sixth"))
-        if collection == "mediafiles":
-            source = next(
-                (x["value"] for x in item["metadata"] if x["key"] == "source"), None
-            )
-            institution = process.extractOne(source, choices=mapping.keys())[0]
-            required_permission = mapping.get(institution)
-        else:
-            required_permission = mapping.get(
-                item["object_id"][: item["object_id"].find(":") + 1]
-            )
-        if not required_permission or not app.require_oauth.check_permission(
-            required_permission
-        ):
+        is_owner = self._is_owner_of_item(item, token)
+        if not is_owner and do_abort:
             abort(403, message="Access denied")
+        return is_owner
