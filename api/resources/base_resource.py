@@ -165,6 +165,9 @@ class BaseResource(Resource):
             return item["value"] == "publiek"
         return False
 
+    def _is_owner_of_item(self, item, token):
+        return "user" in item and item["user"] == token["email"]
+
     def _only_own_items(self, permissions=None):
         if not permissions:
             permissions = ["show-all"]
@@ -177,7 +180,7 @@ class BaseResource(Resource):
 
     def _abort_if_no_access(self, item, token, collection="entities"):
         app.logger.info(f"Checking if {token} has access to {item}")
-        if "user" in item and item["user"] == token["email"]:
+        if self._is_owner_of_item(item, token):
             return
         mapping = {}
         mapping.update(
