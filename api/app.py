@@ -90,6 +90,8 @@ if os.getenv("HEALTH_CHECK_EXTERNAL_SERVICES", True) in ["True", "true", True]:
     health.add_check(rabbit_available)
 app.add_url_rule("/health", "healthcheck", view_func=lambda: health.run())
 
+load_apps(app)
+
 from resources.entity import (
     Entity,
     EntityDetail,
@@ -143,8 +145,6 @@ api.add_resource(MediafileDetail, "/mediafiles/<string:id>")
 
 api.add_resource(AsyncAPISpec, "/spec/dams-collection-api-events.html")
 api.add_resource(OpenAPISpec, "/spec/dams-collection-api.json")
-
-load_apps(app)
 
 
 @app.after_request
