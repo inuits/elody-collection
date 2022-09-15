@@ -103,27 +103,39 @@ class EntityDetail(BaseResource):
 class EntitySetPrimaryMediafile(BaseResource):
     @app.require_oauth("set-entity-primary-mediafile")
     def put(self, id, mediafile_id):
-        self.abort_if_item_doesnt_exist("entities", id)
+        entity = self.abort_if_item_doesnt_exist("entities", id)
+        if self._only_own_items():
+            self._abort_if_no_access(entity, current_token)
+        mediafile = self.abort_if_item_doesnt_exist("entities", mediafile_id)
+        if self._only_own_items():
+            self._abort_if_no_access(mediafile, current_token)
         self.storage.set_primary_field_collection_item(
             "entities", id, mediafile_id, "is_primary"
         )
-        return 204
+        return "", 204
 
 
 class EntitySetPrimaryThumbnail(BaseResource):
     @app.require_oauth("set-entity-primary-thumbnail")
     def put(self, id, mediafile_id):
-        self.abort_if_item_doesnt_exist("entities", id)
+        entity = self.abort_if_item_doesnt_exist("entities", id)
+        if self._only_own_items():
+            self._abort_if_no_access(entity, current_token)
+        mediafile = self.abort_if_item_doesnt_exist("entities", mediafile_id)
+        if self._only_own_items():
+            self._abort_if_no_access(mediafile, current_token)
         self.storage.set_primary_field_collection_item(
             "entities", id, mediafile_id, "is_primary_thumbnail"
         )
-        return 204
+        return "", 204
 
 
 class EntityMetadata(BaseResource):
     @app.require_oauth(permissions=["read-entity-metadata", "read-entity-metadata-all"])
     def get(self, id):
-        self.abort_if_item_doesnt_exist("entities", id)
+        entity = self.abort_if_item_doesnt_exist("entities", id)
+        if self._only_own_items(["read-entity-metadata-all"]):
+            self._abort_if_no_access(entity, current_token)
         metadata = self.storage.get_collection_item_sub_item("entities", id, "metadata")
         return metadata
 
@@ -158,7 +170,7 @@ class EntityMetadataKey(BaseResource):
     )
     def get(self, id, key):
         entity = self.abort_if_item_doesnt_exist("entities", id)
-        if self._only_own_items():
+        if self._only_own_items(["read-entity-metadata-key-all"]):
             self._abort_if_no_access(entity, current_token)
         metadata = self.storage.get_collection_item_sub_item_key(
             "entities", id, "metadata", key
