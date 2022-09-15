@@ -50,7 +50,7 @@ class MediafileDetail(BaseResource):
     @app.require_oauth("read-mediafile")
     def get(self, id):
         mediafile = self.abort_if_item_doesnt_exist("mediafiles", id)
-        if self._only_own_items():
+        if self._only_own_items() and not self._mediafile_is_public(mediafile):
             self._abort_if_no_access(mediafile, current_token, "mediafiles")
         if request.args.get("raw", None):
             return mediafile
