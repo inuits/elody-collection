@@ -68,7 +68,7 @@ class CoghentBaseResource(BaseResource):
                 return ""
             # FIXME: won't work if mediafile is linked to different museums
             item = linked_entities[0]
-        for item in item["metadata"]:
+        for item in self.storage.get_collection_item_relations("entities", self._get_raw_id(item), True):
             if item["type"] == "isIn":
                 return item["key"]
         return ""
