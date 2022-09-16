@@ -9,6 +9,7 @@
     "resources": [
       "box_visit",
       "entity",
+      "mediafile",
       "story_box"
     ]
   }
