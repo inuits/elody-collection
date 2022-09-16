@@ -81,6 +81,7 @@ class CoghentBaseResource(BaseResource):
         return ""
 
     def _abort_if_no_access(self, item, token, collection="entities", do_abort=True):
+        app.logger.info("Starting permission check from coghent app")
         if super()._abort_if_no_access(item, token, do_abort=False):
             return
         app.logger.info(f"Permission mapping: {self.mapping}")
