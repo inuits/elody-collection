@@ -9,8 +9,7 @@
     "resources": [
       "box_visit",
       "entity",
-      "story_box",
-      "user"
+      "story_box"
     ]
   }
 }
