@@ -67,10 +67,12 @@ class CoghentBaseResource(BaseResource):
             if not linked_entities:
                 return ""
             # FIXME: won't work if mediafile is linked to different museums
-            item = linked_entities[0]
+            entity_id = linked_entities[0]["entity_id"].removeprefix("entities/")
+        else:
+            entity_id = self._get_raw_id(item)
         app.logger.info(f"Item to get museum from: {item}")
         relations = self.storage.get_collection_item_relations(
-            "entities", self._get_raw_id(item), True
+            "entities", entity_id, True
         )
         app.logger.info(f"Item relations: {relations}")
         for relation in relations:
