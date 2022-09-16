@@ -68,14 +68,23 @@ class CoghentBaseResource(BaseResource):
                 return ""
             # FIXME: won't work if mediafile is linked to different museums
             item = linked_entities[0]
-        for item in self.storage.get_collection_item_relations("entities", self._get_raw_id(item), True):
-            if item["type"] == "isIn":
-                return item["key"]
+        app.logger.info(f"Item to get museum from: {item}")
+        relations = self.storage.get_collection_item_relations(
+            "entities", self._get_raw_id(item), True
+        )
+        app.logger.info(f"Item relations: {relations}")
+        for relation in relations:
+            if relation["type"] == "isIn":
+                app.logger.info(f'Returning: {relation["key"]}')
+                return relation["key"]
+        app.logger.info("isIn relation not found")
         return ""
 
     def _abort_if_no_access(self, item, token, collection="entities", do_abort=True):
         if super()._abort_if_no_access(item, token, do_abort=False):
             return
+        app.logger.info(f"Permission mapping: {self.mapping}")
         permission = self.mapping.get(self.__get_museum_id(item, collection))
+        app.logger.info(f"Required permission: {permission}")
         if not permission or not app.require_oauth.check_permission(permission):
             abort(403, message="Access denied")
