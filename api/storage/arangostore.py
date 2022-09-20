@@ -252,27 +252,31 @@ class ArangoStorageManager:
 
         return relations
 
-    def __add_mediafile_to_list(self, mediafile, mediafiles):
+    def __get_mediafile_index(self, mediafile, highest_order):
         if "order" in mediafile:
-            mediafiles.insert(mediafile["order"], mediafile)
-        elif "is_primary" in mediafile and mediafile["is_primary"]:
-            mediafiles.insert(0, mediafile)
-        elif "is_primary_thumbnail" in mediafile and mediafile["is_primary_thumbnail"]:
-            mediafiles.insert(1, mediafile)
-        else:
-            mediafiles.append(mediafile)
+            return mediafile["order"]
+        if mediafile.get("is_primary", False):
+            return highest_order + 1
+        if mediafile.get("is_primary_thumbnail", False):
+            return highest_order + 2
+        return highest_order + 3
 
     def get_collection_item_mediafiles(self, collection, id):
         entity = self.get_raw_item_from_collection_by_id(collection, id)
         mediafiles = list()
+        highest_order = -1
         for edge in entity.getOutEdges(self.db["hasMediafile"]):
             mediafile = self.db.fetchDocument(edge["_to"]).getStore()
             if "is_primary" in edge:
                 mediafile["is_primary"] = edge["is_primary"]
             if "is_primary_thumbnail" in edge:
                 mediafile["is_primary_thumbnail"] = edge["is_primary_thumbnail"]
-            self.__add_mediafile_to_list(mediafile, mediafiles)
-        return mediafiles
+            if "order" in mediafile and mediafile["order"] > highest_order:
+                highest_order = mediafile["order"]
+            mediafiles.append(mediafile)
+        return sorted(
+            mediafiles, key=lambda x: self.__get_mediafile_index(x, highest_order)
+        )
 
     def set_primary_field_collection_item(
         self, collection, entity_id, mediafile_id, field
