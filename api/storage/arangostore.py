@@ -253,7 +253,9 @@ class ArangoStorageManager:
         return relations
 
     def __add_mediafile_to_list(self, mediafile, mediafiles):
-        if "is_primary" in mediafile and mediafile["is_primary"]:
+        if "order" in mediafile:
+            mediafiles.insert(mediafile["order"], mediafile)
+        elif "is_primary" in mediafile and mediafile["is_primary"]:
             mediafiles.insert(0, mediafile)
         elif "is_primary_thumbnail" in mediafile and mediafile["is_primary_thumbnail"]:
             mediafiles.insert(1, mediafile)
