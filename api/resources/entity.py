@@ -9,20 +9,6 @@ from validator import entity_schema, mediafile_schema
 
 
 class Entity(BaseResource):
-    @app.require_oauth("create-entity")
-    def post(self):
-        content = self.get_request_body()
-        self.abort_if_not_valid_json("Entity", content, entity_schema)
-        content["user"] = "default_uploader"
-        if "email" in current_token:
-            content["user"] = current_token["email"]
-        try:
-            entity = self.storage.save_item_to_collection("entities", content)
-        except NonUniqueException as ex:
-            return str(ex), 409
-        self._signal_entity_changed(entity)
-        return entity, 201
-
     @app.require_oauth(permissions=["read-entity", "read-entity-all"])
     def get(self):
         skip = int(request.args.get("skip", 0))
@@ -51,6 +37,20 @@ class Entity(BaseResource):
             ] = f"/entities?{type_filter}skip={max(0, skip - limit)}&limit={limit}&skip_relations={skip_relations}"
         entities["results"] = self._inject_api_urls_into_entities(entities["results"])
         return entities
+
+    @app.require_oauth("create-entity")
+    def post(self):
+        content = self.get_request_body()
+        self.abort_if_not_valid_json("Entity", content, entity_schema)
+        content["user"] = "default_uploader"
+        if "email" in current_token:
+            content["user"] = current_token["email"]
+        try:
+            entity = self.storage.save_item_to_collection("entities", content)
+        except NonUniqueException as ex:
+            return str(ex), 409
+        self._signal_entity_changed(entity)
+        return entity, 201
 
 
 class EntityDetail(BaseResource):

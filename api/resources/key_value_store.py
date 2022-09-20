@@ -20,22 +20,22 @@ class KeyValueStoreDetail(BaseResource):
     def get(self, id):
         return self.abort_if_item_doesnt_exist("key_value_store", id)
 
-    @app.require_oauth("patch-key-value-store")
-    def patch(self, id):
-        self.abort_if_item_doesnt_exist("key_value_store", id)
-        content = self.get_request_body()
-        self.abort_if_not_valid_json("KeyValueStore", content, key_value_store_schema)
-        key_value_store = self.storage.patch_item_from_collection(
-            "key_value_store", id, content
-        )
-        return key_value_store, 201
-
     @app.require_oauth("update-key-value-store")
     def put(self, id):
         self.abort_if_item_doesnt_exist("key_value_store", id)
         content = self.get_request_body()
         self.abort_if_not_valid_json("KeyValueStore", content, key_value_store_schema)
         key_value_store = self.storage.update_item_from_collection(
+            "key_value_store", id, content
+        )
+        return key_value_store, 201
+
+    @app.require_oauth("patch-key-value-store")
+    def patch(self, id):
+        self.abort_if_item_doesnt_exist("key_value_store", id)
+        content = self.get_request_body()
+        self.abort_if_not_valid_json("KeyValueStore", content, key_value_store_schema)
+        key_value_store = self.storage.patch_item_from_collection(
             "key_value_store", id, content
         )
         return key_value_store, 201

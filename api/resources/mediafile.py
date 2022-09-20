@@ -7,16 +7,6 @@ from validator import mediafile_schema
 
 
 class Mediafile(BaseResource):
-    @app.require_oauth("create-mediafile")
-    def post(self):
-        content = self.get_request_body()
-        self.abort_if_not_valid_json("Mediafile", content, mediafile_schema)
-        content["user"] = "default_uploader"
-        if "email" in current_token:
-            content["user"] = current_token["email"]
-        mediafile = self.storage.save_item_to_collection("mediafiles", content)
-        return mediafile, 201
-
     @app.require_oauth("read-mediafile")
     def get(self):
         skip = int(request.args.get("skip", 0))
@@ -45,6 +35,16 @@ class Mediafile(BaseResource):
         )
         return mediafiles
 
+    @app.require_oauth("create-mediafile")
+    def post(self):
+        content = self.get_request_body()
+        self.abort_if_not_valid_json("Mediafile", content, mediafile_schema)
+        content["user"] = "default_uploader"
+        if "email" in current_token:
+            content["user"] = current_token["email"]
+        mediafile = self.storage.save_item_to_collection("mediafiles", content)
+        return mediafile, 201
+
 
 class MediafileDetail(BaseResource):
     @app.require_oauth("read-mediafile")
@@ -56,16 +56,6 @@ class MediafileDetail(BaseResource):
             return mediafile
         return self._inject_api_urls_into_mediafiles([mediafile])[0]
 
-    @app.require_oauth("patch-mediafile")
-    def patch(self, id):
-        old_mediafile = self.abort_if_item_doesnt_exist("mediafiles", id)
-        content = self.get_request_body()
-        if self._only_own_items():
-            self._abort_if_no_access(old_mediafile, current_token, "mediafiles")
-        mediafile = self.storage.patch_item_from_collection("mediafiles", id, content)
-        self._signal_mediafile_changed(old_mediafile, mediafile)
-        return mediafile, 201
-
     @app.require_oauth("update-mediafile")
     def put(self, id):
         old_mediafile = self.abort_if_item_doesnt_exist("mediafiles", id)
@@ -74,6 +64,16 @@ class MediafileDetail(BaseResource):
             self._abort_if_no_access(old_mediafile, current_token, "mediafiles")
         self.abort_if_not_valid_json("Mediafile", content, mediafile_schema)
         mediafile = self.storage.update_item_from_collection("mediafiles", id, content)
+        self._signal_mediafile_changed(old_mediafile, mediafile)
+        return mediafile, 201
+
+    @app.require_oauth("patch-mediafile")
+    def patch(self, id):
+        old_mediafile = self.abort_if_item_doesnt_exist("mediafiles", id)
+        content = self.get_request_body()
+        if self._only_own_items():
+            self._abort_if_no_access(old_mediafile, current_token, "mediafiles")
+        mediafile = self.storage.patch_item_from_collection("mediafiles", id, content)
         self._signal_mediafile_changed(old_mediafile, mediafile)
         return mediafile, 201
 
