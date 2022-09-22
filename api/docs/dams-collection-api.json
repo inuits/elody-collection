@@ -1,16 +1,16 @@
 {
-  "openapi": "3.0.1",
+  "openapi": "3.0.3",
   "info": {
     "title": "DAMS Collection API",
     "description": "An API for interactings with the DAMS",
     "contact": {
-      "email": "booster@inuits.eu"
+      "email": "developers@inuits.eu"
     },
-    "version": "0.0.1"
+    "version": "1.0.0"
   },
   "externalDocs": {
-    "description": "Find out more about DAMS",
-    "url": "https://docs.inuits.io/dams/collection-api"
+    "description": "DAMS Collection API Source",
+    "url": "https://gitlab.com/inuits/dams/dams-collection-api"
   },
   "servers": [
     {
@@ -19,175 +19,81 @@
   ],
   "tags": [
     {
-      "name": "tenant",
-      "description": "Tenants in DAMS"
-    },
-    {
       "name": "entity",
       "description": "Entities in DAMS"
     },
     {
       "name": "mediafile",
       "description": "Mediafiles in DAMS"
-    },
-    {
-      "name": "importer",
-      "description": "Importer module in DAMS"
     }
   ],
   "paths": {
-    "/tenants": {
-      "post": {
-        "tags": [
-          "tenant"
-        ],
-        "summary": "Add a new tenant",
-        "operationId": "addTenant",
-        "requestBody": {
-          "description": "Tenant object that needs to be added",
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/tenant"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "successful operation",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/tenant"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Tenant doesn't have a valid format"
-          },
-          "405": {
-            "description": "Invalid input"
-          }
-        }
-      }
-    },
-    "/tenants/{tenantId}": {
-      "put": {
-        "tags": [
-          "tenant"
-        ],
-        "summary": "Update an existing tenant",
-        "operationId": "updateTenant",
-        "parameters": [
-          {
-            "name": "tenantId",
-            "in": "path",
-            "description": "Tenant id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "description": "Tenant object that needs to be updated",
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/tenant"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "successful operation",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/tenant"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Tenant doesn't have a valid format"
-          },
-          "404": {
-            "description": "Tenant not found"
-          },
-          "405": {
-            "description": "Invalid input"
-          }
-        }
-      },
-      "patch": {
-        "tags": [
-          "tenant"
-        ],
-        "summary": "Patch an existing tenant",
-        "operationId": "patchTenant",
-        "parameters": [
-          {
-            "name": "tenantId",
-            "in": "path",
-            "description": "Tenant id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "description": "Tenant object that needs to be patched",
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/tenant"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "successful operation",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/tenant"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Tenant doesn't have a valid format"
-          },
-          "404": {
-            "description": "Tenant not found"
-          },
-          "405": {
-            "description": "Invalid input"
-          }
-        }
-      },
+    "/entities": {
       "get": {
         "tags": [
-          "tenant"
+          "entity"
         ],
-        "summary": "Get specific tenant",
-        "description": "Get tenant for a specific ID",
-        "operationId": "getTenantId",
+        "summary": "Get entities",
+        "operationId": "getEntities",
         "parameters": [
           {
-            "name": "tenantId",
-            "in": "path",
-            "description": "Tenant id",
-            "required": true,
+            "name": "ids",
+            "in": "query",
+            "description": "List of ids of entities to return",
+            "required": false,
+            "explode": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Limit number of entities",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          },
+          {
+            "name": "only_own",
+            "in": "query",
+            "description": "Return only own entities",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0
+            }
+          },
+          {
+            "name": "skip",
+            "in": "query",
+            "description": "Skip number of entities",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0
+            }
+          },
+          {
+            "name": "skip_relations",
+            "in": "query",
+            "description": "Don't add relations to metadata",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "description": "Filter on entity type",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -199,50 +105,24 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/tenant"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/entity"
+                  }
                 }
               }
             }
           },
-          "404": {
-            "description": "Tenant not found"
+          "401": {
+            "description": "Unauthorized"
           }
         }
       },
-      "delete": {
-        "tags": [
-          "tenant"
-        ],
-        "summary": "Delete specific tenant",
-        "description": "Delete tenant with a specific ID",
-        "operationId": "deleteTenantId",
-        "parameters": [
-          {
-            "name": "tenantId",
-            "in": "path",
-            "description": "Tenant id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "successful operation"
-          },
-          "404": {
-            "description": "Tenant not found"
-          }
-        }
-      }
-    },
-    "/entities": {
       "post": {
         "tags": [
           "entity"
         ],
-        "summary": "Add a new entity",
+        "summary": "Add an entity",
         "operationId": "addEntity",
         "requestBody": {
           "description": "Entity object that needs to be added",
@@ -269,48 +149,33 @@
           "400": {
             "description": "Entity doesn't have a valid format"
           },
+          "401": {
+            "description": "Unauthorized"
+          },
           "405": {
-            "description": "Invalid input"
+            "description": "Request body is invalid"
+          },
+          "409": {
+            "description": "Entity identifier is not unique"
           }
         }
-      },
+      }
+    },
+    "/entities/{entityId}": {
       "get": {
         "tags": [
           "entity"
         ],
-        "summary": "Get entity list",
-        "description": "Get all entities",
-        "operationId": "getEntities",
+        "summary": "Get entity with id",
+        "operationId": "getEntityId",
         "parameters": [
           {
-            "name": "skip",
-            "in": "query",
-            "description": "Skip number of entities",
-            "required": false,
+            "name": "entityId",
+            "in": "path",
+            "description": "Entity identifier",
+            "required": true,
             "schema": {
-              "type": "integer"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "description": "Limit number of entities",
-            "required": false,
-            "schema": {
-              "type": "integer"
-            }
-          },
-          {
-            "name": "ids",
-            "in": "query",
-            "description": "List of id's to include in the list",
-            "required": false,
-            "explode": false,
-            "schema": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
+              "type": "string"
             }
           }
         ],
@@ -320,23 +185,27 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/entity"
-                  }
+                  "$ref": "#/components/schemas/entity"
                 }
               }
             }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Entity not found"
           }
         }
-      }
-    },
-    "/entities/{entityId}": {
+      },
       "put": {
         "tags": [
           "entity"
         ],
-        "summary": "Update an existing entity",
+        "summary": "Update entity with id",
         "operationId": "updateEntity",
         "parameters": [
           {
@@ -350,7 +219,7 @@
           }
         ],
         "requestBody": {
-          "description": "Entity object that needs to be updated",
+          "description": "Content to update entity with",
           "required": true,
           "content": {
             "application/json": {
@@ -374,11 +243,20 @@
           "400": {
             "description": "Entity doesn't have a valid format"
           },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Access denied"
+          },
           "404": {
             "description": "Entity not found"
           },
           "405": {
-            "description": "Invalid input"
+            "description": "Request body is invalid"
+          },
+          "409": {
+            "description": "Entity identifier is not unique"
           }
         }
       },
@@ -386,7 +264,7 @@
         "tags": [
           "entity"
         ],
-        "summary": "Patch an existing entity",
+        "summary": "Patch entity with id",
         "operationId": "patchEntity",
         "parameters": [
           {
@@ -400,7 +278,7 @@
           }
         ],
         "requestBody": {
-          "description": "Entity object that needs to be patched",
+          "description": "Content to patch into entity",
           "required": true,
           "content": {
             "application/json": {
@@ -424,45 +302,20 @@
           "400": {
             "description": "Entity doesn't have a valid format"
           },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Access denied"
+          },
           "404": {
             "description": "Entity not found"
           },
           "405": {
-            "description": "Invalid input"
-          }
-        }
-      },
-      "get": {
-        "tags": [
-          "entity"
-        ],
-        "summary": "Get specific entity",
-        "description": "Get entity for a specific ID",
-        "operationId": "getEntityId",
-        "parameters": [
-          {
-            "name": "entityId",
-            "in": "path",
-            "description": "Entity id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "successful operation",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/entity"
-                }
-              }
-            }
+            "description": "Request body is invalid"
           },
-          "404": {
-            "description": "Entity not found"
+          "409": {
+            "description": "Entity identifier is not unique"
           }
         }
       },
@@ -470,8 +323,7 @@
         "tags": [
           "entity"
         ],
-        "summary": "Delete specific entity",
-        "description": "Delete entity with a specific ID",
+        "summary": "Delete entity with id",
         "operationId": "deleteEntityId",
         "parameters": [
           {
@@ -488,6 +340,12 @@
           "204": {
             "description": "successful operation"
           },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Access denied"
+          },
           "404": {
             "description": "Entity not found"
           }
@@ -499,8 +357,7 @@
         "tags": [
           "entity"
         ],
-        "summary": "Get specific entity metadata",
-        "description": "Get entity metadata for a specific ID",
+        "summary": "Get metadata of entity with id",
         "operationId": "getEntityIdMetadata",
         "parameters": [
           {
@@ -527,6 +384,12 @@
               }
             }
           },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Access denied"
+          },
           "404": {
             "description": "Entity not found"
           }
@@ -536,8 +399,7 @@
         "tags": [
           "entity"
         ],
-        "summary": "Add entity metadata",
-        "description": "Add entity metadata for a specific ID",
+        "summary": "Add metadata to entity with id",
         "operationId": "addEntityIdMetadata",
         "parameters": [
           {
@@ -551,7 +413,7 @@
           }
         ],
         "requestBody": {
-          "description": "Metadata objects that need to be added",
+          "description": "Metadata objects to add",
           "required": true,
           "content": {
             "application/json": {
@@ -578,11 +440,17 @@
               }
             }
           },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Access denied"
+          },
           "404": {
             "description": "Entity not found"
           },
           "405": {
-            "description": "Invalid input"
+            "description": "Request body is invalid"
           }
         }
       },
@@ -590,8 +458,7 @@
         "tags": [
           "entity"
         ],
-        "summary": "Update entity metadata",
-        "description": "Update entity metadata for a specific ID",
+        "summary": "Update metadata of entity with id",
         "operationId": "updateEntityIdMetadata",
         "parameters": [
           {
@@ -605,7 +472,7 @@
           }
         ],
         "requestBody": {
-          "description": "Metadata objects that need to be updated",
+          "description": "Metadata objects to update",
           "required": true,
           "content": {
             "application/json": {
@@ -632,11 +499,17 @@
               }
             }
           },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Access denied"
+          },
           "404": {
             "description": "Entity not found"
           },
           "405": {
-            "description": "Invalid input"
+            "description": "Request body is invalid"
           }
         }
       }
@@ -646,8 +519,7 @@
         "tags": [
           "entity"
         ],
-        "summary": "Get specific entity metadata fields",
-        "description": "Get entity metadata for a specific entity ID",
+        "summary": "Get metadata by key of entity with id",
         "operationId": "getEntityIdMetadataField",
         "parameters": [
           {
@@ -683,6 +555,12 @@
               }
             }
           },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Access denied"
+          },
           "404": {
             "description": "Entity not found"
           }
@@ -692,8 +570,7 @@
         "tags": [
           "entity"
         ],
-        "summary": "Delete specific entity metadata fields",
-        "description": "Delete entity metadata fields for a specific ID",
+        "summary": "Delete metadata by key of entity with id",
         "operationId": "deleteEntityIdMetadata",
         "parameters": [
           {
@@ -719,6 +596,12 @@
           "204": {
             "description": "successful operation"
           },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Access denied"
+          },
           "404": {
             "description": "Entity not found"
           }
@@ -730,8 +613,7 @@
         "tags": [
           "entity"
         ],
-        "summary": "Get specific asset mediafiles",
-        "description": "Get entity mediafiles for a specific ID",
+        "summary": "Get mediafiles of entity with id",
         "operationId": "getEntityIdMediafiles",
         "parameters": [
           {
@@ -741,6 +623,16 @@
             "required": true,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "non_public",
+            "in": "query",
+            "description": "Also return non-public mediafiles",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0
             }
           }
         ],
@@ -758,6 +650,12 @@
               }
             }
           },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Access denied"
+          },
           "404": {
             "description": "Entity not found"
           }
@@ -767,8 +665,7 @@
         "tags": [
           "entity"
         ],
-        "summary": "Add asset mediafile",
-        "description": "Add entity mediafile for a specific ID",
+        "summary": "Add mediafile to entity with id",
         "operationId": "addEntityIdMediafile",
         "parameters": [
           {
@@ -795,8 +692,17 @@
           "400": {
             "description": "Mediafile doesn't have a valid format"
           },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Access denied"
+          },
           "404": {
             "description": "Entity not found"
+          },
+          "405": {
+            "description": "Request body is invalid"
           }
         }
       }
@@ -806,16 +712,15 @@
         "tags": [
           "entity"
         ],
-        "summary": "Create asset mediafile",
-        "description": "Create entity mediafile for a specific ID",
+        "summary": "Create mediafile for asset with id",
         "operationId": "createEntityIdMediafile",
         "requestBody": {
-          "description": "Filename of mediafile to be uploaded",
+          "description": "Properties for mediafile",
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/uploadFile"
+                "$ref": "#/components/schemas/mediafile"
               }
             }
           }
@@ -838,13 +743,23 @@
               "application/json": {
                 "schema": {
                   "type": "string",
-                  "format": "uri"
+                  "format": "uri",
+                  "description": "storage-api link for file upload"
                 }
               }
             }
           },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Access denied"
+          },
           "404": {
             "description": "Entity not found"
+          },
+          "405": {
+            "description": "Request body is invalid"
           }
         }
       }
@@ -854,8 +769,7 @@
         "tags": [
           "entity"
         ],
-        "summary": "Get specific entity relations",
-        "description": "Get entity relations for a specific ID",
+        "summary": "Get relations of entity with id",
         "operationId": "getEntityIdRelations",
         "parameters": [
           {
@@ -882,6 +796,12 @@
               }
             }
           },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Access denied"
+          },
           "404": {
             "description": "Entity not found"
           }
@@ -891,8 +811,7 @@
         "tags": [
           "entity"
         ],
-        "summary": "Add entity metadata",
-        "description": "Add entity relations for a specific ID",
+        "summary": "Add relations to entity with id",
         "operationId": "addEntityIdRelations",
         "parameters": [
           {
@@ -906,7 +825,7 @@
           }
         ],
         "requestBody": {
-          "description": "relation objects that need to be added",
+          "description": "Relation objects to add",
           "required": true,
           "content": {
             "application/json": {
@@ -932,6 +851,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Access denied"
           },
           "404": {
             "description": "Entity not found"
@@ -945,8 +870,7 @@
         "tags": [
           "entity"
         ],
-        "summary": "Update entity relations",
-        "description": "Update entity relations for a specific ID",
+        "summary": "Update relations of entity with id",
         "operationId": "updateEntityIdRelations",
         "parameters": [
           {
@@ -960,7 +884,7 @@
           }
         ],
         "requestBody": {
-          "description": "Relation objects that need to be updated",
+          "description": "Relation objects to be updated",
           "required": true,
           "content": {
             "application/json": {
@@ -986,6 +910,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Access denied"
           },
           "404": {
             "description": "Entity not found"
@@ -999,8 +929,7 @@
         "tags": [
           "entity"
         ],
-        "summary": "Patch entity relations",
-        "description": "Patch entity relations for a specific ID",
+        "summary": "Patch relations of entity with id",
         "operationId": "patchEntityIdRelations",
         "parameters": [
           {
@@ -1014,7 +943,7 @@
           }
         ],
         "requestBody": {
-          "description": "Relation objects that need to be updated",
+          "description": "Relation objects to be patched",
           "required": true,
           "content": {
             "application/json": {
@@ -1041,6 +970,12 @@
               }
             }
           },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Access denied"
+          },
           "404": {
             "description": "Entity not found"
           },
@@ -1050,67 +985,195 @@
         }
       }
     },
-    "/mediafiles": {
-      "post": {
+    "/entities/{entityId}/relations/all": {
+      "get": {
         "tags": [
-          "mediafile"
+          "entity"
         ],
-        "summary": "Add a new mediafile",
-        "operationId": "addMediafile",
-        "requestBody": {
-          "description": "Mediafile object that needs to be added",
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/mediafile"
-              }
+        "summary": "Get all relations of entity with id",
+        "operationId": "getEntityIdRelationsAll",
+        "parameters": [
+          {
+            "name": "entityId",
+            "in": "path",
+            "description": "Entity id",
+            "required": true,
+            "schema": {
+              "type": "string"
             }
           }
-        },
+        ],
         "responses": {
-          "201": {
+          "200": {
             "description": "successful operation",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/mediafile"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/relation"
+                  }
                 }
               }
             }
           },
-          "400": {
-            "description": "Mediafile doesn't have a valid format"
+          "401": {
+            "description": "Unauthorized"
           },
-          "405": {
-            "description": "Invalid input"
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Entity not found"
           }
         }
-      },
+      }
+    },
+    "/entities/{entityId}/set_primary_mediafile/{mediafileId}": {
+      "put": {
+        "tags": [
+          "entity"
+        ],
+        "summary": "Set primary mediafile by id of entity with id",
+        "operationId": "setPrimaryMediafileIdEntityId",
+        "parameters": [
+          {
+            "name": "entityId",
+            "in": "path",
+            "description": "Entity id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "mediafileId",
+            "in": "path",
+            "description": "Mediafile id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/relation"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Entity or mediafile not found"
+          }
+        }
+      }
+    },
+    "/entities/{entityId}/set_primary_thumbnail/{mediafileId}": {
+      "put": {
+        "tags": [
+          "entity"
+        ],
+        "summary": "Set primary thumbnail by id of entity with id",
+        "operationId": "setPrimaryThumbnailIdEntityId",
+        "parameters": [
+          {
+            "name": "entityId",
+            "in": "path",
+            "description": "Entity id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "mediafileId",
+            "in": "path",
+            "description": "Mediafile id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/relation"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Entity or mediafile not found"
+          }
+        }
+      }
+    },
+    "/mediafiles": {
       "get": {
         "tags": [
           "mediafile"
         ],
-        "summary": "Get mediafile list",
-        "description": "Get all mediafiles",
+        "summary": "Get mediafiles",
         "operationId": "getMediafiles",
         "parameters": [
           {
-            "name": "skip",
+            "name": "ids",
             "in": "query",
-            "description": "Skip number of entities",
+            "description": "List of ids of mediafiles to return",
             "required": false,
+            "explode": false,
             "schema": {
-              "type": "integer"
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
             }
           },
           {
             "name": "limit",
             "in": "query",
-            "description": "Limit number of entities",
+            "description": "Limit number of mediafiles",
             "required": false,
             "schema": {
-              "type": "integer"
+              "type": "integer",
+              "default": 20
+            }
+          },
+          {
+            "name": "skip",
+            "in": "query",
+            "description": "Skip number of mediafiles",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0
             }
           }
         ],
@@ -1127,119 +1190,58 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "mediafile"
+        ],
+        "summary": "Add a mediafile",
+        "operationId": "addMediafile",
+        "requestBody": {
+          "description": "Mediafile object to add",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/mediafile"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/mediafile"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Mediafile doesn't have a valid format"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "405": {
+            "description": "Invalid input"
           }
         }
       }
     },
     "/mediafiles/{mediafileId}": {
-      "put": {
-        "tags": [
-          "mediafile"
-        ],
-        "summary": "Update an existing mediafile",
-        "description": "Update mediafile with a specific ID",
-        "operationId": "updateMediafile",
-        "parameters": [
-          {
-            "name": "mediafileId",
-            "in": "path",
-            "description": "Mediafile id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "description": "Mediafile object that needs to be updated",
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/mediafile"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "successful operation",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/mediafile"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Mediafile doesn't have a valid format"
-          },
-          "404": {
-            "description": "Mediafile not found"
-          },
-          "405": {
-            "description": "Invalid input"
-          }
-        }
-      },
-      "patch": {
-        "tags": [
-          "mediafile"
-        ],
-        "summary": "Patch an existing mediafile",
-        "description": "Patch mediafile with a specific ID",
-        "operationId": "patchMediafile",
-        "parameters": [
-          {
-            "name": "mediafileId",
-            "in": "path",
-            "description": "Mediafile id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "description": "Mediafile object that needs to be patched",
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/mediafile"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "successful operation",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/mediafile"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Mediafile doesn't have a valid format"
-          },
-          "404": {
-            "description": "Mediafile not found"
-          },
-          "405": {
-            "description": "Invalid input"
-          }
-        }
-      },
       "get": {
         "tags": [
           "mediafile"
         ],
-        "summary": "Get specific mediafile",
-        "description": "Get mediafile with a specific ID",
+        "summary": "Get mediafile with id",
         "operationId": "getMediafileId",
         "parameters": [
           {
@@ -1263,8 +1265,126 @@
               }
             }
           },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Access denied"
+          },
           "404": {
             "description": "Mediafile not found"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "mediafile"
+        ],
+        "summary": "Update mediafile with id",
+        "operationId": "updateMediafile",
+        "parameters": [
+          {
+            "name": "mediafileId",
+            "in": "path",
+            "description": "Mediafile id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Content to update mediafile with",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/mediafile"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/mediafile"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Mediafile doesn't have a valid format"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Mediafile not found"
+          },
+          "405": {
+            "description": "Invalid input"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "mediafile"
+        ],
+        "summary": "Patch mediafile with id",
+        "operationId": "patchMediafile",
+        "parameters": [
+          {
+            "name": "mediafileId",
+            "in": "path",
+            "description": "Mediafile id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Content to patch into mediafile",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/mediafile"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/mediafile"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Mediafile doesn't have a valid format"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Mediafile not found"
+          },
+          "405": {
+            "description": "Invalid input"
           }
         }
       },
@@ -1272,8 +1392,7 @@
         "tags": [
           "mediafile"
         ],
-        "summary": "Delete specific mediafile",
-        "description": "Delete mediafile with a specific ID",
+        "summary": "Delete mediafile with id",
         "operationId": "deleteMediafileId",
         "parameters": [
           {
@@ -1290,6 +1409,12 @@
           "204": {
             "description": "successful operation"
           },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Access denied"
+          },
           "404": {
             "description": "Mediafile not found"
           }
@@ -1297,66 +1422,24 @@
       }
     },
     "/jobs": {
-      "post": {
-        "tags": [
-          "job"
-        ],
-        "summary": "Add a new job",
-        "operationId": "addJob",
-        "requestBody": {
-          "description": "Job object that needs to be added",
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/job"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "successful operation",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/job"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Job doesn't have a valid format"
-          },
-          "405": {
-            "description": "Invalid input"
-          }
-        }
-      },
       "get": {
         "tags": [
           "job"
         ],
-        "summary": "Get job list",
-        "description": "Get all parent jobs",
+        "summary": "Get jobs",
         "operationId": "getJobs",
         "parameters": [
           {
-            "name": "type",
+            "name": "ids",
             "in": "query",
-            "description": "Filter by type of job",
+            "description": "List of ids of jobs to return",
             "required": false,
+            "explode": false,
             "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "skip",
-            "in": "query",
-            "description": "Skip number of jobs",
-            "required": false,
-            "schema": {
-              "type": "integer"
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
             }
           },
           {
@@ -1365,20 +1448,27 @@
             "description": "Limit number of jobs",
             "required": false,
             "schema": {
-              "type": "integer"
+              "type": "integer",
+              "default": 20
             }
           },
           {
-            "name": "ids",
+            "name": "skip",
             "in": "query",
-            "description": "List of id's to include in the list",
+            "description": "Skip number of jobs",
             "required": false,
-            "explode": false,
             "schema": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
+              "type": "integer",
+              "default": 0
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "description": "Filter by job type",
+            "required": false,
+            "schema": {
+              "type": "string"
             }
           }
         ],
@@ -1395,117 +1485,19 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Unauthorized"
           }
         }
       }
     },
     "/jobs/{jobId}": {
-      "put": {
-        "tags": [
-          "job"
-        ],
-        "summary": "Update an existing job",
-        "operationId": "updateJob",
-        "parameters": [
-          {
-            "name": "jobId",
-            "in": "path",
-            "description": "Job id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "description": "Job object that needs to be updated",
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/job"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "successful operation",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/job"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Job doesn't have a valid format"
-          },
-          "404": {
-            "description": "Job not found"
-          },
-          "405": {
-            "description": "Invalid input"
-          }
-        }
-      },
-      "patch": {
-        "tags": [
-          "job"
-        ],
-        "summary": "Patch an existing job",
-        "operationId": "patchJob",
-        "parameters": [
-          {
-            "name": "jobId",
-            "in": "path",
-            "description": "Job id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "description": "Job object that needs to be patched",
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/job"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "successful operation",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/job"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Job doesn't have a valid format"
-          },
-          "404": {
-            "description": "Job not found"
-          },
-          "405": {
-            "description": "Invalid input"
-          }
-        }
-      },
       "get": {
         "tags": [
           "job"
         ],
-        "summary": "Get specific job",
-        "description": "Get job for a specific ID",
+        "summary": "Get job with id",
         "operationId": "getJobId",
         "parameters": [
           {
@@ -1529,32 +1521,8 @@
               }
             }
           },
-          "404": {
-            "description": "Job not found"
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "job"
-        ],
-        "summary": "Delete specific job",
-        "description": "Delete job with a specific ID",
-        "operationId": "deleteJobId",
-        "parameters": [
-          {
-            "name": "jobId",
-            "in": "path",
-            "description": "Job id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "successful operation"
+          "401": {
+            "description": "Unauthorized"
           },
           "404": {
             "description": "Job not found"
@@ -1565,9 +1533,49 @@
   },
   "components": {
     "schemas": {
+      "entity": {
+        "type": "object",
+        "description": "Entity object",
+        "required": [
+          "type"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "description": "entity data"
+          },
+          "id": {
+            "type": "string",
+            "description": "entity id",
+            "format": "uuid"
+          },
+          "identifiers": {
+            "type": "array",
+            "description": "entity identifiers",
+            "items": {
+              "type": "string"
+            }
+          },
+          "metadata": {
+            "type": "array",
+            "description": "entity metadata",
+            "items": {
+              "$ref": "#/components/schemas/metadata"
+            }
+          },
+          "object_id": {
+            "type": "string",
+            "description": "entity object_id"
+          },
+          "type": {
+            "type": "string",
+            "description": "entity value"
+          }
+        }
+      },
       "job": {
         "type": "object",
-        "default": {},
+        "description": "Job object",
         "required": [
           "job_type",
           "job_info",
@@ -1607,186 +1615,92 @@
           }
         }
       },
-      "tenant": {
-        "type": "object",
-        "description": "Tenant object",
-        "properties": {
-          "metadata": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/metadata"
-            }
-          },
-          "location": {
-            "$ref": "#/components/schemas/Location"
-          }
-        }
-      },
-      "entity": {
-        "type": "object",
-        "description": "Entity object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "type": {
-            "type": "string"
-          },
-          "identifiers": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "metadata": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/metadata"
-            }
-          },
-          "data": {
-            "type": "object",
-            "description": "Original entity data"
-          }
-        }
-      },
       "mediafile": {
         "type": "object",
         "description": "Mediafile object",
+        "required": [
+          "filename"
+        ],
         "properties": {
-          "location": {
+          "filename": {
             "type": "string",
-            "format": "uri"
+            "description": "mediafile filename"
           },
-          "entities": {
+          "id": {
+            "type": "string",
+            "description": "mediafile id",
+            "format": "uuid"
+          },
+          "identifiers": {
             "type": "array",
+            "description": "mediafile identifiers",
             "items": {
               "type": "string"
             }
+          },
+          "md5sum": {
+            "type": "string",
+            "description": "mediafile md5sum"
+          },
+          "metadata": {
+            "type": "array",
+            "description": "mediafile metadata",
+            "items": {
+              "$ref": "#/components/schemas/metadata"
+            }
+          },
+          "original_filename": {
+            "type": "string",
+            "description": "mediafile original filename"
           }
         }
       },
       "metadata": {
         "type": "object",
         "description": "Metadata object",
+        "required": [
+          "key",
+          "type"
+        ],
         "properties": {
           "key": {
             "type": "string",
+            "description": "metadata key"
+          },
+          "label": {
+            "type": "string",
             "description": "metadata label"
+          },
+          "language": {
+            "type": "string",
+            "description": "metadata language"
           },
           "value": {
             "type": "string",
             "description": "metadata value"
-          },
-          "language": {
-            "type": "string",
-            "description": "language of the metadata"
           }
         }
       },
       "relation": {
         "type": "object",
-        "description": "Metadata object",
+        "description": "Relation object",
+        "required": [
+          "key",
+          "type"
+        ],
         "properties": {
           "key": {
             "type": "string",
             "format": "uuid",
-            "description": "entityid of entity that is the endpoint of the relation"
+            "description": "id to which this relation goes"
+          },
+          "label": {
+            "type": "string",
+            "description": "extra relation info"
           },
           "type": {
             "type": "string",
             "description": "relation type"
-          }
-        }
-      },
-      "message": {
-        "type": "object",
-        "description": "RabbitMQ message",
-        "properties": {
-          "message_id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "data": {
-            "type": "object",
-            "properties": {
-              "upload_source": {
-                "type": "string",
-                "description": "source location to import from"
-              },
-              "upload_folder": {
-                "type": "string",
-                "description": "folder in source location to import from"
-              },
-              "collection_api_url": {
-                "type": "string",
-                "format": "uri",
-                "description": "url of running collection-api instance"
-              },
-              "storage_api_url": {
-                "type": "string",
-                "format": "uri",
-                "description": "url of running storage-api instance"
-              }
-            }
-          }
-        }
-      },
-      "Geometry": {
-        "type": "object",
-        "description": "GeoJSon geometry",
-        "required": [
-          "type"
-        ],
-        "externalDocs": {
-          "url": "http://geojson.org/geojson-spec.html#geometry-objects"
-        },
-        "properties": {
-          "type": {
-            "type": "string",
-            "enum": [
-              "Point"
-            ],
-            "description": "the geometry type"
-          }
-        }
-      },
-      "Location": {
-        "type": "object",
-        "description": "GeoJSon geometry",
-        "externalDocs": {
-          "url": "http://geojson.org/geojson-spec.html#id2"
-        },
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/Geometry"
-          },
-          {
-            "properties": {
-              "coordinates": {
-                "type": "array",
-                "items": {
-                  "type": "number",
-                  "format": "float"
-                }
-              }
-            }
-          }
-        ]
-      },
-      "uploadFile": {
-        "type": "object",
-        "description": "Upload file object",
-        "properties": {
-          "filename": {
-            "type": "string"
-          },
-          "metadata": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/metadata"
-            }
           }
         }
       }
