@@ -161,7 +161,7 @@ class BaseResource(Resource):
         for item in [
             x for x in mediafile["metadata"] if x["key"] == "publication_status"
         ]:
-            return item["value"] == "publiek"
+            return item["value"].lower() in ["beschermd", "expliciet", "publiek"]
         return False
 
     def _is_owner_of_item(self, item, token):
