@@ -23,7 +23,7 @@ class CoghentBaseResource(BaseResource):
     def _create_box_visit(self, content):
         if "story_id" not in content:
             abort(405, message="Invalid input")
-        story = self.abort_if_item_doesnt_exist("entities", content["story_id"])
+        story = self._abort_if_item_doesnt_exist("entities", content["story_id"])
         story = self._add_relations_to_metadata(story)
         num_frames = sum(
             map(lambda x: "type" in x and x["type"] == "frames", story["metadata"])

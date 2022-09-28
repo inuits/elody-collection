@@ -12,7 +12,7 @@ api = Api(api_bp)
 class StoryBox(CoghentBaseResource):
     @app.require_oauth("get-story-box")
     def get(self):
-        self.abort_if_not_logged_in(current_token)
+        self._abort_if_not_logged_in(current_token)
         fields = {"type": "frame", "user": current_token["email"]}
         skip = int(request.args.get("skip", 0))
         limit = int(request.args.get("limit", 20))
@@ -22,8 +22,8 @@ class StoryBox(CoghentBaseResource):
 class StoryBoxLink(CoghentBaseResource):
     @app.require_oauth("link-story-box")
     def post(self, code):
-        self.abort_if_not_logged_in(current_token)
-        box_visit = self.abort_if_item_doesnt_exist("box_visits", code)
+        self._abort_if_not_logged_in(current_token)
+        box_visit = self._abort_if_item_doesnt_exist("box_visits", code)
         relations = self.storage.get_collection_item_relations(
             "box_visits", self._get_raw_id(box_visit)
         )
@@ -55,8 +55,8 @@ class StoryBoxLink(CoghentBaseResource):
 class StoryBoxPublish(CoghentBaseResource):
     @app.require_oauth("publish-story-box")
     def post(self, id):
-        self.abort_if_not_logged_in(current_token)
-        story_box = self.abort_if_item_doesnt_exist("entities", id)
+        self._abort_if_not_logged_in(current_token)
+        story_box = self._abort_if_item_doesnt_exist("entities", id)
         story_box_relations = self.storage.get_collection_item_relations(
             "entities", self._get_raw_id(story_box)
         )

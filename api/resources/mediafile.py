@@ -37,8 +37,8 @@ class Mediafile(BaseResource):
 
     @app.require_oauth("create-mediafile")
     def post(self):
-        content = self.get_request_body()
-        self.abort_if_not_valid_json("Mediafile", content, mediafile_schema)
+        content = self._get_request_body()
+        self._abort_if_not_valid_json("Mediafile", content, mediafile_schema)
         content["user"] = "default_uploader"
         if "email" in current_token:
             content["user"] = current_token["email"]
@@ -49,7 +49,7 @@ class Mediafile(BaseResource):
 class MediafileDetail(BaseResource):
     @app.require_oauth("read-mediafile")
     def get(self, id):
-        mediafile = self.abort_if_item_doesnt_exist("mediafiles", id)
+        mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
         if self._only_own_items() and not self._mediafile_is_public(mediafile):
             self._abort_if_no_access(mediafile, current_token, "mediafiles")
         if request.args.get("raw", None):
@@ -58,19 +58,19 @@ class MediafileDetail(BaseResource):
 
     @app.require_oauth("update-mediafile")
     def put(self, id):
-        old_mediafile = self.abort_if_item_doesnt_exist("mediafiles", id)
-        content = self.get_request_body()
+        old_mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
+        content = self._get_request_body()
         if self._only_own_items():
             self._abort_if_no_access(old_mediafile, current_token, "mediafiles")
-        self.abort_if_not_valid_json("Mediafile", content, mediafile_schema)
+        self._abort_if_not_valid_json("Mediafile", content, mediafile_schema)
         mediafile = self.storage.update_item_from_collection("mediafiles", id, content)
         self._signal_mediafile_changed(old_mediafile, mediafile)
         return mediafile, 201
 
     @app.require_oauth("patch-mediafile")
     def patch(self, id):
-        old_mediafile = self.abort_if_item_doesnt_exist("mediafiles", id)
-        content = self.get_request_body()
+        old_mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
+        content = self._get_request_body()
         if self._only_own_items():
             self._abort_if_no_access(old_mediafile, current_token, "mediafiles")
         mediafile = self.storage.patch_item_from_collection("mediafiles", id, content)
@@ -79,7 +79,7 @@ class MediafileDetail(BaseResource):
 
     @app.require_oauth("delete-mediafile")
     def delete(self, id):
-        mediafile = self.abort_if_item_doesnt_exist("mediafiles", id)
+        mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
         if self._only_own_items():
             self._abort_if_no_access(mediafile, current_token, "mediafiles")
         linked_entities = self.storage.get_mediafile_linked_entities(mediafile)
@@ -91,7 +91,7 @@ class MediafileDetail(BaseResource):
 class MediafileCopyright(BaseResource):
     @app.require_oauth("get-mediafile-copyright")
     def get(self, id):
-        mediafile = self.abort_if_item_doesnt_exist("mediafiles", id)
+        mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
         if not self._only_own_items() or self._is_owner_of_item(
             mediafile, current_token
         ):
@@ -107,7 +107,7 @@ class MediafileCopyright(BaseResource):
 class MediafileAssets(BaseResource):
     @app.require_oauth("get-mediafile-assets")
     def get(self, id):
-        mediafile = self.abort_if_item_doesnt_exist("mediafiles", id)
+        mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
         if self._only_own_items():
             self._abort_if_no_access(mediafile, current_token, "mediafiles")
         entities = []

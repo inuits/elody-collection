@@ -40,8 +40,8 @@ class Entity(BaseResource):
 
     @app.require_oauth("create-entity")
     def post(self):
-        content = self.get_request_body()
-        self.abort_if_not_valid_json("Entity", content, entity_schema)
+        content = self._get_request_body()
+        self._abort_if_not_valid_json("Entity", content, entity_schema)
         content["user"] = "default_uploader"
         if "email" in current_token:
             content["user"] = current_token["email"]
@@ -56,7 +56,7 @@ class Entity(BaseResource):
 class EntityDetail(BaseResource):
     @app.require_oauth(permissions=["read-entity-detail", "read-entity-detail-all"])
     def get(self, id):
-        entity = self.abort_if_item_doesnt_exist("entities", id)
+        entity = self._abort_if_item_doesnt_exist("entities", id)
         if self._only_own_items(["read-entity-detail-all"]):
             self._abort_if_no_access(entity, current_token)
         entity = self._set_entity_mediafile_and_thumbnail(entity)
@@ -65,9 +65,9 @@ class EntityDetail(BaseResource):
 
     @app.require_oauth("update-entity")
     def put(self, id):
-        entity = self.abort_if_item_doesnt_exist("entities", id)
-        content = self.get_request_body()
-        self.abort_if_not_valid_json("Entity", content, entity_schema)
+        entity = self._abort_if_item_doesnt_exist("entities", id)
+        content = self._get_request_body()
+        self._abort_if_not_valid_json("Entity", content, entity_schema)
         if self._only_own_items():
             self._abort_if_no_access(entity, current_token)
         try:
@@ -79,8 +79,8 @@ class EntityDetail(BaseResource):
 
     @app.require_oauth("patch-entity")
     def patch(self, id):
-        entity = self.abort_if_item_doesnt_exist("entities", id)
-        content = self.get_request_body()
+        entity = self._abort_if_item_doesnt_exist("entities", id)
+        content = self._get_request_body()
         if self._only_own_items():
             self._abort_if_no_access(entity, current_token)
         try:
@@ -92,7 +92,7 @@ class EntityDetail(BaseResource):
 
     @app.require_oauth("delete-entity")
     def delete(self, id):
-        entity = self.abort_if_item_doesnt_exist("entities", id)
+        entity = self._abort_if_item_doesnt_exist("entities", id)
         if self._only_own_items():
             self._abort_if_no_access(entity, current_token)
         self.storage.delete_item_from_collection("entities", id)
@@ -103,10 +103,10 @@ class EntityDetail(BaseResource):
 class EntitySetPrimaryMediafile(BaseResource):
     @app.require_oauth("set-entity-primary-mediafile")
     def put(self, id, mediafile_id):
-        entity = self.abort_if_item_doesnt_exist("entities", id)
+        entity = self._abort_if_item_doesnt_exist("entities", id)
         if self._only_own_items():
             self._abort_if_no_access(entity, current_token)
-        mediafile = self.abort_if_item_doesnt_exist("mediafiles", mediafile_id)
+        mediafile = self._abort_if_item_doesnt_exist("mediafiles", mediafile_id)
         if self._only_own_items():
             self._abort_if_no_access(mediafile, current_token)
         self.storage.set_primary_field_collection_item(
@@ -118,10 +118,10 @@ class EntitySetPrimaryMediafile(BaseResource):
 class EntitySetPrimaryThumbnail(BaseResource):
     @app.require_oauth("set-entity-primary-thumbnail")
     def put(self, id, mediafile_id):
-        entity = self.abort_if_item_doesnt_exist("entities", id)
+        entity = self._abort_if_item_doesnt_exist("entities", id)
         if self._only_own_items():
             self._abort_if_no_access(entity, current_token)
-        mediafile = self.abort_if_item_doesnt_exist("mediafiles", mediafile_id)
+        mediafile = self._abort_if_item_doesnt_exist("mediafiles", mediafile_id)
         if self._only_own_items():
             self._abort_if_no_access(mediafile, current_token)
         self.storage.set_primary_field_collection_item(
@@ -133,7 +133,7 @@ class EntitySetPrimaryThumbnail(BaseResource):
 class EntityMetadata(BaseResource):
     @app.require_oauth(permissions=["read-entity-metadata", "read-entity-metadata-all"])
     def get(self, id):
-        entity = self.abort_if_item_doesnt_exist("entities", id)
+        entity = self._abort_if_item_doesnt_exist("entities", id)
         if self._only_own_items(["read-entity-metadata-all"]):
             self._abort_if_no_access(entity, current_token)
         metadata = self.storage.get_collection_item_sub_item("entities", id, "metadata")
@@ -141,8 +141,8 @@ class EntityMetadata(BaseResource):
 
     @app.require_oauth("add-entity-metadata")
     def post(self, id):
-        entity = self.abort_if_item_doesnt_exist("entities", id)
-        content = self.get_request_body()
+        entity = self._abort_if_item_doesnt_exist("entities", id)
+        content = self._get_request_body()
         if self._only_own_items():
             self._abort_if_no_access(entity, current_token)
         metadata = self.storage.add_sub_item_to_collection_item(
@@ -153,8 +153,8 @@ class EntityMetadata(BaseResource):
 
     @app.require_oauth("update-entity-metadata")
     def put(self, id):
-        entity = self.abort_if_item_doesnt_exist("entities", id)
-        content = self.get_request_body()
+        entity = self._abort_if_item_doesnt_exist("entities", id)
+        content = self._get_request_body()
         if self._only_own_items():
             self._abort_if_no_access(entity, current_token)
         metadata = self.storage.update_collection_item_sub_item(
@@ -169,7 +169,7 @@ class EntityMetadataKey(BaseResource):
         permissions=["read-entity-metadata-key", "read-entity-metadata-key-all"]
     )
     def get(self, id, key):
-        entity = self.abort_if_item_doesnt_exist("entities", id)
+        entity = self._abort_if_item_doesnt_exist("entities", id)
         if self._only_own_items(["read-entity-metadata-key-all"]):
             self._abort_if_no_access(entity, current_token)
         metadata = self.storage.get_collection_item_sub_item_key(
@@ -179,7 +179,7 @@ class EntityMetadataKey(BaseResource):
 
     @app.require_oauth("delete-entity-metadata-key")
     def delete(self, id, key):
-        entity = self.abort_if_item_doesnt_exist("entities", id)
+        entity = self._abort_if_item_doesnt_exist("entities", id)
         if self._only_own_items():
             self._abort_if_no_access(entity, current_token)
         self.storage.delete_collection_item_sub_item_key(
@@ -194,7 +194,7 @@ class EntityMediafiles(BaseResource):
         permissions=["read-entity-mediafiles", "read-entity-mediafiles-all"]
     )
     def get(self, id):
-        entity = self.abort_if_item_doesnt_exist("entities", id)
+        entity = self._abort_if_item_doesnt_exist("entities", id)
         if self._only_own_items(["read-entity-mediafiles-all"]):
             self._abort_if_no_access(entity, current_token)
         mediafiles = self.storage.get_collection_item_mediafiles("entities", id)
@@ -214,12 +214,12 @@ class EntityMediafiles(BaseResource):
 
     @app.require_oauth("add-entity-mediafiles")
     def post(self, id):
-        entity = self.abort_if_item_doesnt_exist("entities", id)
+        entity = self._abort_if_item_doesnt_exist("entities", id)
         only_own = self._only_own_items()
         if only_own:
             self._abort_if_no_access(entity, current_token)
-        content = self.get_request_body()
-        self.abort_if_not_valid_json("Mediafile", content, mediafile_schema)
+        content = self._get_request_body()
+        self._abort_if_not_valid_json("Mediafile", content, mediafile_schema)
         if only_own:
             self._abort_if_no_access(content, current_token, "mediafiles")
         mediafile = self.storage.add_mediafile_to_collection_item(
@@ -232,10 +232,10 @@ class EntityMediafiles(BaseResource):
 class EntityMediafilesCreate(BaseResource):
     @app.require_oauth("create-entity-mediafile")
     def post(self, id):
-        entity = self.abort_if_item_doesnt_exist("entities", id)
+        entity = self._abort_if_item_doesnt_exist("entities", id)
         if self._only_own_items():
             self._abort_if_no_access(entity, current_token)
-        content = self.get_request_body()
+        content = self._get_request_body()
         if "filename" not in content:
             abort(405, message="Invalid input")
         content["original_file_location"] = f'/download/{content["filename"]}'
@@ -259,7 +259,7 @@ class EntityRelationsAll(BaseResource):
         permissions=["read-entity-relations", "read-entity-relations-all"]
     )
     def get(self, id):
-        entity = self.abort_if_item_doesnt_exist("entities", id)
+        entity = self._abort_if_item_doesnt_exist("entities", id)
         if self._only_own_items(["read-entity-relations-all"]):
             self._abort_if_no_access(entity, current_token)
 
@@ -278,7 +278,7 @@ class EntityRelations(BaseResource):
         permissions=["read-entity-relations", "read-entity-relations-all"]
     )
     def get(self, id):
-        entity = self.abort_if_item_doesnt_exist("entities", id)
+        entity = self._abort_if_item_doesnt_exist("entities", id)
         if self._only_own_items(["read-entity-relations-all"]):
             self._abort_if_no_access(entity, current_token)
 
@@ -291,8 +291,8 @@ class EntityRelations(BaseResource):
 
     @app.require_oauth("add-entity-relations")
     def post(self, id):
-        entity = self.abort_if_item_doesnt_exist("entities", id)
-        content = self.get_request_body()
+        entity = self._abort_if_item_doesnt_exist("entities", id)
+        content = self._get_request_body()
         if self._only_own_items():
             self._abort_if_no_access(entity, current_token)
         relations = self.storage.add_relations_to_collection_item(
@@ -303,8 +303,8 @@ class EntityRelations(BaseResource):
 
     @app.require_oauth("update-entity-relations")
     def put(self, id):
-        entity = self.abort_if_item_doesnt_exist("entities", id)
-        content = self.get_request_body()
+        entity = self._abort_if_item_doesnt_exist("entities", id)
+        content = self._get_request_body()
         if self._only_own_items():
             self._abort_if_no_access(entity, current_token)
         relations = self.storage.update_collection_item_relations(
@@ -315,8 +315,8 @@ class EntityRelations(BaseResource):
 
     @app.require_oauth("patch-entity-relations")
     def patch(self, id):
-        entity = self.abort_if_item_doesnt_exist("entities", id)
-        content = self.get_request_body()
+        entity = self._abort_if_item_doesnt_exist("entities", id)
+        content = self._get_request_body()
         if self._only_own_items():
             self._abort_if_no_access(entity, current_token)
         relations = self.storage.patch_collection_item_relations(
@@ -327,8 +327,8 @@ class EntityRelations(BaseResource):
 
     @app.require_oauth("delete-entity-relations")
     def delete(self, id):
-        entity = self.abort_if_item_doesnt_exist("entities", id)
-        content = self.get_request_body()
+        entity = self._abort_if_item_doesnt_exist("entities", id)
+        content = self._get_request_body()
         if self._only_own_items():
             self._abort_if_no_access(entity, current_token)
         self.storage.delete_collection_item_relations("entities", id, content)

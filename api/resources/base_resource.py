@@ -7,7 +7,6 @@ from flask import request
 from flask_restful import Resource, abort
 from storage.storagemanager import StorageManager
 from validator import validate_json
-from werkzeug.exceptions import BadRequest
 
 
 class BaseResource(Resource):
@@ -18,35 +17,56 @@ class BaseResource(Resource):
         self.storage_api_url = os.getenv("STORAGE_API_URL")
         self.storage_api_url_ext = os.getenv("STORAGE_API_URL_EXT")
 
-    def get_request_body(self):
-        try:
-            request_body = request.get_json()
-            invalid_input = request_body is None
-        except BadRequest:
-            invalid_input = True
-        if invalid_input:
-            abort(405, message="Invalid input")
-        return request_body
+    def __send_cloudevent(self, routing_key, data):
+        attributes = {"type": routing_key, "source": "dams"}
+        event = to_dict(CloudEvent(attributes, data))
+        app.rabbit.send(event, routing_key=routing_key)
 
-    def abort_if_item_doesnt_exist(self, collection, id):
-        item = self.storage.get_item_from_collection_by_id(collection, id)
-        if not item:
-            abort(
-                404,
-                message=f"Item with id {id} doesn't exist in collection {collection}",
-            )
-        return item
+    def _abort_if_item_doesnt_exist(self, collection, id):
+        if item := self.storage.get_item_from_collection_by_id(collection, id):
+            return item
+        abort(
+            404, message=f"Item with id {id} doesn't exist in collection {collection}"
+        )
 
-    def abort_if_not_valid_json(self, type, json, schema):
-        validation_error = validate_json(json, schema)
-        if validation_error:
+    def _abort_if_no_access(self, item, token, collection="entities", do_abort=True):
+        app.logger.info(f"Checking if {token} has access to {item}")
+        is_owner = self._is_owner_of_item(item, token)
+        if not is_owner and do_abort:
+            abort(403, message="Access denied")
+        return is_owner
+
+    def _abort_if_not_logged_in(self, token):
+        if "email" not in token:
+            abort(400, message="You must be logged in to access this feature")
+
+    def _abort_if_not_valid_json(self, type, json, schema):
+        if validation_error := validate_json(json, schema):
             abort(
                 400, message=f"{type} doesn't have a valid format. {validation_error}"
             )
 
-    def abort_if_not_logged_in(self, token):
-        if "email" not in token:
-            abort(400, message="You must be logged in to access this feature")
+    def _add_relations_to_metadata(self, entity, collection="entities", sort_by=None):
+        relations = self.storage.get_collection_item_relations(
+            collection, self._get_raw_id(entity), exclude_relations=["story_box_visits"]
+        )
+        if not relations:
+            return entity
+        if sort_by and all("order" in x for x in relations):
+            relations = sorted(relations, key=lambda x: x[sort_by])
+        if "metadata" in entity:
+            entity["metadata"] = [*entity["metadata"], *relations]
+        else:
+            entity["metadata"] = relations
+        return entity
+
+    def _get_raw_id(self, item):
+        return item["_key"] if "_key" in item else item["_id"]
+
+    def _get_request_body(self):
+        if request_body := request.get_json(silent=True):
+            return request_body
+        abort(405, message="Invalid input")
 
     def _inject_api_urls_into_entities(self, entities):
         for entity in entities:
@@ -80,10 +100,49 @@ class BaseResource(Resource):
                 ] = f'{self.storage_api_url_ext}{mediafile["transcode_file_location"]}'
         return mediafiles
 
-    def __send_cloudevent(self, routing_key, data):
-        attributes = {"type": routing_key, "source": "dams"}
-        event = to_dict(CloudEvent(attributes, data))
-        app.rabbit.send(event, routing_key=routing_key)
+    def _is_owner_of_item(self, item, token):
+        return "user" in item and item["user"] == token["email"]
+
+    def _mediafile_is_public(self, mediafile):
+        if "metadata" not in mediafile:
+            return False
+        for item in mediafile["metadata"]:
+            if item["key"] == "publication_status":
+                return item["value"].lower() in ["beschermd", "expliciet", "publiek"]
+        return False
+
+    def _only_own_items(self, permissions=None):
+        if not permissions:
+            permissions = ["show-all"]
+        else:
+            permissions.append("show-all")
+        if any(app.require_oauth.check_permission(x) for x in permissions):
+            return False
+        return True
+
+    def _set_entity_mediafile_and_thumbnail(self, entity):
+        mediafiles = self.storage.get_collection_item_mediafiles(
+            "entities", self._get_raw_id(entity)
+        )
+        for mediafile in mediafiles:
+            if mediafile.get("is_primary", False):
+                entity["primary_mediafile"] = mediafile["filename"]
+                entity["primary_mediafile_location"] = mediafile[
+                    "original_file_location"
+                ]
+                if "transcode_file_location" in mediafile:
+                    entity["primary_transcode"] = mediafile["transcode_filename"]
+                    entity["primary_transcode_location"] = mediafile[
+                        "transcode_file_location"
+                    ]
+                if "img_width" in mediafile and "img_height" in mediafile:
+                    entity["primary_width"] = mediafile["img_width"]
+                    entity["primary_height"] = mediafile["img_height"]
+            if mediafile.get("is_primary_thumbnail", False):
+                entity["primary_thumbnail_location"] = mediafile[
+                    "thumbnail_file_location"
+                ]
+        return entity
 
     def _signal_entity_changed(self, entity):
         data = {
@@ -106,80 +165,3 @@ class BaseResource(Resource):
     def _signal_mediafile_deleted(self, mediafile, linked_entities):
         data = {"mediafile": mediafile, "linked_entities": linked_entities}
         self.__send_cloudevent("dams.mediafile_deleted", data)
-
-    def _get_raw_id(self, item):
-        return item["_key"] if "_key" in item else item["_id"]
-
-    def _set_entity_mediafile_and_thumbnail(self, entity):
-        mediafiles = self.storage.get_collection_item_mediafiles(
-            "entities", self._get_raw_id(entity)
-        )
-        for mediafile in mediafiles:
-            if "is_primary" in mediafile and mediafile["is_primary"] is True:
-                entity["primary_mediafile"] = mediafile["filename"]
-                entity["primary_mediafile_location"] = mediafile[
-                    "original_file_location"
-                ]
-                if "transcode_file_location" in mediafile:
-                    entity["primary_transcode"] = mediafile["transcode_filename"]
-                    entity["primary_transcode_location"] = mediafile[
-                        "transcode_file_location"
-                    ]
-                if "img_width" in mediafile and "img_height" in mediafile:
-                    entity["primary_width"] = mediafile["img_width"]
-                    entity["primary_height"] = mediafile["img_height"]
-            if (
-                "is_primary_thumbnail" in mediafile
-                and mediafile["is_primary_thumbnail"] is True
-            ):
-                entity["primary_thumbnail_location"] = mediafile[
-                    "thumbnail_file_location"
-                ]
-        return entity
-
-    def _add_relations_to_metadata(self, entity, collection="entities", sort_by=False):
-        relations = self.storage.get_collection_item_relations(
-            collection, self._get_raw_id(entity), exclude_relations=["story_box_visits"]
-        )
-        if relations:
-            if sort_by:
-                sort = True
-                for relation in relations:
-                    if "order" not in relation:
-                        sort = False
-                if sort:
-                    relations = sorted(relations, key=lambda tup: tup[sort_by])
-            if "metadata" in entity:
-                entity["metadata"] = entity["metadata"] + relations
-            else:
-                entity["metadata"] = relations
-        return entity
-
-    def _mediafile_is_public(self, mediafile):
-        if "metadata" not in mediafile:
-            return False
-        for item in [
-            x for x in mediafile["metadata"] if x["key"] == "publication_status"
-        ]:
-            return item["value"].lower() in ["beschermd", "expliciet", "publiek"]
-        return False
-
-    def _is_owner_of_item(self, item, token):
-        return "user" in item and item["user"] == token["email"]
-
-    def _only_own_items(self, permissions=None):
-        if not permissions:
-            permissions = ["show-all"]
-        else:
-            permissions = [*permissions, *["show-all"]]
-        for permission in permissions:
-            if app.require_oauth.check_permission(permission):
-                return False
-        return True
-
-    def _abort_if_no_access(self, item, token, collection="entities", do_abort=True):
-        app.logger.info(f"Checking if {token} has access to {item}")
-        is_owner = self._is_owner_of_item(item, token)
-        if not is_owner and do_abort:
-            abort(403, message="Access denied")
-        return is_owner
