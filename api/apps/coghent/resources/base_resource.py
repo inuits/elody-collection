@@ -20,6 +20,13 @@ class CoghentBaseResource(BaseResource):
             os.getenv("STAM_ID"): "all-stam",
         }
 
+    def _abort_if_no_access(self, item, token, collection="entities", do_abort=True):
+        if super()._abort_if_no_access(item, token, do_abort=False):
+            return
+        permission = self.mapping.get(self._get_museum_id(item, collection))
+        if not permission or not app.require_oauth.check_permission(permission):
+            abort(403, message="Access denied")
+
     def _create_box_visit(self, content):
         if "story_id" not in content:
             abort(405, message="Invalid input")
@@ -61,7 +68,7 @@ class CoghentBaseResource(BaseResource):
         )
         return self._add_relations_to_metadata(box_visit, "box_visits", sort_by="order")
 
-    def __get_museum_id(self, item, collection):
+    def _get_museum_id(self, item, collection):
         if collection == "mediafiles":
             linked_entities = self.storage.get_mediafile_linked_entities(item)
             if not linked_entities:
@@ -81,13 +88,3 @@ class CoghentBaseResource(BaseResource):
                 return relation["key"]
         app.logger.info("isIn relation not found")
         return ""
-
-    def _abort_if_no_access(self, item, token, collection="entities", do_abort=True):
-        app.logger.info("Starting permission check from coghent app")
-        if super()._abort_if_no_access(item, token, do_abort=False):
-            return
-        app.logger.info(f"Permission mapping: {self.mapping}")
-        permission = self.mapping.get(self.__get_museum_id(item, collection))
-        app.logger.info(f"Required permission: {permission}")
-        if not permission or not app.require_oauth.check_permission(permission):
-            abort(403, message="Access denied")
