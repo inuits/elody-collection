@@ -4,6 +4,7 @@ import os
 from apps.coghent.storage.storagemanager import CoghentStorageManager
 from datetime import datetime
 from flask_restful import abort
+from inuits_jwt_auth.authorization import current_token
 from resources.base_resource import BaseResource
 
 
@@ -67,6 +68,18 @@ class CoghentBaseResource(BaseResource):
             "entities", self._get_raw_id(story), [relation], False
         )
         return self._add_relations_to_metadata(box_visit, "box_visits", sort_by="order")
+
+    def _get_item_permissions(self, item_id, collection):
+        item = self._abort_if_item_doesnt_exist(collection, item_id)
+        full = ["can-get", "can-put", "can-patch", "can-delete"]
+        if self._is_owner_of_item(item, current_token):
+            return full, 200
+        if app.require_oauth.is_super_admin():
+            return full, 200
+        permission = self.mapping.get(self._get_museum_id(item, collection))
+        if permission and app.require_oauth.check_permission(permission):
+            return full, 200
+        return [full[0]], 200
 
     def _get_museum_id(self, item, collection):
         if collection == "mediafiles":

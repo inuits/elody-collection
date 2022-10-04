@@ -55,6 +55,12 @@ class CoghentEntitySetPrimaryThumbnail(CoghentBaseResource, EntitySetPrimaryThum
     pass
 
 
+class EntityPermissions(CoghentBaseResource):
+    @app.require_oauth("get-entity-permissions")
+    def get(self, id):
+        return self._get_item_permissions(id, "entities")
+
+
 class EntitySixthCollectionId(CoghentBaseResource):
     @app.require_oauth("get-entity-sixth-collection-id")
     def get(self):
@@ -80,4 +86,5 @@ api.add_resource(
     CoghentEntitySetPrimaryThumbnail,
     "/entities/<string:id>/set_primary_thumbnail/<string:mediafile_id>",
 )
+api.add_resource(EntityPermissions, "/entities/<string:id>/permissions")
 api.add_resource(EntitySixthCollectionId, "/entities/sixthcollection/id")

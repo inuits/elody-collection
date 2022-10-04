@@ -29,6 +29,13 @@ class CoghentMediafileDetail(CoghentBaseResource, MediafileDetail):
     pass
 
 
+class MediafilePermissions(CoghentBaseResource):
+    @app.require_oauth("get-mediafile-permissions")
+    def get(self, id):
+        return self._get_item_permissions(id, "mediafiles")
+
+
 api.add_resource(CoghentMediafileAssets, "/mediafiles/<string:id>/assets")
 api.add_resource(CoghentMediafileCopyright, "/mediafiles/<string:id>/copyright")
 api.add_resource(CoghentMediafileDetail, "/mediafiles/<string:id>")
+api.add_resource(MediafilePermissions, "/mediafiles/<string:id>/permissions")
