@@ -72,6 +72,8 @@ class CoghentBaseResource(BaseResource):
     def _get_item_permissions(self, item_id, collection):
         item = self._abort_if_item_doesnt_exist(collection, item_id)
         full = ["can-get", "can-put", "can-patch", "can-delete"]
+        if not app.require_oauth.require_token:
+            return full, 200
         if app.require_oauth.is_super_admin():
             return full, 200
         if self._is_owner_of_item(item, current_token):
