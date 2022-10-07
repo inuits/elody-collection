@@ -78,8 +78,6 @@ class CoghentBaseResource(BaseResource):
             return full, 200
         if self._is_owner_of_item(item, current_token):
             return full, 200
-        if app.require_oauth.is_super_admin():
-            return full, 200
         permission = self.mapping.get(self._get_museum_id(item, collection))
         if permission and app.require_oauth.check_permission(permission):
             return full, 200
