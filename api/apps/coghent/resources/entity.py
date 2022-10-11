@@ -2,7 +2,7 @@ import app
 
 from apps.coghent.resources.base_resource import CoghentBaseResource
 from flask import Blueprint
-from flask_restful import Api
+from flask_restful import abort, Api
 from resources.entity import (
     EntityDetail,
     EntitySetPrimaryMediafile,
@@ -61,6 +61,17 @@ class EntityPermissions(CoghentBaseResource):
         return self._get_item_permissions(id, "entities")
 
 
+class EntitySixthCollectionEntityId(CoghentBaseResource):
+    @app.require_oauth("get-entity-sixth-collection-id")
+    def get(self):
+        entity_id = self.storage.get_collection_item_sub_item(
+            "entities", "sixth_collection", "_id"
+        )
+        if not entity_id:
+            abort(404, message="Sixth collection entity could not be found")
+        return entity_id
+
+
 class EntitySixthCollectionId(CoghentBaseResource):
     @app.require_oauth("get-entity-sixth-collection-id")
     def get(self):
@@ -87,4 +98,5 @@ api.add_resource(
     "/entities/<string:id>/set_primary_thumbnail/<string:mediafile_id>",
 )
 api.add_resource(EntityPermissions, "/entities/<string:id>/permissions")
+api.add_resource(EntitySixthCollectionEntityId, "/entities/sixthcollection/entity_id")
 api.add_resource(EntitySixthCollectionId, "/entities/sixthcollection/id")
