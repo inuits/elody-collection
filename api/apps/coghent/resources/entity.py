@@ -62,7 +62,7 @@ class EntityPermissions(CoghentBaseResource):
 
 
 class EntitySixthCollectionEntityId(CoghentBaseResource):
-    @app.require_oauth("get-entity-sixth-collection-id")
+    @app.require_oauth("get-entity-sixth-collection-entity-id")
     def get(self):
         entity_id = self.storage.get_collection_item_sub_item(
             "entities", "sixth_collection", "_id"
