@@ -1,5 +1,42 @@
 from jsonschema import validate, ValidationError
 
+box_visit_schema = {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "default": {},
+    "required": ["code", "start_time"],
+    "properties": {
+        "_id": {"type": "string"},
+        "identifiers": {
+            "type": "array",
+            "default": [],
+            "items": {"$id": "#/properties/identifiers/items"},
+        },
+        "type": {
+            "type": "string",
+            "default": "",
+        },
+        "metadata": {
+            "type": "array",
+            "default": [],
+            "additionalItems": True,
+            "items": {"$id": "#/properties/metadata/items"},
+        },
+        "code": {
+            "type": "string",
+        },
+        "start_time": {
+            "type": "string",
+        },
+        "touch_table_time": {
+            "type": "string",
+        },
+        "frames_seen_last_visit": {
+            "type": "string",
+        },
+    },
+}
+
 entity_schema = {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
@@ -54,6 +91,21 @@ entity_schema = {
     "additionalProperties": True,
 }
 
+key_value_store_schema = {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+        "identifiers": {
+            "type": "array",
+            "default": [],
+            "items": {"$id": "#/properties/identifiers/items"},
+        },
+        "items": {
+            "type": "object",
+            "default": {},
+        },
+    },
+}
 
 mediafile_schema = {
     "$schema": "http://json-schema.org/draft-07/schema#",
@@ -86,63 +138,10 @@ mediafile_schema = {
     },
 }
 
-key_value_store_schema = {
-    "$schema": "http://json-schema.org/draft-07/schema#",
-    "type": "object",
-    "properties": {
-        "identifiers": {
-            "type": "array",
-            "default": [],
-            "items": {"$id": "#/properties/identifiers/items"},
-        },
-        "items": {
-            "type": "object",
-            "default": {},
-        },
-    },
-}
-
-box_visit_schema = {
-    "$schema": "http://json-schema.org/draft-07/schema#",
-    "type": "object",
-    "default": {},
-    "required": ["code", "start_time"],
-    "properties": {
-        "_id": {"type": "string"},
-        "identifiers": {
-            "type": "array",
-            "default": [],
-            "items": {"$id": "#/properties/identifiers/items"},
-        },
-        "type": {
-            "type": "string",
-            "default": "",
-        },
-        "metadata": {
-            "type": "array",
-            "default": [],
-            "additionalItems": True,
-            "items": {"$id": "#/properties/metadata/items"},
-        },
-        "code": {
-            "type": "string",
-        },
-        "start_time": {
-            "type": "string",
-        },
-        "touch_table_time": {
-            "type": "string",
-        },
-        "frames_seen_last_visit": {
-            "type": "string",
-        },
-    },
-}
-
 
 def validate_json(json, schema):
     try:
         validate(instance=json, schema=schema)
     except ValidationError as ve:
         return ve.message
-    return ""
+    return None

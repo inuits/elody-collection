@@ -6,11 +6,15 @@ from pyArango.theExceptions import CreationError
 
 
 class PyArangoConnection(Connection, ABC):
-    def __create_helper(self, name, db_name, db_collection, args, expected_status):
+    def __create_helper(
+        self, name, db_name, db_collection, args, expected_status, type=None
+    ):
         if not args:
             args = {}
         if name:
             args["name"] = name
+        if type:
+            args["type"] = type
         payload = json.dumps(args, default=str)
         url = f"{self.getEndpointURL()}/_db/{db_name}/_api/{db_collection}"
         r = self.session.post(url, data=payload)
@@ -22,10 +26,7 @@ class PyArangoConnection(Connection, ABC):
         self.__create_helper(name, db_name, "collection", args, 200)
 
     def createEdge(self, name, db_name, args=None):
-        if not args:
-            args = {}
-        args["type"] = 3
-        self.__create_helper(name, db_name, "collection", args, 200)
+        self.__create_helper(name, db_name, "collection", args, 200, "3")
 
     def createGraph(self, name, db_name, args=None):
         self.__create_helper(name, db_name, "gharial", args, 202)

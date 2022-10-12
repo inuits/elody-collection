@@ -33,7 +33,7 @@ class JobDetail(BaseResource):
     @app.require_oauth("read-job")
     def get(self, id):
         job = self._abort_if_item_doesnt_exist("jobs", id)
-        if "parent_job_id" in job and job["parent_job_id"] is None:
+        if not job.get("parent_job_id", True):
             job["sub_jobs"] = self.storage.get_items_from_collection(
                 "jobs",
                 limit=job["amount_of_jobs"],

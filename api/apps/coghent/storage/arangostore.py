@@ -1,10 +1,27 @@
-import string
 import random
+import string
 
 from storage.arangostore import ArangoStorageManager
 
 
 class CoghentArangoStorageManager(ArangoStorageManager):
+    def __generate_unique_code(self):
+        codes = ["".join(random.choices(string.digits, k=8)) for i in range(5)]
+        aql = """
+            FOR bv IN @@collection
+                FILTER bv.code IN @code_list
+                RETURN bv.code
+        """
+        bind = {"@collection": "box_visits", "code_list": codes}
+        results = list(self.db.AQLQuery(aql, rawResults=True, bindVars=bind))
+        return next((x for x in codes if x not in results), None)
+
+    def generate_box_visit_code(self):
+        code = self.__generate_unique_code()
+        while not code:
+            code = self.__generate_unique_code()
+        return code
+
     def get_box_visits(self, skip, limit, item_type=None, ids=None):
         aql = f"""
             FOR c IN box_visits
@@ -39,23 +56,6 @@ class CoghentArangoStorageManager(ArangoStorageManager):
                 if result_item["_key"] == i
             ]
         return items
-
-    def __generate_unique_code(self):
-        codes = ["".join(random.choices(string.digits, k=8)) for i in range(5)]
-        aql = """
-            FOR bv IN @@collection
-                FILTER bv.code IN @code_list
-                RETURN bv.code
-        """
-        bind = {"@collection": "box_visits", "code_list": codes}
-        results = list(self.db.AQLQuery(aql, rawResults=True, bindVars=bind))
-        return next((x for x in codes if x not in results), None)
-
-    def generate_box_visit_code(self):
-        code = self.__generate_unique_code()
-        while not code:
-            code = self.__generate_unique_code()
-        return code
 
     def get_sixth_collection_id(self):
         aql = f"""

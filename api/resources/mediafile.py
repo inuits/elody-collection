@@ -46,6 +46,39 @@ class Mediafile(BaseResource):
         return mediafile, 201
 
 
+class MediafileAssets(BaseResource):
+    @app.require_oauth("get-mediafile-assets")
+    def get(self, id):
+        mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
+        if self._only_own_items():
+            self._abort_if_no_access(mediafile, current_token, "mediafiles")
+        entities = []
+        for item in self.storage.get_mediafile_linked_entities(mediafile):
+            entity = self.storage.get_item_from_collection_by_id(
+                "entities", item["entity_id"].removeprefix("entities/")
+            )
+            entity = self._set_entity_mediafile_and_thumbnail(entity)
+            entity = self._add_relations_to_metadata(entity)
+            entities.append(self._inject_api_urls_into_entities([entity])[0])
+        return entities, 200
+
+
+class MediafileCopyright(BaseResource):
+    @app.require_oauth("get-mediafile-copyright")
+    def get(self, id):
+        mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
+        if not self._only_own_items() or self._is_owner_of_item(
+            mediafile, current_token
+        ):
+            return "full", 200
+        if not self._mediafile_is_public(mediafile):
+            return "none", 200
+        for item in [x for x in mediafile["metadata"] if x["key"] == "rights"]:
+            if "in copyright" in item["value"].lower():
+                return "limited", 200
+        return "full", 200
+
+
 class MediafileDetail(BaseResource):
     @app.require_oauth("read-mediafile")
     def get(self, id):
@@ -86,36 +119,3 @@ class MediafileDetail(BaseResource):
         self.storage.delete_item_from_collection("mediafiles", id)
         self._signal_mediafile_deleted(mediafile, linked_entities)
         return "", 204
-
-
-class MediafileCopyright(BaseResource):
-    @app.require_oauth("get-mediafile-copyright")
-    def get(self, id):
-        mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
-        if not self._only_own_items() or self._is_owner_of_item(
-            mediafile, current_token
-        ):
-            return "full", 200
-        if not self._mediafile_is_public(mediafile):
-            return "none", 200
-        for item in [x for x in mediafile["metadata"] if x["key"] == "rights"]:
-            if "in copyright" in item["value"].lower():
-                return "limited", 200
-        return "full", 200
-
-
-class MediafileAssets(BaseResource):
-    @app.require_oauth("get-mediafile-assets")
-    def get(self, id):
-        mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
-        if self._only_own_items():
-            self._abort_if_no_access(mediafile, current_token, "mediafiles")
-        entities = []
-        for item in self.storage.get_mediafile_linked_entities(mediafile):
-            entity = self.storage.get_item_from_collection_by_id(
-                "entities", item["entity_id"].removeprefix("entities/")
-            )
-            entity = self._set_entity_mediafile_and_thumbnail(entity)
-            entity = self._add_relations_to_metadata(entity)
-            entities.append(self._inject_api_urls_into_entities([entity])[0])
-        return entities, 200

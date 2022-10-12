@@ -10,11 +10,6 @@ api = Api(api_bp)
 
 
 class BoxVisit(CoghentBaseResource):
-    @app.require_oauth("create-box-visit")
-    def post(self):
-        content = self._get_request_body()
-        return self._create_box_visit(content)
-
     @app.require_oauth("read-box-visit")
     def get(self):
         skip = int(request.args.get("skip", 0))
@@ -36,6 +31,11 @@ class BoxVisit(CoghentBaseResource):
                 "previous"
             ] = f"/box_visits?{type_filter}skip={max(0, skip - limit)}&limit={limit}"
         return box_visits
+
+    @app.require_oauth("create-box-visit")
+    def post(self):
+        content = self._get_request_body()
+        return self._create_box_visit(content)
 
 
 class BoxVisitDetail(CoghentBaseResource):

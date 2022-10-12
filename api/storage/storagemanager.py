@@ -15,9 +15,8 @@ class StorageManager(metaclass=Singleton):
         return self.storage_manager
 
     def _init_storage_managers(self):
-        if self.storage_engine == "arango":
-            self.storage_manager = ArangoStorageManager()
-        elif self.storage_engine == "memory":
-            self.storage_manager = MemoryStorageManager()
-        elif self.storage_engine == "mongo":
-            self.storage_manager = MongoStorageManager()
+        self.storage_manager = {
+            "arango": ArangoStorageManager,
+            "memory": MemoryStorageManager,
+            "mongo": MongoStorageManager,
+        }.get(self.storage_engine)()

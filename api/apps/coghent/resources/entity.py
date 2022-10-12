@@ -5,14 +5,14 @@ from flask import Blueprint
 from flask_restful import abort, Api
 from resources.entity import (
     EntityDetail,
-    EntitySetPrimaryMediafile,
-    EntitySetPrimaryThumbnail,
     EntityMetadata,
     EntityMetadataKey,
     EntityMediafiles,
     EntityMediafilesCreate,
-    EntityRelationsAll,
     EntityRelations,
+    EntityRelationsAll,
+    EntitySetPrimaryMediafile,
+    EntitySetPrimaryThumbnail,
 )
 
 api_bp = Blueprint("entity", __name__)
