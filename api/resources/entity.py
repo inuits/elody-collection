@@ -171,7 +171,7 @@ class EntityMetadata(BaseResource):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         if self._only_own_items(["read-entity-metadata-all"]):
             self._abort_if_no_access(entity, current_token)
-        metadata = self.storage.get_collection_item_field("entities", id, "metadata")
+        metadata = self.storage.get_collection_item_sub_item("entities", id, "metadata")
         return metadata
 
     @app.require_oauth("add-entity-metadata")

@@ -31,7 +31,7 @@ def handle_file_scanned(routing_key, body, message_id):
         }
     }
     if data["infected"]:
-        metadata = storage.get_collection_item_field(
+        metadata = storage.get_collection_item_sub_item(
             "mediafiles", data["mediafile_id"], "metadata"
         )
         for item in [x for x in metadata if x["key"] == "publication_status"]:
