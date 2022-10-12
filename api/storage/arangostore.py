@@ -112,16 +112,6 @@ class ArangoStorageManager:
         except Exception as ex:
             app.logger.error(f"Could not create unique index: {ex}")
 
-    def __get_field_for_id(self, collection, id, field):
-        aql = "FOR c in @@collection FILTER c.object_id == @id OR @id IN c.identifiers OR c._key == @id RETURN c.@field"
-        bind = {"id": id, "@collection": collection, "field": field}
-        result = self.db.AQLQuery(aql, rawResults=True, bindVars=bind)
-        if result.__len__():
-            if result.__len__() > 1:
-                return list(result)
-            return result[0]
-        return None
-
     def __get_mediafile_index(self, mediafile, highest_order):
         if "order" in mediafile:
             return mediafile["order"]
@@ -151,7 +141,7 @@ class ArangoStorageManager:
     def __get_raw_item_from_collection_by_id(self, collection, id):
         item = self.__try_get_item_from_collection_by_key(collection, id)
         if not item:
-            if key := self.__get_field_for_id(collection, id, "_key"):
+            if key := self.get_collection_item_field(collection, id, "_key"):
                 item = self.__try_get_item_from_collection_by_key(collection, key)
         return item
 
@@ -442,8 +432,15 @@ class ArangoStorageManager:
 
         return relations
 
-    def get_collection_item_sub_item(self, collection, id, sub_item):
-        return self.__get_field_for_id(collection, id, sub_item)
+    def get_collection_item_field(self, collection, id, field):
+        aql = "FOR c in @@collection FILTER c.object_id == @id OR @id IN c.identifiers OR c._key == @id RETURN c.@field"
+        bind = {"id": id, "@collection": collection, "field": field}
+        result = self.db.AQLQuery(aql, rawResults=True, bindVars=bind)
+        if result.__len__():
+            if result.__len__() > 1:
+                return list(result)
+            return result[0]
+        return None
 
     def get_collection_item_sub_item_key(self, collection, id, sub_item, key):
         aql = """
