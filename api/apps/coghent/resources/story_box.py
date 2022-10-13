@@ -1,9 +1,13 @@
 import app
+import requests
+import srt
 
 from apps.coghent.resources.base_resource import CoghentBaseResource
+from datetime import timedelta
 from flask import Blueprint, request
 from flask_restful import abort, Api
 from inuits_jwt_auth.authorization import current_token
+from srt import Subtitle
 
 api_bp = Blueprint("story_box", __name__)
 api = Api(api_bp)
@@ -93,6 +97,53 @@ class StoryBoxPublish(CoghentBaseResource):
         return self._create_box_visit({"story_id": self._get_raw_id(story)}), 201
 
 
+class StoryBoxSubtitles(CoghentBaseResource):
+    @app.require_oauth("subtitles-story-box")
+    def post(self, id):
+        self._abort_if_not_logged_in(current_token)
+        self._abort_if_item_doesnt_exist("entities", id)
+        relations = [
+            x
+            for x in self.storage.get_collection_item_relations("entities", id)
+            if x["type"] == "components"
+            and all(y in x for y in ["value", "timestamp_start", "timestamp_end"])
+        ]
+        subtitles = []
+        for relation in relations:
+            subtitles.append(
+                Subtitle(
+                    index=None,
+                    start=timedelta(seconds=relation["timestamp_start"]),
+                    end=timedelta(seconds=relation["timestamp_end"]),
+                    content=relation["value"],
+                )
+            )
+        mediafile = self.storage.save_item_to_collection(
+            "mediafiles", {"filename": "storybox_srt.srt"}
+        )
+        # FIXME: add auth headers
+        req = requests.post(
+            f"{self.storage_api_url}/upload?id={self._get_raw_id(mediafile)}",
+            files={
+                "file": ("storybox_srt.srt", bytes(srt.compose(subtitles), "utf-8"))
+            },
+        )
+        if req.status_code != 201:
+            self.storage.delete_item_from_collection(
+                "mediafiles", self._get_raw_id(mediafile)
+            )
+            abort(400, message=req.text.strip())
+        new_relation = {
+            "key": mediafile["_id"],
+            "type": "components",
+            "label": "subtitle",
+            "order": 1,
+        }
+        self.storage.add_relations_to_collection_item("entities", id, [new_relation])
+        return "", 201
+
+
 api.add_resource(StoryBox, "/story_box")
 api.add_resource(StoryBoxLink, "/story_box/link/<string:code>")
 api.add_resource(StoryBoxPublish, "/story_box/publish/<string:id>")
+api.add_resource(StoryBoxSubtitles, "/story_box/subtitles/<string:id>")
