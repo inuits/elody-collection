@@ -18,7 +18,7 @@ class Job(BaseResource):
         else:
             fields = {"parent_job_id": None}
         jobs = self.storage.get_items_from_collection(
-            "jobs", skip, limit, fields, filters
+            "jobs", skip, limit, fields, filters, "start_time", False
         )
         count = jobs["count"]
         jobs["limit"] = limit

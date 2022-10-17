@@ -508,7 +508,14 @@ class ArangoStorageManager:
         return item
 
     def get_items_from_collection(
-        self, collection, skip=0, limit=20, fields=None, filters=None
+        self,
+        collection,
+        skip=0,
+        limit=20,
+        fields=None,
+        filters=None,
+        sort=None,
+        asc=True,
     ):
         items = dict()
         extra_query = ""
@@ -526,6 +533,7 @@ class ArangoStorageManager:
                 {"FILTER c._key IN @ids" if "ids" in filters else ""}
                 {extra_query}
                 LIMIT @skip, @limit
+                {f'SORT c.{sort} {"ASC" if asc else "DESC"}' if sort else ""}
                 RETURN c
         """
         bind = {"@collection": collection, "skip": skip, "limit": limit}

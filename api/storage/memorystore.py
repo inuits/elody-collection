@@ -158,7 +158,14 @@ class MemoryStorageManager:
         return None
 
     def get_items_from_collection(
-        self, collection, skip=0, limit=20, fields=None, filters=None
+        self,
+        collection,
+        skip=0,
+        limit=20,
+        fields=None,
+        filters=None,
+        sort=None,
+        asc=True,
     ):
         items = dict()
         results = list(self.collections[collection].values())

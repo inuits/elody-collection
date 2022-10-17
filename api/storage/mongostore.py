@@ -177,7 +177,14 @@ class MongoStorageManager:
         return document
 
     def get_items_from_collection(
-        self, collection, skip=0, limit=20, fields=None, filters=None
+        self,
+        collection,
+        skip=0,
+        limit=20,
+        fields=None,
+        filters=None,
+        sort=None,
+        asc=True,
     ):
         items = dict()
         if "type" in fields:
