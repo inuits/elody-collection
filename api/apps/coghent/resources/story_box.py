@@ -121,12 +121,18 @@ class StoryBoxSubtitles(CoghentBaseResource):
         mediafile = self.storage.save_item_to_collection(
             "mediafiles", {"filename": "storybox_srt.srt"}
         )
+        if not mediafile:
+            abort(400, message="Failed to create mediafile")
+        app.logger.info(f"Created mediafile {mediafile}")
         # FIXME: add auth headers
         req = requests.post(
             f"{self.storage_api_url}/upload?id={self._get_raw_id(mediafile)}",
             files={
                 "file": ("storybox_srt.srt", bytes(srt.compose(subtitles), "utf-8"))
             },
+        )
+        app.logger.info(
+            f"Uploading srt file returned: {req.status_code} {req.text.strip()}"
         )
         if req.status_code != 201:
             self.storage.delete_item_from_collection(
