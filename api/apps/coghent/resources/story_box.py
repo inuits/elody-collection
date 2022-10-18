@@ -106,9 +106,21 @@ class StoryBoxSubtitles(CoghentBaseResource):
             x
             for x in self.storage.get_collection_item_relations("entities", id)
             if x["type"] == "components"
-            and all(y in x for y in ["value", "timestamp_start", "timestamp_end"])
         ]
+        if subtitle := next((x for x in relations if x["label"] == "subtitle"), None):
+            mediafile = self.storage.get_item_from_collection_by_id(
+                "mediafiles", subtitle["key"].removeprefix("mediafiles/")
+            )
+            linked_entities = self.storage.get_mediafile_linked_entities(mediafile)
+            self.storage.delete_item_from_collection("mediafiles", id)
+            self._signal_mediafile_deleted(mediafile, linked_entities)
+            app.logger.info(f"Existing subtitle found, deleted: {mediafile}")
         subtitles = []
+        relations = [
+            x
+            for x in relations
+            if all(y in x for y in ["value", "timestamp_start", "timestamp_end"])
+        ]
         for relation in relations:
             subtitles.append(
                 Subtitle(
