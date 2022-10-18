@@ -146,7 +146,10 @@ class StoryBoxSubtitles(CoghentBaseResource):
         app.logger.info(
             f"Uploading srt file returned: {req.status_code} {req.text.strip()}"
         )
-        if req.status_code != 201:
+        # FIXME: handle duplicate srt
+        if req.status_code == 409:
+            app.logger.info(f"Duplicate srt found: {req.text.strip()}")
+        elif req.status_code != 201:
             self.storage.delete_item_from_collection(
                 "mediafiles", self._get_raw_id(mediafile)
             )
