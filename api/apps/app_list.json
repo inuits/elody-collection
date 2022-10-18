@@ -10,7 +10,8 @@
       "box_visit",
       "entity",
       "mediafile",
-      "story_box"
+      "story_box",
+      "user"
     ]
   }
 }
