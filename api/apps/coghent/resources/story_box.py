@@ -114,7 +114,6 @@ class StoryBoxSubtitles(CoghentBaseResource):
             linked_entities = self.storage.get_mediafile_linked_entities(mediafile)
             self.storage.delete_item_from_collection("mediafiles", id)
             self._signal_mediafile_deleted(mediafile, linked_entities)
-            app.logger.info(f"Existing subtitle found, deleted: {mediafile}")
         subtitles = []
         relations = [
             x
@@ -135,7 +134,6 @@ class StoryBoxSubtitles(CoghentBaseResource):
         )
         if not mediafile:
             abort(400, message="Failed to create mediafile")
-        app.logger.info(f"Created mediafile {mediafile}")
         # FIXME: add auth headers
         req = requests.post(
             f"{self.storage_api_url}/upload?id={self._get_raw_id(mediafile)}",
@@ -143,12 +141,9 @@ class StoryBoxSubtitles(CoghentBaseResource):
                 "file": ("storybox_srt.srt", bytes(srt.compose(subtitles), "utf-8"))
             },
         )
-        app.logger.info(
-            f"Uploading srt file returned: {req.status_code} {req.text.strip()}"
-        )
         # FIXME: handle duplicate srt
         if req.status_code == 409:
-            app.logger.info(f"Duplicate srt found: {req.text.strip()}")
+            abort(400, message=f"Duplicate srt found: {req.text.strip()}")
         elif req.status_code != 201:
             self.storage.delete_item_from_collection(
                 "mediafiles", self._get_raw_id(mediafile)
