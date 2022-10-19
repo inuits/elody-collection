@@ -198,6 +198,16 @@ class EntityMetadata(BaseResource):
         self._signal_entity_changed(entity)
         return metadata, 201
 
+    @app.require_oauth("patch-entity-metadata")
+    def patch(self, id):
+        entity = self._abort_if_item_doesnt_exist("entities", id)
+        content = self._get_request_body()
+        if self._only_own_items():
+            self._abort_if_no_access(entity, current_token)
+        metadata = self.storage.patch_collection_item_metadata("entities", id, content)
+        self._signal_entity_changed(entity)
+        return metadata, 201
+
 
 class EntityMetadataKey(BaseResource):
     @app.require_oauth(
