@@ -512,6 +512,65 @@
             "description": "Request body is invalid"
           }
         }
+      },
+      "patch": {
+        "tags": [
+          "entity"
+        ],
+        "summary": "Patch metadata of entity with id",
+        "operationId": "patchEntityIdMetadata",
+        "parameters": [
+          {
+            "name": "entityId",
+            "in": "path",
+            "description": "Entity id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Metadata objects to be patched in",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/metadata"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/metadata"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Entity not found"
+          },
+          "405": {
+            "description": "Request body is invalid"
+          }
+        }
       }
     },
     "/entities/{entityId}/metadata/{key}": {
