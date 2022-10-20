@@ -107,7 +107,9 @@ class StoryBoxSubtitles(CoghentBaseResource):
             for x in self.storage.get_collection_item_relations("entities", id)
             if x["type"] == "components"
         ]
-        if subtitle := next((x for x in relations if x["label"] == "subtitle"), None):
+        if subtitle := next(
+            (x for x in relations if x.get("label", "") == "subtitle"), None
+        ):
             mediafile = self.storage.get_item_from_collection_by_id(
                 "mediafiles", subtitle["key"].removeprefix("mediafiles/")
             )
