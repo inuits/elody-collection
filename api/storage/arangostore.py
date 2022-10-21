@@ -532,8 +532,8 @@ class ArangoStorageManager:
             FOR c IN @@collection
                 {"FILTER c._key IN @ids" if "ids" in filters else ""}
                 {extra_query}
-                LIMIT @skip, @limit
                 {f'SORT c.{sort} {"ASC" if asc else "DESC"}' if sort else ""}
+                LIMIT @skip, @limit
                 RETURN c
         """
         bind = {"@collection": collection, "skip": skip, "limit": limit}
