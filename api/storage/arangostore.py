@@ -145,8 +145,8 @@ class ArangoStorageManager:
                 item = self.__try_get_item_from_collection_by_key(collection, key)
         return item
 
-    def __get_relevant_relations(self, type):
-        return {
+    def __get_relevant_relations(self, type, exclude=None):
+        relations = {
             "asset": ["isIn", "components", "parent", "hasTestimony"],
             "box": ["box_stories"],
             "box_visit": ["stories", "visited", "story_box"],
@@ -156,6 +156,7 @@ class ArangoStorageManager:
             "testimony": ["isTestimonyFor"],
             "thesaurus": [],
         }.get(type, ["components"])
+        return [x for x in relations if exclude and x not in exclude]
 
     def __map_entity_relation(self, relation):
         return {
@@ -353,94 +354,87 @@ class ArangoStorageManager:
         )
 
     def get_collection_item_relations(
-        self, collection, id, include_sub_relations=False, exclude_relations=None
+        self, collection, id, include_sub_relations=False, exclude=None
     ):
-        if exclude_relations is None:
-            exclude_relations = []
+        if exclude is None:
+            exclude = []
         entity = self.__get_raw_item_from_collection_by_id(collection, id)
-        relevant_relations = self.__get_relevant_relations(entity["type"])
+        relevant_relations = self.__get_relevant_relations(entity["type"], exclude)
         relations = []
         for relation in relevant_relations:
-            if relation not in exclude_relations:
-                for edge in entity.getOutEdges(self.db[relation]):
-                    relation_object = {}
-                    edge = edge.getStore()
-                    for key in edge.keys():
-                        if key[0] != "_":
-                            relation_object[key] = edge[key]
-                    relation_object["key"] = edge["_to"]
-                    relation_object["type"] = relation
-                    if relation_object not in relations:
-                        relations.append(relation_object)
-                    if include_sub_relations and (
-                        "value" in relation_object
-                        and (
-                            relation_object["value"]
-                            in [
-                                "Productie",
-                                "InformatieObject",
-                                "ConceptueelDing",
-                                "InformatieObject",
-                                "Classificatie",
-                            ]
-                        )
-                        or (
-                            "label" in relation_object
-                            and (
-                                relation_object["label"] in ["MaterieelDing.bestaatUit"]
+            for edge in entity.getOutEdges(self.db[relation]):
+                relation_object = {}
+                edge = edge.getStore()
+                for key in edge.keys():
+                    if key[0] != "_":
+                        relation_object[key] = edge[key]
+                relation_object["key"] = edge["_to"]
+                relation_object["type"] = relation
+                if relation_object not in relations:
+                    relations.append(relation_object)
+                if include_sub_relations and (
+                    "value" in relation_object
+                    and (
+                        relation_object["value"]
+                        in [
+                            "Productie",
+                            "InformatieObject",
+                            "ConceptueelDing",
+                            "InformatieObject",
+                            "Classificatie",
+                        ]
+                    )
+                    or (
+                        "label" in relation_object
+                        and (relation_object["label"] in ["MaterieelDing.bestaatUit"])
+                    )
+                ):
+                    sub_entity = self.__get_raw_item_from_collection_by_id(
+                        collection, relation_object["key"].split("entities/")[1]
+                    )
+                    for sub_edge in sub_entity.getOutEdges(self.db[relation]):
+                        relation_object = {}
+                        sub_edge = sub_edge.getStore()
+                        for key in sub_edge.keys():
+                            if key[0] != "_":
+                                relation_object[key] = sub_edge[key]
+                        relation_object["key"] = sub_edge["_to"]
+                        relation_object["type"] = relation
+                        if relation_object["value"] == "Creatie":
+                            sub_entity2 = self.__get_raw_item_from_collection_by_id(
+                                collection,
+                                relation_object["key"].split("entities/")[1],
                             )
-                        )
-                    ):
-                        sub_entity = self.__get_raw_item_from_collection_by_id(
-                            collection, relation_object["key"].split("entities/")[1]
-                        )
-
-                        for sub_edge in sub_entity.getOutEdges(self.db[relation]):
-                            relation_object = {}
-                            sub_edge = sub_edge.getStore()
-                            for key in sub_edge.keys():
-                                if key[0] != "_":
-                                    relation_object[key] = sub_edge[key]
-                            relation_object["key"] = sub_edge["_to"]
-                            relation_object["type"] = relation
-                            if relation_object["value"] == "Creatie":
-
-                                sub_entity2 = self.__get_raw_item_from_collection_by_id(
-                                    collection,
-                                    relation_object["key"].split("entities/")[1],
-                                )
-                                for sub_edge2 in sub_entity2.getOutEdges(
-                                    self.db[relation]
+                            for sub_edge2 in sub_entity2.getOutEdges(self.db[relation]):
+                                relation_object = {}
+                                sub_edge2 = sub_edge2.getStore()
+                                for key in sub_edge2.keys():
+                                    if key[0] != "_":
+                                        relation_object[key] = sub_edge2[key]
+                                relation_object["key"] = sub_edge2["_to"]
+                                relation_object["type"] = relation
+                                if (
+                                    relation_object not in relations
+                                    and relation_object["label"] != "vervaardiger.rol"
                                 ):
-                                    relation_object = {}
-                                    sub_edge2 = sub_edge2.getStore()
-                                    for key in sub_edge2.keys():
-                                        if key[0] != "_":
-                                            relation_object[key] = sub_edge2[key]
-                                    relation_object["key"] = sub_edge2["_to"]
-                                    relation_object["type"] = relation
-                                    if (
-                                        relation_object not in relations
-                                        and relation_object["label"]
-                                        != "vervaardiger.rol"
-                                    ):
-                                        relations.append(relation_object)
-
-                            elif relation_object["label"] != "vervaardiger.rol":
-                                if relation_object not in relations:
                                     relations.append(relation_object)
-
+                        elif relation_object["label"] != "vervaardiger.rol":
+                            if relation_object not in relations:
+                                relations.append(relation_object)
         return relations
 
     def get_collection_item_sub_item(self, collection, id, sub_item):
-        aql = "FOR c in @@collection FILTER c.object_id == @id OR @id IN c.identifiers OR c._key == @id RETURN c.@sub_item"
+        aql = """
+            FOR c in @@collection
+                FILTER c.object_id == @id OR @id IN c.identifiers OR c._key == @id
+                RETURN c.@sub_item
+        """
         bind = {"id": id, "@collection": collection, "sub_item": sub_item}
         result = self.db.AQLQuery(aql, rawResults=True, bindVars=bind)
-        if result.__len__():
-            if result.__len__() > 1:
-                return list(result)
-            return result[0]
-        return None
+        result_len = result.__len__()
+        if not result_len:
+            return None
+        return list(result) if result_len > 1 else result[0]
 
     def get_collection_item_sub_item_key(self, collection, id, sub_item, key):
         aql = """
@@ -502,8 +496,7 @@ class ArangoStorageManager:
         return items
 
     def get_item_from_collection_by_id(self, collection, id):
-        item = self.__get_raw_item_from_collection_by_id(collection, id)
-        if item:
+        if item := self.__get_raw_item_from_collection_by_id(collection, id):
             item = item.getStore()
         return item
 
