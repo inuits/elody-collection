@@ -48,6 +48,7 @@ class ArangoStorageManager:
             password=self.arango_password,
         )
         self.db = self.__create_database_if_not_exists()
+        self.key_cache = {}
 
     def __create_database_if_not_exists(self):
         if not self.conn.hasDatabase(self.arango_db_name):
@@ -139,11 +140,14 @@ class ArangoStorageManager:
         return result
 
     def __get_raw_item_from_collection_by_id(self, collection, id):
-        item = self.__try_get_item_from_collection_by_key(collection, id)
-        if not item:
-            if key := self.get_collection_item_sub_item(collection, id, "_key"):
-                item = self.__try_get_item_from_collection_by_key(collection, key)
-        return item
+        if item := self.__try_get_item_from_collection_by_key(collection, id):
+            return item
+        if key := self.key_cache.get(id):
+            return self.__try_get_item_from_collection_by_key(collection, key)
+        if key := self.get_collection_item_sub_item(collection, id, "_key"):
+            self.key_cache[id] = key
+            return self.__try_get_item_from_collection_by_key(collection, key)
+        return None
 
     def __get_relevant_relations(self, type, exclude=None):
         relations = {
