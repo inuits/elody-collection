@@ -71,7 +71,9 @@ class EntityDetail(BaseResource):
         if self._only_own_items():
             self._abort_if_no_access(entity, current_token)
         try:
-            entity = self.storage.update_item_from_collection("entities", id, content)
+            entity = self.storage.update_item_from_collection(
+                "entities", self._get_raw_id(entity), content
+            )
         except NonUniqueException as ex:
             return str(ex), 409
         self._signal_entity_changed(entity)
@@ -84,7 +86,9 @@ class EntityDetail(BaseResource):
         if self._only_own_items():
             self._abort_if_no_access(entity, current_token)
         try:
-            entity = self.storage.patch_item_from_collection("entities", id, content)
+            entity = self.storage.patch_item_from_collection(
+                "entities", self._get_raw_id(entity), content
+            )
         except NonUniqueException as ex:
             return str(ex), 409
         self._signal_entity_changed(entity)
@@ -95,7 +99,7 @@ class EntityDetail(BaseResource):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         if self._only_own_items():
             self._abort_if_no_access(entity, current_token)
-        self.storage.delete_item_from_collection("entities", id)
+        self.storage.delete_item_from_collection("entities", self._get_raw_id(entity))
         self._signal_entity_deleted(entity)
         return "", 204
 
@@ -108,7 +112,9 @@ class EntityMediafiles(BaseResource):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         if self._only_own_items(["read-entity-mediafiles-all"]):
             self._abort_if_no_access(entity, current_token)
-        mediafiles = self.storage.get_collection_item_mediafiles("entities", id)
+        mediafiles = self.storage.get_collection_item_mediafiles(
+            "entities", self._get_raw_id(entity)
+        )
         if not request.args.get("non_public"):
             mediafiles = [
                 mediafile
@@ -134,7 +140,10 @@ class EntityMediafiles(BaseResource):
         if only_own:
             self._abort_if_no_access(content, current_token, "mediafiles")
         mediafile = self.storage.add_mediafile_to_collection_item(
-            "entities", id, content["_id"], self._mediafile_is_public(content)
+            "entities",
+            self._get_raw_id(entity),
+            content["_id"],
+            self._mediafile_is_public(content),
         )
         self._signal_entity_changed(entity)
         return mediafile, 201
@@ -159,7 +168,10 @@ class EntityMediafilesCreate(BaseResource):
         mediafile = self.storage.save_item_to_collection("mediafiles", content)
         upload_location = f'{self.storage_api_url}/upload/{content["filename"]}?id={self._get_raw_id(mediafile)}'
         self.storage.add_mediafile_to_collection_item(
-            "entities", id, mediafile["_id"], self._mediafile_is_public(mediafile)
+            "entities",
+            self._get_raw_id(entity),
+            mediafile["_id"],
+            self._mediafile_is_public(mediafile),
         )
         self._signal_entity_changed(entity)
         return upload_location, 201
@@ -171,7 +183,9 @@ class EntityMetadata(BaseResource):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         if self._only_own_items(["read-entity-metadata-all"]):
             self._abort_if_no_access(entity, current_token)
-        metadata = self.storage.get_collection_item_sub_item("entities", id, "metadata")
+        metadata = self.storage.get_collection_item_sub_item(
+            "entities", self._get_raw_id(entity), "metadata"
+        )
         return metadata
 
     @app.require_oauth("add-entity-metadata")
@@ -181,7 +195,7 @@ class EntityMetadata(BaseResource):
         if self._only_own_items():
             self._abort_if_no_access(entity, current_token)
         metadata = self.storage.add_sub_item_to_collection_item(
-            "entities", id, "metadata", content
+            "entities", self._get_raw_id(entity), "metadata", content
         )
         self._signal_entity_changed(entity)
         return metadata, 201
@@ -193,7 +207,7 @@ class EntityMetadata(BaseResource):
         if self._only_own_items():
             self._abort_if_no_access(entity, current_token)
         metadata = self.storage.update_collection_item_sub_item(
-            "entities", id, "metadata", content
+            "entities", self._get_raw_id(entity), "metadata", content
         )
         self._signal_entity_changed(entity)
         return metadata, 201
@@ -204,7 +218,9 @@ class EntityMetadata(BaseResource):
         content = self._get_request_body()
         if self._only_own_items():
             self._abort_if_no_access(entity, current_token)
-        metadata = self.storage.patch_collection_item_metadata("entities", id, content)
+        metadata = self.storage.patch_collection_item_metadata(
+            "entities", self._get_raw_id(entity), content
+        )
         self._signal_entity_changed(entity)
         return metadata, 201
 
@@ -218,7 +234,7 @@ class EntityMetadataKey(BaseResource):
         if self._only_own_items(["read-entity-metadata-key-all"]):
             self._abort_if_no_access(entity, current_token)
         metadata = self.storage.get_collection_item_sub_item_key(
-            "entities", id, "metadata", key
+            "entities", self._get_raw_id(entity), "metadata", key
         )
         return metadata
 
@@ -228,7 +244,7 @@ class EntityMetadataKey(BaseResource):
         if self._only_own_items():
             self._abort_if_no_access(entity, current_token)
         self.storage.delete_collection_item_sub_item_key(
-            "entities", id, "metadata", key
+            "entities", self._get_raw_id(entity), "metadata", key
         )
         self._signal_entity_changed(entity)
         return "", 204
@@ -248,7 +264,9 @@ class EntityRelations(BaseResource):
             response.headers["Access-Control-Allow-Origin"] = "*"
             return response
 
-        return self.storage.get_collection_item_relations("entities", id)
+        return self.storage.get_collection_item_relations(
+            "entities", self._get_raw_id(entity)
+        )
 
     @app.require_oauth("add-entity-relations")
     def post(self, id):
@@ -257,7 +275,7 @@ class EntityRelations(BaseResource):
         if self._only_own_items():
             self._abort_if_no_access(entity, current_token)
         relations = self.storage.add_relations_to_collection_item(
-            "entities", id, content
+            "entities", self._get_raw_id(entity), content
         )
         self._signal_entity_changed(entity)
         return relations, 201
@@ -269,7 +287,7 @@ class EntityRelations(BaseResource):
         if self._only_own_items():
             self._abort_if_no_access(entity, current_token)
         relations = self.storage.update_collection_item_relations(
-            "entities", id, content
+            "entities", self._get_raw_id(entity), content
         )
         self._signal_entity_changed(entity)
         return relations, 201
@@ -281,7 +299,7 @@ class EntityRelations(BaseResource):
         if self._only_own_items():
             self._abort_if_no_access(entity, current_token)
         relations = self.storage.patch_collection_item_relations(
-            "entities", id, content
+            "entities", self._get_raw_id(entity), content
         )
         self._signal_entity_changed(entity)
         return relations, 201
@@ -292,7 +310,9 @@ class EntityRelations(BaseResource):
         content = self._get_request_body()
         if self._only_own_items():
             self._abort_if_no_access(entity, current_token)
-        self.storage.delete_collection_item_relations("entities", id, content)
+        self.storage.delete_collection_item_relations(
+            "entities", self._get_raw_id(entity), content
+        )
         self._signal_entity_changed(entity)
         return "", 204
 
@@ -312,7 +332,7 @@ class EntityRelationsAll(BaseResource):
             return response
 
         return self.storage.get_collection_item_relations(
-            "entities", id, include_sub_relations=True
+            "entities", self._get_raw_id(entity), include_sub_relations=True
         )
 
 
@@ -326,7 +346,7 @@ class EntitySetPrimaryMediafile(BaseResource):
         if self._only_own_items():
             self._abort_if_no_access(mediafile, current_token)
         self.storage.set_primary_field_collection_item(
-            "entities", id, mediafile_id, "is_primary"
+            "entities", self._get_raw_id(entity), mediafile_id, "is_primary"
         )
         return "", 204
 
@@ -341,6 +361,6 @@ class EntitySetPrimaryThumbnail(BaseResource):
         if self._only_own_items():
             self._abort_if_no_access(mediafile, current_token)
         self.storage.set_primary_field_collection_item(
-            "entities", id, mediafile_id, "is_primary_thumbnail"
+            "entities", self._get_raw_id(entity), mediafile_id, "is_primary_thumbnail"
         )
         return "", 204

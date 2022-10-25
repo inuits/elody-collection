@@ -96,7 +96,9 @@ class MediafileDetail(BaseResource):
         if self._only_own_items():
             self._abort_if_no_access(old_mediafile, current_token, "mediafiles")
         self._abort_if_not_valid_json("Mediafile", content, mediafile_schema)
-        mediafile = self.storage.update_item_from_collection("mediafiles", id, content)
+        mediafile = self.storage.update_item_from_collection(
+            "mediafiles", self._get_raw_id(old_mediafile), content
+        )
         self._signal_mediafile_changed(old_mediafile, mediafile)
         return mediafile, 201
 
@@ -106,7 +108,9 @@ class MediafileDetail(BaseResource):
         content = self._get_request_body()
         if self._only_own_items():
             self._abort_if_no_access(old_mediafile, current_token, "mediafiles")
-        mediafile = self.storage.patch_item_from_collection("mediafiles", id, content)
+        mediafile = self.storage.patch_item_from_collection(
+            "mediafiles", self._get_raw_id(old_mediafile), content
+        )
         self._signal_mediafile_changed(old_mediafile, mediafile)
         return mediafile, 201
 
@@ -116,6 +120,8 @@ class MediafileDetail(BaseResource):
         if self._only_own_items():
             self._abort_if_no_access(mediafile, current_token, "mediafiles")
         linked_entities = self.storage.get_mediafile_linked_entities(mediafile)
-        self.storage.delete_item_from_collection("mediafiles", id)
+        self.storage.delete_item_from_collection(
+            "mediafiles", self._get_raw_id(mediafile)
+        )
         self._signal_mediafile_deleted(mediafile, linked_entities)
         return "", 204

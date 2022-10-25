@@ -101,10 +101,12 @@ class StoryBoxSubtitles(CoghentBaseResource):
     @app.require_oauth("subtitles-story-box")
     def post(self, id):
         self._abort_if_not_logged_in(current_token)
-        self._abort_if_item_doesnt_exist("entities", id)
+        story_box = self._abort_if_item_doesnt_exist("entities", id)
         relations = [
             x
-            for x in self.storage.get_collection_item_relations("entities", id)
+            for x in self.storage.get_collection_item_relations(
+                "entities", self._get_raw_id(story_box)
+            )
             if x["type"] == "components"
         ]
         if subtitle := next(
@@ -114,7 +116,9 @@ class StoryBoxSubtitles(CoghentBaseResource):
                 "mediafiles", subtitle["key"].removeprefix("mediafiles/")
             )
             linked_entities = self.storage.get_mediafile_linked_entities(mediafile)
-            self.storage.delete_item_from_collection("mediafiles", id)
+            self.storage.delete_item_from_collection(
+                "mediafiles", self._get_raw_id(story_box)
+            )
             self._signal_mediafile_deleted(mediafile, linked_entities)
         subtitles = []
         relations = [
@@ -157,7 +161,9 @@ class StoryBoxSubtitles(CoghentBaseResource):
             "label": "subtitle",
             "order": 1,
         }
-        self.storage.add_relations_to_collection_item("entities", id, [new_relation])
+        self.storage.add_relations_to_collection_item(
+            "entities", self._get_raw_id(story_box), [new_relation]
+        )
         return "", 201
 
 
