@@ -24,8 +24,7 @@ class CoghentBaseResource(BaseResource):
     def _abort_if_no_access(self, item, token, collection="entities", do_abort=True):
         if super()._abort_if_no_access(item, token, do_abort=False):
             return
-        permission = self.mapping.get(self._get_museum_id(item, collection))
-        if not permission or not app.require_oauth.check_permission(permission):
+        if not self._has_access_to_item(item, collection):
             abort(403, message="Access denied")
 
     def _create_box_visit(self, content):
@@ -78,28 +77,28 @@ class CoghentBaseResource(BaseResource):
             return full, 200
         if self._is_owner_of_item(item, current_token):
             return full, 200
-        permission = self.mapping.get(self._get_museum_id(item, collection))
-        if permission and app.require_oauth.check_permission(permission):
+        if self._has_access_to_item(item, collection):
             return full, 200
         return [full[0]], 200
 
-    def _get_museum_id(self, item, collection):
-        if collection == "mediafiles":
-            linked_entities = self.storage.get_mediafile_linked_entities(item)
-            if not linked_entities:
-                return ""
-            # FIXME: won't work if mediafile is linked to different museums
-            entity_id = linked_entities[0]["entity_id"].removeprefix("entities/")
-        else:
-            entity_id = self._get_raw_id(item)
-        app.logger.info(f"Item to get museum from: {item}")
+    def _get_museum_id(self, entity_id):
         relations = self.storage.get_collection_item_relations(
             "entities", entity_id, True
         )
-        app.logger.info(f"Item relations: {relations}")
         for relation in relations:
             if relation["type"] == "isIn":
-                app.logger.info(f'Returning: {relation["key"]}')
                 return relation["key"]
-        app.logger.info("isIn relation not found")
         return ""
+
+    def _has_access_to_item(self, item, collection):
+        entity_ids = []
+        if collection == "mediafiles":
+            for linked_entity in self.storage.get_mediafile_linked_entities(item):
+                entity_ids.append(linked_entity["entity_id"].removeprefix("entities/"))
+        else:
+            entity_ids.append(self._get_raw_id(item))
+        for entity_id in entity_ids:
+            permission = self.mapping.get(self._get_museum_id(entity_id))
+            if permission and app.require_oauth.check_permission(permission):
+                return True
+        return False

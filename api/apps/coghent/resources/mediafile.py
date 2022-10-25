@@ -19,10 +19,9 @@ class CoghentMediafileCopyright(CoghentBaseResource, MediafileCopyright):
         if ret_val == "full":
             return ret_val, ret_code
         item = self.storage.get_item_from_collection_by_id("mediafiles", id)
-        permission = self.mapping.get(self._get_museum_id(item, "mediafiles"))
-        if not permission or not app.require_oauth.check_permission(permission):
-            return ret_val, ret_code
-        return "full", 200
+        if self._has_access_to_item(item, "mediafiles"):
+            return "full", 200
+        return ret_val, ret_code
 
 
 class CoghentMediafileDetail(CoghentBaseResource, MediafileDetail):
