@@ -140,14 +140,12 @@ class StoryBoxSubtitles(CoghentBaseResource):
         )
         if not mediafile:
             abort(400, message="Failed to create mediafile")
+        srt_string = f"{{\\{self._get_raw_id(story_box)}}}\n{srt.compose(subtitles)}"
         # FIXME: add auth headers
         req = requests.post(
             f"{self.storage_api_url}/upload?id={self._get_raw_id(mediafile)}",
-            files={
-                "file": ("storybox_srt.srt", bytes(srt.compose(subtitles), "utf-8"))
-            },
+            files={"file": ("storybox_srt.srt", bytes(srt_string, "utf-8"))},
         )
-        # FIXME: handle duplicate srt
         if req.status_code == 409:
             abort(400, message=f"Duplicate srt found: {req.text.strip()}")
         elif req.status_code != 201:
