@@ -19,6 +19,10 @@
   ],
   "tags": [
     {
+      "name": "config",
+      "description": "Config for DAMS"
+    },
+    {
       "name": "entity",
       "description": "Entities in DAMS"
     },
@@ -28,6 +32,30 @@
     }
   ],
   "paths": {
+    "/config": {
+      "get": {
+        "tags": [
+          "config"
+        ],
+        "summary": "Get config",
+        "operationId": "getConfig",
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/config"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
     "/entities": {
       "get": {
         "tags": [
@@ -1592,6 +1620,10 @@
   },
   "components": {
     "schemas": {
+      "config": {
+        "type": "object",
+        "description": "Config options for DAMS"
+      },
       "entity": {
         "type": "object",
         "description": "Entity object",
