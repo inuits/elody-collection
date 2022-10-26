@@ -29,12 +29,11 @@ class BaseResource(Resource):
             404, message=f"Item with id {id} doesn't exist in collection {collection}"
         )
 
-    def _abort_if_no_access(self, item, token, collection="entities", do_abort=True):
+    def _abort_if_no_access(self, item, token, collection="entities"):
         app.logger.info(f"Checking if {token} has access to {item}")
         is_owner = self._is_owner_of_item(item, token)
-        if not is_owner and do_abort:
+        if not is_owner:
             abort(403, message="Access denied")
-        return is_owner
 
     def _abort_if_not_logged_in(self, token):
         if "email" not in token:

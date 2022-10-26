@@ -6,6 +6,7 @@ from datetime import datetime
 from flask_restful import abort
 from inuits_jwt_auth.authorization import current_token
 from resources.base_resource import BaseResource
+from werkzeug.exceptions import HTTPException
 
 
 class CoghentBaseResource(BaseResource):
@@ -21,11 +22,12 @@ class CoghentBaseResource(BaseResource):
             os.getenv("STAM_ID"): "all-stam",
         }
 
-    def _abort_if_no_access(self, item, token, collection="entities", do_abort=True):
-        if super()._abort_if_no_access(item, token, do_abort=False):
-            return
-        if not self._has_access_to_item(item, collection):
-            abort(403, message="Access denied")
+    def _abort_if_no_access(self, item, token, collection="entities"):
+        try:
+            super()._abort_if_no_access(item, token)
+        except HTTPException:
+            if not self._has_access_to_item(item, collection):
+                raise
 
     def _create_box_visit(self, content):
         if "story_id" not in content:
