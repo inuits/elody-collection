@@ -109,17 +109,13 @@ class StoryBoxSubtitles(CoghentBaseResource):
             )
             if x["type"] == "components"
         ]
+        # FIXME: delete file from storage-api (directly, not using event)
         if subtitle := next(
             (x for x in relations if x.get("label", "") == "subtitle"), None
         ):
-            mediafile = self.storage.get_item_from_collection_by_id(
+            self.storage.delete_item_from_collection(
                 "mediafiles", subtitle["key"].removeprefix("mediafiles/")
             )
-            linked_entities = self.storage.get_mediafile_linked_entities(mediafile)
-            self.storage.delete_item_from_collection(
-                "mediafiles", self._get_raw_id(story_box)
-            )
-            self._signal_mediafile_deleted(mediafile, linked_entities)
         subtitles = []
         relations = [
             x
@@ -147,7 +143,7 @@ class StoryBoxSubtitles(CoghentBaseResource):
             files={"file": ("storybox_srt.srt", bytes(srt_string, "utf-8"))},
         )
         if req.status_code == 409:
-            abort(400, message=f"Duplicate srt found: {req.text.strip()}")
+            abort(409, message=f"Duplicate srt found: {req.text.strip()}")
         elif req.status_code != 201:
             self.storage.delete_item_from_collection(
                 "mediafiles", self._get_raw_id(mediafile)
