@@ -96,6 +96,7 @@ app.add_url_rule("/health", "healthcheck", view_func=lambda: health.run())
 
 load_apps(app)
 
+from resources.config import Config
 from resources.entity import (
     Entity,
     EntityDetail,
@@ -119,6 +120,7 @@ from resources.mediafile import (
 from resources.spec import AsyncAPISpec, OpenAPISpec
 import resources.queues
 
+api.add_resource(Config, "/config")
 api.add_resource(Entity, "/entities")
 api.add_resource(EntityDetail, "/entities/<string:id>")
 api.add_resource(EntityMediafiles, "/entities/<string:id>/mediafiles")
