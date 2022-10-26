@@ -553,6 +553,18 @@ class ArangoStorageManager:
             )
         return linked_entities
 
+    def get_metadata_values_for_collection_item_by_key(self, collection, key):
+        aql = """
+            FOR c IN @@collection
+                FILTER c.metadata != NULL
+                FOR metadata IN c.metadata
+                    FILTER metadata.key == @key
+                    RETURN DISTINCT(metadata.value)
+        """
+        bind = {"@collection": collection, "key": key}
+        results = self.db.AQLQuery(aql, rawResults=True, bindVars=bind)
+        return list(results)
+
     def handle_mediafile_deleted(self, parents):
         for item in parents:
             if item["primary_mediafile"] or item["primary_thumbnail"]:

@@ -176,6 +176,9 @@ class MemoryStorageManager:
     def get_mediafile_linked_entities(self, mediafile):
         return
 
+    def get_metadata_values_for_collection_item_by_key(self, collection, key):
+        return
+
     def handle_mediafile_deleted(self, parents):
         return
 
