@@ -160,7 +160,7 @@ class ArangoStorageManager:
             "testimony": ["isTestimonyFor"],
             "thesaurus": [],
         }.get(type, ["components"])
-        return [x for x in relations if exclude and x not in exclude]
+        return [x for x in relations if not exclude or x not in exclude]
 
     def __map_entity_relation(self, relation):
         return {
