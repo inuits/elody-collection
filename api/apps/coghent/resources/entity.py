@@ -3,6 +3,7 @@ import app
 from apps.coghent.resources.base_resource import CoghentBaseResource
 from flask import Blueprint
 from flask_restful import abort, Api
+from inuits_jwt_auth.authorization import current_token
 from resources.entity import (
     EntityDetail,
     EntityMetadata,
@@ -32,7 +33,22 @@ class CoghentEntityMediafilesCreate(CoghentBaseResource, EntityMediafilesCreate)
 
 
 class CoghentEntityMetadata(CoghentBaseResource, EntityMetadata):
-    pass
+    @app.require_oauth("update-entity-metadata")
+    def put(self, id):
+        entity = self._abort_if_item_doesnt_exist("entities", id)
+        content = self._get_request_body()
+        if (
+            entity["type"] != "testimony"
+            or not any(x["key"] == "likes" for x in content)
+            or not app.require_oauth.check_permission(["like-testimony"])
+        ):
+            if self._only_own_items():
+                self._abort_if_no_access(entity, current_token)
+        metadata = self.storage.update_collection_item_sub_item(
+            "entities", self._get_raw_id(entity), "metadata", content
+        )
+        self._signal_entity_changed(entity)
+        return metadata, 201
 
 
 class CoghentEntityMetadataKey(CoghentBaseResource, EntityMetadataKey):
