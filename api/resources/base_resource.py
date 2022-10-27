@@ -126,7 +126,7 @@ class BaseResource(Resource):
         for filter_collection, filters_for_collection in filters.items():
             allowed_filters[filter_collection] = list()
             for filter in filters_for_collection:
-                if app.require_oauth.check_permission(f"filter_on_{filter['key']}"):
+                if app.require_oauth.check_permission(f"filter-on-{filter['key']}"):
                     allowed_filters[filter_collection].append(filter)
         return allowed_filters
 
