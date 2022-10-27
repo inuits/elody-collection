@@ -120,12 +120,12 @@ class BaseResource(Resource):
             return False
         return True
 
-    def _read_json_as_dict(self, json_filename):
-        with open(f"{json_filename}.json") as file:
-            try:
+    def _read_json_as_dict(self, filename):
+        try:
+            with open(f"{filename}.json") as file:
                 return json.load(file)
-            except json.JSONDecodeError as ex:
-                app.logger.error(f"Could not read {json_filename}.json as a dict: {ex}")
+        except (FileNotFoundError, json.JSONDecodeError) as ex:
+            app.logger.error(f"Could not read {filename}.json as a dict: {ex}")
         return {}
 
     def _set_entity_mediafile_and_thumbnail(self, entity):
