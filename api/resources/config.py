@@ -31,5 +31,5 @@ class Config(BaseResource):
                     ] = self.storage.get_metadata_values_for_collection_item_by_key(
                         collection, key
                     )
-        config["filters"] = self._read_json_as_dict("filters")
+        config["filters"] = self._get_allowed_filters()
         return config

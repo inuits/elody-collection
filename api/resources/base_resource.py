@@ -120,6 +120,16 @@ class BaseResource(Resource):
             return False
         return True
 
+    def _get_allowed_filters(self):
+        allowed_filters = dict()
+        filters = self._read_json_as_dict("filters")
+        for filter_collection, filters_for_collection in filters.items():
+            allowed_filters[filter_collection] = list()
+            for filter in filters_for_collection:
+                if app.require_oauth.check_permission(f"filter_on_{filter['key']}"):
+                    allowed_filters[filter_collection].append(filter)
+        return allowed_filters
+
     def _read_json_as_dict(self, filename):
         try:
             with open(f"{filename}.json") as file:

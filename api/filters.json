@@ -28,29 +28,45 @@
       "type": "AdvancedFilterTypes.Checklist"
     },
     {
-      "key": "titel",
+      "key": "title",
       "label": "Titel",
       "type": "AdvancedFilterTypes.Tekst"
     },
     {
-      "key": "objectnummer",
+      "key": "object_number",
       "label": "Objectnummer",
       "type": "AdvancedFilterTypes.Tekst"
     },
     {
-      "key": "Entiteit.beschrijving",
+      "key": "description",
       "label": "Beschrijving",
       "type": "AdvancedFilterTypes.Tekst"
     },
     {
-      "key": "collectie",
-      "label": "Collectie",
-      "type": "AdvancedFilterTypes.Multiselect"
+      "key": "material",
+      "label": "Materiaal",
+      "type": "AdvancedFilterTypes.Tekst"
+    },
+    {
+      "key": "skos:note",
+      "label": "Nota",
+      "type": "AdvancedFilterTypes.Tekst"
     },
     {
       "key": "museum",
       "label": "Beheerder",
       "type": "AdvancedFilterTypes.Checklist"
+    },
+    {
+      "key": "publication_status",
+      "label": "Status",
+      "type": "AdvancedFilterTypes.Checklist"
+    },
+    {
+      "key": "mediafiles",
+      "label": "Aantal mediafiles",
+      "type": "AdvancedFilterTypes.Minmax",
+      "isRelation": true
     }
   ]
 }
