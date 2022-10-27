@@ -1,0 +1,56 @@
+{
+  "mediafileFilters": [
+    {
+      "key": "rights",
+      "label": "Rights",
+      "type": "AdvancedFilterTypes.Checklist"
+    },
+    {
+      "key": "source",
+      "label": "Source",
+      "type": "AdvancedFilterTypes.Checklist"
+    },
+    {
+      "key": "publication_status_media_file",
+      "label": "Publication Status",
+      "type": "AdvancedFilterTypes.Checklist"
+    },
+    {
+      "key": "photographer",
+      "label": "Photographer",
+      "type": "AdvancedFilterTypes.Tekst"
+    }
+  ],
+  "entityFilters": [
+    {
+      "key": "type",
+      "label": "Type",
+      "type": "AdvancedFilterTypes.Checklist"
+    },
+    {
+      "key": "titel",
+      "label": "Titel",
+      "type": "AdvancedFilterTypes.Tekst"
+    },
+    {
+      "key": "objectnummer",
+      "label": "Objectnummer",
+      "type": "AdvancedFilterTypes.Tekst"
+    },
+    {
+      "key": "Entiteit.beschrijving",
+      "label": "Beschrijving",
+      "type": "AdvancedFilterTypes.Tekst"
+    },
+    {
+      "key": "collectie",
+      "label": "Collectie",
+      "type": "AdvancedFilterTypes.Multiselect"
+    },
+    {
+      "key": "museum",
+      "label": "Beheerder",
+      "type": "AdvancedFilterTypes.Checklist"
+    }
+  ]
+}
