@@ -132,7 +132,12 @@ class StoryBoxSubtitles(CoghentBaseResource):
                 )
             )
         mediafile = self.storage.save_item_to_collection(
-            "mediafiles", {"filename": "storybox_srt.srt", "metadata": []}
+            "mediafiles",
+            {
+                "filename": "storybox_srt.srt",
+                "metadata": [],
+                "user": current_token["email"],
+            },
         )
         if not mediafile:
             abort(400, message="Failed to create mediafile")
