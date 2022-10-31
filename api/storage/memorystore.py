@@ -98,7 +98,7 @@ class MemoryStorageManager:
         return None
 
     def get_collection_item_relations(
-        self, collection, obj_id, include_sub_relations=False, exclude_relations=None
+        self, collection, obj_id, include_sub_relations=False, exclude=None
     ):
         return self.get_collection_item_sub_item(collection, obj_id, "relations")
 

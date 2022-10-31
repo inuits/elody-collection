@@ -143,7 +143,7 @@ class MongoStorageManager:
         return mediafiles
 
     def get_collection_item_relations(
-        self, collection, id, include_sub_relations=False, exclude_relations=None
+        self, collection, id, include_sub_relations=False, exclude=None
     ):
         return self.get_collection_item_sub_item(collection, id, "relations")
 
