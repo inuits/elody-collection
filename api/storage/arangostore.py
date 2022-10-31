@@ -4,10 +4,10 @@ import uuid
 
 from cloudevents.conversion import to_dict
 from cloudevents.http import CloudEvent
-from exceptions import NonUniqueException
 from pyArango.theExceptions import CreationError, DocumentNotFoundError, UpdateError
 from storage.py_arango_connection_extension import PyArangoConnection as Connection
 from time import sleep
+from util import NonUniqueException
 
 
 class ArangoStorageManager:

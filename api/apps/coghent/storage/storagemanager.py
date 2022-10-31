@@ -1,6 +1,6 @@
 from apps.coghent.storage.arangostore import CoghentArangoStorageManager
-from singleton import Singleton
 from storage.storagemanager import StorageManager
+from util import Singleton
 
 
 class CoghentStorageManager(StorageManager, metaclass=Singleton):

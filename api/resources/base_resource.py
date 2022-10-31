@@ -1,6 +1,6 @@
 import app
-import json
 import os
+import util
 
 from cloudevents.conversion import to_dict
 from cloudevents.http import CloudEvent
@@ -62,7 +62,7 @@ class BaseResource(Resource):
 
     def _get_allowed_filters(self):
         allowed_filters = dict()
-        filters = self._read_json_as_dict("filters")
+        filters = util.read_json_as_dict("filters")
         for filter_collection, filters_for_collection in filters.items():
             allowed_filters[filter_collection] = list()
             for filter in filters_for_collection:
@@ -131,14 +131,6 @@ class BaseResource(Resource):
         if any(app.require_oauth.check_permission(x) for x in permissions):
             return False
         return True
-
-    def _read_json_as_dict(self, filename):
-        try:
-            with open(f"{filename}.json") as file:
-                return json.load(file)
-        except (FileNotFoundError, json.JSONDecodeError) as ex:
-            app.logger.error(f"Could not read {filename}.json as a dict: {ex}")
-        return {}
 
     def _set_entity_mediafile_and_thumbnail(self, entity):
         mediafiles = self.storage.get_collection_item_mediafiles(

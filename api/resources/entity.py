@@ -1,10 +1,10 @@
 import app
 
 from datetime import datetime
-from exceptions import NonUniqueException
 from flask import request, after_this_request
 from inuits_jwt_auth.authorization import current_token
 from resources.base_resource import BaseResource
+from util import NonUniqueException
 from validator import entity_schema, mediafile_schema
 
 
