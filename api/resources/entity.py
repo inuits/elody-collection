@@ -139,12 +139,10 @@ class EntityMediafiles(BaseResource):
     @app.require_oauth("add-entity-mediafiles")
     def post(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
-        only_own = self._only_own_items()
-        if only_own:
-            self._abort_if_no_access(entity, current_token)
         content = self._get_request_body()
         self._abort_if_not_valid_json("Mediafile", content, mediafile_schema)
-        if only_own:
+        if self._only_own_items():
+            self._abort_if_no_access(entity, current_token)
             self._abort_if_no_access(content, current_token, "mediafiles")
         mediafile = self.storage.add_mediafile_to_collection_item(
             "entities",
@@ -160,9 +158,9 @@ class EntityMediafilesCreate(BaseResource):
     @app.require_oauth("create-entity-mediafile")
     def post(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
+        content = self._get_request_body()
         if self._only_own_items():
             self._abort_if_no_access(entity, current_token)
-        content = self._get_request_body()
         if "filename" not in content:
             abort(405, message="Invalid input")
         content["original_file_location"] = f'/download/{content["filename"]}'
