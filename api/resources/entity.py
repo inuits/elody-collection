@@ -1,5 +1,6 @@
 import app
 
+from datetime import datetime
 from exceptions import NonUniqueException
 from flask import request, after_this_request
 from flask_restful import abort
@@ -45,6 +46,8 @@ class Entity(BaseResource):
         content["user"] = "default_uploader"
         if "email" in current_token:
             content["user"] = current_token["email"]
+        content["date_created"] = str(datetime.now())
+        content["version"] = 1
         try:
             entity = self.storage.save_item_to_collection("entities", content)
         except NonUniqueException as ex:
@@ -70,6 +73,8 @@ class EntityDetail(BaseResource):
         self._abort_if_not_valid_json("Entity", content, entity_schema)
         if self._only_own_items():
             self._abort_if_no_access(entity, current_token)
+        content["date_updated"] = str(datetime.now())
+        content["version"] = content.get("version", 0) + 1
         try:
             entity = self.storage.update_item_from_collection(
                 "entities", self._get_raw_id(entity), content
@@ -85,6 +90,8 @@ class EntityDetail(BaseResource):
         content = self._get_request_body()
         if self._only_own_items():
             self._abort_if_no_access(entity, current_token)
+        content["date_updated"] = str(datetime.now())
+        content["version"] = content.get("version", 0) + 1
         try:
             entity = self.storage.patch_item_from_collection(
                 "entities", self._get_raw_id(entity), content

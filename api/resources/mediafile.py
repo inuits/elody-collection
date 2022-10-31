@@ -1,5 +1,6 @@
 import app
 
+from datetime import datetime
 from flask import request
 from inuits_jwt_auth.authorization import current_token
 from resources.base_resource import BaseResource
@@ -42,6 +43,8 @@ class Mediafile(BaseResource):
         content["user"] = "default_uploader"
         if "email" in current_token:
             content["user"] = current_token["email"]
+        content["date_created"] = str(datetime.now())
+        content["version"] = content.get("version", 0) + 1
         mediafile = self.storage.save_item_to_collection("mediafiles", content)
         return mediafile, 201
 
@@ -96,6 +99,8 @@ class MediafileDetail(BaseResource):
         if self._only_own_items():
             self._abort_if_no_access(old_mediafile, current_token, "mediafiles")
         self._abort_if_not_valid_json("Mediafile", content, mediafile_schema)
+        content["date_updated"] = str(datetime.now())
+        content["version"] = content.get("version", 0) + 1
         mediafile = self.storage.update_item_from_collection(
             "mediafiles", self._get_raw_id(old_mediafile), content
         )
@@ -108,6 +113,8 @@ class MediafileDetail(BaseResource):
         content = self._get_request_body()
         if self._only_own_items():
             self._abort_if_no_access(old_mediafile, current_token, "mediafiles")
+        content["date_updated"] = str(datetime.now())
+        content["version"] = content.get("version", 0) + 1
         mediafile = self.storage.patch_item_from_collection(
             "mediafiles", self._get_raw_id(old_mediafile), content
         )
