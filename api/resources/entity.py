@@ -3,7 +3,6 @@ import app
 from datetime import datetime
 from exceptions import NonUniqueException
 from flask import request, after_this_request
-from flask_restful import abort
 from inuits_jwt_auth.authorization import current_token
 from resources.base_resource import BaseResource
 from validator import entity_schema, mediafile_schema
@@ -162,10 +161,9 @@ class EntityMediafilesCreate(BaseResource):
     def post(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         content = self._get_request_body()
+        self._abort_if_not_valid_json("Mediafile", content, mediafile_schema)
         if self._only_own_items():
             self._abort_if_no_access(entity, current_token)
-        if "filename" not in content:
-            abort(405, message="Invalid input")
         content["original_file_location"] = f'/download/{content["filename"]}'
         content[
             "thumbnail_file_location"
