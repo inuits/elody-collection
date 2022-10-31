@@ -1,13 +1,13 @@
 import app
 import os
 import uuid
+import util
 
 from cloudevents.conversion import to_dict
 from cloudevents.http import CloudEvent
 from pyArango.theExceptions import CreationError, DocumentNotFoundError, UpdateError
 from storage.py_arango_connection_extension import PyArangoConnection as Connection
 from time import sleep
-from util import NonUniqueException
 
 
 class ArangoStorageManager:
@@ -200,10 +200,7 @@ class ArangoStorageManager:
     def __set_new_primary(self, raw_entity, mediafile=False, thumbnail=False):
         for edge in raw_entity.getOutEdges(self.db["hasMediafile"]):
             potential_mediafile = self.db.fetchDocument(edge["_to"]).getStore()
-            if (
-                self.__get_mediafile_publication_status(potential_mediafile)
-                == "publiek"
-            ):
+            if util.mediafile_is_public(potential_mediafile):
                 if mediafile:
                     edge["is_primary"] = True
                 if thumbnail:
@@ -583,7 +580,7 @@ class ArangoStorageManager:
         ):
             raw_entity = self.db.fetchDocument(edge["_from"])
             primary_items = self.__get_primary_items(raw_entity)
-            if new_publication_status == "publiek":
+            if util.mediafile_is_public(mediafile):
                 if not primary_items["primary_mediafile"]:
                     edge["is_primary"] = True
                     edge.save()
@@ -628,7 +625,7 @@ class ArangoStorageManager:
             item = raw_item.getStore()
         except UpdateError as ue:
             if ue.errors["code"] == 409:
-                raise NonUniqueException(ue.errors["errorMessage"])
+                raise util.NonUniqueException(ue.errors["errorMessage"])
             raise ue
         self.__signal_child_relation_changed(collection, id)
         return item
@@ -657,7 +654,7 @@ class ArangoStorageManager:
             item.save()
         except CreationError as ce:
             if ce.errors["code"] == 409:
-                raise NonUniqueException(ce.errors["errorMessage"])
+                raise util.NonUniqueException(ce.errors["errorMessage"])
             raise ce
         return item.getStore()
 
@@ -696,7 +693,7 @@ class ArangoStorageManager:
             item = raw_item.getStore()
         except UpdateError as ue:
             if ue.errors["code"] == 409:
-                raise NonUniqueException(ue.errors["errorMessage"])
+                raise util.NonUniqueException(ue.errors["errorMessage"])
             raise ue
         self.__signal_child_relation_changed(collection, id)
         return item
