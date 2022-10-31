@@ -1,4 +1,5 @@
 import app
+import util
 
 from datetime import datetime
 from flask import request
@@ -74,7 +75,7 @@ class MediafileCopyright(BaseResource):
             mediafile, current_token
         ):
             return "full", 200
-        if not self._mediafile_is_public(mediafile):
+        if not util.mediafile_is_public(mediafile):
             return "none", 200
         for item in [x for x in mediafile["metadata"] if x["key"] == "rights"]:
             if "in copyright" in item["value"].lower():
@@ -86,7 +87,7 @@ class MediafileDetail(BaseResource):
     @app.require_oauth("read-mediafile")
     def get(self, id):
         mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
-        if self._only_own_items() and not self._mediafile_is_public(mediafile):
+        if self._only_own_items() and not util.mediafile_is_public(mediafile):
             self._abort_if_no_access(mediafile, current_token, "mediafiles")
         if request.args.get("raw", None):
             return mediafile

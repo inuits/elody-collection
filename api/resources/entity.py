@@ -1,4 +1,5 @@
 import app
+import util
 
 from datetime import datetime
 from flask import request, after_this_request
@@ -125,7 +126,7 @@ class EntityMediafiles(BaseResource):
             mediafiles = [
                 mediafile
                 for mediafile in mediafiles
-                if self._mediafile_is_public(mediafile)
+                if util.mediafile_is_public(mediafile)
             ]
 
         @after_this_request
@@ -150,7 +151,7 @@ class EntityMediafiles(BaseResource):
             "entities",
             self._get_raw_id(entity),
             mediafile["_id"],
-            self._mediafile_is_public(mediafile),
+            util.mediafile_is_public(mediafile),
         )
         self._signal_entity_changed(entity)
         return mediafile, 201
@@ -177,7 +178,7 @@ class EntityMediafilesCreate(BaseResource):
             "entities",
             self._get_raw_id(entity),
             mediafile["_id"],
-            self._mediafile_is_public(mediafile),
+            util.mediafile_is_public(mediafile),
         )
         self._signal_entity_changed(entity)
         return upload_location, 201

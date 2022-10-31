@@ -16,6 +16,13 @@ class Singleton(type):
         return cls._instances[cls]
 
 
+def mediafile_is_public(mediafile):
+    for item in mediafile.get("metadata", []):
+        if item["key"] == "publication_status":
+            return item["value"].lower() in ["beschermd", "expliciet", "publiek"]
+    return False
+
+
 def read_json_as_dict(filename):
     try:
         with open(f"{filename}.json") as file:

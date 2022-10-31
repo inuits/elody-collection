@@ -115,14 +115,6 @@ class BaseResource(Resource):
     def _is_owner_of_item(self, item, token):
         return "user" in item and item["user"] == token["email"]
 
-    def _mediafile_is_public(self, mediafile):
-        if "metadata" not in mediafile:
-            return False
-        for item in mediafile["metadata"]:
-            if item["key"] == "publication_status":
-                return item["value"].lower() in ["beschermd", "expliciet", "publiek"]
-        return False
-
     def _only_own_items(self, permissions=None):
         if not permissions:
             permissions = ["show-all"]
