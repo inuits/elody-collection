@@ -141,14 +141,17 @@ class EntityMediafiles(BaseResource):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         content = self._get_request_body()
         self._abort_if_not_valid_json("Mediafile", content, mediafile_schema)
+        mediafile = self._abort_if_item_doesnt_exist(
+            "mediafiles", self._get_raw_id(content)
+        )
         if self._only_own_items():
             self._abort_if_no_access(entity, current_token)
-            self._abort_if_no_access(content, current_token, "mediafiles")
+            self._abort_if_no_access(mediafile, current_token, "mediafiles")
         mediafile = self.storage.add_mediafile_to_collection_item(
             "entities",
             self._get_raw_id(entity),
-            content["_id"],
-            self._mediafile_is_public(content),
+            mediafile["_id"],
+            self._mediafile_is_public(mediafile),
         )
         self._signal_entity_changed(entity)
         return mediafile, 201
