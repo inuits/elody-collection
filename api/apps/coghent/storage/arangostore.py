@@ -27,33 +27,26 @@ class CoghentArangoStorageManager(ArangoStorageManager):
             FOR c IN box_visits
             {"FILTER c._key IN @ids" if ids else ""}
             {f'FILTER c.type == "{item_type}"' if item_type else ""}
-        """
-        aql2 = """
             LET new_metadata = (
                 FOR item,edge IN OUTBOUND c GRAPH 'assets'
                     FILTER edge._id NOT LIKE 'hasMediafile%'
-                    LET relation = {'key': edge._to, 'type': edge.type}
-                    RETURN HAS(edge, 'label') ? MERGE(relation, {'label': IS_NULL(edge.label.`@value`) ? edge.label : edge.label.`@value`}) : relation
+                    LET relation = {{'key': edge._to, 'type': edge.type}}
+                    RETURN HAS(edge, 'label') ? MERGE(relation, {{'label': IS_NULL(edge.label.`@value`) ? edge.label : edge.label.`@value`}}) : relation
             )
-            LET all_metadata = {'metadata': APPEND(c.metadata, new_metadata)}
+            LET all_metadata = {{'metadata': APPEND(c.metadata, new_metadata)}}
             LIMIT @skip, @limit
             RETURN MERGE(c, all_metadata)
         """
         bind = {"skip": skip, "limit": limit}
         if ids:
             bind["ids"] = ids
-        results = self.db.AQLQuery(
-            f"{aql}{aql2}", rawResults=True, bindVars=bind, fullCount=True
-        )
+        results = self.db.AQLQuery(aql, rawResults=True, bindVars=bind, fullCount=True)
         items = dict()
         items["count"] = results.extra["stats"]["fullCount"]
         items["results"] = list(results)
         if ids:
             items["results"] = [
-                result_item
-                for i in ids
-                for result_item in items["results"]
-                if result_item["_key"] == i
+                item for id in ids for item in items["results"] if item["_key"] == id
             ]
         return items
 

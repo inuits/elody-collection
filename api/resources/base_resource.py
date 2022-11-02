@@ -54,10 +54,7 @@ class BaseResource(Resource):
             return entity
         if sort_by and all("order" in x for x in relations):
             relations = sorted(relations, key=lambda x: x[sort_by])
-        if "metadata" in entity:
-            entity["metadata"] = [*entity["metadata"], *relations]
-        else:
-            entity["metadata"] = relations
+        entity["metadata"] = [*entity.get("metadata", []), *relations]
         return entity
 
     def _get_allowed_filters(self):

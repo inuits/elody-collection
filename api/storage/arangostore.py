@@ -123,9 +123,7 @@ class ArangoStorageManager:
         return highest_order + 3
 
     def __get_mediafile_publication_status(self, mediafile):
-        if "metadata" not in mediafile:
-            return ""
-        for metadata in mediafile["metadata"]:
+        for metadata in mediafile.get("metadata", []):
             if metadata["key"] == "publication_status":
                 return metadata["value"]
         return ""
@@ -133,9 +131,9 @@ class ArangoStorageManager:
     def __get_primary_items(self, raw_entity):
         result = {"primary_mediafile": "", "primary_thumbnail": ""}
         for edge in raw_entity.getOutEdges(self.db["hasMediafile"]):
-            if "is_primary" in edge and edge["is_primary"]:
+            if edge.get("is_primary", False):
                 result["primary_mediafile"] = edge["_to"]
-            if "is_primary_thumbnail" in edge and edge["is_primary_thumbnail"]:
+            if edge.get("is_primary_thumbnail", False):
                 result["primary_thumbnail"] = edge["_to"]
         return result
 
@@ -175,9 +173,6 @@ class ArangoStorageManager:
             "parent": "components",
             "stories": "frames",
         }.get(relation)
-
-    def __map_entity_relation_parent_label(self, relation):
-        return {"GecureerdeCollectie.bestaatUit": "Collectie.naam"}.get(relation)
 
     def __remove_edges(self, entity, relation, edge_collection):
         for edge in entity.getEdges(self.db[edge_collection]):
@@ -246,12 +241,9 @@ class ArangoStorageManager:
         }
         if mediafile_public:
             for edge in entity.getOutEdges(self.db["hasMediafile"]):
-                if "is_primary" in edge and edge["is_primary"] is True:
+                if edge.get("is_primary", False):
                     extra_data["is_primary"] = False
-                if (
-                    "is_primary_thumbnail" in edge
-                    and edge["is_primary_thumbnail"] is True
-                ):
+                if edge.get("is_primary_thumbnail", False):
                     extra_data["is_primary_thumbnail"] = False
         self.db.graphs[self.default_graph_name].createEdge(
             "hasMediafile", entity["_id"], mediafile_id, extra_data
@@ -272,11 +264,9 @@ class ArangoStorageManager:
             if not parent:
                 continue
             extra_data = {}
-            if "label" in relation and (
-                label := self.__map_entity_relation_parent_label(relation["label"])
-            ):
+            if relation.get("label") == "GecureerdeCollectie.bestaatUit":
                 extra_data = {
-                    "label": label,
+                    "label": "Collectie.naam",
                     "value": entity["data"]["MensgemaaktObject.titel"]["@value"],
                 }
             self.db.graphs[self.default_graph_name].createEdge(
@@ -332,10 +322,8 @@ class ArangoStorageManager:
         item.delete()
 
     def drop_all_collections(self):
-        for collection in self.collections:
+        for collection in [*self.collections, *self.edges]:
             self.db[collection].truncate()
-        for edge in self.edges:
-            self.db[edge].truncate()
 
     def get_collection_item_mediafiles(self, collection, id):
         entity = self.__get_raw_item_from_collection_by_id(collection, id)
@@ -357,7 +345,7 @@ class ArangoStorageManager:
     def get_collection_item_relations(
         self, collection, id, include_sub_relations=False, exclude=None
     ):
-        if exclude is None:
+        if not exclude:
             exclude = []
         entity = self.__get_raw_item_from_collection_by_id(collection, id)
         relevant_relations = self.__get_relevant_relations(entity["type"], exclude)
@@ -613,8 +601,7 @@ class ArangoStorageManager:
         ]
 
     def patch_collection_item_relations(self, collection, id, content, parent=True):
-        entity = self.__get_raw_item_from_collection_by_id(collection, id)
-        self.__remove_relations(entity, content, parent)
+        self.delete_collection_item_relations(collection, id, content, parent)
         return self.add_relations_to_collection_item(collection, id, content, parent)
 
     def patch_item_from_collection(self, collection, id, content):
@@ -664,12 +651,10 @@ class ArangoStorageManager:
         entity = self.__get_raw_item_from_collection_by_id(collection, entity_id)
         for edge in entity.getOutEdges(self.db["hasMediafile"]):
             new_primary_id = f"mediafiles/{mediafile_id}"
-            if edge["_to"] != new_primary_id and edge[field]:
+            if edge["_to"] != new_primary_id and edge.get(field, False):
                 edge[field] = False
                 edge.save()
-            elif edge["_to"] == new_primary_id and (
-                field not in edge or not edge[field]
-            ):
+            elif edge["_to"] == new_primary_id and not edge.get(field, False):
                 edge[field] = True
                 edge.save()
 
