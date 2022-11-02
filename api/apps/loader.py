@@ -5,7 +5,7 @@ from importlib import import_module
 
 
 def load_apps(flask_app):
-    apps = util.read_json_as_dict(os.getenv("APPS_MANIFEST", "apps/app_list.json"))
+    apps = util.read_json_as_dict(os.getenv("APPS_MANIFEST"))
     for app in apps:
         for resource in apps[app].get("resources", []):
             api_bp = import_module(f"apps.{app}.resources.{resource}").api_bp

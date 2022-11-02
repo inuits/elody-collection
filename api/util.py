@@ -25,8 +25,8 @@ def mediafile_is_public(mediafile):
 
 def read_json_as_dict(filename):
     try:
-        with open(f"{filename}.json") as file:
+        with open(filename) as file:
             return json.load(file)
     except (FileNotFoundError, json.JSONDecodeError) as ex:
-        app.logger.error(f"Could not read {filename}.json as a dict: {ex}")
+        app.logger.error(f"Could not read {filename} as a dict: {ex}")
     return {}

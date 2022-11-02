@@ -62,7 +62,7 @@ class BaseResource(Resource):
 
     def _get_allowed_filters(self):
         allowed_filters = dict()
-        filters = util.read_json_as_dict("filters")
+        filters = util.read_json_as_dict("filters.json")
         for filter_collection, filters_for_collection in filters.items():
             allowed_filters[filter_collection] = list()
             for filter in filters_for_collection:
