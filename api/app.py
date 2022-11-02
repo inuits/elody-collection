@@ -140,12 +140,5 @@ api.add_resource(MediafileDetail, "/mediafiles/<string:id>")
 api.add_resource(AsyncAPISpec, "/spec/dams-collection-api-events.html")
 api.add_resource(OpenAPISpec, "/spec/dams-collection-api.json")
 
-
-@app.after_request
-def add_header(response):
-    response.headers["Jaeger-trace-id"] = os.getenv("JAEGER_TRACE_ID", "default-id")
-    return response
-
-
 if __name__ == "__main__":
     app.run(debug=True)
