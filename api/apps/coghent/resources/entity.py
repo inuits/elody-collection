@@ -40,7 +40,7 @@ class CoghentEntityMetadata(CoghentBaseResource, EntityMetadata):
         if (
             entity["type"] != "testimony"
             or not any(x["key"] == "likes" for x in content)
-            or not app.require_oauth.check_permission(["like-testimony"])
+            or not app.require_oauth.check_permission("like-testimony")
         ):
             if self._only_own_items():
                 self._abort_if_no_access(entity, current_token)
