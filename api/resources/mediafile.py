@@ -24,9 +24,8 @@ class Mediafile(BaseResource):
             mediafiles = self.storage.get_items_from_collection(
                 "mediafiles", skip, limit, filters=filters
             )
-        count = mediafiles["count"]
         mediafiles["limit"] = limit
-        if skip + limit < count:
+        if skip + limit < mediafiles["count"]:
             mediafiles["next"] = f"/mediafiles?skip={skip + limit}&limit={limit}"
         if skip:
             mediafiles[

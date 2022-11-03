@@ -20,9 +20,8 @@ class BoxVisit(CoghentBaseResource):
         if ids:
             ids = ids.split(",")
         box_visits = self.storage.get_box_visits(skip, limit, item_type, ids)
-        count = box_visits["count"]
         box_visits["limit"] = limit
-        if skip + limit < count:
+        if skip + limit < box_visits["count"]:
             box_visits[
                 "next"
             ] = f"/box_visits?{type_filter}skip={skip + limit}&limit={limit}"

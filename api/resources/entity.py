@@ -26,9 +26,8 @@ class Entity(BaseResource):
         skip_relations = int(request.args.get("skip_relations", 0))
         type_filter = f"type={item_type}&" if item_type else ""
         entities = self.storage.get_entities(skip, limit, skip_relations, filters)
-        count = entities["count"]
         entities["limit"] = limit
-        if skip + limit < count:
+        if skip + limit < entities["count"]:
             entities[
                 "next"
             ] = f"/entities?{type_filter}skip={skip + limit}&limit={limit}&skip_relations={skip_relations}"
