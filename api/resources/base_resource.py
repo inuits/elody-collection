@@ -60,13 +60,14 @@ class BaseResource(Resource):
     def _get_allowed_filters(self):
         allowed_filters = dict()
         filters = util.read_json_as_dict("filters.json")
-        for filter_collection, filters_for_collection in filters.items():
-            allowed_filters[filter_collection] = list()
-            for filter in filters_for_collection:
-                if app.require_oauth.check_permission(
-                    f"filter-on-{filter['key'].replace('_', '-')}"
-                ):
-                    allowed_filters[filter_collection].append(filter)
+        permissions = app.require_oauth.get_token_permissions(
+            app.validator.role_permission_mapping
+        )
+        for collection, collection_filters in filters.items():
+            allowed_filters[collection] = list()
+            for filter in collection_filters:
+                if f"filter-on-{filter['key'].replace('_', '-')}" in permissions:
+                    allowed_filters[collection].append(filter)
         return allowed_filters
 
     def _get_raw_id(self, item):
