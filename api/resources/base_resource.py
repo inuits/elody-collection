@@ -118,7 +118,7 @@ class BaseResource(Resource):
             permissions = ["show-all"]
         else:
             permissions.append("show-all")
-        if any(app.require_oauth.check_permission(x) for x in permissions):
+        if app.require_oauth.check_permissions(permissions):
             return False
         return True
 

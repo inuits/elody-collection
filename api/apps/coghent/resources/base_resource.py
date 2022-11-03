@@ -99,8 +99,8 @@ class CoghentBaseResource(BaseResource):
                 entity_ids.append(linked_entity["entity_id"].removeprefix("entities/"))
         else:
             entity_ids.append(self._get_raw_id(item))
+        permissions = set()
         for entity_id in entity_ids:
-            permission = self.mapping.get(self._get_museum_id(entity_id))
-            if permission and app.require_oauth.check_permission(permission):
-                return True
-        return False
+            if permission := self.mapping.get(self._get_museum_id(entity_id)):
+                permissions.add(permission)
+        return permissions and app.require_oauth.check_permissions(permissions)
