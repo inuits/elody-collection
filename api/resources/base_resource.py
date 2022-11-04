@@ -46,6 +46,27 @@ class BaseResource(Resource):
                 400, message=f"{type} doesn't have a valid format. {validation_error}"
             )
 
+    def _add_options_to_filters(self, options, filters, filter_options_map):
+        for collection, collection_filters in filters.items():
+            for filter in collection_filters:
+                key = filter["key"]
+                if key in filter_options_map and filter_options_map[key] in options:
+                    filter = self._add_options_to_specific_filter(
+                        filter, options[filter_options_map[key]]
+                    )
+        return filters
+
+    def _add_options_to_specific_filter(self, filter, options):
+        filter["options"] = list()
+        for option in options:
+            filter["options"].append(
+                {
+                    "label": option,
+                    "value": option,
+                }
+            )
+        return filter
+
     def _add_relations_to_metadata(self, entity, collection="entities", sort_by=None):
         relations = self.storage.get_collection_item_relations(
             collection, self._get_raw_id(entity), exclude=["story_box_visits"]
