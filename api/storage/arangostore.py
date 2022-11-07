@@ -113,6 +113,19 @@ class ArangoStorageManager:
         except Exception as ex:
             app.logger.error(f"Could not create unique index: {ex}")
 
+    def __get_collection_item_sub_item_aql(self, collection, id, sub_item):
+        aql = """
+            FOR c in @@collection
+                FILTER c.object_id == @id OR @id IN c.identifiers OR c._key == @id
+                RETURN c.@sub_item
+        """
+        bind = {"id": id, "@collection": collection, "sub_item": sub_item}
+        result = self.db.AQLQuery(aql, rawResults=True, bindVars=bind)
+        result_len = result.__len__()
+        if not result_len:
+            return None
+        return list(result) if result_len > 1 else result[0]
+
     def __get_mediafile_index(self, mediafile, highest_order):
         if "order" in mediafile:
             return mediafile["order"]
@@ -142,7 +155,7 @@ class ArangoStorageManager:
             return item
         if key := self.key_cache.get(id):
             return self.__try_get_item_from_collection_by_key(collection, key)
-        if key := self.get_collection_item_sub_item(collection, id, "_key"):
+        if key := self.__get_collection_item_sub_item_aql(collection, id, "_key"):
             self.key_cache[id] = key
             return self.__try_get_item_from_collection_by_key(collection, key)
         return None
@@ -413,29 +426,19 @@ class ArangoStorageManager:
         return relations
 
     def get_collection_item_sub_item(self, collection, id, sub_item):
-        aql = """
-            FOR c in @@collection
-                FILTER c.object_id == @id OR @id IN c.identifiers OR c._key == @id
-                RETURN c.@sub_item
-        """
-        bind = {"id": id, "@collection": collection, "sub_item": sub_item}
-        result = self.db.AQLQuery(aql, rawResults=True, bindVars=bind)
-        result_len = result.__len__()
-        if not result_len:
+        item = self.get_item_from_collection_by_id(collection, id)
+        if not item:
             return None
-        return list(result) if result_len > 1 else result[0]
+        return item.get(sub_item)
 
     def get_collection_item_sub_item_key(self, collection, id, sub_item, key):
-        aql = """
-            FOR c IN @@collection
-                FILTER @id IN c.identifiers OR c._key == @id
-                FOR obj IN c.@sub_item
-                    FILTER obj.key == @key
-                    RETURN obj
-        """
-        bind = {"@collection": collection, "id": id, "sub_item": sub_item, "key": key}
-        results = self.db.AQLQuery(aql, rawResults=True, bindVars=bind)
-        return list(results)
+        item = self.get_item_from_collection_by_id(collection, id)
+        if not item:
+            return None
+        for sub_object in item.get(sub_item, []):
+            if sub_object["key"] == key:
+                return sub_object
+        return None
 
     def get_entities(self, skip=0, limit=20, skip_relations=0, filters=None):
         if not filters:
