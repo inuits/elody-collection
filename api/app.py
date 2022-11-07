@@ -105,6 +105,10 @@ from resources.mediafile import (
     MediafileCopyright,
     MediafileDetail,
 )
+from resources.saved_search import (
+    SavedSearch,
+    SavedSearchDetail,
+)
 from resources.spec import AsyncAPISpec, OpenAPISpec
 import resources.queues
 
@@ -136,6 +140,9 @@ api.add_resource(Mediafile, "/mediafiles")
 api.add_resource(MediafileAssets, "/mediafiles/<string:id>/assets")
 api.add_resource(MediafileCopyright, "/mediafiles/<string:id>/copyright")
 api.add_resource(MediafileDetail, "/mediafiles/<string:id>")
+
+api.add_resource(SavedSearch, "/saved_searches")
+api.add_resource(SavedSearchDetail, "/saved_searches/<string:id>")
 
 api.add_resource(AsyncAPISpec, "/spec/dams-collection-api-events.html")
 api.add_resource(OpenAPISpec, "/spec/dams-collection-api.json")

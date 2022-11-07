@@ -138,6 +138,42 @@ mediafile_schema = {
     },
 }
 
+saved_search_schema = {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "default": {},
+    "required": ["type", "definition"],
+    "properties": {
+        "_id": {"type": "string"},
+        "identifiers": {
+            "type": "array",
+            "default": [],
+            "items": {"$id": "#/properties/identifiers/items"},
+        },
+        "type": {
+            "type": "string",
+            "default": "",
+        },
+        "metadata": {
+            "type": "array",
+            "default": [],
+            "additionalItems": True,
+            "items": {"$id": "#/properties/metadata/items"},
+        },
+        "definition": {
+            "type": "array",
+            "default": [],
+            "additionalItems": True,
+            "items": {"$id": "#/properties/metadata/items"},
+        },
+        "user": {
+            "type": "string",
+            "default": "",
+        },
+    },
+    "additionalProperties": True,
+}
+
 
 def validate_json(json, schema):
     try:

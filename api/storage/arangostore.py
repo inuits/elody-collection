@@ -20,6 +20,7 @@ class ArangoStorageManager:
         self.event_delay = float(os.getenv("EVENT_DELAY", 0.02))
         self.event_batch_limit = int(os.getenv("EVENT_BATCH_LIMIT", 50))
         self.collections = [
+            "abstracts",
             "box_visits",
             "entities",
             "jobs",

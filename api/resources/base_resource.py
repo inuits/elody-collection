@@ -30,6 +30,15 @@ class BaseResource(Resource):
             404, message=f"Item with id {id} doesn't exist in collection {collection}"
         )
 
+    def _abort_if_item_doesnt_exist_or_incorrect_type(self, collection, id, type):
+        if item := self.storage.get_item_from_collection_by_id(collection, id):
+            if item["type"] == type:
+                return item
+        abort(
+            404,
+            message=f"Item with id {id} doesn't exist in collection {collection} or is of incorrect type",
+        )
+
     def _abort_if_no_access(self, item, token, collection="entities"):
         app.logger.info(f"Checking if {token} has access to {item}")
         is_owner = self._is_owner_of_item(item, token)
