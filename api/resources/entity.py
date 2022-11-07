@@ -62,7 +62,8 @@ class EntityDetail(BaseResource):
         if self._only_own_items(["read-entity-detail-all"]):
             self._abort_if_no_access(entity, current_token)
         entity = self._set_entity_mediafile_and_thumbnail(entity)
-        entity = self._add_relations_to_metadata(entity)
+        if not int(request.args.get("skip_relations", 0)):
+            entity = self._add_relations_to_metadata(entity)
         return self._inject_api_urls_into_entities([entity])[0]
 
     @app.require_oauth("update-entity")
