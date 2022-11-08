@@ -145,9 +145,9 @@ class ArangoStorageManager:
     def __get_primary_items(self, raw_entity):
         result = {"primary_mediafile": "", "primary_thumbnail": ""}
         for edge in raw_entity.getOutEdges(self.db["hasMediafile"]):
-            if edge.get("is_primary", False):
+            if "is_primary" in edge and edge["is_primary"]:
                 result["primary_mediafile"] = edge["_to"]
-            if edge.get("is_primary_thumbnail", False):
+            if "is_primary_thumbnail" in edge and edge["is_primary_thumbnail"]:
                 result["primary_thumbnail"] = edge["_to"]
         return result
 
@@ -255,9 +255,9 @@ class ArangoStorageManager:
         }
         if mediafile_public:
             for edge in entity.getOutEdges(self.db["hasMediafile"]):
-                if edge.get("is_primary", False):
+                if "is_primary" in edge and edge["is_primary"]:
                     extra_data["is_primary"] = False
-                if edge.get("is_primary_thumbnail", False):
+                if "is_primary_thumbnail" in edge and edge["is_primary_thumbnail"]:
                     extra_data["is_primary_thumbnail"] = False
         self.db.graphs[self.default_graph_name].createEdge(
             "hasMediafile", entity["_id"], mediafile_id, extra_data
@@ -655,10 +655,10 @@ class ArangoStorageManager:
         entity = self.__get_raw_item_from_collection_by_id(collection, entity_id)
         for edge in entity.getOutEdges(self.db["hasMediafile"]):
             new_primary_id = f"mediafiles/{mediafile_id}"
-            if edge["_to"] != new_primary_id and edge.get(field, False):
+            if edge["_to"] != new_primary_id and field in edge and edge[field]:
                 edge[field] = False
                 edge.save()
-            elif edge["_to"] == new_primary_id and not edge.get(field, False):
+            elif edge["_to"] == new_primary_id and field in edge and not edge[field]:
                 edge[field] = True
                 edge.save()
 
