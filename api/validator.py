@@ -142,17 +142,19 @@ saved_search_schema = {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
     "default": {},
-    "required": ["type", "definition"],
+    "required": ["definition", "private", "type"],
     "properties": {
         "_id": {"type": "string"},
+        "definition": {
+            "type": "array",
+            "default": [],
+            "additionalItems": True,
+            "items": {"$id": "#/properties/metadata/items"},
+        },
         "identifiers": {
             "type": "array",
             "default": [],
             "items": {"$id": "#/properties/identifiers/items"},
-        },
-        "type": {
-            "type": "string",
-            "default": "",
         },
         "metadata": {
             "type": "array",
@@ -160,11 +162,13 @@ saved_search_schema = {
             "additionalItems": True,
             "items": {"$id": "#/properties/metadata/items"},
         },
-        "definition": {
-            "type": "array",
-            "default": [],
-            "additionalItems": True,
-            "items": {"$id": "#/properties/metadata/items"},
+        "private": {
+            "type": "boolean",
+            "default": True,
+        },
+        "type": {
+            "type": "string",
+            "default": "",
         },
         "user": {
             "type": "string",

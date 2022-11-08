@@ -2163,14 +2163,18 @@
           },
           "metadata": {
             "type": "array",
-            "description": "mediafile metadata",
+            "description": "saved search metadata",
             "items": {
               "$ref": "#/components/schemas/metadata"
             }
           },
+          "private": {
+            "type": "boolean",
+            "description": "private saved search"
+          },
           "type": {
             "type": "string",
-            "description": "saved search value"
+            "description": "saved search type"
           }
         }
       }
