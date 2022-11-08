@@ -10,25 +10,30 @@ class Job(BaseResource):
         skip = int(request.args.get("skip", 0))
         limit = int(request.args.get("limit", 20))
         job_type = request.args.get("type")
-        fields = {}
+        status = request.args.get("status")
+        fields = {"parent_job_id": None}
+        if job_type:
+            fields["job_type"] = job_type
+        if status:
+            fields["status"] = status
         filters = {}
         if ids := request.args.get("ids"):
             filters["ids"] = ids.split(",")
-        elif job_type:
-            fields = {"job_type": job_type, "parent_job_id": None}
-        else:
-            fields = {"parent_job_id": None}
+            fields = {}
         jobs = self.storage.get_items_from_collection(
             "jobs", skip, limit, fields, filters, "start_time", False
         )
         jobs["limit"] = limit
         job_filter = f"&type={job_type}" if job_type else ""
+        status_filter = f"&status={status}" if status else ""
         if skip + limit < jobs["count"]:
-            jobs["next"] = f"/jobs?skip={skip + limit}&limit={limit}{job_filter}"
+            jobs[
+                "next"
+            ] = f"/jobs?skip={skip + limit}&limit={limit}{job_filter}{status_filter}"
         if skip > 0:
             jobs[
                 "previous"
-            ] = f"/jobs?skip={max(0, skip - limit)}&limit={limit}{job_filter}"
+            ] = f"/jobs?skip={max(0, skip - limit)}&limit={limit}{job_filter}{status_filter}"
         return jobs
 
 
