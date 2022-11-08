@@ -517,6 +517,7 @@ class ArangoStorageManager:
         aql = f"""
             FOR c IN @@collection
                 {"FILTER c._key IN @ids" if "ids" in filters else ""}
+                {"FILTER c.user == @user_or_public OR NOT c.private" if "user_or_public" in filters else ""}
                 {extra_query}
                 {f'SORT c.{sort} {"ASC" if asc else "DESC"}' if sort else ""}
                 LIMIT @skip, @limit
@@ -525,6 +526,8 @@ class ArangoStorageManager:
         bind = {"@collection": collection, "skip": skip, "limit": limit}
         if "ids" in filters:
             bind["ids"] = filters["ids"]
+        if "user_or_public" in filters:
+            bind["user_or_public"] = filters["user_or_public"]
         results = self.db.AQLQuery(aql, rawResults=True, bindVars=bind, fullCount=True)
         items["count"] = results.extra["stats"]["fullCount"]
         items["results"] = list(results)

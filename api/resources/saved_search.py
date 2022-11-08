@@ -18,7 +18,8 @@ class SavedSearch(BaseResource):
         if int(request.args.get("only_own", 0)) or self._only_own_items(
             ["read-saved-search-all"]
         ):
-            fields["user"] = current_token["email"]
+            email = current_token["email"]
+            filters["user_or_public"] = email
         if ids := request.args.get("ids", None):
             filters["ids"] = ids.split(",")
         saved_searches = self.storage.get_items_from_collection(
