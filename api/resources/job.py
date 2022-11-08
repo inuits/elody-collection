@@ -41,10 +41,12 @@ class JobDetail(BaseResource):
     @app.require_oauth("read-job")
     def get(self, id):
         job = self._abort_if_item_doesnt_exist("jobs", id)
-        if not job.get("parent_job_id", True):
-            job["sub_jobs"] = self.storage.get_items_from_collection(
-                "jobs",
-                limit=job["amount_of_jobs"],
-                fields={"parent_job_id": job["identifiers"][0]},
-            )
+        if job.get("parent_job_id"):
+            return job
+        fields = {"parent_job_id": self._get_raw_id(job)}
+        if status := request.args.get("status"):
+            fields["status"] = status
+        job["sub_jobs"] = self.storage.get_items_from_collection(
+            "jobs", limit=job["amount_of_jobs"], fields=fields
+        )
         return job
