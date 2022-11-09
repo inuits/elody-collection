@@ -174,6 +174,12 @@ class ArangoStorageManager:
         }.get(type, ["components"])
         return [x for x in relations if not exclude or x not in exclude]
 
+    def __invalidate_key_cache_for_item(self, item):
+        identifiers = item["identifiers"]
+        for id in identifiers:
+            if id in self.key_cache:
+                del self.key_cache[id]
+
     def __map_entity_relation(self, relation):
         return {
             "box": "box_stories",
@@ -330,6 +336,7 @@ class ArangoStorageManager:
 
     def delete_item_from_collection(self, collection, id):
         item = self.__get_raw_item_from_collection_by_id(collection, id)
+        self.__invalidate_key_cache_for_item(item)
         for edge_name in self.edges:
             for edge in item.getEdges(self.db[edge_name]):
                 edge.delete()
