@@ -3,69 +3,69 @@
     {
       "key": "rights",
       "label": "Rights",
-      "type": "AdvancedFilterTypes.Checklist"
+      "type": "checklist"
     },
     {
       "key": "source",
       "label": "Source",
-      "type": "AdvancedFilterTypes.Checklist"
+      "type": "checklist"
     },
     {
       "key": "publication_status_media_file",
       "label": "Publication Status",
-      "type": "AdvancedFilterTypes.Checklist"
+      "type": "checklist"
     },
     {
       "key": "photographer",
       "label": "Photographer",
-      "type": "AdvancedFilterTypes.Tekst"
+      "type": "tekst"
     }
   ],
   "entityFilters": [
     {
       "key": "type",
       "label": "Type",
-      "type": "AdvancedFilterTypes.Checklist"
+      "type": "checklist"
     },
     {
       "key": "title",
       "label": "Titel",
-      "type": "AdvancedFilterTypes.Tekst"
+      "type": "tekst"
     },
     {
       "key": "object_number",
       "label": "Objectnummer",
-      "type": "AdvancedFilterTypes.Tekst"
+      "type": "tekst"
     },
     {
       "key": "description",
       "label": "Beschrijving",
-      "type": "AdvancedFilterTypes.Tekst"
+      "type": "tekst"
     },
     {
       "key": "material",
       "label": "Materiaal",
-      "type": "AdvancedFilterTypes.Tekst"
+      "type": "tekst"
     },
     {
       "key": "skos:note",
       "label": "Nota",
-      "type": "AdvancedFilterTypes.Tekst"
+      "type": "tekst"
     },
     {
       "key": "museum",
       "label": "Beheerder",
-      "type": "AdvancedFilterTypes.Checklist"
+      "type": "checklist"
     },
     {
       "key": "publication_status",
       "label": "Status",
-      "type": "AdvancedFilterTypes.Checklist"
+      "type": "checklist"
     },
     {
       "key": "mediafiles",
       "label": "Aantal mediafiles",
-      "type": "AdvancedFilterTypes.Minmax",
+      "type": "minmax",
       "isRelation": true
     }
   ]
