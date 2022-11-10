@@ -175,8 +175,7 @@ class ArangoStorageManager:
         return [x for x in relations if not exclude or x not in exclude]
 
     def __invalidate_key_cache_for_item(self, item):
-        identifiers = item["identifiers"]
-        for id in identifiers:
+        for id in item["identifiers"]:
             if id in self.key_cache:
                 del self.key_cache[id]
 
