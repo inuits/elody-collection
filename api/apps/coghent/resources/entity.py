@@ -1,4 +1,5 @@
 import app
+import os
 
 from apps.coghent.resources.base_resource import CoghentBaseResource
 from flask import Blueprint
@@ -80,12 +81,13 @@ class EntityPermissions(CoghentBaseResource):
 class EntitySixthCollectionEntityId(CoghentBaseResource):
     @app.require_oauth("get-entity-sixth-collection-entity-id")
     def get(self):
-        entity_id = self.storage.get_collection_item_sub_item(
+        if entity_id := os.getenv("SIXTH_COLLECTION_ID"):
+            return entity_id
+        if entity_id := self.storage.get_collection_item_sub_item(
             "entities", "sixth_collection", "_id"
-        )
-        if not entity_id:
-            abort(404, message="Sixth collection entity could not be found")
-        return entity_id
+        ):
+            return entity_id
+        abort(404, message="Sixth collection entity could not be found")
 
 
 class EntitySixthCollectionId(CoghentBaseResource):
