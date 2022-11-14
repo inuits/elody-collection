@@ -10,7 +10,7 @@ class Config(BaseResource):
         hard_coded_values = {
             "publication_status": [
                 "publiek",
-                "niet_publiek",
+                "niet-publiek",
                 "kandidaat",
                 "werkbeeld",
                 "beschermd",
