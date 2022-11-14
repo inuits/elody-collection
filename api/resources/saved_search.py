@@ -18,8 +18,9 @@ class SavedSearch(BaseResource):
         if int(request.args.get("only_own", 0)) or self._only_own_items(
             ["read-saved-search-all"]
         ):
-            email = current_token["email"]
-            filters["user_or_public"] = email
+            filters["user_or_public"] = dict(current_token).get(
+                "email", "default_uploader"
+            )
         if ids := request.args.get("ids", None):
             filters["ids"] = ids.split(",")
         saved_searches = self.storage.get_items_from_collection(
@@ -40,9 +41,7 @@ class SavedSearch(BaseResource):
     def post(self):
         content = self._get_request_body()
         self._abort_if_not_valid_json("Saved search", content, saved_search_schema)
-        content["user"] = "default_uploader"
-        if "email" in current_token:
-            content["user"] = current_token["email"]
+        content["user"] = dict(current_token).get("email", "default_uploader")
         content["date_created"] = str(datetime.now())
         try:
             saved_search = self.storage.save_item_to_collection("abstracts", content)

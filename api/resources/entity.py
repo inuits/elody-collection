@@ -18,7 +18,7 @@ class Entity(BaseResource):
         if int(request.args.get("only_own", 0)) or self._only_own_items(
             ["read-entity-all"]
         ):
-            filters["user"] = current_token["email"]
+            filters["user"] = dict(current_token).get("email", "default_uploader")
         if item_type := request.args.get("type", None):
             filters["type"] = item_type
         if ids := request.args.get("ids", None):
@@ -42,9 +42,7 @@ class Entity(BaseResource):
     def post(self):
         content = self._get_request_body()
         self._abort_if_not_valid_json("Entity", content, entity_schema)
-        content["user"] = "default_uploader"
-        if "email" in current_token:
-            content["user"] = current_token["email"]
+        content["user"] = dict(current_token).get("email", "default_uploader")
         content["date_created"] = str(datetime.now())
         content["version"] = 1
         try:
@@ -169,9 +167,7 @@ class EntityMediafilesCreate(BaseResource):
         content[
             "thumbnail_file_location"
         ] = f'/iiif/3/{content["filename"]}/full/,150/0/default.jpg'
-        content["user"] = "default_uploader"
-        if "email" in current_token:
-            content["user"] = current_token["email"]
+        content["user"] = dict(current_token).get("email", "default_uploader")
         mediafile = self.storage.save_item_to_collection("mediafiles", content)
         upload_location = f'{self.storage_api_url}/upload/{content["filename"]}?id={self._get_raw_id(mediafile)}'
         self.storage.add_mediafile_to_collection_item(

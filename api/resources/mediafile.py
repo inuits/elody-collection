@@ -18,7 +18,11 @@ class Mediafile(BaseResource):
             filters["ids"] = ids.split(",")
         if self._only_own_items():
             mediafiles = self.storage.get_items_from_collection(
-                "mediafiles", skip, limit, {"user": current_token["email"]}, filters
+                "mediafiles",
+                skip,
+                limit,
+                {"user": dict(current_token).get("email", "default_uploader")},
+                filters,
             )
         else:
             mediafiles = self.storage.get_items_from_collection(
@@ -40,9 +44,7 @@ class Mediafile(BaseResource):
     def post(self):
         content = self._get_request_body()
         self._abort_if_not_valid_json("Mediafile", content, mediafile_schema)
-        content["user"] = "default_uploader"
-        if "email" in current_token:
-            content["user"] = current_token["email"]
+        content["user"] = dict(current_token).get("email", "default_uploader")
         content["date_created"] = str(datetime.now())
         content["version"] = content.get("version", 0) + 1
         mediafile = self.storage.save_item_to_collection("mediafiles", content)
