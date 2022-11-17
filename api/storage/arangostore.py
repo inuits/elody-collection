@@ -178,6 +178,8 @@ class ArangoStorageManager:
         for id in item["identifiers"]:
             if id in self.key_cache:
                 del self.key_cache[id]
+        if "object_id" in item and item["object_id"] in self.key_cache:
+            del self.key_cache[item["object_id"]]
 
     def __map_entity_relation(self, relation):
         return {
