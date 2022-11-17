@@ -43,7 +43,7 @@ class JobDetail(BaseResource):
         job = self._abort_if_item_doesnt_exist("jobs", id)
         if job.get("parent_job_id"):
             return job
-        fields = {"parent_job_id": self._get_raw_id(job)}
+        fields = {"parent_job_id": job["identifiers"][0]}
         if status := request.args.get("status"):
             fields["status"] = status
         job["sub_jobs"] = self.storage.get_items_from_collection(
