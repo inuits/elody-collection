@@ -19,6 +19,11 @@
       "key": "photographer",
       "label": "Photographer",
       "type": "tekst"
+    },
+    {
+      "key": "filename",
+      "label": "Filename",
+      "type": "tekst"
     }
   ],
   "entityFilters": [
