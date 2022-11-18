@@ -522,11 +522,18 @@ class ArangoStorageManager:
                 extra_query += f"FILTER c.{name} == null\n"
             else:
                 extra_query += f'FILTER c.{name} == "{value}"\n'
+        if "title" in filters:
+            title_filter = f"""
+            FOR metadata IN c.metadata
+                FILTER metadata.key == "title"
+                FILTER LIKE(metadata.value, "%{filters["title"]}%", true)
+        """
         aql = f"""
             FOR c IN @@collection
                 {"FILTER c._key IN @ids" if "ids" in filters else ""}
                 {"FILTER c.user == @user_or_public OR NOT c.private" if "user_or_public" in filters else ""}
                 {extra_query}
+                {title_filter if "title" in filters else ""}
                 {f'SORT c.{sort} {"ASC" if asc else "DESC"}' if sort else ""}
                 LIMIT @skip, @limit
                 RETURN c

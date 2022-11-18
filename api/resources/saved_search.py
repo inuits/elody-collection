@@ -23,6 +23,8 @@ class SavedSearch(BaseResource):
             )
         if ids := request.args.get("ids", None):
             filters["ids"] = ids.split(",")
+        if title := request.args.get("title", None):
+            filters["title"] = title
         saved_searches = self.storage.get_items_from_collection(
             "abstracts", skip, limit, fields, filters
         )
