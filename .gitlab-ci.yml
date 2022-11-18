@@ -15,18 +15,3 @@ variables:
   CUSTOMER: 'inuits'
   APPLICATION: 'dams-collection'
   SKIP_DEPLOY: 'true' # This pipeline does not provide a deploy, if a deploy is needed, you can add it to the deploy targets mentioned in the includes
-
-prod:
-  tags:
-    - nomad
-    - prod
-
-uat:
-  tags:
-    - nomad
-    - dev
-
-dev:
-  tags:
-    - nomad
-    - dev
