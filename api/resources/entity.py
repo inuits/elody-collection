@@ -3,6 +3,7 @@ import util
 
 from datetime import datetime
 from flask import request, after_this_request
+from flask_restful import abort
 from inuits_jwt_auth.authorization import current_token
 from resources.base_resource import BaseResource
 from util import NonUniqueException
@@ -347,6 +348,8 @@ class EntitySetPrimaryMediafile(BaseResource):
         if self._only_own_items():
             self._abort_if_no_access(entity, current_token)
             self._abort_if_no_access(mediafile, current_token, "mediafiles")
+        if not util.mediafile_is_public(mediafile):
+            abort(400, message=f"Mediafile with id {mediafile_id} is not public")
         self.storage.set_primary_field_collection_item(
             "entities", self._get_raw_id(entity), mediafile_id, "is_primary"
         )
@@ -361,6 +364,8 @@ class EntitySetPrimaryThumbnail(BaseResource):
         if self._only_own_items():
             self._abort_if_no_access(entity, current_token)
             self._abort_if_no_access(mediafile, current_token, "mediafiles")
+        if not util.mediafile_is_public(mediafile):
+            abort(400, message=f"Mediafile with id {mediafile_id} is not public")
         self.storage.set_primary_field_collection_item(
             "entities", self._get_raw_id(entity), mediafile_id, "is_primary_thumbnail"
         )
