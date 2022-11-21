@@ -346,7 +346,7 @@ class EntitySetPrimaryMediafile(BaseResource):
         mediafile = self._abort_if_item_doesnt_exist("mediafiles", mediafile_id)
         if self._only_own_items():
             self._abort_if_no_access(entity, current_token)
-            self._abort_if_no_access(mediafile, current_token)
+            self._abort_if_no_access(mediafile, current_token, "mediafiles")
         self.storage.set_primary_field_collection_item(
             "entities", self._get_raw_id(entity), mediafile_id, "is_primary"
         )
@@ -360,7 +360,7 @@ class EntitySetPrimaryThumbnail(BaseResource):
         mediafile = self._abort_if_item_doesnt_exist("mediafiles", mediafile_id)
         if self._only_own_items():
             self._abort_if_no_access(entity, current_token)
-            self._abort_if_no_access(mediafile, current_token)
+            self._abort_if_no_access(mediafile, current_token, "mediafiles")
         self.storage.set_primary_field_collection_item(
             "entities", self._get_raw_id(entity), mediafile_id, "is_primary_thumbnail"
         )
