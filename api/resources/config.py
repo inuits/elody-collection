@@ -1,4 +1,5 @@
 import app
+import util
 
 from resources.base_resource import BaseResource
 
@@ -39,6 +40,22 @@ class Config(BaseResource):
         for option in options:
             filter["options"].append({"label": option, "value": option})
 
+    def __get_allowed_filters(self):
+        allowed_filters = dict()
+        filters = util.read_json_as_dict("filters.json")
+        permissions = app.require_oauth.get_token_permissions(
+            app.validator.role_permission_mapping
+        )
+        for collection, collection_filters in filters.items():
+            allowed_filters[collection] = list()
+            for filter in collection_filters:
+                if (
+                    f"filter-on-{filter['key'].replace('_', '-')}" in permissions
+                    or not app.require_oauth.require_token
+                ):
+                    allowed_filters[collection].append(filter)
+        return allowed_filters
+
     @app.require_oauth("read-config")
     def get(self):
         config = dict()
@@ -52,7 +69,7 @@ class Config(BaseResource):
                     ] = self.storage.get_metadata_values_for_collection_item_by_key(
                         collection, key
                     )
-        config["filters"] = self._get_allowed_filters()
+        config["filters"] = self.__get_allowed_filters()
         self.__add_options_to_filters(
             config, config["filters"], self.filter_options_map
         )

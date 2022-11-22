@@ -1,6 +1,5 @@
 import app
 import os
-import util
 
 from cloudevents.conversion import to_dict
 from cloudevents.http import CloudEvent
@@ -66,22 +65,6 @@ class BaseResource(Resource):
             relations = sorted(relations, key=lambda x: x[sort_by])
         entity["metadata"] = [*entity.get("metadata", []), *relations]
         return entity
-
-    def _get_allowed_filters(self):
-        allowed_filters = dict()
-        filters = util.read_json_as_dict("filters.json")
-        permissions = app.require_oauth.get_token_permissions(
-            app.validator.role_permission_mapping
-        )
-        for collection, collection_filters in filters.items():
-            allowed_filters[collection] = list()
-            for filter in collection_filters:
-                if (
-                    f"filter-on-{filter['key'].replace('_', '-')}" in permissions
-                    or not app.require_oauth.require_token
-                ):
-                    allowed_filters[collection].append(filter)
-        return allowed_filters
 
     def _get_raw_id(self, item):
         return item["_key"] if "_key" in item else item["_id"]
