@@ -187,7 +187,7 @@ class MongoStorageManager:
         asc=True,
     ):
         items = dict()
-        if "type" in fields:
+        if fields and "type" in fields:
             documents = self.db[collection].find(
                 self.__get_entities_by_type_query(fields["type"]),
                 skip=skip,
