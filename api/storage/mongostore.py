@@ -264,7 +264,10 @@ class MongoStorageManager:
     def set_primary_field_collection_item(
         self, collection, entity_id, mediafile_id, field
     ):
-        pass
+        mediafiles = self.get_collection_item_mediafiles(collection, entity_id)
+        for mediafile in mediafiles:
+            patch_data = {field: mediafile["_id"] == mediafile_id}
+            self.patch_item_from_collection("mediafiles", mediafile["_id"], patch_data)
 
     def update_collection_item_relations(self, collection, id, content, parent=True):
         for item in self.get_collection_item_sub_item(collection, id, "relations"):
