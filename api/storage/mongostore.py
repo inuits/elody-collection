@@ -95,11 +95,24 @@ class MongoStorageManager:
         identifiers = self.db[collection].find_one(
             self.__get_id_query(id), {"identifiers": 1}
         )
+        if mediafile_public:
+            mediafiles = self.get_collection_item_mediafiles(collection, id)
+            for mediafile in mediafiles:
+                patch_data = {"is_primary": False, "is_primary_thumbnail": False}
+                self.patch_item_from_collection(
+                    "mediafiles", mediafile["_id"], patch_data
+                )
         if identifiers and "identifiers" in identifiers:
             identifiers = identifiers["identifiers"]
             self.db["mediafiles"].update_one(
                 self.__get_id_query(mediafile_id),
-                {"$addToSet": {"entities": {"$each": identifiers}}},
+                {
+                    "$set": {
+                        "is_primary": mediafile_public,
+                        "is_primary_thumbnail": mediafile_public,
+                    },
+                    "$addToSet": {"entities": {"$each": identifiers}},
+                },
             )
             mediafile = self.db["mediafiles"].find_one(
                 self.__get_id_query(mediafile_id)
