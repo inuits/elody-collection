@@ -29,6 +29,9 @@ class MongoStorageManager:
     def __get_id_query(self, id):
         return {"$or": [{"_id": id}, {"identifiers": id}]}
 
+    def __get_ids_query(self, ids):
+        return {"$or": [{"_id": {"$in": ids}}, {"identifiers": {"$in": ids}}]}
+
     def __get_items_from_collection_by_ids(self, collection, ids):
         items = dict()
         documents = self.db[collection].find(self.__get_multiple_id_query(ids))
@@ -117,8 +120,12 @@ class MongoStorageManager:
     def check_health(self):
         return True
 
-    def delete_collection_item_relations(self, collection, id, content, parent=True):
-        pass
+    def delete_collection_item_relations(self, collection, id, relations, parent=True):
+        for relation in relations:
+            impacted_ids = [id, relation["key"]]
+            self.db[collection].update_many(
+                self.__get_ids_query(impacted_ids), { "$pull": { "relations": {"key": {"$in": impacted_ids}} } }
+            )
 
     def delete_collection_item_sub_item_key(self, collection, id, sub_item, key):
         patch_data = {sub_item: []}
