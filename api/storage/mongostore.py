@@ -123,8 +123,17 @@ class MongoStorageManager:
     def delete_collection_item_relations(self, collection, id, relations, parent=True):
         for relation in relations:
             impacted_ids = [id, relation["key"]]
+            types = [relation["type"], self.__map_entity_relation(relation["type"])]
             self.db[collection].update_many(
-                self.__get_ids_query(impacted_ids), { "$pull": { "relations": {"key": {"$in": impacted_ids}} } }
+                self.__get_ids_query(impacted_ids),
+                {
+                    "$pull": {
+                        "relations": {
+                            "key": {"$in": impacted_ids},
+                            "type": {"$in": types},
+                        }
+                    }
+                },
             )
 
     def delete_collection_item_sub_item_key(self, collection, id, sub_item, key):
