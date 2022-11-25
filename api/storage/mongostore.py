@@ -283,9 +283,19 @@ class MongoStorageManager:
         self, collection, entity_id, mediafile_id, field
     ):
         mediafiles = self.get_collection_item_mediafiles(collection, entity_id)
+        non_primary_mediafile_ids = list()
         for mediafile in mediafiles:
-            patch_data = {field: mediafile["_id"] == mediafile_id}
-            self.patch_item_from_collection("mediafiles", mediafile["_id"], patch_data)
+            if mediafile["_id"] == mediafile_id:
+                content = {field: True}
+                self.db["mediafiles"].update_one(
+                    self.__get_id_query(mediafile["_id"]), {"$set": content}
+                )
+            else:
+                non_primary_mediafile_ids.append(mediafile["_id"])
+        content = {field: False}
+        self.db["mediafiles"].update_many(
+            self.__get_ids_query(non_primary_mediafile_ids), {"$set": content}
+        )
 
     def update_collection_item_relations(self, collection, id, content, parent=True):
         for item in self.get_collection_item_sub_item(collection, id, "relations"):
