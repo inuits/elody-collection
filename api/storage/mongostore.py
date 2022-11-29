@@ -201,7 +201,7 @@ class MongoStorageManager:
     def get_entities(self, skip=0, limit=20, skip_relations=0, filters=None):
         if "ids" in filters:
             return self.__get_items_from_collection_by_ids("entities", filters["ids"])
-        item_type = filters["type"] if "type" in filters else None
+        item_type = filters if "type" in filters else None
         return self.get_items_from_collection("entities", skip, limit, item_type)
 
     def get_item_from_collection_by_id(self, collection, id):
