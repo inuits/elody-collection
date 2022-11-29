@@ -49,9 +49,11 @@ class Config(BaseResource):
         for collection, collection_filters in filters.items():
             allowed_filters[collection] = list()
             for filter in collection_filters:
+                filter_permission = f"filter-on-{filter['key'].replace('_', '-')}"
                 if (
-                    f"filter-on-{filter['key'].replace('_', '-')}" in permissions
-                    or not app.require_oauth.require_token
+                    not app.require_oauth.require_token
+                    or filter_permission in permissions
+                    or app.require_oauth.check_permission(filter_permission)
                 ):
                     allowed_filters[collection].append(filter)
         return allowed_filters
