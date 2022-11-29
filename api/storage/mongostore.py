@@ -243,7 +243,24 @@ class MongoStorageManager:
         return
 
     def get_metadata_values_for_collection_item_by_key(self, collection, key):
-        return
+        distinct_values = list()
+        aggregation = self.db[collection].aggregate(
+            [
+                {"$match": {"metadata.key": key}},
+                {"$unwind": "$metadata"},
+                {"$match": {"metadata.key": key}},
+                {
+                    "$group": {
+                        "_id": None,
+                        "distinctValues": {"$addToSet": "$metadata.value"},
+                    }
+                },
+            ]
+        )
+        for result in aggregation:
+            for distinct_value in result["distinctValues"]:
+                distinct_values.append(distinct_value)
+        return distinct_values
 
     def handle_mediafile_deleted(self, parents):
         return
