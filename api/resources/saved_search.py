@@ -45,6 +45,7 @@ class SavedSearch(BaseResource):
         self._abort_if_not_valid_json("Saved search", content, saved_search_schema)
         content["user"] = dict(current_token).get("email", "default_uploader")
         content["date_created"] = str(datetime.now())
+        content["version"] = 1
         try:
             saved_search = self.storage.save_item_to_collection("abstracts", content)
         except NonUniqueException as ex:
