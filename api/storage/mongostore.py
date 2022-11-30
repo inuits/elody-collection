@@ -16,9 +16,11 @@ class MongoStorageManager:
 
     def __add_child_relations(self, collection, id, relations):
         for relation in relations:
-            dst_relation = self.__map_entity_relation(relation["type"])
+            dst_relation = relation.copy()
+            dst_relation["type"] = self.__map_entity_relation(relation["type"])
+            dst_relation["key"] = id
             dst_id = relation["key"]
-            dst_content = [{"key": id, "type": dst_relation}]
+            dst_content = [dst_relation]
             self.add_sub_item_to_collection_item(
                 collection, dst_id, "relations", dst_content
             )
@@ -49,10 +51,23 @@ class MongoStorageManager:
         mapping = {
             "authoredBy": "authored",
             "isIn": "contains",
+            "hasMediafile": "belongsTo",
             "authored": "authoredBy",
+            "belongsTo": "hasMediafile",
             "contains": "isIn",
         }
         return mapping.get(relation)
+
+    def __map_relation_to_collection(self, relation):
+        mapping = {
+            "authoredBy": "entities",
+            "isIn": "entities",
+            "hasMediafile": "mediafiles",
+            "authored": "entities",
+            "belongsTo": "entities",
+            "contains": "entities",
+        }
+        return mapping.get(relation, "entities")
 
     def __prepare_mongo_document(self, document, reversed, id=None):
         if id:
@@ -92,41 +107,40 @@ class MongoStorageManager:
         self, collection, id, mediafile_id, mediafile_public
     ):
         mediafile = None
-        identifiers = self.db[collection].find_one(
-            self.__get_id_query(id), {"identifiers": 1}
-        )
         primary_mediafile = mediafile_public
         primary_thumbnail = mediafile_public
         if mediafile_public:
-            mediafiles = self.get_collection_item_mediafiles(collection, id)
-            for mediafile in mediafiles:
-                if "is_primary" in mediafile and mediafile["is_primary"]:
+            relations = self.get_collection_item_relations(collection, id)
+            for relation in relations:
+                if "is_primary" in relation and relation["is_primary"]:
                     primary_mediafile = False
                 if (
-                    "is_primary_thumbnail" in mediafile
-                    and mediafile["is_primary_thumbnail"]
+                    "is_primary_thumbnail" in relation
+                    and relation["is_primary_thumbnail"]
                 ):
                     primary_thumbnail = False
-        if identifiers and "identifiers" in identifiers:
-            identifiers = identifiers["identifiers"]
-            self.db["mediafiles"].update_one(
-                self.__get_id_query(mediafile_id),
-                {
-                    "$set": {
-                        "is_primary": primary_mediafile,
-                        "is_primary_thumbnail": primary_thumbnail,
-                    },
-                    "$addToSet": {"entities": {"$each": identifiers}},
-                },
-            )
-            mediafile = self.db["mediafiles"].find_one(
-                self.__get_id_query(mediafile_id)
-            )
+        relations = [
+            {
+                "key": mediafile_id,
+                "label": "hasMediafile",
+                "type": "hasMediafile",
+                "is_primary": primary_mediafile,
+                "is_primary_thumbnail": primary_thumbnail,
+            }
+        ]
+        self.add_relations_to_collection_item(
+            collection, id, relations, True, "mediafiles"
+        )
+        mediafile = self.db["mediafiles"].find_one(self.__get_id_query(mediafile_id))
         return mediafile
 
-    def add_relations_to_collection_item(self, collection, id, relations, parent=True):
+    def add_relations_to_collection_item(
+        self, collection, id, relations, parent=True, destination_collection=None
+    ):
         self.add_sub_item_to_collection_item(collection, id, "relations", relations)
-        self.__add_child_relations(collection, id, relations)
+        if destination_collection is None:
+            destination_collection = collection
+        self.__add_child_relations(destination_collection, id, relations)
         return relations
 
     def add_sub_item_to_collection_item(self, collection, id, sub_item, content):
@@ -163,7 +177,15 @@ class MongoStorageManager:
         self.patch_item_from_collection(collection, id, patch_data)
 
     def delete_item_from_collection(self, collection, id):
+        self.delete_impacted_relations(collection, id)
         self.db[collection].delete_one(self.__get_id_query(id))
+
+    def delete_impacted_relations(self, collection, id, sub_item="relations"):
+        all_sub_items = self.get_collection_item_sub_item(collection, id, sub_item)
+        for obj in all_sub_items:
+            self.delete_collection_item_sub_item_key(
+                self.__map_relation_to_collection(obj["type"]), obj["key"], sub_item, id
+            )
 
     def drop_all_collections(self):
         self.db.entities.drop()
@@ -172,7 +194,7 @@ class MongoStorageManager:
 
     def get_collection_item_mediafiles(self, collection, id):
         mediafiles = []
-        for mediafile in self.db["mediafiles"].find({collection: id}):
+        for mediafile in self.db["mediafiles"].find({"relations.key": id}):
             mediafiles.append(mediafile)
         return mediafiles
 
@@ -299,20 +321,19 @@ class MongoStorageManager:
     def set_primary_field_collection_item(
         self, collection, entity_id, mediafile_id, field
     ):
-        mediafiles = self.get_collection_item_mediafiles(collection, entity_id)
-        non_primary_mediafile_ids = list()
-        for mediafile in mediafiles:
-            if mediafile["_id"] == mediafile_id:
-                content = {field: True}
-                self.db["mediafiles"].update_one(
-                    self.__get_id_query(mediafile["_id"]), {"$set": content}
-                )
-            else:
-                non_primary_mediafile_ids.append(mediafile["_id"])
-        content = {field: False}
-        self.db["mediafiles"].update_many(
-            self.__get_ids_query(non_primary_mediafile_ids), {"$set": content}
-        )
+        for id, destination_id in [
+            (entity_id, mediafile_id),
+            (mediafile_id, entity_id),
+        ]:
+            if id == mediafile_id:
+                collection = "mediafiles"
+            relations = self.get_collection_item_relations(collection, id)
+            for relation in relations:
+                if relation["key"] == destination_id:
+                    relation[field] = True
+                elif field in relation and relation[field]:
+                    relation[field] = False
+            self.patch_item_from_collection(collection, id, {"relations": relations})
 
     def update_collection_item_relations(self, collection, id, content, parent=True):
         for item in self.get_collection_item_sub_item(collection, id, "relations"):
