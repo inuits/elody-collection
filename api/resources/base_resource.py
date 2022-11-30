@@ -48,9 +48,7 @@ class BaseResource(Resource):
 
     def _abort_if_not_valid_type(self, item, type):
         if type and item["type"] != type:
-            abort(
-                400, message=f"Item with id {self._get_raw_id(item)} has the wrong type"
-            )
+            abort(400, message=f"Item has the wrong type")
 
     def _add_relations_to_metadata(self, entity, collection="entities", sort_by=None):
         relations = self.storage.get_collection_item_relations(
