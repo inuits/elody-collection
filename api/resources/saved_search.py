@@ -21,9 +21,9 @@ class SavedSearch(BaseResource):
             filters["user_or_public"] = dict(current_token).get(
                 "email", "default_uploader"
             )
-        if ids := request.args.get("ids", None):
+        if ids := request.args.get("ids"):
             filters["ids"] = ids.split(",")
-        if title := request.args.get("title", None):
+        if title := request.args.get("title"):
             filters["title"] = title
         saved_searches = self.storage.get_items_from_collection(
             "abstracts", skip, limit, fields, filters
@@ -57,18 +57,16 @@ class SavedSearchDetail(BaseResource):
         permissions=["read-saved-search-detail", "read-saved-search-detail-all"]
     )
     def get(self, id):
-        saved_search = self._abort_if_item_doesnt_exist_or_incorrect_type(
-            "abstracts", id, "saved_search"
-        )
+        saved_search = self._abort_if_item_doesnt_exist("abstracts", id)
+        self._abort_if_not_valid_type(saved_search, "saved_search")
         if self._only_own_items(["read-saved-search-detail-all"]):
             self._abort_if_no_access(saved_search, current_token)
         return saved_search
 
     @app.require_oauth("update-saved-search")
     def put(self, id):
-        saved_search = self._abort_if_item_doesnt_exist_or_incorrect_type(
-            "abstracts", id, "saved_search"
-        )
+        saved_search = self._abort_if_item_doesnt_exist("abstracts", id)
+        self._abort_if_not_valid_type(saved_search, "saved_search")
         content = self._get_request_body()
         self._abort_if_not_valid_json("Saved search", content, saved_search_schema)
         if self._only_own_items():
@@ -85,9 +83,8 @@ class SavedSearchDetail(BaseResource):
 
     @app.require_oauth("patch-saved-search")
     def patch(self, id):
-        saved_search = self._abort_if_item_doesnt_exist_or_incorrect_type(
-            "abstracts", id, "saved_search"
-        )
+        saved_search = self._abort_if_item_doesnt_exist("abstracts", id)
+        self._abort_if_not_valid_type(saved_search, "saved_search")
         content = self._get_request_body()
         if self._only_own_items():
             self._abort_if_no_access(saved_search, current_token)
@@ -103,9 +100,8 @@ class SavedSearchDetail(BaseResource):
 
     @app.require_oauth("delete-saved-search")
     def delete(self, id):
-        saved_search = self._abort_if_item_doesnt_exist_or_incorrect_type(
-            "abstracts", id, "saved_search"
-        )
+        saved_search = self._abort_if_item_doesnt_exist("abstracts", id)
+        self._abort_if_not_valid_type(saved_search, "saved_search")
         if self._only_own_items():
             self._abort_if_no_access(saved_search, current_token)
         self.storage.delete_item_from_collection(
