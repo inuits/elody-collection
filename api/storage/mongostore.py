@@ -37,8 +37,9 @@ class MongoStorageManager:
     def __get_items_from_collection_by_ids(self, collection, ids):
         items = dict()
         documents = self.db[collection].find(self.__get_multiple_id_query(ids))
-        count = self.db[collection].count_documents(self.__get_multiple_id_query(ids))
-        items["count"] = count
+        items["count"] = self.db[collection].count_documents(
+            self.__get_multiple_id_query(ids)
+        )
         items["results"] = list()
         for document in documents:
             items["results"].append(self.__prepare_mongo_document(document, True))
@@ -48,26 +49,24 @@ class MongoStorageManager:
         return {"$or": [{"_id": {"$in": ids}}, {"identifiers": {"$in": ids}}]}
 
     def __map_entity_relation(self, relation):
-        mapping = {
+        return {
             "authoredBy": "authored",
             "isIn": "contains",
             "hasMediafile": "belongsTo",
             "authored": "authoredBy",
             "belongsTo": "hasMediafile",
             "contains": "isIn",
-        }
-        return mapping.get(relation)
+        }.get(relation)
 
     def __map_relation_to_collection(self, relation):
-        mapping = {
+        return {
             "authoredBy": "entities",
             "isIn": "entities",
             "hasMediafile": "mediafiles",
             "authored": "entities",
             "belongsTo": "entities",
             "contains": "entities",
-        }
-        return mapping.get(relation, "entities")
+        }.get(relation, "entities")
 
     def __prepare_mongo_document(self, document, reversed, id=None):
         if id:
@@ -86,7 +85,6 @@ class MongoStorageManager:
         if type(data) is dict:
             new_dict = dict()
             for key, value in data.items():
-                new_value = value
                 if type(value) is list:
                     new_value = list()
                     for object in value:
@@ -106,18 +104,14 @@ class MongoStorageManager:
     def add_mediafile_to_collection_item(
         self, collection, id, mediafile_id, mediafile_public
     ):
-        mediafile = None
         primary_mediafile = mediafile_public
         primary_thumbnail = mediafile_public
         if mediafile_public:
             relations = self.get_collection_item_relations(collection, id)
             for relation in relations:
-                if "is_primary" in relation and relation["is_primary"]:
+                if relation.get("is_primary", False):
                     primary_mediafile = False
-                if (
-                    "is_primary_thumbnail" in relation
-                    and relation["is_primary_thumbnail"]
-                ):
+                if relation.get("is_primary_thumbnail", False):
                     primary_thumbnail = False
         relations = [
             {
@@ -131,16 +125,15 @@ class MongoStorageManager:
         self.add_relations_to_collection_item(
             collection, id, relations, True, "mediafiles"
         )
-        mediafile = self.db["mediafiles"].find_one(self.__get_id_query(mediafile_id))
-        return mediafile
+        return self.db["mediafiles"].find_one(self.__get_id_query(mediafile_id))
 
     def add_relations_to_collection_item(
-        self, collection, id, relations, parent=True, destination_collection=None
+        self, collection, id, relations, parent=True, dst_collection=None
     ):
         self.add_sub_item_to_collection_item(collection, id, "relations", relations)
-        if destination_collection is None:
-            destination_collection = collection
-        self.__add_child_relations(destination_collection, id, relations)
+        if not dst_collection:
+            dst_collection = collection
+        self.__add_child_relations(dst_collection, id, relations)
         return relations
 
     def add_sub_item_to_collection_item(self, collection, id, sub_item, content):
