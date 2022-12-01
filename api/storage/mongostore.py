@@ -106,26 +106,25 @@ class MongoStorageManager:
         entity_id = raw_entity["_id"]
         relations = self.get_collection_item_relations("entities", entity_id)
         for relation in relations:
-            if "is_primary" in relation or "is_primary_thumbnail" in relation:
-                potential_mediafile = self.get_item_from_collection_by_id(
-                    "mediafiles", relation["key"]
+            if "is_primary" not in relation and "is_primary_thumbnail" not in relation:
+                continue
+            potential_mediafile = self.get_item_from_collection_by_id(
+                "mediafiles", relation["key"]
+            )
+            if not util.mediafile_is_public(potential_mediafile):
+                continue
+            if mediafile:
+                self.set_primary_field_collection_item(
+                    "entities", entity_id, potential_mediafile["_id"], "is_primary"
                 )
-                if util.mediafile_is_public(potential_mediafile):
-                    if mediafile:
-                        self.set_primary_field_collection_item(
-                            "entities",
-                            entity_id,
-                            potential_mediafile["_id"],
-                            "is_primary",
-                        )
-                    if thumbnail:
-                        self.set_primary_field_collection_item(
-                            "entities",
-                            entity_id,
-                            potential_mediafile["_id"],
-                            "is_primary_thumbnail",
-                        )
-                    return
+            if thumbnail:
+                self.set_primary_field_collection_item(
+                    "entities",
+                    entity_id,
+                    potential_mediafile["_id"],
+                    "is_primary_thumbnail",
+                )
+            break
 
     def add_mediafile_to_collection_item(
         self, collection, id, mediafile_id, mediafile_public
@@ -223,13 +222,12 @@ class MongoStorageManager:
         return self.get_collection_item_sub_item(collection, id, "relations")
 
     def get_collection_item_sub_item(self, collection, id, sub_item):
-        ret = []
         document = self.db[collection].find_one(
             self.__get_id_query(id), {sub_item: 1, "_id": 0}
         )
         if document and sub_item in document:
-            ret = document[sub_item]
-        return ret
+            return document[sub_item]
+        return []
 
     def get_collection_item_sub_item_key(self, collection, id, sub_item, key):
         ret = []
@@ -242,14 +240,12 @@ class MongoStorageManager:
     def get_entities(self, skip=0, limit=20, skip_relations=0, filters=None):
         if "ids" in filters:
             return self.__get_items_from_collection_by_ids("entities", filters["ids"])
-        item_type = filters if "type" in filters else None
-        return self.get_items_from_collection("entities", skip, limit, item_type)
+        return self.get_items_from_collection("entities", skip, limit, filters)
 
     def get_item_from_collection_by_id(self, collection, id):
-        document = self.db[collection].find_one(self.__get_id_query(id))
-        if document:
-            document = self.__prepare_mongo_document(document, True)
-        return document
+        if document := self.db[collection].find_one(self.__get_id_query(id)):
+            return self.__prepare_mongo_document(document, True)
+        return None
 
     def get_items_from_collection(
         self,
