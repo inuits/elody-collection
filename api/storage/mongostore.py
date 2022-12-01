@@ -320,8 +320,8 @@ class MongoStorageManager:
                     entity, item["primary_mediafile"], item["primary_thumbnail"]
                 )
 
-    def handle_mediafile_status_change(self, old_mediafile, mediafile):
-        return
+    def handle_mediafile_status_change(self, mediafile):
+        pass
 
     def patch_collection_item_relations(self, collection, id, content, parent=True):
         for item in content:

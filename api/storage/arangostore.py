@@ -136,12 +136,6 @@ class ArangoStorageManager:
             return highest_order + 2
         return highest_order + 3
 
-    def __get_mediafile_publication_status(self, mediafile):
-        for metadata in mediafile.get("metadata", []):
-            if metadata["key"] == "publication_status":
-                return metadata["value"]
-        return ""
-
     def __get_primary_items(self, raw_entity):
         result = {"primary_mediafile": "", "primary_thumbnail": ""}
         for edge in raw_entity.getOutEdges(self.db["hasMediafile"]):
@@ -580,11 +574,7 @@ class ArangoStorageManager:
                     raw_entity, item["primary_mediafile"], item["primary_thumbnail"]
                 )
 
-    def handle_mediafile_status_change(self, old_mediafile, mediafile):
-        old_publication_status = self.__get_mediafile_publication_status(old_mediafile)
-        new_publication_status = self.__get_mediafile_publication_status(mediafile)
-        if old_publication_status == new_publication_status:
-            return
+    def handle_mediafile_status_change(self, mediafile):
         for edge in self.db.fetchDocument(mediafile["_id"]).getInEdges(
             self.db["hasMediafile"]
         ):

@@ -1,4 +1,5 @@
 import app
+import util
 
 from storage.storagemanager import StorageManager
 
@@ -54,6 +55,13 @@ def job_created(routing_key, body, message_id):
     StorageManager().get_db_engine().save_item_to_collection("jobs", body["data"])
 
 
+def __get_mediafile_publication_status(mediafile):
+    for metadata in mediafile.get("metadata", []):
+        if metadata["key"] == "publication_status":
+            return metadata["value"]
+    return ""
+
+
 @app.rabbit.queue("dams.mediafile_changed")
 def mediafile_changed(routing_key, body, message_id):
     data = body["data"]
@@ -61,7 +69,13 @@ def mediafile_changed(routing_key, body, message_id):
         app.logger.error("Message malformed: missing 'mediafile' or 'old_mediafile'")
         return
     storage = StorageManager().get_db_engine()
-    storage.handle_mediafile_status_change(data["old_mediafile"], data["mediafile"])
+    old_publication_status = __get_mediafile_publication_status(data["old_mediafile"])
+    new_publication_status = __get_mediafile_publication_status(data["mediafile"])
+    if old_publication_status == new_publication_status:
+        return
+    if util.mediafile_is_public(data["mediafile"]):
+        return
+    storage.handle_mediafile_status_change(data["mediafile"])
     storage.reindex_mediafile_parents(data["mediafile"])
 
 
