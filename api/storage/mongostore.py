@@ -321,7 +321,15 @@ class MongoStorageManager:
                 )
 
     def handle_mediafile_status_change(self, mediafile):
-        pass
+        relations = self.get_collection_item_relations("mediafiles", mediafile["_id"])
+        for relation in [x for x in relations if x["type"] == "belongsTo"]:
+            primary_mediafile = relation.get("is_primary", False)
+            primary_thumbnail = relation.get("is_primary_thumbnail", False)
+            if primary_mediafile or primary_thumbnail:
+                entity = self.get_item_from_collection_by_id(
+                    "entities", relation["key"]
+                )
+                self.__set_new_primary(entity, primary_mediafile, primary_thumbnail)
 
     def patch_collection_item_relations(self, collection, id, content, parent=True):
         for item in content:
