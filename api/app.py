@@ -69,7 +69,7 @@ app.register_blueprint(swaggerui_blueprint)
 
 
 def database_available():
-    return True, StorageManager().get_db_engine().check_health().json()
+    return True, StorageManager().get_db_engine().check_health()
 
 
 def rabbit_available():

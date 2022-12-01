@@ -37,4 +37,4 @@ class PyArangoConnection(Connection, ABC):
     def get_cluster_health(self, db_name):
         return self.session.get(
             f"{self.getEndpointURL()}/_db/{db_name}/_admin/cluster/health"
-        )
+        ).json()

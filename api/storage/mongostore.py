@@ -150,7 +150,7 @@ class MongoStorageManager:
         return content if result.modified_count else None
 
     def check_health(self):
-        return True
+        return {}
 
     def delete_collection_item_relations(self, collection, id, relations, parent=True):
         for relation in relations:
