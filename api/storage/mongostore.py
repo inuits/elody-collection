@@ -1,5 +1,6 @@
 import os
 import uuid
+import util
 
 from pymongo import MongoClient
 
@@ -100,6 +101,31 @@ class MongoStorageManager:
                         new_dict[key.replace(original_char, replace_char)] = new_value
             return new_dict
         return data
+
+    def __set_new_primary(self, raw_entity, mediafile=False, thumbnail=False):
+        entity_id = raw_entity["_id"]
+        relations = self.get_collection_item_relations("entities", entity_id)
+        for relation in relations:
+            if "is_primary" in relation or "is_primary_thumbnail" in relation:
+                potential_mediafile = self.get_item_from_collection_by_id(
+                    "mediafiles", relation["key"]
+                )
+                if util.mediafile_is_public(potential_mediafile):
+                    if mediafile:
+                        self.set_primary_field_collection_item(
+                            "entities",
+                            entity_id,
+                            potential_mediafile["_id"],
+                            "is_primary",
+                        )
+                    if thumbnail:
+                        self.set_primary_field_collection_item(
+                            "entities",
+                            entity_id,
+                            potential_mediafile["_id"],
+                            "is_primary_thumbnail",
+                        )
+                    return
 
     def add_mediafile_to_collection_item(
         self, collection, id, mediafile_id, mediafile_public
@@ -255,7 +281,18 @@ class MongoStorageManager:
         return items
 
     def get_mediafile_linked_entities(self, mediafile):
-        return
+        linked_entities = []
+        for relation in self.get_collection_item_relations(
+            "mediafiles", mediafile["_id"]
+        ):
+            linked_entities.append(
+                {
+                    "entity_id": relation["key"],
+                    "primary_mediafile": relation["is_primary"],
+                    "primary_thumbnail": relation["is_primary_thumbnail"],
+                }
+            )
+        return linked_entities
 
     def get_metadata_values_for_collection_item_by_key(self, collection, key):
         distinct_values = list()
@@ -278,7 +315,14 @@ class MongoStorageManager:
         return distinct_values
 
     def handle_mediafile_deleted(self, parents):
-        return
+        for item in parents:
+            if item["primary_mediafile"] or item["primary_thumbnail"]:
+                entity = self.get_item_from_collection_by_id(
+                    "entities", item["entity_id"]
+                )
+                self.__set_new_primary(
+                    entity, item["primary_mediafile"], item["primary_thumbnail"]
+                )
 
     def handle_mediafile_status_change(self, old_mediafile, mediafile):
         return
