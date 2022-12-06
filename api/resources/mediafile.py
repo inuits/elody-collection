@@ -103,6 +103,7 @@ class MediafileDetail(BaseResource):
             self._abort_if_no_access(old_mediafile, current_token, "mediafiles")
         content["date_updated"] = str(datetime.now())
         content["version"] = content.get("version", 0) + 1
+        content["last_editor"] = dict(current_token).get("email", "default_uploader")
         mediafile = self.storage.update_item_from_collection(
             "mediafiles", self._get_raw_id(old_mediafile), content
         )
@@ -117,6 +118,7 @@ class MediafileDetail(BaseResource):
             self._abort_if_no_access(old_mediafile, current_token, "mediafiles")
         content["date_updated"] = str(datetime.now())
         content["version"] = content.get("version", 0) + 1
+        content["last_editor"] = dict(current_token).get("email", "default_uploader")
         mediafile = self.storage.patch_item_from_collection(
             "mediafiles", self._get_raw_id(old_mediafile), content
         )

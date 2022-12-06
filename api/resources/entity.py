@@ -74,6 +74,7 @@ class EntityDetail(BaseResource):
             self._abort_if_no_access(entity, current_token)
         content["date_updated"] = str(datetime.now())
         content["version"] = content.get("version", 0) + 1
+        content["last_editor"] = dict(current_token).get("email", "default_uploader")
         try:
             entity = self.storage.update_item_from_collection(
                 "entities", self._get_raw_id(entity), content
@@ -91,6 +92,7 @@ class EntityDetail(BaseResource):
             self._abort_if_no_access(entity, current_token)
         content["date_updated"] = str(datetime.now())
         content["version"] = content.get("version", 0) + 1
+        content["last_editor"] = dict(current_token).get("email", "default_uploader")
         try:
             entity = self.storage.patch_item_from_collection(
                 "entities", self._get_raw_id(entity), content
