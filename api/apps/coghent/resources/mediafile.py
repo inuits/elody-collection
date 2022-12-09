@@ -3,7 +3,12 @@ import app
 from apps.coghent.resources.base_resource import CoghentBaseResource
 from flask import Blueprint
 from flask_restful import Api
-from resources.mediafile import Mediafile, MediafileAssets, MediafileCopyright, MediafileDetail
+from resources.mediafile import (
+    Mediafile,
+    MediafileAssets,
+    MediafileCopyright,
+    MediafileDetail,
+)
 
 api_bp = Blueprint("mediafile", __name__)
 api = Api(api_bp)

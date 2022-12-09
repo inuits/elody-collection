@@ -51,7 +51,9 @@ class CoghentEntityDetail(CoghentBaseResource, EntityDetail):
 
 
 class CoghentEntityMediafiles(CoghentBaseResource, EntityMediafiles):
-    @app.require_oauth(permissions=["read-entity-mediafiles", "read-entity-mediafiles-all"])
+    @app.require_oauth(
+        permissions=["read-entity-mediafiles", "read-entity-mediafiles-all"]
+    )
     def get(self, id):
         return super().get(id)
 
@@ -98,7 +100,9 @@ class CoghentEntityMetadata(CoghentBaseResource, EntityMetadata):
 
 
 class CoghentEntityMetadataKey(CoghentBaseResource, EntityMetadataKey):
-    @app.require_oauth(permissions=["read-entity-metadata-key", "read-entity-metadata-key-all"])
+    @app.require_oauth(
+        permissions=["read-entity-metadata-key", "read-entity-metadata-key-all"]
+    )
     def get(self, id, key):
         return super().get(id, key)
 
@@ -108,7 +112,9 @@ class CoghentEntityMetadataKey(CoghentBaseResource, EntityMetadataKey):
 
 
 class CoghentEntityRelations(CoghentBaseResource, EntityRelations):
-    @app.require_oauth(permissions=["read-entity-relations", "read-entity-relations-all"])
+    @app.require_oauth(
+        permissions=["read-entity-relations", "read-entity-relations-all"]
+    )
     def get(self, id):
         return super().get(id)
 
@@ -130,7 +136,9 @@ class CoghentEntityRelations(CoghentBaseResource, EntityRelations):
 
 
 class CoghentEntityRelationsAll(CoghentBaseResource, EntityRelationsAll):
-    @app.require_oauth(permissions=["read-entity-relations", "read-entity-relations-all"])
+    @app.require_oauth(
+        permissions=["read-entity-relations", "read-entity-relations-all"]
+    )
     def get(self, id):
         return super().get(id)
 

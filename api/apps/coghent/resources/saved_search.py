@@ -20,7 +20,9 @@ class CoghentSavedSearch(CoghentBaseResource, SavedSearch):
 
 
 class CoghentSavedSearchDetail(CoghentBaseResource, SavedSearchDetail):
-    @app.require_oauth(permissions=["read-saved-search-detail", "read-saved-search-detail-all"])
+    @app.require_oauth(
+        permissions=["read-saved-search-detail", "read-saved-search-detail-all"]
+    )
     def get(self, id):
         return super().get(id)
 
