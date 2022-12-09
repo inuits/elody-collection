@@ -2,7 +2,7 @@ aniso8601==9.0.1
 attrs==22.1.0
 Authlib==1.2.0
 blinker==1.5
-certifi==2022.9.24
+certifi==2022.12.7
 cffi==1.15.1
 charset-normalizer==2.1.1
 click==8.1.3
@@ -23,14 +23,13 @@ itsdangerous==2.1.2
 Jinja2==3.1.2
 jsonschema==4.17.3
 MarkupSafe==2.1.1
-packaging==21.3
+packaging==22.0
 pika==1.3.1
 py==1.11.0
 py-healthcheck==1.10.1
 pyArango==2.0.1
 pycparser==2.21
 pymongo==4.3.3
-pyparsing==3.0.9
 pyrsistent==0.19.2
 pytz==2022.6
 rabbitmq-pika-flask==1.2.26
