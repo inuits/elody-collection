@@ -8,8 +8,12 @@
     "license": "GPLv2",
     "resources": [
       "box_visit",
+      "config",
       "entity",
+      "job",
+      "key_value_store",
       "mediafile",
+      "saved_search",
       "story_box",
       "user"
     ]

@@ -58,7 +58,7 @@ class Config(BaseResource):
                     allowed_filters[collection].append(filter)
         return allowed_filters
 
-    @app.require_oauth("read-config")
+    @app.require_oauth()
     def get(self):
         config = dict()
         for collection, keys in self.keys_for_config.items():

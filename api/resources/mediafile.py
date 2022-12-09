@@ -9,7 +9,7 @@ from validator import mediafile_schema
 
 
 class Mediafile(BaseResource):
-    @app.require_oauth("read-mediafile")
+    @app.require_oauth()
     def get(self):
         skip = int(request.args.get("skip", 0))
         limit = int(request.args.get("limit", 20))
@@ -40,7 +40,7 @@ class Mediafile(BaseResource):
         )
         return mediafiles
 
-    @app.require_oauth("create-mediafile")
+    @app.require_oauth()
     def post(self):
         content = self._get_request_body()
         self._abort_if_not_valid_json("Mediafile", content, mediafile_schema)
@@ -52,7 +52,7 @@ class Mediafile(BaseResource):
 
 
 class MediafileAssets(BaseResource):
-    @app.require_oauth("get-mediafile-assets")
+    @app.require_oauth()
     def get(self, id):
         mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
         if self._only_own_items():
@@ -85,7 +85,7 @@ class MediafileCopyright(BaseResource):
 
 
 class MediafileDetail(BaseResource):
-    @app.require_oauth("read-mediafile")
+    @app.require_oauth()
     def get(self, id):
         mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
         if self._only_own_items() and not util.mediafile_is_public(mediafile):
@@ -94,7 +94,7 @@ class MediafileDetail(BaseResource):
             return mediafile
         return self._inject_api_urls_into_mediafiles([mediafile])[0]
 
-    @app.require_oauth("update-mediafile")
+    @app.require_oauth()
     def put(self, id):
         old_mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
         content = self._get_request_body()
@@ -110,7 +110,7 @@ class MediafileDetail(BaseResource):
         self._signal_mediafile_changed(old_mediafile, mediafile)
         return mediafile, 201
 
-    @app.require_oauth("patch-mediafile")
+    @app.require_oauth()
     def patch(self, id):
         old_mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
         content = self._get_request_body()
@@ -125,7 +125,7 @@ class MediafileDetail(BaseResource):
         self._signal_mediafile_changed(old_mediafile, mediafile)
         return mediafile, 201
 
-    @app.require_oauth("delete-mediafile")
+    @app.require_oauth()
     def delete(self, id):
         mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
         if self._only_own_items():

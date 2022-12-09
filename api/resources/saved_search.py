@@ -9,7 +9,7 @@ from validator import saved_search_schema
 
 
 class SavedSearch(BaseResource):
-    @app.require_oauth(permissions=["read-saved-search", "read-saved-search-all"])
+    @app.require_oauth()
     def get(self):
         skip = int(request.args.get("skip", 0))
         limit = int(request.args.get("limit", 20))
@@ -39,7 +39,7 @@ class SavedSearch(BaseResource):
             ] = f"/saved_searches?skip={max(0, skip - limit)}&limit={limit}"
         return saved_searches
 
-    @app.require_oauth("create-saved-search")
+    @app.require_oauth()
     def post(self):
         content = self._get_request_body()
         self._abort_if_not_valid_json("Saved search", content, saved_search_schema)
@@ -54,9 +54,7 @@ class SavedSearch(BaseResource):
 
 
 class SavedSearchDetail(BaseResource):
-    @app.require_oauth(
-        permissions=["read-saved-search-detail", "read-saved-search-detail-all"]
-    )
+    @app.require_oauth()
     def get(self, id):
         saved_search = self._abort_if_item_doesnt_exist("abstracts", id)
         self._abort_if_not_valid_type(saved_search, "saved_search")
@@ -64,7 +62,7 @@ class SavedSearchDetail(BaseResource):
             self._abort_if_no_access(saved_search, current_token)
         return saved_search
 
-    @app.require_oauth("update-saved-search")
+    @app.require_oauth()
     def put(self, id):
         saved_search = self._abort_if_item_doesnt_exist("abstracts", id)
         self._abort_if_not_valid_type(saved_search, "saved_search")
@@ -82,7 +80,7 @@ class SavedSearchDetail(BaseResource):
             return str(ex), 409
         return saved_search, 201
 
-    @app.require_oauth("patch-saved-search")
+    @app.require_oauth()
     def patch(self, id):
         saved_search = self._abort_if_item_doesnt_exist("abstracts", id)
         self._abort_if_not_valid_type(saved_search, "saved_search")
@@ -99,7 +97,7 @@ class SavedSearchDetail(BaseResource):
             return str(ex), 409
         return saved_search, 201
 
-    @app.require_oauth("delete-saved-search")
+    @app.require_oauth()
     def delete(self, id):
         saved_search = self._abort_if_item_doesnt_exist("abstracts", id)
         self._abort_if_not_valid_type(saved_search, "saved_search")

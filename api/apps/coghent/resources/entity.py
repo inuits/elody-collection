@@ -6,6 +6,7 @@ from flask import Blueprint
 from flask_restful import abort, Api
 from inuits_jwt_auth.authorization import current_token
 from resources.entity import (
+    Entity,
     EntityDetail,
     EntityMetadata,
     EntityMetadataKey,
@@ -21,19 +22,59 @@ api_bp = Blueprint("entity", __name__)
 api = Api(api_bp)
 
 
+class CoghentEntity(CoghentBaseResource, Entity):
+    @app.require_oauth(permissions=["read-entity", "read-entity-all"])
+    def get(self):
+        return super().get()
+
+    @app.require_oauth("create-entity")
+    def post(self):
+        return super().post()
+
+
 class CoghentEntityDetail(CoghentBaseResource, EntityDetail):
-    pass
+    @app.require_oauth(permissions=["read-entity-detail", "read-entity-detail-all"])
+    def get(self, id):
+        return super().get(id)
+
+    @app.require_oauth("update-entity")
+    def put(self, id):
+        return super().put(id)
+
+    @app.require_oauth("patch-entity")
+    def patch(self, id):
+        return super().patch(id)
+
+    @app.require_oauth("delete-entity")
+    def delete(self, id):
+        return super().delete(id)
 
 
 class CoghentEntityMediafiles(CoghentBaseResource, EntityMediafiles):
-    pass
+    @app.require_oauth(permissions=["read-entity-mediafiles", "read-entity-mediafiles-all"])
+    def get(self, id):
+        return super().get(id)
+
+    @app.require_oauth("add-entity-mediafiles")
+    def post(self, id):
+        return super().post(id)
 
 
 class CoghentEntityMediafilesCreate(CoghentBaseResource, EntityMediafilesCreate):
-    pass
+    @app.require_oauth("create-entity-mediafile")
+    def post(self, id):
+        return super().post(id)
 
 
 class CoghentEntityMetadata(CoghentBaseResource, EntityMetadata):
+    @app.require_oauth(permissions=["read-entity-metadata", "read-entity-metadata-all"])
+    def get(self, id):
+        return super().get(id)
+
+    @app.require_oauth("add-entity-metadata")
+    def post(self, id):
+        return super().post(id)
+
     @app.require_oauth("update-entity-metadata")
     def put(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
@@ -51,25 +92,59 @@ class CoghentEntityMetadata(CoghentBaseResource, EntityMetadata):
         self._signal_entity_changed(entity)
         return metadata, 201
 
+    @app.require_oauth("patch-entity-metadata")
+    def patch(self, id):
+        return super().patch(id)
+
 
 class CoghentEntityMetadataKey(CoghentBaseResource, EntityMetadataKey):
-    pass
+    @app.require_oauth(permissions=["read-entity-metadata-key", "read-entity-metadata-key-all"])
+    def get(self, id, key):
+        return super().get(id, key)
+
+    @app.require_oauth("delete-entity-metadata-key")
+    def delete(self, id, key):
+        return super().delete(id, key)
 
 
 class CoghentEntityRelations(CoghentBaseResource, EntityRelations):
-    pass
+    @app.require_oauth(permissions=["read-entity-relations", "read-entity-relations-all"])
+    def get(self, id):
+        return super().get(id)
+
+    @app.require_oauth("add-entity-relations")
+    def post(self, id):
+        return super().post(id)
+
+    @app.require_oauth("update-entity-relations")
+    def put(self, id):
+        return super().put(id)
+
+    @app.require_oauth("patch-entity-relations")
+    def patch(self, id):
+        return super().patch(id)
+
+    @app.require_oauth("delete-entity-relations")
+    def delete(self, id):
+        return super().delete(id)
 
 
 class CoghentEntityRelationsAll(CoghentBaseResource, EntityRelationsAll):
-    pass
+    @app.require_oauth(permissions=["read-entity-relations", "read-entity-relations-all"])
+    def get(self, id):
+        return super().get(id)
 
 
 class CoghentEntitySetPrimaryMediafile(CoghentBaseResource, EntitySetPrimaryMediafile):
-    pass
+    @app.require_oauth("set-entity-primary-mediafile")
+    def put(self, id, mediafile_id):
+        return super().put(id, mediafile_id)
 
 
 class CoghentEntitySetPrimaryThumbnail(CoghentBaseResource, EntitySetPrimaryThumbnail):
-    pass
+    @app.require_oauth("set-entity-primary-thumbnail")
+    def put(self, id, mediafile_id):
+        return super().put(id, mediafile_id)
 
 
 class EntityPermissions(CoghentBaseResource):
@@ -96,6 +171,7 @@ class EntitySixthCollectionId(CoghentBaseResource):
         return self.storage.get_sixth_collection_id()
 
 
+api.add_resource(CoghentEntity, "/entities")
 api.add_resource(CoghentEntityDetail, "/entities/<string:id>")
 api.add_resource(CoghentEntityMediafiles, "/entities/<string:id>/mediafiles")
 api.add_resource(
