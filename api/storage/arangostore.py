@@ -393,6 +393,7 @@ class ArangoStorageManager(GenericStorageManager):
                 {"FILTER c._key IN @ids" if "ids" in filters else ""}
                 {f'FILTER c.type == "{filters["type"]}"' if "type" in filters else ""}
                 {f'FILTER c.user == "{filters["user"]}"' if "user" in filters else ""}
+                {f'FILTER c.tenants != null AND "{filters["tenants"]}" IN c.tenants' if "tenants" in filters else ""}
         """
         if skip_relations == 1:
             aql2 = "LET all_metadata = {'metadata': c.metadata}"

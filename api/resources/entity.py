@@ -1,3 +1,4 @@
+import app
 import mappers
 import util
 
@@ -22,6 +23,13 @@ class Entity(BaseResource):
         order_by = request.args.get("order_by", None)
         ascending = request.args.get("asc", 1, int)
         filters = {}
+        if app.multitenancy_enabled:
+            tenant_id = self._abort_if_no_tenant_given(
+                request.headers,
+                policy_factory.get_user_context().auth_objects.get("token"),
+            )
+            self._abort_if_item_doesnt_exist("entities", tenant_id)
+            filters["tenants"] = tenant_id
         if request.args.get("only_own", 0, int) or self._only_own_items(
             ["read-entity-all"]
         ):
@@ -76,6 +84,22 @@ class Entity(BaseResource):
             content = request.get_json()
         accept_header = request.headers.get("Accept")
         user_id = policy_factory.get_user_context().email or "default_uploader"
+        if app.multitenancy_enabled:
+            tenant_id = self._abort_if_no_tenant_given(
+                request.headers,
+                policy_factory.get_user_context().auth_objects.get("token"),
+            )
+            tenant = self.storage.get_item_from_collection_by_id("entities", tenant_id)
+            if not tenant and app.auto_create_tenants:
+                tenant = {
+                    "tenant_id": tenant_id,
+                    "identifiers": [tenant_id],
+                    "type": "tenant",
+                }
+                self.storage.save_item_to_collection("entities", tenant)
+            elif not tenant:
+                abort(400, message="Tenant not found")
+            content["tenants"] = [tenant_id]
         entity = self._decorate_entity(content)
         entity["user"] = user_id
         entity["date_created"] = str(datetime.now())
@@ -108,6 +132,14 @@ class EntityDetail(BaseResource):
     def get(self, id):
         accept_header = request.headers.get("Accept")
         entity = self._abort_if_item_doesnt_exist("entities", id)
+        if app.multitenancy_enabled:
+            tenant_id = self._abort_if_no_tenant_given(
+                request.headers,
+                policy_factory.get_user_context().auth_objects.get("token"),
+            )
+            self._abort_if_item_doesnt_exist("entities", tenant_id)
+            if "tenants" not in entity or tenant_id not in entity["tenants"]:
+                abort(400, message="Access denied")
         fields = [
             *request.args.getlist("field"),
             *request.args.getlist("field[]"),

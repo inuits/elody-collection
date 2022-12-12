@@ -73,8 +73,15 @@ class MongoStorageManager(GenericStorageManager):
                 id,
             )
 
-    def __get_entities_by_type_query(self, item_type):
-        return {"type": item_type}
+    def __get_filter_fields(self, fields):
+        filter_fields = {}
+        for name, value in fields.items():
+            # FIXME how does Mongo handle not existing fields?
+            if value is None:
+                filter_fields[name] = "null"
+            else:
+                filter_fields[name] = value
+        return filter_fields
 
     def __get_id_query(self, id):
         return {"$or": [{"_id": id}, {"identifiers": id}]}
@@ -352,14 +359,14 @@ class MongoStorageManager(GenericStorageManager):
         asc=True,
     ):
         items = dict()
-        if fields and "type" in fields:
+        if fields:
             documents = self.db[collection].find(
-                self.__get_entities_by_type_query(fields["type"]),
+                self.__get_filter_fields(fields),
                 skip=skip,
                 limit=limit,
             )
             count = self.db[collection].count_documents(
-                self.__get_entities_by_type_query(fields["type"])
+                self.__get_filter_fields(fields)
             )
         else:
             documents = self.db[collection].find(skip=skip, limit=limit)
