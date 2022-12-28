@@ -98,6 +98,10 @@ from resources.entity import (
     EntitySetPrimaryMediafile,
     EntitySetPrimaryThumbnail,
 )
+from resources.filter import (
+    FilterEntities,
+    FilterMediafiles,
+)
 from resources.job import Job, JobDetail
 from resources.key_value_store import KeyValueStore, KeyValueStoreDetail
 from resources.mediafile import (
@@ -131,6 +135,8 @@ api.add_resource(
     "/entities/<string:id>/set_primary_thumbnail/<string:mediafile_id>",
 )
 
+api.add_resource(FilterEntities, "/entities/filter")
+api.add_resource(FilterMediafiles, "/mediafiles/filter")
 api.add_resource(Job, "/jobs")
 api.add_resource(JobDetail, "/jobs/<string:id>")
 
