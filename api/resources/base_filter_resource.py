@@ -10,9 +10,7 @@ class BaseFilterResource(BaseResource):
         super().__init__()
         self.filter_engine = FilterManager().get_filter_engine()
 
-    def _execute_advanced_search(self, collection="entities"):
-        body = request.get_json()
-        app.logger.info(body)
+    def _execute_advanced_search_with_query(self, query, collection="entities"):
         skip = int(request.args.get("skip", 0))
         limit = int(request.args.get("limit", 20))
 
@@ -23,26 +21,33 @@ class BaseFilterResource(BaseResource):
 
         if not self.filter_engine:
             abort(500, message="Failed to init search engine")
-        self.validate_advanced_query_syntax(body)
+        self.validate_advanced_query_syntax(query)
 
         filters = dict()
-        ids = self.filter_engine.filter("", body, skip, limit, collection)
+        ids = self.filter_engine.filter("", query, skip, limit, collection)
         if ids:
             filters["ids"] = list(ids)
         count = ids.extra["stats"]["fullCount"]
-        items = self.storage.get_items_from_collection(collection, 0, limit, None, filters)
+        items = self.storage.get_items_from_collection(
+            collection, 0, limit, None, filters
+        )
         items["count"] = count
         items["limit"] = limit
         if skip + limit < count:
-            items[
-                "next"
-            ] = f"/{collection}/filter?skip={skip + limit}&limit={limit}"
+            items["next"] = f"/{collection}/filter?skip={skip + limit}&limit={limit}"
         if skip > 0:
             items[
                 "previous"
             ] = f"/{collection}/filter?skip={max(0, skip - limit)}&limit={limit}"
         items["results"] = self._inject_api_urls_into_entities(items["results"])
         return items
+
+    def _execute_advanced_search_with_saved_search(self, id, collection="entities"):
+        saved_search = self._abort_if_item_doesnt_exist("abstracts", id)
+        self._abort_if_not_valid_type(saved_search, "saved_search")
+        return self._execute_advanced_search_with_query(
+            saved_search["definition"], collection
+        )
 
     def validate_advanced_query_syntax(self, queries):
         for query in queries:
