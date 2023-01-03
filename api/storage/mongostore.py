@@ -405,6 +405,3 @@ class MongoStorageManager(GenericStorageManager):
         content = self.__prepare_mongo_document(content, False)
         self.db[collection].replace_one(self.__get_id_query(id), content)
         return self.get_item_from_collection_by_id(collection, id)
-
-    def update_parent_relation_values(self, collection, parent_id):
-        pass

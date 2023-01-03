@@ -251,6 +251,3 @@ class MemoryStorageManager(GenericStorageManager):
             self.collections[collection][gen_id] = content
             return self.collections[collection][gen_id]
         return None
-
-    def update_parent_relation_values(self, collection, parent_id):
-        pass
