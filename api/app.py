@@ -141,6 +141,7 @@ api.add_resource(FilterEntities, "/entities/filter")
 api.add_resource(FilterEntitiesBySavedSearchId, "/entities/filter/<string:id>")
 api.add_resource(FilterMediafiles, "/mediafiles/filter")
 api.add_resource(FilterMediafilesBySavedSearchId, "/mediafiles/filter/<string:id>")
+
 api.add_resource(Job, "/jobs")
 api.add_resource(JobDetail, "/jobs/<string:id>")
 

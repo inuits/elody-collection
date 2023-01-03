@@ -276,7 +276,7 @@ class ArangoFilters(ArangoStorageManager):
                 LET e = DOCUMENT(e_id)
         """
 
-    # needs to be implemented again
+    # FIXME: implement this function again
     def __api_output(self, query_output, skip, limit, collection="entities"):
         results = list()
         ids = list(filter(lambda item: item is not None, query_output))
