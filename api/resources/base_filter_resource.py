@@ -1,7 +1,6 @@
-import app
-
 from filters.filter_manager import FilterManager
-from flask import request, after_this_request
+from flask import after_this_request, request
+from flask_restful import abort
 from resources.base_resource import BaseResource
 
 
