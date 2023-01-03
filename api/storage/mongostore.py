@@ -353,7 +353,11 @@ class MongoStorageManager(GenericStorageManager):
         return self.get_item_from_collection_by_id(collection, id)
 
     def reindex_mediafile_parents(self, mediafile=None, parents=None):
-        return
+        if mediafile:
+            parents = self.get_mediafile_linked_entities(mediafile)
+        for item in parents:
+            entity = self.get_item_from_collection_by_id("entities", item["entity_id"])
+            util.signal_entity_changed(entity)
 
     def save_item_to_collection(self, collection, content):
         content = self.__prepare_mongo_document(content, False, str(uuid.uuid4()))
