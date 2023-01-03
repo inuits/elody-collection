@@ -3,12 +3,9 @@ import os
 import uuid
 import util
 
-from cloudevents.conversion import to_dict
-from cloudevents.http import CloudEvent
 from pyArango.theExceptions import CreationError, DocumentNotFoundError, UpdateError
 from storage.genericstore import GenericStorageManager
 from storage.py_arango_connection_extension import PyArangoConnection as Connection
-from time import sleep
 
 
 class ArangoStorageManager(GenericStorageManager):
@@ -203,11 +200,6 @@ class ArangoStorageManager(GenericStorageManager):
                     entity, relation, self.__map_entity_relation(relation["type"])
                 )
 
-    def __send_cloudevent(self, routing_key, data):
-        attributes = {"type": routing_key, "source": "dams"}
-        event = to_dict(CloudEvent(attributes, data))
-        app.rabbit.send(event, routing_key=routing_key)
-
     def __set_new_primary(self, raw_entity, mediafile=False, thumbnail=False):
         for edge in raw_entity.getOutEdges(self.db["hasMediafile"]):
             potential_mediafile = self.db.fetchDocument(edge["_to"]).getStore()
@@ -218,25 +210,6 @@ class ArangoStorageManager(GenericStorageManager):
                     edge["is_primary_thumbnail"] = True
                 edge.save()
                 return
-
-    def __signal_child_relation_changed(self, collection, id):
-        data = {"parent_id": id, "collection": collection}
-        self.__send_cloudevent("dams.child_relation_changed", data)
-
-    def __signal_entity_changed(self, entity):
-        data = {
-            "location": f'/entities/{entity["_key"]}',
-            "type": entity["type"] if "type" in entity else "unspecified",
-        }
-        self.__send_cloudevent("dams.entity_changed", data)
-
-    def __signal_edge_changed(self, parent_ids_from_changed_edges):
-        data = {
-            "location": f'/entities?ids={",".join(parent_ids_from_changed_edges)}&skip_relations=1'
-        }
-        self.__send_cloudevent("dams.edge_changed", data)
-        if self.event_delay > 0:
-            sleep(self.event_delay)
 
     def __try_get_item_from_collection_by_key(self, collection, key):
         try:
@@ -617,20 +590,20 @@ class ArangoStorageManager(GenericStorageManager):
             if ue.errors["code"] == 409:
                 raise util.NonUniqueException(ue.errors["errorMessage"])
             raise ue
-        self.__signal_child_relation_changed(collection, id)
+        util.signal_child_relation_changed(collection, id)
         return item
 
     def reindex_mediafile_parents(self, mediafile=None, parents=None):
         if parents:
             for item in parents:
                 entity = self.db.fetchDocument(item["entity_id"]).getStore()
-                self.__signal_entity_changed(entity)
+                util.signal_entity_changed(entity)
         if mediafile:
             for edge in self.db.fetchDocument(mediafile["_id"]).getInEdges(
                 self.db["hasMediafile"]
             ):
                 entity = self.db.fetchDocument(edge["_from"]).getStore()
-                self.__signal_entity_changed(entity)
+                util.signal_entity_changed(entity)
 
     def save_item_to_collection(self, collection, content):
         _id = str(uuid.uuid4())
@@ -678,7 +651,7 @@ class ArangoStorageManager(GenericStorageManager):
             if ue.errors["code"] == 409:
                 raise util.NonUniqueException(ue.errors["errorMessage"])
             raise ue
-        self.__signal_child_relation_changed(collection, id)
+        util.signal_child_relation_changed(collection, id)
         return item
 
     def update_parent_relation_values(self, collection, parent_id):
@@ -710,10 +683,12 @@ class ArangoStorageManager(GenericStorageManager):
                                 len(parent_ids_from_changed_edges)
                                 > self.event_batch_limit
                             ):
-                                self.__signal_edge_changed(
-                                    parent_ids_from_changed_edges
+                                util.signal_edge_changed(
+                                    parent_ids_from_changed_edges, self.event_delay
                                 )
                                 parent_ids_from_changed_edges = []
             # send remaining messages
             if len(parent_ids_from_changed_edges) > 0:
-                self.__signal_edge_changed(parent_ids_from_changed_edges)
+                util.signal_edge_changed(
+                    parent_ids_from_changed_edges, self.event_delay
+                )

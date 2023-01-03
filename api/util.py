@@ -1,6 +1,10 @@
 import app
 import json
 
+from cloudevents.conversion import to_dict
+from cloudevents.http import CloudEvent
+from time import sleep
+
 
 class NonUniqueException(Exception):
     def __init__(self, message):
@@ -14,6 +18,12 @@ class Singleton(type):
         if cls not in cls._instances:
             cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
         return cls._instances[cls]
+
+
+def __send_cloudevent(routing_key, data):
+    attributes = {"type": routing_key, "source": "dams"}
+    event = to_dict(CloudEvent(attributes, data))
+    app.rabbit.send(event, routing_key=routing_key)
 
 
 def mediafile_is_public(mediafile):
@@ -30,3 +40,25 @@ def read_json_as_dict(filename):
     except (FileNotFoundError, json.JSONDecodeError) as ex:
         app.logger.error(f"Could not read {filename} as a dict: {ex}")
     return {}
+
+
+def signal_child_relation_changed(collection, id):
+    data = {"parent_id": id, "collection": collection}
+    __send_cloudevent("dams.child_relation_changed", data)
+
+
+def signal_edge_changed(parent_ids_from_changed_edges, event_delay):
+    data = {
+        "location": f'/entities?ids={",".join(parent_ids_from_changed_edges)}&skip_relations=1'
+    }
+    __send_cloudevent("dams.edge_changed", data)
+    if event_delay > 0:
+        sleep(event_delay)
+
+
+def signal_entity_changed(entity):
+    data = {
+        "location": f'/entities/{entity["_key"]}',
+        "type": entity["type"] if "type" in entity else "unspecified",
+    }
+    __send_cloudevent("dams.entity_changed", data)
