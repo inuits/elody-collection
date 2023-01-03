@@ -3,7 +3,6 @@ import json
 
 from cloudevents.conversion import to_dict
 from cloudevents.http import CloudEvent
-from time import sleep
 
 
 class NonUniqueException(Exception):
@@ -47,13 +46,11 @@ def signal_child_relation_changed(collection, id):
     __send_cloudevent("dams.child_relation_changed", data)
 
 
-def signal_edge_changed(parent_ids_from_changed_edges, event_delay):
+def signal_edge_changed(parent_ids_from_changed_edges):
     data = {
         "location": f'/entities?ids={",".join(parent_ids_from_changed_edges)}&skip_relations=1'
     }
     __send_cloudevent("dams.edge_changed", data)
-    if event_delay > 0:
-        sleep(event_delay)
 
 
 def signal_entity_changed(entity):

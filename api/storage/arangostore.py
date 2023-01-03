@@ -15,8 +15,6 @@ class ArangoStorageManager(GenericStorageManager):
         self.arango_password = os.getenv("ARANGO_DB_PASSWORD")
         self.arango_db_name = os.getenv("ARANGO_DB_NAME")
         self.default_graph_name = os.getenv("DEFAULT_GRAPH", "assets")
-        self.event_delay = float(os.getenv("EVENT_DELAY", 0.02))
-        self.event_batch_limit = int(os.getenv("EVENT_BATCH_LIMIT", 50))
         self.collections = [
             "abstracts",
             "box_visits",
@@ -667,15 +665,12 @@ class ArangoStorageManager(GenericStorageManager):
 
         if not (new_value := get_value_from_metadata()):
             return
-        changed_ids = list()
+        changed_ids = set()
         for edge_type in ["isIn", "components"]:
             for edge in raw_entity.getEdges(self.db[edge_type]):
                 if edge["key"] == entity["_id"] and edge["value"] != new_value:
                     edge.set({"value": new_value})
                     edge.patch()
-                    changed_ids.append(entity["_key"])
-                    if len(changed_ids) > self.event_batch_limit:
-                        util.signal_edge_changed(changed_ids, self.event_delay)
-                        changed_ids = list()
+                    changed_ids.add(entity["_key"])
         if len(changed_ids):
-            util.signal_edge_changed(changed_ids, self.event_delay)
+            util.signal_edge_changed(changed_ids)
