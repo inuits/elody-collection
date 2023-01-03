@@ -6,11 +6,12 @@ import util
 from cloudevents.conversion import to_dict
 from cloudevents.http import CloudEvent
 from pyArango.theExceptions import CreationError, DocumentNotFoundError, UpdateError
+from storage.genericstore import GenericStorageManager
 from storage.py_arango_connection_extension import PyArangoConnection as Connection
 from time import sleep
 
 
-class ArangoStorageManager:
+class ArangoStorageManager(GenericStorageManager):
     def __init__(self):
         self.arango_host = os.getenv("ARANGO_DB_HOST")
         self.arango_username = os.getenv("ARANGO_DB_USERNAME")

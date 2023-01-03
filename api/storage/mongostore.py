@@ -3,9 +3,10 @@ import uuid
 import util
 
 from pymongo import MongoClient
+from storage.genericstore import GenericStorageManager
 
 
-class MongoStorageManager:
+class MongoStorageManager(GenericStorageManager):
     character_replace_map = {".": "="}
 
     def __init__(self):

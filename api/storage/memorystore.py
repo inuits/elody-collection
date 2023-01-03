@@ -1,9 +1,10 @@
 import uuid
 
 from copy import deepcopy
+from storage.genericstore import GenericStorageManager
 
 
-class MemoryStorageManager:
+class MemoryStorageManager(GenericStorageManager):
     collections = {"entities": {}, "mediafiles": {}, "jobs": {}}
 
     def __add_child_relations(self, collection, obj_id, relations):
