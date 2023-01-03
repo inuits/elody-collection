@@ -70,7 +70,14 @@ class GenericStorageManager:
         pass
 
     def patch_collection_item_metadata(self, collection, id, content):
-        pass
+        metadata = self.get_collection_item_sub_item(collection, id, "metadata")
+        for item in content:
+            if existing := next((x for x in metadata if x["key"] == item["key"]), None):
+                metadata.remove(existing)
+            metadata.append(item)
+        return self.patch_item_from_collection(collection, id, {"metadata": metadata})[
+            "metadata"
+        ]
 
     def patch_collection_item_relations(self, collection, id, content, parent=True):
         pass
