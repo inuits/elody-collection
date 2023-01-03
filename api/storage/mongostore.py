@@ -386,11 +386,6 @@ class MongoStorageManager(GenericStorageManager):
         self.__add_child_relations(collection, id, content)
         return content
 
-    def update_collection_item_sub_item(self, collection, id, sub_item, content):
-        patch_data = {sub_item: content}
-        self.patch_item_from_collection(collection, id, patch_data)
-        return content
-
     def update_item_from_collection(self, collection, id, content):
         content = self.__prepare_mongo_document(content, False)
         self.db[collection].replace_one(self.__get_id_query(id), content)

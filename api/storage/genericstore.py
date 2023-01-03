@@ -100,7 +100,9 @@ class GenericStorageManager:
         pass
 
     def update_collection_item_sub_item(self, collection, id, sub_item, content):
-        pass
+        patch_data = {sub_item: content}
+        item = self.patch_item_from_collection(collection, id, patch_data)
+        return item[sub_item]
 
     def update_item_from_collection(self, collection, id, content):
         pass

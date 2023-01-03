@@ -239,11 +239,6 @@ class MemoryStorageManager(GenericStorageManager):
         self.__add_child_relations(collection, obj_id, content)
         return content
 
-    def update_collection_item_sub_item(self, collection, obj_id, sub_item, content):
-        patch_data = {sub_item: content}
-        self.patch_item_from_collection(collection, obj_id, patch_data)
-        return content
-
     def update_item_from_collection(self, collection, obj_id, content):
         if gen_id := self.__get_collection_item_gen_id_by_identifier(
             collection, obj_id

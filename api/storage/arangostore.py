@@ -668,11 +668,6 @@ class ArangoStorageManager(GenericStorageManager):
                 edge.delete()
         return self.add_relations_to_collection_item(collection, id, content, parent)
 
-    def update_collection_item_sub_item(self, collection, id, sub_item, content):
-        patch_data = {sub_item: content}
-        item = self.patch_item_from_collection(collection, id, patch_data)
-        return item[sub_item]
-
     def update_item_from_collection(self, collection, id, content):
         raw_item = self.__get_raw_item_from_collection_by_id(collection, id)
         try:
