@@ -657,38 +657,25 @@ class ArangoStorageManager(GenericStorageManager):
     def update_parent_relation_values(self, collection, parent_id):
         raw_entity = self.__get_raw_item_from_collection_by_id(collection, parent_id)
         entity = raw_entity.getStore()
-        if "metadata" not in entity:
+
+        def get_value_from_metadata():
+            for title_key in ["title", "fullname", "fullName", "description"]:
+                for metadata in entity.get("metadata", list()):
+                    if metadata.get("key") == title_key:
+                        return metadata["value"]
+            return None
+
+        if not (new_value := get_value_from_metadata()):
             return
-        new_value = None
-        for title_key in ["title", "fullname", "fullName", "description"]:
-            if new_value is None:
-                for metadata in entity["metadata"]:
-                    if "key" in metadata and metadata["key"] == title_key:
-                        new_value = metadata["value"]
-            else:
-                break
-        if new_value is not None:
-            parent_ids_from_changed_edges = []
-            for edgeType in ["isIn", "components"]:
-                for edge in raw_entity.getEdges(self.db[edgeType]):
-                    if edge["key"] == entity["_id"]:
-                        # only patch if new value is different from old value
-                        if edge["value"] != new_value:
-                            patch = {"value": new_value}
-                            edge.set(patch)
-                            edge.patch()
-                            parent_ids_from_changed_edges.append(entity["_key"])
-                            # send event message in batches
-                            if (
-                                len(parent_ids_from_changed_edges)
-                                > self.event_batch_limit
-                            ):
-                                util.signal_edge_changed(
-                                    parent_ids_from_changed_edges, self.event_delay
-                                )
-                                parent_ids_from_changed_edges = []
-            # send remaining messages
-            if len(parent_ids_from_changed_edges) > 0:
-                util.signal_edge_changed(
-                    parent_ids_from_changed_edges, self.event_delay
-                )
+        changed_ids = list()
+        for edge_type in ["isIn", "components"]:
+            for edge in raw_entity.getEdges(self.db[edge_type]):
+                if edge["key"] == entity["_id"] and edge["value"] != new_value:
+                    edge.set({"value": new_value})
+                    edge.patch()
+                    changed_ids.append(entity["_key"])
+                    if len(changed_ids) > self.event_batch_limit:
+                        util.signal_edge_changed(changed_ids, self.event_delay)
+                        changed_ids = list()
+        if len(changed_ids):
+            util.signal_edge_changed(changed_ids, self.event_delay)
