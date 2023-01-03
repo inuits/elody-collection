@@ -275,12 +275,12 @@ class ArangoFilters(ArangoStorageManager):
                 LET e = DOCUMENT(e_id)
         """
 
-    # needs to be implmented again
+    # needs to be implemented again
     def __api_output(self, query_output, skip, limit, collection="entities"):
         results = list()
         ids = list(filter(lambda item: item is not None, query_output))
         if ids:
-            filters["ids"] = ids.split(",")
+            filters = {"ids": ids}
             skip_relations = True
             results = self.get_entities(skip, limit, skip_relations, filters)
         count = query_output.extra["stats"]["fullCount"]
