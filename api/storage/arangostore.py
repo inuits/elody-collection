@@ -10,9 +10,6 @@ from storage.py_arango_connection_extension import PyArangoConnection as Connect
 
 class ArangoStorageManager(GenericStorageManager):
     def __init__(self):
-        self.arango_host = os.getenv("ARANGO_DB_HOST")
-        self.arango_username = os.getenv("ARANGO_DB_USERNAME")
-        self.arango_password = os.getenv("ARANGO_DB_PASSWORD")
         self.arango_db_name = os.getenv("ARANGO_DB_NAME")
         self.default_graph_name = os.getenv("DEFAULT_GRAPH", "assets")
         self.collections = [
@@ -40,9 +37,9 @@ class ArangoStorageManager(GenericStorageManager):
         ]
         self.edges = [*self.entity_relations, "hasMediafile"]
         self.conn = Connection(
-            arangoURL=self.arango_host,
-            username=self.arango_username,
-            password=self.arango_password,
+            arangoURL=os.getenv("ARANGO_DB_HOST"),
+            username=os.getenv("ARANGO_DB_USERNAME"),
+            password=os.getenv("ARANGO_DB_PASSWORD"),
         )
         self.db = self.__create_database_if_not_exists()
         self.key_cache = {}
@@ -401,10 +398,9 @@ class ArangoStorageManager(GenericStorageManager):
         return relations
 
     def get_collection_item_sub_item(self, collection, id, sub_item):
-        item = self.get_item_from_collection_by_id(collection, id)
-        if not item:
-            return None
-        return item.get(sub_item)
+        if item := self.get_item_from_collection_by_id(collection, id):
+            return item.get(sub_item)
+        return None
 
     def get_collection_item_sub_item_key(self, collection, id, sub_item, key):
         item = self.get_item_from_collection_by_id(collection, id)
@@ -592,16 +588,11 @@ class ArangoStorageManager(GenericStorageManager):
         return item
 
     def reindex_mediafile_parents(self, mediafile=None, parents=None):
-        if parents:
-            for item in parents:
-                entity = self.db.fetchDocument(item["entity_id"]).getStore()
-                util.signal_entity_changed(entity)
         if mediafile:
-            for edge in self.db.fetchDocument(mediafile["_id"]).getInEdges(
-                self.db["hasMediafile"]
-            ):
-                entity = self.db.fetchDocument(edge["_from"]).getStore()
-                util.signal_entity_changed(entity)
+            parents = self.get_mediafile_linked_entities(mediafile)
+        for item in parents:
+            entity = self.db.fetchDocument(item["entity_id"]).getStore()
+            util.signal_entity_changed(entity)
 
     def save_item_to_collection(self, collection, content):
         _id = str(uuid.uuid4())
