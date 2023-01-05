@@ -25,6 +25,10 @@ def __send_cloudevent(routing_key, data):
     app.rabbit.send(event, routing_key=routing_key)
 
 
+def get_raw_id(item):
+    return item["_key"] if "_key" in item else item["_id"]
+
+
 def mediafile_is_public(mediafile):
     for item in mediafile.get("metadata", []):
         if item["key"] == "publication_status":
@@ -55,7 +59,25 @@ def signal_edge_changed(parent_ids_from_changed_edges):
 
 def signal_entity_changed(entity):
     data = {
-        "location": f'/entities/{entity["_key"]}',
+        "location": f"/entities/{get_raw_id(entity)}",
         "type": entity["type"] if "type" in entity else "unspecified",
     }
     __send_cloudevent("dams.entity_changed", data)
+
+
+def signal_entity_deleted(entity):
+    data = {
+        "_id": get_raw_id(entity),
+        "type": entity["type"] if "type" in entity else "unspecified",
+    }
+    __send_cloudevent("dams.entity_deleted", data)
+
+
+def signal_mediafile_changed(old_mediafile, mediafile):
+    data = {"old_mediafile": old_mediafile, "mediafile": mediafile}
+    __send_cloudevent("dams.mediafile_changed", data)
+
+
+def signal_mediafile_deleted(mediafile, linked_entities):
+    data = {"mediafile": mediafile, "linked_entities": linked_entities}
+    __send_cloudevent("dams.mediafile_deleted", data)

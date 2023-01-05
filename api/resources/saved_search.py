@@ -1,10 +1,10 @@
 import app
+import util
 
 from datetime import datetime
 from flask import request
 from inuits_jwt_auth.authorization import current_token
 from resources.base_resource import BaseResource
-from util import NonUniqueException
 from validator import saved_search_schema
 
 
@@ -48,7 +48,7 @@ class SavedSearch(BaseResource):
         content["version"] = 1
         try:
             saved_search = self.storage.save_item_to_collection("abstracts", content)
-        except NonUniqueException as ex:
+        except util.NonUniqueException as ex:
             return str(ex), 409
         return saved_search, 201
 
@@ -74,9 +74,9 @@ class SavedSearchDetail(BaseResource):
         content["version"] = saved_search.get("version", 0) + 1
         try:
             saved_search = self.storage.update_item_from_collection(
-                "abstracts", self._get_raw_id(saved_search), content
+                "abstracts", util.get_raw_id(saved_search), content
             )
-        except NonUniqueException as ex:
+        except util.NonUniqueException as ex:
             return str(ex), 409
         return saved_search, 201
 
@@ -91,9 +91,9 @@ class SavedSearchDetail(BaseResource):
         content["version"] = saved_search.get("version", 0) + 1
         try:
             saved_search = self.storage.patch_item_from_collection(
-                "abstracts", self._get_raw_id(saved_search), content
+                "abstracts", util.get_raw_id(saved_search), content
             )
-        except NonUniqueException as ex:
+        except util.NonUniqueException as ex:
             return str(ex), 409
         return saved_search, 201
 
@@ -104,6 +104,6 @@ class SavedSearchDetail(BaseResource):
         if self._only_own_items():
             self._abort_if_no_access(saved_search, current_token)
         self.storage.delete_item_from_collection(
-            "abstracts", self._get_raw_id(saved_search)
+            "abstracts", util.get_raw_id(saved_search)
         )
         return "", 204

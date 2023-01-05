@@ -1,6 +1,7 @@
 import app
 import requests
 import srt
+import util
 
 from apps.coghent.resources.base_resource import CoghentBaseResource
 from datetime import timedelta
@@ -29,14 +30,14 @@ class StoryBoxLink(CoghentBaseResource):
         self._abort_if_not_logged_in(current_token)
         box_visit = self._abort_if_item_doesnt_exist("box_visits", code)
         relations = self.storage.get_collection_item_relations(
-            "box_visits", self._get_raw_id(box_visit)
+            "box_visits", util.get_raw_id(box_visit)
         )
         if story_box := next((x for x in relations if x["type"] == "story_box"), None):
             if "linked" in story_box and story_box["linked"]:
                 abort(400, message="Code has already been linked")
             story_box["linked"] = True
             self.storage.patch_collection_item_relations(
-                "box_visits", self._get_raw_id(box_visit), [story_box], False
+                "box_visits", util.get_raw_id(box_visit), [story_box], False
             )
             content = {"user": current_token["email"]}
             story_box = self.storage.patch_item_from_collection(
@@ -51,7 +52,7 @@ class StoryBoxLink(CoghentBaseResource):
             story_box = self.storage.save_item_to_collection("entities", content)
             content = [{"key": story_box["_id"], "type": "story_box", "linked": True}]
             self.storage.patch_collection_item_relations(
-                "box_visits", self._get_raw_id(box_visit), content, False
+                "box_visits", util.get_raw_id(box_visit), content, False
             )
         return story_box, 201
 
@@ -62,7 +63,7 @@ class StoryBoxPublish(CoghentBaseResource):
         self._abort_if_not_logged_in(current_token)
         story_box = self._abort_if_item_doesnt_exist("entities", id)
         story_box_relations = self.storage.get_collection_item_relations(
-            "entities", self._get_raw_id(story_box)
+            "entities", util.get_raw_id(story_box)
         )
         if story := next(
             (x for x in story_box_relations if x["type"] == "stories"), None
@@ -92,9 +93,9 @@ class StoryBoxPublish(CoghentBaseResource):
             {"key": story_box["_id"], "label": "Frame", "type": "frames", "order": 1}
         ]
         self.storage.patch_collection_item_relations(
-            "entities", self._get_raw_id(story), content
+            "entities", util.get_raw_id(story), content
         )
-        return self._create_box_visit({"story_id": self._get_raw_id(story)}), 201
+        return self._create_box_visit({"story_id": util.get_raw_id(story)}), 201
 
 
 class StoryBoxSubtitles(CoghentBaseResource):
@@ -105,7 +106,7 @@ class StoryBoxSubtitles(CoghentBaseResource):
         relations = [
             x
             for x in self.storage.get_collection_item_relations(
-                "entities", self._get_raw_id(story_box)
+                "entities", util.get_raw_id(story_box)
             )
             if x["type"] == "components"
         ]
@@ -141,17 +142,17 @@ class StoryBoxSubtitles(CoghentBaseResource):
         )
         if not mediafile:
             abort(400, message="Failed to create mediafile")
-        srt_string = f"{{\\{self._get_raw_id(story_box)}}}\n{srt.compose(subtitles)}"
+        srt_string = f"{{\\{util.get_raw_id(story_box)}}}\n{srt.compose(subtitles)}"
         # FIXME: add auth headers
         req = requests.post(
-            f"{self.storage_api_url}/upload?id={self._get_raw_id(mediafile)}",
+            f"{self.storage_api_url}/upload?id={util.get_raw_id(mediafile)}",
             files={"file": ("storybox_srt.srt", bytes(srt_string, "utf-8"))},
         )
         if req.status_code == 409:
             abort(409, message=f"Duplicate srt found: {req.text.strip()}")
         elif req.status_code != 201:
             self.storage.delete_item_from_collection(
-                "mediafiles", self._get_raw_id(mediafile)
+                "mediafiles", util.get_raw_id(mediafile)
             )
             abort(400, message=req.text.strip())
         new_relation = {
@@ -161,7 +162,7 @@ class StoryBoxSubtitles(CoghentBaseResource):
             "order": 1,
         }
         self.storage.add_relations_to_collection_item(
-            "entities", self._get_raw_id(story_box), [new_relation]
+            "entities", util.get_raw_id(story_box), [new_relation]
         )
         return "", 201
 

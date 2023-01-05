@@ -1,5 +1,6 @@
 import app
 import os
+import util
 
 from apps.coghent.storage.storagemanager import CoghentStorageManager
 from datetime import datetime
@@ -58,7 +59,7 @@ class CoghentBaseResource(BaseResource):
             "last_frame": "",
         }
         self.storage.add_relations_to_collection_item(
-            "box_visits", self._get_raw_id(box_visit), [relation], False
+            "box_visits", util.get_raw_id(box_visit), [relation], False
         )
         relation = {
             "type": "story_box_visits",
@@ -66,7 +67,7 @@ class CoghentBaseResource(BaseResource):
             "key": box_visit["_id"],
         }
         self.storage.add_relations_to_collection_item(
-            "entities", self._get_raw_id(story), [relation], False
+            "entities", util.get_raw_id(story), [relation], False
         )
         return self._add_relations_to_metadata(box_visit, "box_visits", sort_by="order")
 
@@ -98,7 +99,7 @@ class CoghentBaseResource(BaseResource):
             for linked_entity in self.storage.get_mediafile_linked_entities(item):
                 entity_ids.append(linked_entity["entity_id"].removeprefix("entities/"))
         else:
-            entity_ids.append(self._get_raw_id(item))
+            entity_ids.append(util.get_raw_id(item))
         permissions = set()
         for entity_id in entity_ids:
             if permission := self.mapping.get(self._get_museum_id(entity_id)):

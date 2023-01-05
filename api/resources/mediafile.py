@@ -105,9 +105,9 @@ class MediafileDetail(BaseResource):
         content["version"] = content.get("version", 0) + 1
         content["last_editor"] = dict(current_token).get("email", "default_uploader")
         mediafile = self.storage.update_item_from_collection(
-            "mediafiles", self._get_raw_id(old_mediafile), content
+            "mediafiles", util.get_raw_id(old_mediafile), content
         )
-        self._signal_mediafile_changed(old_mediafile, mediafile)
+        util.signal_mediafile_changed(old_mediafile, mediafile)
         return mediafile, 201
 
     @app.require_oauth()
@@ -120,9 +120,9 @@ class MediafileDetail(BaseResource):
         content["version"] = content.get("version", 0) + 1
         content["last_editor"] = dict(current_token).get("email", "default_uploader")
         mediafile = self.storage.patch_item_from_collection(
-            "mediafiles", self._get_raw_id(old_mediafile), content
+            "mediafiles", util.get_raw_id(old_mediafile), content
         )
-        self._signal_mediafile_changed(old_mediafile, mediafile)
+        util.signal_mediafile_changed(old_mediafile, mediafile)
         return mediafile, 201
 
     @app.require_oauth()
@@ -132,7 +132,7 @@ class MediafileDetail(BaseResource):
             self._abort_if_no_access(mediafile, current_token, "mediafiles")
         linked_entities = self.storage.get_mediafile_linked_entities(mediafile)
         self.storage.delete_item_from_collection(
-            "mediafiles", self._get_raw_id(mediafile)
+            "mediafiles", util.get_raw_id(mediafile)
         )
-        self._signal_mediafile_deleted(mediafile, linked_entities)
+        util.signal_mediafile_deleted(mediafile, linked_entities)
         return "", 204

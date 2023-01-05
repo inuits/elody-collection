@@ -1,4 +1,5 @@
 import app
+import util
 
 from apps.coghent.resources.base_resource import CoghentBaseResource
 from flask import Blueprint, request, after_this_request
@@ -52,7 +53,7 @@ class BoxVisitDetail(CoghentBaseResource):
         content = self._get_request_body()
         self._abort_if_not_valid_json("BoxVisit", content, box_visit_schema)
         box_visit = self.storage.update_item_from_collection(
-            "box_visits", self._get_raw_id(box_visit), content
+            "box_visits", util.get_raw_id(box_visit), content
         )
         return box_visit, 201
 
@@ -61,7 +62,7 @@ class BoxVisitDetail(CoghentBaseResource):
         box_visit = self._abort_if_item_doesnt_exist("box_visits", id)
         content = self._get_request_body()
         box_visit = self.storage.patch_item_from_collection(
-            "box_visits", self._get_raw_id(box_visit), content
+            "box_visits", util.get_raw_id(box_visit), content
         )
         return box_visit, 201
 
@@ -69,7 +70,7 @@ class BoxVisitDetail(CoghentBaseResource):
     def delete(self, id):
         box_visit = self._abort_if_item_doesnt_exist("box_visits", id)
         self.storage.delete_item_from_collection(
-            "box_visits", self._get_raw_id(box_visit)
+            "box_visits", util.get_raw_id(box_visit)
         )
         return "", 204
 
@@ -85,7 +86,7 @@ class BoxVisitRelations(CoghentBaseResource):
             return response
 
         return self.storage.get_collection_item_relations(
-            "box_visits", self._get_raw_id(box_visit)
+            "box_visits", util.get_raw_id(box_visit)
         )
 
     @app.require_oauth("add-box-visit-relations")
@@ -93,7 +94,7 @@ class BoxVisitRelations(CoghentBaseResource):
         box_visit = self._abort_if_item_doesnt_exist("box_visits", id)
         content = self._get_request_body()
         relations = self.storage.add_relations_to_collection_item(
-            "box_visits", self._get_raw_id(box_visit), content, False
+            "box_visits", util.get_raw_id(box_visit), content, False
         )
         return relations, 201
 
@@ -102,7 +103,7 @@ class BoxVisitRelations(CoghentBaseResource):
         box_visit = self._abort_if_item_doesnt_exist("box_visits", id)
         content = self._get_request_body()
         relations = self.storage.update_collection_item_relations(
-            "box_visits", self._get_raw_id(box_visit), content, False
+            "box_visits", util.get_raw_id(box_visit), content, False
         )
         return relations, 201
 
@@ -111,7 +112,7 @@ class BoxVisitRelations(CoghentBaseResource):
         box_visit = self._abort_if_item_doesnt_exist("box_visits", id)
         content = self._get_request_body()
         relations = self.storage.patch_collection_item_relations(
-            "box_visits", self._get_raw_id(box_visit), content, False
+            "box_visits", util.get_raw_id(box_visit), content, False
         )
         return relations, 201
 
@@ -120,7 +121,7 @@ class BoxVisitRelations(CoghentBaseResource):
         box_visit = self._abort_if_item_doesnt_exist("box_visits", id)
         content = self._get_request_body()
         self.storage.delete_collection_item_relations(
-            "box_visits", self._get_raw_id(box_visit), content, False
+            "box_visits", util.get_raw_id(box_visit), content, False
         )
         return "", 204
 
@@ -136,7 +137,7 @@ class BoxVisitRelationsAll(CoghentBaseResource):
             return response
 
         return self.storage.get_collection_item_relations(
-            "box_visits", self._get_raw_id(box_visit), include_sub_relations=True
+            "box_visits", util.get_raw_id(box_visit), include_sub_relations=True
         )
 
 

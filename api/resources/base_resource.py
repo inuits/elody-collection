@@ -1,8 +1,7 @@
 import app
 import os
+import util
 
-from cloudevents.conversion import to_dict
-from cloudevents.http import CloudEvent
 from flask import request
 from flask_restful import Resource, abort
 from storage.storagemanager import StorageManager
@@ -16,11 +15,6 @@ class BaseResource(Resource):
         self.image_api_url_ext = os.getenv("IMAGE_API_URL_EXT")
         self.storage_api_url = os.getenv("STORAGE_API_URL")
         self.storage_api_url_ext = os.getenv("STORAGE_API_URL_EXT")
-
-    def __send_cloudevent(self, routing_key, data):
-        attributes = {"type": routing_key, "source": "dams"}
-        event = to_dict(CloudEvent(attributes, data))
-        app.rabbit.send(event, routing_key=routing_key)
 
     def _abort_if_item_doesnt_exist(self, collection, id):
         if item := self.storage.get_item_from_collection_by_id(collection, id):
@@ -52,7 +46,7 @@ class BaseResource(Resource):
 
     def _add_relations_to_metadata(self, entity, collection="entities", sort_by=None):
         relations = self.storage.get_collection_item_relations(
-            collection, self._get_raw_id(entity), exclude=["story_box_visits"]
+            collection, util.get_raw_id(entity), exclude=["story_box_visits"]
         )
         if not relations:
             return entity
@@ -60,9 +54,6 @@ class BaseResource(Resource):
             relations = sorted(relations, key=lambda x: x[sort_by])
         entity["metadata"] = [*entity.get("metadata", []), *relations]
         return entity
-
-    def _get_raw_id(self, item):
-        return item["_key"] if "_key" in item else item["_id"]
 
     def _get_request_body(self):
         if request_body := request.get_json(silent=True):
@@ -118,7 +109,7 @@ class BaseResource(Resource):
 
     def _set_entity_mediafile_and_thumbnail(self, entity):
         mediafiles = self.storage.get_collection_item_mediafiles(
-            "entities", self._get_raw_id(entity)
+            "entities", util.get_raw_id(entity)
         )
         for mediafile in mediafiles:
             if mediafile.get("is_primary", False):
@@ -139,25 +130,3 @@ class BaseResource(Resource):
                     "thumbnail_file_location"
                 ]
         return entity
-
-    def _signal_entity_changed(self, entity):
-        data = {
-            "location": f"/entities/{self._get_raw_id(entity)}",
-            "type": entity["type"] if "type" in entity else "unspecified",
-        }
-        self.__send_cloudevent("dams.entity_changed", data)
-
-    def _signal_entity_deleted(self, entity):
-        data = {
-            "_id": self._get_raw_id(entity),
-            "type": entity["type"] if "type" in entity else "unspecified",
-        }
-        self.__send_cloudevent("dams.entity_deleted", data)
-
-    def _signal_mediafile_changed(self, old_mediafile, mediafile):
-        data = {"old_mediafile": old_mediafile, "mediafile": mediafile}
-        self.__send_cloudevent("dams.mediafile_changed", data)
-
-    def _signal_mediafile_deleted(self, mediafile, linked_entities):
-        data = {"mediafile": mediafile, "linked_entities": linked_entities}
-        self.__send_cloudevent("dams.mediafile_deleted", data)

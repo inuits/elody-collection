@@ -239,7 +239,7 @@ class EntityTest(BaseCase):
         returned_ids = []
         for entity in response.json["results"]:
             self.valid_entity(entity, 3, 4)
-            returned_ids.append(self._get_item_id(entity))
+            returned_ids.append(util.get_raw_id(entity))
         self.assertListEqual(sorted(ids), sorted(returned_ids))
         self.assertEqual(200, response.status_code)
 
@@ -261,7 +261,7 @@ class EntityTest(BaseCase):
         returned_ids = []
         for entity in response.json["results"]:
             self.valid_entity(entity, 3, 4)
-            returned_ids.append(self._get_item_id(entity))
+            returned_ids.append(util.get_raw_id(entity))
         self.assertListEqual(sorted(ids[:2]), sorted(returned_ids))
         self.assertEqual(200, response.status_code)
 
@@ -324,7 +324,7 @@ class EntityTest(BaseCase):
         )
 
         response = self.app.put(
-            "/entities/{}".format(self._get_item_id(response.json)),
+            "/entities/{}".format(util.get_raw_id(response.json)),
             headers={"Content-Type": "application/json"},
             data=update,
         )
@@ -416,7 +416,7 @@ class EntityTest(BaseCase):
         )
 
         response = self.app.patch(
-            "/entities/{}".format(self._get_item_id(response.json)),
+            "/entities/{}".format(util.get_raw_id(response.json)),
             headers={"Content-Type": "application/json"},
             data=update,
         )
@@ -586,7 +586,7 @@ class EntityTest(BaseCase):
         }
 
         response = self.app.put(
-            "/entities/{}".format(self._get_item_id(updated_entity)),
+            "/entities/{}".format(util.get_raw_id(updated_entity)),
             headers={"Content-Type": "application/json"},
             data=json.dumps(updated_entity),
         )
@@ -606,7 +606,7 @@ class EntityTest(BaseCase):
         ]
 
         response = self.app.post(
-            "/entities/{}/relations".format(self._get_item_id(entities[0])),
+            "/entities/{}/relations".format(util.get_raw_id(entities[0])),
             headers={"Content-Type": "application/json"},
             data=json.dumps(relations),
         )
@@ -616,7 +616,7 @@ class EntityTest(BaseCase):
         self.assertEqual(relations, response.json)
 
         response = self.app.get(
-            "/entities/{}/relations".format(self._get_item_id(entities[1])),
+            "/entities/{}/relations".format(util.get_raw_id(entities[1])),
             headers={"Content-Type": "application/json"},
         )
         self.assertEqual(200, response.status_code)
@@ -627,7 +627,7 @@ class EntityTest(BaseCase):
         )
 
         response = self.app.get(
-            "/entities/{}/relations".format(self._get_item_id(entities[2])),
+            "/entities/{}/relations".format(util.get_raw_id(entities[2])),
             headers={"Content-Type": "application/json"},
         )
         self.assertEqual(200, response.status_code)
@@ -647,7 +647,7 @@ class EntityTest(BaseCase):
         ]
 
         response = self.app.post(
-            "/entities/{}/relations".format(self._get_item_id(entities[0])),
+            "/entities/{}/relations".format(util.get_raw_id(entities[0])),
             headers={"Content-Type": "application/json"},
             data=json.dumps(relations),
         )
@@ -657,7 +657,7 @@ class EntityTest(BaseCase):
         new_relations = [{"key": new_entity["_id"], "type": "authoredBy"}]
 
         response = self.app.put(
-            "/entities/{}/relations".format(self._get_item_id(entities[0])),
+            "/entities/{}/relations".format(util.get_raw_id(entities[0])),
             headers={"Content-Type": "application/json"},
             data=json.dumps(new_relations),
         )
@@ -667,7 +667,7 @@ class EntityTest(BaseCase):
         self.assertEqual(new_relations, response.json)
 
         response = self.app.get(
-            "/entities/{}/relations".format(self._get_item_id(entities[0])),
+            "/entities/{}/relations".format(util.get_raw_id(entities[0])),
             headers={"Content-Type": "application/json"},
         )
         self.assertEqual(200, response.status_code)
@@ -676,7 +676,7 @@ class EntityTest(BaseCase):
         self.assertEqual(new_relations, response.json)
 
         response = self.app.get(
-            "/entities/{}/relations".format(self._get_item_id(new_entity)),
+            "/entities/{}/relations".format(util.get_raw_id(new_entity)),
             headers={"Content-Type": "application/json"},
         )
         self.assertEqual(200, response.status_code)
@@ -687,7 +687,7 @@ class EntityTest(BaseCase):
         )
 
         response = self.app.get(
-            "/entities/{}/relations".format(self._get_item_id(entities[1])),
+            "/entities/{}/relations".format(util.get_raw_id(entities[1])),
             headers={"Content-Type": "application/json"},
         )
         self.assertEqual(200, response.status_code)
@@ -695,7 +695,7 @@ class EntityTest(BaseCase):
         self.assertEqual(0, len(response.json))
 
         response = self.app.get(
-            "/entities/{}/relations".format(self._get_item_id(entities[2])),
+            "/entities/{}/relations".format(util.get_raw_id(entities[2])),
             headers={"Content-Type": "application/json"},
         )
         self.assertEqual(200, response.status_code)
@@ -709,7 +709,7 @@ class EntityTest(BaseCase):
         relations = [{"key": entities[1]["_id"], "type": "authoredBy"}]
 
         response = self.app.post(
-            "/entities/{}/relations".format(self._get_item_id(entities[0])),
+            "/entities/{}/relations".format(util.get_raw_id(entities[0])),
             headers={"Content-Type": "application/json"},
             data=json.dumps(relations),
         )
@@ -719,7 +719,7 @@ class EntityTest(BaseCase):
         new_relations = [{"key": new_entity["_id"], "type": "isIn"}]
 
         response = self.app.patch(
-            "/entities/{}/relations".format(self._get_item_id(entities[0])),
+            "/entities/{}/relations".format(util.get_raw_id(entities[0])),
             headers={"Content-Type": "application/json"},
             data=json.dumps(new_relations),
         )
@@ -729,7 +729,7 @@ class EntityTest(BaseCase):
         self.assertEqual(new_relations, response.json)
 
         response = self.app.get(
-            "/entities/{}/relations".format(self._get_item_id(entities[0])),
+            "/entities/{}/relations".format(util.get_raw_id(entities[0])),
             headers={"Content-Type": "application/json"},
         )
         self.assertEqual(200, response.status_code)
@@ -738,7 +738,7 @@ class EntityTest(BaseCase):
         self.assertEqual(relations + new_relations, response.json)
 
         response = self.app.get(
-            "/entities/{}/relations".format(self._get_item_id(new_entity)),
+            "/entities/{}/relations".format(util.get_raw_id(new_entity)),
             headers={"Content-Type": "application/json"},
         )
         self.assertEqual(200, response.status_code)
@@ -749,7 +749,7 @@ class EntityTest(BaseCase):
         )
 
         response = self.app.get(
-            "/entities/{}/relations".format(self._get_item_id(entities[1])),
+            "/entities/{}/relations".format(util.get_raw_id(entities[1])),
             headers={"Content-Type": "application/json"},
         )
         self.assertEqual(200, response.status_code)
@@ -769,7 +769,7 @@ class EntityTest(BaseCase):
         ]
 
         response = self.app.post(
-            "/entities/{}/relations".format(self._get_item_id(entities[0])),
+            "/entities/{}/relations".format(util.get_raw_id(entities[0])),
             headers={"Content-Type": "application/json"},
             data=json.dumps(relations),
         )
@@ -778,7 +778,7 @@ class EntityTest(BaseCase):
         updated_relations = [{"key": entities[2]["_id"], "type": "isIn"}]
 
         response = self.app.patch(
-            "/entities/{}/relations".format(self._get_item_id(entities[0])),
+            "/entities/{}/relations".format(util.get_raw_id(entities[0])),
             headers={"Content-Type": "application/json"},
             data=json.dumps(updated_relations),
         )
@@ -788,7 +788,7 @@ class EntityTest(BaseCase):
         self.assertEqual(updated_relations, response.json)
 
         response = self.app.get(
-            "/entities/{}/relations".format(self._get_item_id(entities[0])),
+            "/entities/{}/relations".format(util.get_raw_id(entities[0])),
             headers={"Content-Type": "application/json"},
         )
         self.assertEqual(200, response.status_code)
@@ -797,7 +797,7 @@ class EntityTest(BaseCase):
         self.assertEqual([relations[0]] + updated_relations, response.json)
 
         response = self.app.get(
-            "/entities/{}/relations".format(self._get_item_id(entities[1])),
+            "/entities/{}/relations".format(util.get_raw_id(entities[1])),
             headers={"Content-Type": "application/json"},
         )
         self.assertEqual(200, response.status_code)
@@ -808,7 +808,7 @@ class EntityTest(BaseCase):
         )
 
         response = self.app.get(
-            "/entities/{}/relations".format(self._get_item_id(entities[2])),
+            "/entities/{}/relations".format(util.get_raw_id(entities[2])),
             headers={"Content-Type": "application/json"},
         )
         self.assertEqual(200, response.status_code)
@@ -833,7 +833,7 @@ class EntityTest(BaseCase):
 
         entities[-1]["type"] = "asset"
         response = self.app.put(
-            "/entities/{}".format(self._get_item_id(entities[-1])),
+            "/entities/{}".format(util.get_raw_id(entities[-1])),
             headers={"Content-Type": "application/json"},
             data=json.dumps(entities[-1]),
         )
@@ -854,7 +854,7 @@ class EntityTest(BaseCase):
         self.assertEqual(0, len(response.json["results"]))
 
     def valid_entity(self, entity, identifier_count, metadata_count):
-        self.assertEqual(str, type(self._get_item_id(entity)))
+        self.assertEqual(str, type(util.get_raw_id(entity)))
         self.assertEqual(str, type(entity["metadata"][0]["value"]))
         self.assertEqual(str, type(entity["type"]))
         self.assertEqual(list, type(entity["metadata"]))
@@ -887,6 +887,6 @@ class EntityTest(BaseCase):
         self.assertEqual(skip > 0, "previous" in response.json)
         for i in range(min(count, limit)):
             entity = response.json["results"][i]
-            self.assertEqual(ids[i + skip], self._get_item_id(entity))
+            self.assertEqual(ids[i + skip], util.get_raw_id(entity))
             self.valid_entity(entity, 3, 4)
         self.assertEqual(200, response.status_code)
