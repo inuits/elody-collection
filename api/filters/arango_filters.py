@@ -275,25 +275,3 @@ class ArangoFilters(ArangoStorageManager):
             FOR e_id in {prev_collection}
                 LET e = DOCUMENT(e_id)
         """
-
-    # FIXME: implement this function again
-    def __api_output(self, query_output, skip, limit, collection="entities"):
-        results = list()
-        ids = list(filter(lambda item: item is not None, query_output))
-        if ids:
-            filters = {"ids": ids}
-            skip_relations = True
-            results = self.get_entities(skip, limit, skip_relations, filters)
-        count = query_output.extra["stats"]["fullCount"]
-        api_output = {
-            "count": count,
-            "results": results,
-            "limit": limit,
-        }
-        if skip + limit < count:
-            api_output["next"] = f"/advanced-search?skip={skip + limit}&limit={limit}"
-        if skip > 0:
-            api_output[
-                "previous"
-            ] = f"/advanced-search?skip={max(0, skip - limit)}&limit={limit}"
-        return api_output
