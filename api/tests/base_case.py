@@ -1,6 +1,5 @@
 import json
 import unittest
-import util
 
 from app import app
 from storage.storagemanager import StorageManager
@@ -89,7 +88,7 @@ class BaseCase(unittest.TestCase):
         )
 
     def create_entity_get_id(self):
-        return util.get_raw_id(self.create_entity().json)
+        return self._get_item_id(self.create_entity().json)
 
     def create_mediafile(self):
         return self.app.post(
@@ -99,10 +98,13 @@ class BaseCase(unittest.TestCase):
         )
 
     def create_mediafile_get_id(self):
-        return util.get_raw_id(self.create_mediafile().json)
+        return self._get_item_id(self.create_mediafile().json)
+
+    def _get_item_id(self, item):
+        return item["_key"] if "_key" in item else item["_id"]
 
     def valid_mediafile(self, mediafile):
-        self.assertEqual(str, type(util.get_raw_id(mediafile)))
+        self.assertEqual(str, type(self._get_item_id(mediafile)))
         self.assertEqual(str, type(mediafile["filename"]))
 
     def invalid_input(self, response):
