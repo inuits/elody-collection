@@ -63,12 +63,6 @@ class MemoryStorageManager(GenericStorageManager):
             return content
         return None
 
-    def check_health(self):
-        return True
-
-    def delete_collection_item_relations(self, collection, id, content, parent=True):
-        pass
-
     def delete_collection_item_sub_item_key(self, collection, obj_id, sub_item, key):
         patch_data = {sub_item: []}
         all_sub_items = self.get_collection_item_sub_item(collection, obj_id, sub_item)
@@ -174,18 +168,6 @@ class MemoryStorageManager(GenericStorageManager):
         items["results"] = results[skip : skip + limit]
         return deepcopy(items)
 
-    def get_mediafile_linked_entities(self, mediafile):
-        return
-
-    def get_metadata_values_for_collection_item_by_key(self, collection, key):
-        return
-
-    def handle_mediafile_deleted(self, parents):
-        return
-
-    def handle_mediafile_status_change(self, old_mediafile, mediafile):
-        return
-
     def patch_collection_item_relations(self, collection, obj_id, content, parent=True):
         for item in content:
             self.delete_collection_item_sub_item_key(
@@ -210,9 +192,6 @@ class MemoryStorageManager(GenericStorageManager):
             return self.collections[collection][gen_id]
         return None
 
-    def reindex_mediafile_parents(self, mediafile=None, parents=None):
-        return
-
     def save_item_to_collection(self, collection, content):
         gen_id = str(uuid.uuid4())
         content["_id"] = gen_id
@@ -222,11 +201,6 @@ class MemoryStorageManager(GenericStorageManager):
             content["identifiers"].insert(0, gen_id)
         self.collections[collection][gen_id] = content
         return self.collections[collection][gen_id]
-
-    def set_primary_field_collection_item(
-        self, collection, entity_id, mediafile_id, field
-    ):
-        pass
 
     def update_collection_item_relations(
         self, collection, obj_id, content, parent=True

@@ -11,7 +11,7 @@ class GenericStorageManager:
         pass
 
     def check_health(self):
-        pass
+        return True
 
     def delete_collection_item_relations(self, collection, id, content, parent=True):
         pass
