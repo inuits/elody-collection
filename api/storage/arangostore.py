@@ -397,20 +397,6 @@ class ArangoStorageManager(GenericStorageManager):
                                 relations.append(relation_object)
         return relations
 
-    def get_collection_item_sub_item(self, collection, id, sub_item):
-        if item := self.get_item_from_collection_by_id(collection, id):
-            return item.get(sub_item)
-        return None
-
-    def get_collection_item_sub_item_key(self, collection, id, sub_item, key):
-        item = self.get_item_from_collection_by_id(collection, id)
-        if not item:
-            return None
-        for sub_object in item.get(sub_item, []):
-            if sub_object["key"] == key:
-                return sub_object
-        return None
-
     def get_entities(self, skip=0, limit=20, skip_relations=0, filters=None):
         if not filters:
             filters = {}

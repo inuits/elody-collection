@@ -222,22 +222,6 @@ class MongoStorageManager(GenericStorageManager):
     ):
         return self.get_collection_item_sub_item(collection, id, "relations")
 
-    def get_collection_item_sub_item(self, collection, id, sub_item):
-        document = self.db[collection].find_one(
-            self.__get_id_query(id), {sub_item: 1, "_id": 0}
-        )
-        if document and sub_item in document:
-            return document[sub_item]
-        return []
-
-    def get_collection_item_sub_item_key(self, collection, id, sub_item, key):
-        ret = []
-        all_sub_items = self.get_collection_item_sub_item(collection, id, sub_item)
-        for obj in all_sub_items:
-            if obj["key"] == key:
-                ret.append(obj)
-        return ret
-
     def get_entities(self, skip=0, limit=20, skip_relations=0, filters=None):
         if "ids" in filters:
             return self.__get_items_from_collection_by_ids("entities", filters["ids"])

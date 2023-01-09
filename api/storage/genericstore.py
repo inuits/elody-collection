@@ -33,16 +33,21 @@ class GenericStorageManager:
     ):
         pass
 
-    def get_collection_item_sub_item(self, collection, id, sub_item) -> list:
-        pass
+    def get_collection_item_sub_item(self, collection, id, sub_item):
+        if item := self.get_item_from_collection_by_id(collection, id):
+            return item.get(sub_item)
+        return None
 
     def get_collection_item_sub_item_key(self, collection, id, sub_item, key):
-        pass
+        ret = None
+        if sub_items := self.get_collection_item_sub_item(collection, id, sub_item):
+            ret = list(filter(lambda x: x["key"] == key, sub_items))
+        return ret
 
     def get_entities(self, skip=0, limit=20, skip_relations=0, filters=None):
         pass
 
-    def get_item_from_collection_by_id(self, collection, id):
+    def get_item_from_collection_by_id(self, collection, id) -> dict:
         pass
 
     def get_items_from_collection(
