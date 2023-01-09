@@ -23,9 +23,10 @@ class BaseFilterResource(BaseResource):
         self.validate_advanced_query_syntax(query)
 
         filters = dict()
+        count = 0
         if ids := self.filter_engine.filter("", query, skip, limit, collection):
             filters["ids"] = list(ids)
-        count = ids.extra["stats"]["fullCount"]
+            count = ids.extra["stats"]["fullCount"]
         items = self.storage.get_items_from_collection(
             collection, 0, limit, None, filters
         )
