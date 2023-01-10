@@ -44,7 +44,7 @@ class MongoStorageManager(GenericStorageManager):
         )
         items["results"] = list()
         for document in documents:
-            items["results"].append(self.__prepare_mongo_document(document, True))
+            items["results"].append(self._prepare_mongo_document(document, True))
         return items
 
     def __get_multiple_id_query(self, ids):
@@ -70,7 +70,7 @@ class MongoStorageManager(GenericStorageManager):
             "contains": "entities",
         }.get(relation, "entities")
 
-    def __prepare_mongo_document(self, document, reversed, id=None):
+    def _prepare_mongo_document(self, document, reversed, id=None):
         if id:
             document["_id"] = id
             if "identifiers" not in document:
@@ -229,7 +229,7 @@ class MongoStorageManager(GenericStorageManager):
 
     def get_item_from_collection_by_id(self, collection, id):
         if document := self.db[collection].find_one(self.__get_id_query(id)):
-            return self.__prepare_mongo_document(document, True)
+            return self._prepare_mongo_document(document, True)
         return None
 
     def get_items_from_collection(
@@ -258,7 +258,7 @@ class MongoStorageManager(GenericStorageManager):
         items["count"] = count
         items["results"] = list()
         for document in documents:
-            items["results"].append(self.__prepare_mongo_document(document, True))
+            items["results"].append(self._prepare_mongo_document(document, True))
         return items
 
     def get_mediafile_linked_entities(self, mediafile):
@@ -332,7 +332,7 @@ class MongoStorageManager(GenericStorageManager):
         return content
 
     def patch_item_from_collection(self, collection, id, content):
-        content = self.__prepare_mongo_document(content, False)
+        content = self._prepare_mongo_document(content, False)
         self.db[collection].update_one(self.__get_id_query(id), {"$set": content})
         return self.get_item_from_collection_by_id(collection, id)
 
@@ -344,7 +344,7 @@ class MongoStorageManager(GenericStorageManager):
             util.signal_entity_changed(entity)
 
     def save_item_to_collection(self, collection, content):
-        content = self.__prepare_mongo_document(content, False, str(uuid.uuid4()))
+        content = self._prepare_mongo_document(content, False, str(uuid.uuid4()))
         item_id = self.db[collection].insert_one(content).inserted_id
         return self.get_item_from_collection_by_id(collection, item_id)
 
@@ -375,6 +375,6 @@ class MongoStorageManager(GenericStorageManager):
         return content
 
     def update_item_from_collection(self, collection, id, content):
-        content = self.__prepare_mongo_document(content, False)
+        content = self._prepare_mongo_document(content, False)
         self.db[collection].replace_one(self.__get_id_query(id), content)
         return self.get_item_from_collection_by_id(collection, id)
