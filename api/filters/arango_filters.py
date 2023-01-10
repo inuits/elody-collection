@@ -8,9 +8,12 @@ class ArangoFilters(ArangoStorageManager):
     def filter(self, output_type, body, skip, limit, collection="entities"):
         aql = self.__generate_aql_query(body, collection)
         bind = {"skip": skip, "limit": limit}
-        app.logger.info(aql)
         results = self.db.AQLQuery(aql, rawResults=True, fullCount=True, bindVars=bind)
-        return results
+        filters = {"ids": list(results)}
+        items = self.get_items_from_collection(collection, 0, limit, None, filters)
+        items["count"] = results.extra["stats"]["fullCount"]
+        items["limit"] = limit
+        return items
 
     def __generate_aql_query(self, queries, collection="entities"):
         multi_select_exceptions = ["rights", "source", "publication_status"]
