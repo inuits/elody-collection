@@ -39,10 +39,9 @@ class GenericStorageManager:
         return None
 
     def get_collection_item_sub_item_key(self, collection, id, sub_item, key):
-        ret = None
         if sub_items := self.get_collection_item_sub_item(collection, id, sub_item):
-            ret = list(filter(lambda x: x["key"] == key, sub_items))
-        return ret
+            return list(filter(lambda x: x["key"] == key, sub_items))
+        return None
 
     def get_entities(self, skip=0, limit=20, skip_relations=0, filters=None):
         pass
