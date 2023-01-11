@@ -99,23 +99,6 @@ class MemoryStorageManager(GenericStorageManager):
     ):
         return self.get_collection_item_sub_item(collection, obj_id, "relations")
 
-    def get_collection_item_sub_item(self, collection, obj_id, sub_item):
-        if item := self.get_item_from_collection_by_id(collection, obj_id):
-            return deepcopy(item[sub_item]) if sub_item in item else []
-        return None
-
-    def get_collection_item_sub_item_key(self, collection, obj_id, sub_item, key):
-        if obj := self.get_collection_item_sub_item(collection, obj_id, sub_item):
-            return deepcopy(
-                list(
-                    filter(
-                        lambda elem: elem["key"] == key,
-                        obj,
-                    )
-                )
-            )
-        return None
-
     def get_entities(self, skip=0, limit=20, skip_relations=0, filters=None):
         items = dict()
         items["results"] = list(self.collections["entities"].values())
