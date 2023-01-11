@@ -226,6 +226,8 @@ class EntityMetadata(BaseResource):
         metadata = self.storage.patch_collection_item_metadata(
             "entities", util.get_raw_id(entity), content
         )
+        if not metadata:
+            abort(400, message=f"Entity with id {id} has no metadata")
         util.signal_entity_changed(entity)
         return metadata, 201
 

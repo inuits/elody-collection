@@ -82,6 +82,8 @@ class GenericStorageManager:
 
     def patch_collection_item_metadata(self, collection, id, content):
         metadata = self.get_collection_item_sub_item(collection, id, "metadata")
+        if not metadata:
+            return None
         for item in content:
             if existing := next((x for x in metadata if x["key"] == item["key"]), None):
                 metadata.remove(existing)
