@@ -187,16 +187,6 @@ class MongoStorageManager(GenericStorageManager):
                 },
             )
 
-    def delete_collection_item_sub_item_key(self, collection, id, sub_item, key):
-        patch_data = {sub_item: []}
-        all_sub_items = self.get_collection_item_sub_item(collection, id, sub_item)
-        if not all_sub_items:
-            return
-        for obj in all_sub_items:
-            if obj["key"] != key:
-                patch_data[sub_item].append(obj)
-        self.patch_item_from_collection(collection, id, patch_data)
-
     def delete_item_from_collection(self, collection, id):
         self.delete_impacted_relations(collection, id)
         self.db[collection].delete_one(self.__get_id_query(id))

@@ -63,16 +63,6 @@ class MemoryStorageManager(GenericStorageManager):
             return content
         return None
 
-    def delete_collection_item_sub_item_key(self, collection, obj_id, sub_item, key):
-        patch_data = {sub_item: []}
-        sub_items = self.get_collection_item_sub_item(collection, obj_id, sub_item)
-        if not sub_items:
-            return
-        for obj in sub_items:
-            if obj["key"] != key:
-                patch_data[sub_item].append(obj)
-        self.patch_item_from_collection(collection, obj_id, patch_data)
-
     def delete_item_from_collection(self, collection, obj_id):
         gen_id = self.__get_collection_item_gen_id_by_identifier(collection, obj_id)
         self.collections[collection].pop(gen_id, None)

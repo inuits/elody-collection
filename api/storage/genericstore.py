@@ -17,7 +17,14 @@ class GenericStorageManager:
         pass
 
     def delete_collection_item_sub_item_key(self, collection, id, sub_item, key):
-        pass
+        sub_items = self.get_collection_item_sub_item(collection, id, sub_item)
+        if not sub_items:
+            return
+        patch_data = {sub_item: []}
+        for obj in sub_items:
+            if obj["key"] != key:
+                patch_data[sub_item].append(obj)
+        self.patch_item_from_collection(collection, id, patch_data)
 
     def delete_item_from_collection(self, collection, id):
         pass
