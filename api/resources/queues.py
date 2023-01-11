@@ -4,11 +4,24 @@ import util
 from storage.storagemanager import StorageManager
 
 
+def __get_mediafile_publication_status(mediafile):
+    for metadata in mediafile.get("metadata", []):
+        if metadata["key"] == "publication_status":
+            return metadata["value"]
+    return ""
+
+
+def __is_malformed_message(data, fields):
+    if not all(x in data for x in fields):
+        app.logger.error(f"Message malformed: missing one of {fields}")
+        return True
+    return False
+
+
 @app.rabbit.queue("dams.child_relation_changed")
 def child_relation_changed(routing_key, body, message_id):
     data = body["data"]
-    if any(x not in data for x in ["collection", "parent_id"]):
-        app.logger.error("Message malformed: missing 'collection' or 'parent_id'")
+    if __is_malformed_message(data, ["collection", "parent_id"]):
         return
     StorageManager().get_db_engine().update_parent_relation_values(
         data["collection"], data["parent_id"]
@@ -18,10 +31,7 @@ def child_relation_changed(routing_key, body, message_id):
 @app.rabbit.queue("dams.file_scanned")
 def handle_file_scanned(routing_key, body, message_id):
     data = body["data"]
-    if any(x not in data for x in ["clamav_version", "infected", "mediafile_id"]):
-        app.logger.error(
-            "Message malformed: missing 'clamav_version', 'infected' or 'mediafile_id'"
-        )
+    if __is_malformed_message(data, ["clamav_version", "infected", "mediafile_id"]):
         return
     storage = StorageManager().get_db_engine()
     content = {
@@ -55,18 +65,10 @@ def job_created(routing_key, body, message_id):
     StorageManager().get_db_engine().save_item_to_collection("jobs", body["data"])
 
 
-def __get_mediafile_publication_status(mediafile):
-    for metadata in mediafile.get("metadata", []):
-        if metadata["key"] == "publication_status":
-            return metadata["value"]
-    return ""
-
-
 @app.rabbit.queue("dams.mediafile_changed")
 def mediafile_changed(routing_key, body, message_id):
     data = body["data"]
-    if any(x not in data for x in ["mediafile", "old_mediafile"]):
-        app.logger.error("Message malformed: missing 'mediafile' or 'old_mediafile'")
+    if __is_malformed_message(data, ["mediafile", "old_mediafile"]):
         return
     storage = StorageManager().get_db_engine()
     old_publication_status = __get_mediafile_publication_status(data["old_mediafile"])
@@ -82,8 +84,7 @@ def mediafile_changed(routing_key, body, message_id):
 @app.rabbit.queue("dams.mediafile_deleted")
 def mediafile_deleted(routing_key, body, message_id):
     data = body["data"]
-    if any(x not in data for x in ["linked_entities", "mediafile"]):
-        app.logger.error("Message malformed: missing 'linked_entities' or 'mediafile'")
+    if __is_malformed_message(data, ["linked_entities", "mediafile"]):
         return
     storage = StorageManager().get_db_engine()
     storage.handle_mediafile_deleted(data["linked_entities"])
