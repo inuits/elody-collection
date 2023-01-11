@@ -288,6 +288,7 @@ class ArangoStorageManager(GenericStorageManager):
         aql = """
             FOR c IN @@collection
                 FILTER @id IN c.identifiers OR c._key == @id
+                FILTER c.@sub_item != null
                 LET filteredSubItems = (
                     FOR obj IN c.@sub_item
                         FILTER obj.key != @key

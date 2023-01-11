@@ -190,6 +190,8 @@ class MongoStorageManager(GenericStorageManager):
     def delete_collection_item_sub_item_key(self, collection, id, sub_item, key):
         patch_data = {sub_item: []}
         all_sub_items = self.get_collection_item_sub_item(collection, id, sub_item)
+        if not all_sub_items:
+            return
         for obj in all_sub_items:
             if obj["key"] != key:
                 patch_data[sub_item].append(obj)
