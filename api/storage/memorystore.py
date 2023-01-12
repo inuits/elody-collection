@@ -18,9 +18,7 @@ class MemoryStorageManager(GenericStorageManager):
 
     def __get_collection_item_gen_id_by_identifier(self, collection, obj_id):
         for item in self.collections[collection].values():
-            if ("identifiers" in item and obj_id in item["identifiers"]) or item[
-                "_id"
-            ] == obj_id:
+            if obj_id in item.get("identifiers", []) or item["_id"] == obj_id:
                 return deepcopy(item["_id"])
         return None
 
