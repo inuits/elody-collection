@@ -63,7 +63,7 @@ class MediafileTest(BaseCase):
         )
 
         response = self.app.get(
-            "/mediafiles/{}?raw=1".format(self._get_item_id(response.json[0])),
+            "/mediafiles/{}?raw=1".format(self._get_raw_id(response.json[0])),
             headers={"Content-Type": "application/json"},
         )
         self.assertEqual(200, response.status_code)
@@ -97,7 +97,7 @@ class MediafileTest(BaseCase):
         )
 
         response = self.app.put(
-            "/mediafiles/{}".format(self._get_item_id(mediafile)),
+            "/mediafiles/{}".format(self._get_raw_id(mediafile)),
             headers={"Content-Type": "application/json"},
             data=update,
         )
@@ -210,7 +210,7 @@ class MediafileTest(BaseCase):
         self.assertEqual(skip > 0, "previous" in response.json)
         for i in range(min(count, limit)):
             mediafile = response.json["results"][i]
-            self.assertEqual(ids[i + skip], self._get_item_id(mediafile))
+            self.assertEqual(ids[i + skip], self._get_raw_id(mediafile))
             self.valid_mediafile(mediafile)
         self.assertEqual(200, response.status_code)
 

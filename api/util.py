@@ -26,7 +26,7 @@ def __send_cloudevent(routing_key, data):
 
 
 def get_raw_id(item):
-    return item["_key"] if "_key" in item else item["_id"]
+    return item.get("_key", item["_id"])
 
 
 def mediafile_is_public(mediafile):
