@@ -38,17 +38,12 @@ class MongoStorageManager(GenericStorageManager):
 
     def __get_items_from_collection_by_ids(self, collection, ids):
         items = dict()
-        documents = self.db[collection].find(self.__get_multiple_id_query(ids))
-        items["count"] = self.db[collection].count_documents(
-            self.__get_multiple_id_query(ids)
-        )
+        documents = self.db[collection].find(self.__get_ids_query(ids))
+        items["count"] = self.db[collection].count_documents(self.__get_ids_query(ids))
         items["results"] = list()
         for document in documents:
             items["results"].append(self._prepare_mongo_document(document, True))
         return items
-
-    def __get_multiple_id_query(self, ids):
-        return {"$or": [{"_id": {"$in": ids}}, {"identifiers": {"$in": ids}}]}
 
     def __map_entity_relation(self, relation):
         return {
