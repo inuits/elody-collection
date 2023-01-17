@@ -41,32 +41,10 @@ class MongoFilters(MongoStorageManager):
                 pipeline += self.__generate_multi_select_input_query(query)
         return pipeline
 
-    def __get_text_input_metadata_filter(self, query):
-        metadata_match = {"$match": {"metadata": {"$elemMatch": {}}}}
-        if "label" in query:
-            metadata_match["$match"]["metadata"]["$elemMatch"]["label"] = {
-                "$regex": query["label"],
-                "$options": "i",
-            }
-        if "key" in query:
-            metadata_match["$match"]["metadata"]["$elemMatch"]["key"] = query["key"]
-        if "value" in query:
-            metadata_match["$match"]["metadata"]["$elemMatch"]["value"] = {
-                "$regex": query["value"],
-                "$options": "i",
-            }
-        return metadata_match
-
-    def __get_text_input_root_field_filter(self, query):
-        root_field_match = {
-            "$match": {
-                query["key"]: {
-                    "$regex": query["value"],
-                    "$options": "i",
-                }
-            }
-        }
-        return root_field_match
+    def __generate_min_max_metadata_filter(
+        self, query, counter, prev_collection, metadata_field, item_types=None
+    ):
+        pass
 
     def __generate_multi_select_input_query(self, query):
         sub_pipeline = list()
@@ -102,6 +80,9 @@ class MongoFilters(MongoStorageManager):
             sub_pipeline.append(self.__get_text_input_metadata_filter(query))
         return sub_pipeline
 
+    def __get_min_max_filter_query(self, relation_types, prev_collection, min, max):
+        pass
+
     def __get_multi_select_metadata_filter(self, query):
         multi_select_match = {
             "$match": {
@@ -122,24 +103,35 @@ class MongoFilters(MongoStorageManager):
             ]["$in"] = query["value"]
         return multi_select_match
 
-    def __text_input_filter_exception(self, query, counter, prev_collection):
-        pass
+    def __get_text_input_metadata_filter(self, query):
+        metadata_match = {"$match": {"metadata": {"$elemMatch": {}}}}
+        if "label" in query:
+            metadata_match["$match"]["metadata"]["$elemMatch"]["label"] = {
+                "$regex": query["label"],
+                "$options": "i",
+            }
+        if "key" in query:
+            metadata_match["$match"]["metadata"]["$elemMatch"]["key"] = query["key"]
+        if "value" in query:
+            metadata_match["$match"]["metadata"]["$elemMatch"]["value"] = {
+                "$regex": query["value"],
+                "$options": "i",
+            }
+        return metadata_match
 
-    def __generate_min_max_relations_filter(
-        self, query, counter, prev_collection, relation_types
-    ):
-        pass
-
-    def __get_min_max_filter_query(self, relation_types, prev_collection, min, max):
-        pass
-
-    def __generate_min_max_metadata_filter(
-        self, query, counter, prev_collection, metadata_field, item_types=None
-    ):
-        pass
+    def __get_text_input_root_field_filter(self, query):
+        root_field_match = {
+            "$match": {
+                query["key"]: {
+                    "$regex": query["value"],
+                    "$options": "i",
+                }
+            }
+        }
+        return root_field_match
 
     def __map_relation_types(self, relation_types):
         pass
 
-    def __get_prev_collection_loop(self, prev_collection):
+    def __text_input_filter_exception(self, query, counter, prev_collection):
         pass
