@@ -60,16 +60,13 @@ def signal_edge_changed(parent_ids_from_changed_edges):
 def signal_entity_changed(entity):
     data = {
         "location": f"/entities/{get_raw_id(entity)}",
-        "type": entity["type"] if "type" in entity else "unspecified",
+        "type": entity.get("type", "unspecified"),
     }
     __send_cloudevent("dams.entity_changed", data)
 
 
 def signal_entity_deleted(entity):
-    data = {
-        "_id": get_raw_id(entity),
-        "type": entity["type"] if "type" in entity else "unspecified",
-    }
+    data = {"_id": get_raw_id(entity), "type": entity.get("type", "unspecified")}
     __send_cloudevent("dams.entity_deleted", data)
 
 
