@@ -5,7 +5,13 @@ from storage.genericstore import GenericStorageManager
 
 
 class MemoryStorageManager(GenericStorageManager):
-    collections = {"entities": {}, "mediafiles": {}, "jobs": {}}
+    collections = {
+        "abstracts": {},
+        "entities": {},
+        "history": {},
+        "jobs": {},
+        "mediafiles": {},
+    }
 
     def __add_child_relations(self, collection, obj_id, relations):
         for relation in relations:

@@ -16,6 +16,7 @@ class ArangoStorageManager(GenericStorageManager):
             "abstracts",
             "box_visits",
             "entities",
+            "history",
             "jobs",
             "key_value_store",
             "mediafiles",
