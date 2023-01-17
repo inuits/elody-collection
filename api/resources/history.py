@@ -7,6 +7,8 @@ class History(BaseResource):
     def get(self, collection, id):
         timestamp = request.args.get("timestamp")
         all_entries = int(request.args.get("all", 0))
+        if timestamp and all_entries:
+            abort(400, message="Can't specify both 'timestamp' and 'all'")
         history_object = self.storage.get_history_for_item(
             collection, id, timestamp, all_entries
         )
