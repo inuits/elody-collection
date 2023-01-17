@@ -32,7 +32,13 @@ def start_index(routing_key, body, message_id):
     entity_id = data["location"].removeprefix("/entities/")
     storage = StorageManager().get_db_engine()
     entity = storage.get_item_from_collection_by_id("entities", entity_id)
-    content = {"object": entity, "timestamp": datetime.now(), "collection": "entities"}
+    relations = storage.get_collection_item_relations("entities", entity_id, True)
+    content = {
+        "object": entity,
+        "timestamp": datetime.now(),
+        "collection": "entities",
+        "relations": relations,
+    }
     storage.save_item_to_collection("history", content)
 
 
