@@ -53,6 +53,9 @@ class GenericStorageManager:
     def get_entities(self, skip=0, limit=20, skip_relations=0, filters=None):
         pass
 
+    def get_history_for_item(self, collection, id, timestamp=None, all_entries=None):
+        pass
+
     def get_item_from_collection_by_id(self, collection, id) -> dict:
         pass
 

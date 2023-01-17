@@ -446,6 +446,17 @@ class ArangoStorageManager(GenericStorageManager):
             items["results"].sort(key=lambda x: filters["ids"].index(x["_key"]))
         return items
 
+    def get_history_for_item(self, collection, id, timestamp=None, all_entries=None):
+        aql = f"""
+            FOR h IN history
+                FILTER h.collection == '{collection}'
+                FILTER h.object._key == '{id}' OR h.object.object_id == '{id}' OR '{id}' IN h.object.identifiers
+                SORT h.timestamp DESC
+                LIMIT 1
+                RETURN h
+        """
+        return list(self.db.AQLQuery(aql, rawResults=True))[0]
+
     def get_item_from_collection_by_id(self, collection, id):
         if item := self.__get_raw_item_from_collection_by_id(collection, id):
             item = item.getStore()

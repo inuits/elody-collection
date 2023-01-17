@@ -1,6 +1,6 @@
 import os
-import uuid
 import util
+import uuid
 
 from pymongo import MongoClient
 from storage.genericstore import GenericStorageManager
@@ -220,6 +220,17 @@ class MongoStorageManager(GenericStorageManager):
         if "ids" in filters:
             return self.__get_items_from_collection_by_ids("entities", filters["ids"])
         return self.get_items_from_collection("entities", skip, limit, filters)
+
+    def get_history_for_item(self, collection, id, timestamp=None, all_entries=None):
+        query = {
+            "$and": [
+                {"collection": collection},
+                {"$or": [{"object._id": id}, {"object.identifiers": id}]},
+            ]
+        }
+        history = self.db["history"].find_one(query, sort=[("timestamp", -1)])
+        history["timestamp"] = str(history["timestamp"])
+        return history
 
     def get_item_from_collection_by_id(self, collection, id):
         if document := self.db[collection].find_one(self.__get_id_query(id)):
