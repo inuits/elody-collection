@@ -1,6 +1,7 @@
 import app
 import util
 
+from datetime import datetime
 from storage.storagemanager import StorageManager
 
 
@@ -19,6 +20,20 @@ def child_relation_changed(routing_key, body, message_id):
     StorageManager().get_db_engine().update_parent_relation_values(
         data["collection"], data["parent_id"]
     )
+
+
+@app.rabbit.queue("dams.entity_changed")
+def start_index(routing_key, body, message_id):
+    data = body["data"]
+    if __is_malformed_message(data, ["location", "type"]):
+        return
+    if data["type"] != "asset":
+        return
+    entity_id = data["location"].removeprefix("/entities/")
+    storage = StorageManager().get_db_engine()
+    entity = storage.get_item_from_collection_by_id("entities", entity_id)
+    content = {"object": entity, "timestamp": datetime.now(), "collection": "entities"}
+    storage.save_item_to_collection("history", content)
 
 
 @app.rabbit.queue("dams.file_scanned")
