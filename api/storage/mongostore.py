@@ -27,6 +27,17 @@ class MongoStorageManager(GenericStorageManager):
                 collection, dst_id, "relations", dst_content
             )
 
+    def __delete_impacted_relations(self, collection, id):
+        relations = self.get_collection_item_sub_item(collection, id, "relations")
+        relations = relations if relations else []
+        for obj in relations:
+            self.delete_collection_item_sub_item_key(
+                self.__map_relation_to_collection(obj["type"]),
+                obj["key"],
+                "relations",
+                id,
+            )
+
     def __get_entities_by_type_query(self, item_type):
         return {"type": item_type}
 
@@ -183,15 +194,8 @@ class MongoStorageManager(GenericStorageManager):
             )
 
     def delete_item_from_collection(self, collection, id):
-        self.delete_impacted_relations(collection, id)
+        self.__delete_impacted_relations(collection, id)
         self.db[collection].delete_one(self.__get_id_query(id))
-
-    def delete_impacted_relations(self, collection, id, sub_item="relations"):
-        all_sub_items = self.get_collection_item_sub_item(collection, id, sub_item)
-        for obj in all_sub_items:
-            self.delete_collection_item_sub_item_key(
-                self.__map_relation_to_collection(obj["type"]), obj["key"], sub_item, id
-            )
 
     def drop_all_collections(self):
         self.db.entities.drop()
@@ -207,7 +211,8 @@ class MongoStorageManager(GenericStorageManager):
     def get_collection_item_relations(
         self, collection, id, include_sub_relations=False, exclude=None
     ):
-        return self.get_collection_item_sub_item(collection, id, "relations")
+        relations = self.get_collection_item_sub_item(collection, id, "relations")
+        return relations if relations else []
 
     def get_entities(self, skip=0, limit=20, skip_relations=0, filters=None):
         if "ids" in filters:
@@ -312,9 +317,8 @@ class MongoStorageManager(GenericStorageManager):
                 collection, item["key"], "relations", id
             )
         relations = self.get_collection_item_sub_item(collection, id, "relations")
-        self.update_collection_item_sub_item(
-            collection, id, "relations", relations + content
-        )
+        relations = [*relations, *content] if relations else content
+        self.update_collection_item_sub_item(collection, id, "relations", relations)
         self.__add_child_relations(collection, id, content)
         return content
 
@@ -353,7 +357,9 @@ class MongoStorageManager(GenericStorageManager):
             self.patch_item_from_collection(collection, id, {"relations": relations})
 
     def update_collection_item_relations(self, collection, id, content, parent=True):
-        for item in self.get_collection_item_sub_item(collection, id, "relations"):
+        relations = self.get_collection_item_sub_item(collection, id, "relations")
+        relations = relations if relations else []
+        for item in relations:
             self.delete_collection_item_sub_item_key(
                 collection, item["key"], "relations", id
             )
