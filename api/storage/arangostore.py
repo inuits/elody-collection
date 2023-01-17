@@ -452,10 +452,11 @@ class ArangoStorageManager(GenericStorageManager):
                 FILTER h.collection == '{collection}'
                 FILTER h.object._key == '{id}' OR h.object.object_id == '{id}' OR '{id}' IN h.object.identifiers
                 SORT h.timestamp DESC
-                LIMIT 1
+                {"LIMIT 1" if not all_entries else ""}
                 RETURN h
         """
-        return list(self.db.AQLQuery(aql, rawResults=True))[0]
+        history = list(self.db.AQLQuery(aql, rawResults=True))
+        return history if all_entries else history[0]
 
     def get_item_from_collection_by_id(self, collection, id):
         if item := self.__get_raw_item_from_collection_by_id(collection, id):

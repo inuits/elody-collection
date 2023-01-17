@@ -228,9 +228,10 @@ class MongoStorageManager(GenericStorageManager):
                 {"$or": [{"object._id": id}, {"object.identifiers": id}]},
             ]
         }
-        history = self.db["history"].find_one(query, sort=[("timestamp", -1)])
-        history["timestamp"] = str(history["timestamp"])
-        return history
+        if all_entries:
+            return list(self.db["history"].find(query, sort=[("timestamp", -1)]))
+        else:
+            return list(self.db["history"].find_one(query, sort=[("timestamp", -1)]))
 
     def get_item_from_collection_by_id(self, collection, id):
         if document := self.db[collection].find_one(self.__get_id_query(id)):
