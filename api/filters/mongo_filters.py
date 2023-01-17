@@ -6,11 +6,13 @@ from storage.mongostore import MongoStorageManager
 
 class MongoFilters(MongoStorageManager):
     def filter(self, output_type, body, skip, limit, collection="entities"):
-        items = {"results": list()}
-        pipeline = self.__generate_aggregation_pipeline(body)
+        items = {"count": 0, "results": list()}
+        pipeline = self.__generate_aggregation_pipeline(body, collection)
         pipeline_count = pipeline + [{"$count": "count"}]
-        count = self.db[collection].aggregate(pipeline_count)
-        items["count"] = list(count)[0]["count"]
+        count = list(self.db[collection].aggregate(pipeline_count))
+        if len(count) == 0:
+            return items
+        items["count"] = count[0]["count"]
         pipeline += [
             {"$skip": skip},
             {"$limit": limit},
@@ -21,11 +23,22 @@ class MongoFilters(MongoStorageManager):
         items["limit"] = limit
         return items
 
-    def __generate_aggregation_pipeline(self, queries):
-        pipeline = list()
+    def __generate_aggregation_pipeline(self, queries, collection="entities"):
+        pipeline = [
+            {
+                "$lookup": {
+                    "from": collection,
+                    "localField": "relations.key",
+                    "foreignField": "_id",
+                    "as": "relationDocuments",
+                }
+            }
+        ]
         for query in queries:
             if query["type"] == "TextInput" and "value" in query:
                 pipeline += self.__generate_text_input_query(query)
+            elif query["type"] == "MultiSelectInput":
+                pipeline += self.__generate_multi_select_input_query(query)
         return pipeline
 
     def __get_text_input_metadata_filter(self, query):
@@ -55,6 +68,21 @@ class MongoFilters(MongoStorageManager):
         }
         return root_field_match
 
+    def __generate_multi_select_input_query(self, query):
+        sub_pipeline = list()
+        if "item_types" in query and len(query["item_types"]):
+            sub_pipeline.append(
+                {
+                    "$match": {
+                        "type": {
+                            "$in": query["item_types"],
+                        }
+                    }
+                }
+            )
+        sub_pipeline.append(self.__get_multi_select_metadata_filter(query))
+        return sub_pipeline
+
     def __generate_text_input_query(self, query):
         root_fields = ["filename", "mimetype"]
         sub_pipeline = list()
@@ -74,21 +102,25 @@ class MongoFilters(MongoStorageManager):
             sub_pipeline.append(self.__get_text_input_metadata_filter(query))
         return sub_pipeline
 
-    def __get_multi_select_metadata_filter(
-        self, query, prev_collection, type, ignore_previous_results
-    ):
-        pass
-
-    def __generate_multi_select_input_query(
-        self,
-        query,
-        counter,
-        prev_collection,
-        collection="entities",
-        type=None,
-        ignore_previous_results=False,
-    ):
-        pass
+    def __get_multi_select_metadata_filter(self, query):
+        multi_select_match = {
+            "$match": {
+                "relationDocuments.metadata": {
+                    "$elemMatch": {
+                        "value": {},
+                    }
+                }
+            }
+        }
+        if "key" in query and query["key"]:
+            multi_select_match["$match"]["relationDocuments.metadata"]["$elemMatch"][
+                "key"
+            ] = query["key"]
+        if "value" in query and len(query["value"]):
+            multi_select_match["$match"]["relationDocuments.metadata"]["$elemMatch"][
+                "value"
+            ]["$in"] = query["value"]
+        return multi_select_match
 
     def __text_input_filter_exception(self, query, counter, prev_collection):
         pass
