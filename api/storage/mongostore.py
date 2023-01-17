@@ -2,6 +2,7 @@ import os
 import util
 import uuid
 
+from datetime import datetime
 from pymongo import MongoClient
 from storage.genericstore import GenericStorageManager
 
@@ -228,10 +229,54 @@ class MongoStorageManager(GenericStorageManager):
                 {"$or": [{"object._id": id}, {"object.identifiers": id}]},
             ]
         }
-        if all_entries:
+        if timestamp:
+            results = self.db.history.aggregate(
+                [
+                    {
+                        "$match": {
+                            "$and": [
+                                {"collection": collection},
+                                {
+                                    "$or": [
+                                        {"object._id": id},
+                                        {"object.identifiers": id},
+                                    ]
+                                },
+                            ]
+                        }
+                    },
+                    {
+                        "$project": {
+                            "_id": 1,
+                            "identifiers": 1,
+                            "object": 1,
+                            "relations": 1,
+                            "timestamp": 1,
+                            "difference": {
+                                "$abs": {
+                                    "$subtract": [
+                                        datetime.fromisoformat(timestamp),
+                                        {
+                                            "$dateFromString": {
+                                                "dateString": "$timestamp"
+                                            }
+                                        },
+                                    ]
+                                }
+                            },
+                        }
+                    },
+                    {"$sort": {"difference": 1}},
+                    {"$limit": 1},
+                ]
+            )
+            result = list(results)[0]
+            del result["difference"]
+            return result
+        elif all_entries:
             return list(self.db["history"].find(query, sort=[("timestamp", -1)]))
         else:
-            return list(self.db["history"].find_one(query, sort=[("timestamp", -1)]))
+            return self.db["history"].find_one(query, sort=[("timestamp", -1)])
 
     def get_item_from_collection_by_id(self, collection, id):
         if document := self.db[collection].find_one(self.__get_id_query(id)):
