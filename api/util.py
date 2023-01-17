@@ -29,11 +29,16 @@ def get_raw_id(item):
     return item.get("_key", item["_id"])
 
 
+def get_item_metadata_value(item, key):
+    for item in item.get("metadata", []):
+        if item["key"] == key:
+            return item["value"]
+    return None
+
+
 def mediafile_is_public(mediafile):
-    for item in mediafile.get("metadata", []):
-        if item["key"] == "publication_status":
-            return item["value"].lower() in ["beschermd", "expliciet", "publiek"]
-    return False
+    publication_status = get_item_metadata_value(mediafile, "publication_status")
+    return publication_status.lower() in ["beschermd", "expliciet", "publiek"]
 
 
 def read_json_as_dict(filename):

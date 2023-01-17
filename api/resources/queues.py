@@ -4,13 +4,6 @@ import util
 from storage.storagemanager import StorageManager
 
 
-def __get_mediafile_publication_status(mediafile):
-    for metadata in mediafile.get("metadata", []):
-        if metadata["key"] == "publication_status":
-            return metadata["value"]
-    return ""
-
-
 def __is_malformed_message(data, fields):
     if not all(x in data for x in fields):
         app.logger.error(f"Message malformed: missing one of {fields}")
@@ -71,8 +64,12 @@ def mediafile_changed(routing_key, body, message_id):
     if __is_malformed_message(data, ["mediafile", "old_mediafile"]):
         return
     storage = StorageManager().get_db_engine()
-    old_publication_status = __get_mediafile_publication_status(data["old_mediafile"])
-    new_publication_status = __get_mediafile_publication_status(data["mediafile"])
+    old_publication_status = util.get_item_metadata_value(
+        data["old_mediafile"], "publication_status"
+    )
+    new_publication_status = util.get_item_metadata_value(
+        data["mediafile"], "publication_status"
+    )
     if old_publication_status == new_publication_status:
         return
     if util.mediafile_is_public(data["mediafile"]):
