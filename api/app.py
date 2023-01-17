@@ -104,6 +104,7 @@ from resources.filter import (
     FilterMediafiles,
     FilterMediafilesBySavedSearchId,
 )
+from resources.history import History
 from resources.job import Job, JobDetail
 from resources.key_value_store import KeyValueStore, KeyValueStoreDetail
 from resources.mediafile import (
@@ -141,6 +142,8 @@ api.add_resource(FilterEntities, "/entities/filter")
 api.add_resource(FilterEntitiesBySavedSearchId, "/entities/filter/<string:id>")
 api.add_resource(FilterMediafiles, "/mediafiles/filter")
 api.add_resource(FilterMediafilesBySavedSearchId, "/mediafiles/filter/<string:id>")
+
+api.add_resource(History, "/history/<string:collection>/<string:id>")
 
 api.add_resource(Job, "/jobs")
 api.add_resource(JobDetail, "/jobs/<string:id>")
