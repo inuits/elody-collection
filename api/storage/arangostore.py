@@ -451,7 +451,7 @@ class ArangoStorageManager(GenericStorageManager):
             FOR h IN history
                 FILTER h.collection == '{collection}'
                 FILTER h.object._key == '{id}' OR h.object.object_id == '{id}' OR '{id}' IN h.object.identifiers
-                SORT h.timestamp DESC
+                {f"SORT DATE_DIFF(h.timestamp, {timestamp}, 's', true)" if timestamp else "SORT h.timestamp DESC"}
                 {"LIMIT 1" if not all_entries else ""}
                 RETURN h
         """
