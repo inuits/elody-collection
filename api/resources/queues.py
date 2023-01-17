@@ -23,7 +23,7 @@ def child_relation_changed(routing_key, body, message_id):
 
 
 @app.rabbit.queue("dams.entity_changed")
-def start_index(routing_key, body, message_id):
+def add_entity_to_history(routing_key, body, message_id):
     data = body["data"]
     if __is_malformed_message(data, ["location", "type"]):
         return
