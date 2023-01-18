@@ -27,8 +27,6 @@ def add_entity_to_history(routing_key, body, message_id):
     data = body["data"]
     if __is_malformed_message(data, ["location", "type"]):
         return
-    if data["type"] != "asset":
-        return
     entity_id = data["location"].removeprefix("/entities/")
     storage = StorageManager().get_db_engine()
     entity = storage.get_item_from_collection_by_id("entities", entity_id)
