@@ -84,9 +84,14 @@ class MongoFilters(MongoStorageManager):
         pass
 
     def __get_multi_select_metadata_filter(self, query):
+        match_field = (
+            "metadata"
+            if query["key"] in ["rights", "source", "publication_status"]
+            else "relationDocuments.metadata"
+        )
         multi_select_match = {
             "$match": {
-                "relationDocuments.metadata": {
+                match_field: {
                     "$elemMatch": {
                         "value": {},
                     }
@@ -94,13 +99,13 @@ class MongoFilters(MongoStorageManager):
             }
         }
         if "key" in query and query["key"]:
-            multi_select_match["$match"]["relationDocuments.metadata"]["$elemMatch"][
+            multi_select_match["$match"][match_field]["$elemMatch"]["key"] = query[
                 "key"
-            ] = query["key"]
+            ]
         if "value" in query and len(query["value"]):
-            multi_select_match["$match"]["relationDocuments.metadata"]["$elemMatch"][
-                "value"
-            ]["$in"] = query["value"]
+            multi_select_match["$match"][match_field]["$elemMatch"]["value"][
+                "$in"
+            ] = query["value"]
         return multi_select_match
 
     def __get_text_input_metadata_filter(self, query):
