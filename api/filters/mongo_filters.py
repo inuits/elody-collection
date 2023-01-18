@@ -49,8 +49,8 @@ class MongoFilters(MongoStorageManager):
         sub_pipeline = [metadata_min_max_match]
         if len(query.get("item_types", [])):
             sub_pipeline.append(self.__get_item_types_query(query["item_types"]))
-        min = query["value"].get("min", -1)
-        max = query["value"].get("max", sys.maxsize)
+        min = query.get("value", {}).get("min", -1)
+        max = query.get("value", {}).get("max", sys.maxsize)
         metadata_min_max_match["$match"]["metadata"]["$elemMatch"][
             "key"
         ] = f"{query['metadata_field']}_float"
@@ -72,7 +72,7 @@ class MongoFilters(MongoStorageManager):
         sub_pipeline = list()
         if len(query.get("item_types", [])):
             sub_pipeline.append(self.__get_item_types_query(query["item_types"]))
-        if "key" in query and query["key"] in root_fields:
+        if query.get("key") in root_fields:
             sub_pipeline.append(self.__get_text_input_root_field_filter(query))
         else:
             sub_pipeline.append(self.__get_text_input_metadata_filter(query))
@@ -105,11 +105,11 @@ class MongoFilters(MongoStorageManager):
                 }
             }
         }
-        if "key" in query and query["key"]:
+        if query.get("key"):
             multi_select_match["$match"][match_field]["$elemMatch"]["key"] = query[
                 "key"
             ]
-        if "value" in query and len(query["value"]):
+        if len(query.get("value", [])):
             multi_select_match["$match"][match_field]["$elemMatch"]["value"][
                 "$in"
             ] = query["value"]
