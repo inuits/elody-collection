@@ -35,50 +35,57 @@ class MongoFilters(MongoStorageManager):
             }
         ]
         for query in queries:
-            if query["type"] == "TextInput" and "value" in query:
+            if query.get("type") == "TextInput" and "value" in query:
                 pipeline += self.__generate_text_input_query(query)
-            elif query["type"] == "MultiSelectInput":
+            elif query.get("type") == "MultiSelectInput":
                 pipeline += self.__generate_multi_select_input_query(query)
+            elif query.get("type") == "MinMaxInput":
+                if "metadata_field" in query:
+                    pipeline += self.__generate_min_max_metadata_filter(query)
         return pipeline
 
-    def __generate_min_max_metadata_filter(
-        self, query, counter, prev_collection, metadata_field, item_types=None
-    ):
-        pass
+    def __generate_min_max_metadata_filter(self, query):
+        metadata_min_max_match = {"$match": {"metadata": {"$elemMatch": {}}}}
+        sub_pipeline = [metadata_min_max_match]
+        if len(query.get("item_types", [])):
+            sub_pipeline.append(self.__get_item_types_query(query["item_types"]))
+        min = query["value"].get("min", -1)
+        max = query["value"].get("max", sys.maxsize)
+        metadata_min_max_match["$match"]["metadata"]["$elemMatch"][
+            "key"
+        ] = f"{query['metadata_field']}_float"
+        metadata_min_max_match["$match"]["metadata"]["$elemMatch"]["value"] = {
+            "$gte": min,
+            "$lte": max,
+        }
+        return sub_pipeline
 
     def __generate_multi_select_input_query(self, query):
         sub_pipeline = list()
-        if "item_types" in query and len(query["item_types"]):
-            sub_pipeline.append(
-                {
-                    "$match": {
-                        "type": {
-                            "$in": query["item_types"],
-                        }
-                    }
-                }
-            )
+        if len(query.get("item_types", [])):
+            sub_pipeline.append(self.__get_item_types_query(query["item_types"]))
         sub_pipeline.append(self.__get_multi_select_metadata_filter(query))
         return sub_pipeline
 
     def __generate_text_input_query(self, query):
         root_fields = ["filename", "mimetype"]
         sub_pipeline = list()
-        if "item_types" in query and len(query["item_types"]):
-            sub_pipeline.append(
-                {
-                    "$match": {
-                        "type": {
-                            "$in": query["item_types"],
-                        }
-                    }
-                }
-            )
+        if len(query.get("item_types", [])):
+            sub_pipeline.append(self.__get_item_types_query(query["item_types"]))
         if "key" in query and query["key"] in root_fields:
             sub_pipeline.append(self.__get_text_input_root_field_filter(query))
         else:
             sub_pipeline.append(self.__get_text_input_metadata_filter(query))
         return sub_pipeline
+
+    def __get_item_types_query(self, item_types):
+        return {
+            "$match": {
+                "type": {
+                    "$in": item_types,
+                }
+            }
+        }
 
     def __get_min_max_filter_query(self, relation_types, prev_collection, min, max):
         pass
@@ -125,7 +132,7 @@ class MongoFilters(MongoStorageManager):
         return metadata_match
 
     def __get_text_input_root_field_filter(self, query):
-        root_field_match = {
+        return {
             "$match": {
                 query["key"]: {
                     "$regex": query["value"],
@@ -133,7 +140,6 @@ class MongoFilters(MongoStorageManager):
                 }
             }
         }
-        return root_field_match
 
     def __map_relation_types(self, relation_types):
         pass

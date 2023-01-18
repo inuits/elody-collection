@@ -41,7 +41,7 @@ class BaseFilterResource(BaseResource):
 
     def validate_advanced_query_syntax(self, queries):
         for query in queries:
-            if query["type"] == "MinMaxInput":
+            if query.get("type") == "MinMaxInput":
                 if "min" not in query["value"] and "max" not in query["value"]:
                     abort(
                         400,
