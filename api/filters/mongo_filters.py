@@ -103,7 +103,7 @@ class MongoFilters(MongoStorageManager):
         sub_pipeline = list()
         if len(query.get("item_types", [])):
             sub_pipeline.append(self.__get_item_types_query(query["item_types"]))
-        sub_pipeline.append(self.__get_multi_select_metadata_filter(query))
+        sub_pipeline.append(self.__get_multi_select_filter(query))
         return sub_pipeline
 
     def __generate_text_input_query(self, query):
@@ -126,7 +126,7 @@ class MongoFilters(MongoStorageManager):
             }
         }
 
-    def __get_multi_select_metadata_filter(self, query):
+    def __get_multi_select_filter(self, query):
         match_field = (
             "metadata"
             if query["key"] in ["rights", "source", "publication_status"]
