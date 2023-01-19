@@ -269,7 +269,10 @@ class ArangoFilters(ArangoStorageManager):
             "mediafiles": "hasMediafile",
             "testimonies": "hasTestimony",
         }
-        return [relation_types_map[x] for x in relation_types]
+        return [
+            relation_types_map.get(relation_type, relation_type)
+            for relation_type in relation_types
+        ]
 
     def __get_prev_collection_loop(self, prev_collection):
         if prev_collection in ["entities", "mediafiles"]:
