@@ -42,6 +42,12 @@ class MongoFilters(MongoStorageManager):
             elif query.get("type") == "MinMaxInput":
                 if "metadata_field" in query:
                     pipeline += self.__generate_min_max_metadata_filter(query)
+        pipeline.append({
+            "$project": {
+                "relationDocuments": 0,
+                "numberOfRelations": 0,
+            }
+        })
         return pipeline
 
     def __generate_min_max_metadata_filter(self, query):

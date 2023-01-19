@@ -88,8 +88,6 @@ class MongoStorageManager(GenericStorageManager):
             document["data"] = self.__replace_dictionary_keys(
                 document["data"], reversed
             )
-        if "relationDocuments" in document:
-            del document["relationDocuments"]
         return document
 
     def __replace_dictionary_keys(self, data, reversed):
