@@ -33,7 +33,7 @@ def get_item_metadata_value(item, key):
     for item in item.get("metadata", []):
         if item["key"] == key:
             return item["value"]
-    return None
+    return ""
 
 
 def mediafile_is_public(mediafile):
