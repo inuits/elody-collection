@@ -55,19 +55,24 @@ class MongoFilters(MongoStorageManager):
         return pipeline
 
     def __generate_min_max_metadata_filter(self, query):
-        metadata_min_max_match = {"$match": {"metadata": {"$elemMatch": {}}}}
+        min = query.get("value", {}).get("min", -1)
+        max = query.get("value", {}).get("max", sys.maxsize)
+        metadata_min_max_match = {
+            "$match": {
+                "metadata": {
+                    "$elemMatch": {
+                        "key": f"{query['metadata_field']}_float",
+                        "value": {
+                            "$gte": min,
+                            "$lte": max,
+                        },
+                    }
+                }
+            }
+        }
         sub_pipeline = [metadata_min_max_match]
         if len(query.get("item_types", [])):
             sub_pipeline.append(self.__get_item_types_query(query["item_types"]))
-        min = query.get("value", {}).get("min", -1)
-        max = query.get("value", {}).get("max", sys.maxsize)
-        metadata_min_max_match["$match"]["metadata"]["$elemMatch"][
-            "key"
-        ] = f"{query['metadata_field']}_float"
-        metadata_min_max_match["$match"]["metadata"]["$elemMatch"]["value"] = {
-            "$gte": min,
-            "$lte": max,
-        }
         return sub_pipeline
 
     def __generate_min_max_relations_filter(self, query):
