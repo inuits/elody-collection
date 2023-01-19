@@ -186,6 +186,3 @@ class MongoFilters(MongoStorageManager):
             relation_types_map.get(relation_type, relation_type)
             for relation_type in relation_types
         ]
-
-    def __text_input_filter_exception(self, query, counter, prev_collection):
-        pass
