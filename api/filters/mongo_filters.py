@@ -160,7 +160,9 @@ class MongoFilters(MongoStorageManager):
             }
         if "key" in query:
             metadata_match["$match"]["metadata"]["$elemMatch"]["key"] = query["key"]
-        if "value" in query:
+        if "value" in query and query.get("match_exact"):
+            metadata_match["$match"]["metadata"]["$elemMatch"]["value"] = query["value"]
+        elif "value" in query:
             metadata_match["$match"]["metadata"]["$elemMatch"]["value"] = {
                 "$regex": query["value"],
                 "$options": "i",

@@ -98,7 +98,9 @@ class ArangoFilters(ArangoStorageManager):
             aql += f'FILTER LIKE(metadata.label, "{query["label"]}", true)\n'
         if "key" in query:
             aql += f'FILTER metadata.key == "{query["key"]}"\n'
-        if "value" in query:
+        if "value" in query and query.get("match_exact"):
+            aql += f'FILTER metadata.value == "{query["value"]}"\n'
+        elif "value" in query:
             aql += f'FILTER LIKE(metadata.value, "%{query["value"]}%", true)\n'
         if not aql:
             return aql
