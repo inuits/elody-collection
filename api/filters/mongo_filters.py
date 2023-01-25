@@ -5,6 +5,15 @@ from storage.mongostore import MongoStorageManager
 
 
 class MongoFilters(MongoStorageManager):
+    operator_map = {
+        "==": "$eq",
+        "!=": "$ne",
+        ">": "$gt",
+        "<": "$lt",
+        ">=": "$gte",
+        "<=": "$lte",
+    }
+
     def filter(self, output_type, body, skip, limit, collection="entities"):
         items = {"count": 0, "results": list()}
         pipeline = self.__generate_aggregation_pipeline(body, collection)
@@ -162,6 +171,14 @@ class MongoFilters(MongoStorageManager):
             metadata_match["$match"]["metadata"]["$elemMatch"]["key"] = query["key"]
         if "value" in query and query.get("match_exact"):
             metadata_match["$match"]["metadata"]["$elemMatch"]["value"] = query["value"]
+        elif (
+            "value" in query
+            and "operator" in query
+            and query["operator"] in self.operator_map
+        ):
+            metadata_match["$match"]["metadata"]["$elemMatch"]["value"] = {
+                self.operator_map[query["operator"]]: query["value"]
+            }
         elif "value" in query:
             metadata_match["$match"]["metadata"]["$elemMatch"]["value"] = {
                 "$regex": query["value"],
