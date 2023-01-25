@@ -32,7 +32,7 @@ class BaseResource(Resource):
 
     def _abort_if_not_logged_in(self, token):
         if "email" not in token:
-            abort(400, message="You must be logged in to access this feature")
+            abort(401, message="You must be logged in to access this feature")
 
     def _abort_if_not_valid_json(self, type, json, schema):
         if validation_error := validate_json(json, schema):
@@ -58,7 +58,7 @@ class BaseResource(Resource):
     def _get_request_body(self):
         if request_body := request.get_json(silent=True):
             return request_body
-        abort(405, message="Invalid input")
+        abort(400, message="Invalid input")
 
     def _inject_api_urls_into_entities(self, entities):
         for entity in entities:
