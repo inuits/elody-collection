@@ -92,7 +92,7 @@ class BaseResource(Resource):
         return mediafile
 
     def _get_request_body(self):
-        if request_body := request.get_json(silent=True):
+        if (request_body := request.get_json(silent=True)) is not None:
             return request_body
         abort(400, message="Invalid input")
 
