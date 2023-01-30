@@ -2,6 +2,7 @@ import app
 import os
 import util
 
+from datetime import datetime
 from flask import request
 from flask_restful import Resource, abort
 from storage.storagemanager import StorageManager
@@ -54,6 +55,41 @@ class BaseResource(Resource):
             relations = sorted(relations, key=lambda x: x[sort_by])
         entity["metadata"] = [*entity.get("metadata", []), *relations]
         return entity
+
+    def _create_default_entity(self, user_id, type="asset"):
+        content = {
+            "type": type,
+            "user": user_id,
+            "date_created": str(datetime.now()),
+            "version": 1,
+        }
+
+        entity = self.storage.save_item_to_collection("entities", content)
+        util.signal_entity_changed(entity)
+        return entity
+
+    def _create_mediafile_for_entity(
+        self, user_id, entity, filename, mediafile_is_public=False
+    ):
+        content = {
+            "filename": filename,
+            "user": user_id,
+            "date_created": str(datetime.now()),
+            "version": 1,
+            "thumbnail_file_location": f"/iiif/3/{filename}/full/,150/0/default.jpg",
+            "original_file_location": f"/download/{filename}",
+        }
+
+        mediafile = self.storage.save_item_to_collection("mediafiles", content)
+
+        self.storage.add_mediafile_to_collection_item(
+            "entities",
+            util.get_raw_id(entity),
+            mediafile["_id"],
+            mediafile_is_public,
+        )
+        util.signal_entity_changed(entity)
+        return mediafile
 
     def _get_request_body(self):
         if request_body := request.get_json(silent=True):

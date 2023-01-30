@@ -87,6 +87,7 @@ load_apps(app)
 
 from resources.config import Config
 from resources.entity import (
+    DefaultEntityMediafiles,
     Entity,
     EntityDetail,
     EntityMediafiles,
@@ -121,6 +122,7 @@ from resources.spec import AsyncAPISpec, OpenAPISpec
 import resources.queues
 
 api.add_resource(Config, "/config")
+api.add_resource(DefaultEntityMediafiles, "/default-entities/mediafiles")
 api.add_resource(Entity, "/entities")
 api.add_resource(EntityDetail, "/entities/<string:id>")
 api.add_resource(EntityMediafiles, "/entities/<string:id>/mediafiles")
