@@ -156,6 +156,27 @@
         ],
         "summary": "Add an entity",
         "operationId": "addEntity",
+        "parameters": [
+          {
+            "name": "create_mediafile",
+            "in": "query",
+            "description": "Create empty mediafile together with entity",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0
+            }
+          },
+          {
+            "name": "mediafile_filename",
+            "in": "query",
+            "description": "Filename for the to-be created mediafile",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "description": "Entity object that needs to be added",
           "required": true,
@@ -174,6 +195,12 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/entity"
+                }
+              },
+              "text/uri-list": {
+                "schema": {
+                  "type": "string",
+                  "format": "uri"
                 }
               }
             }
