@@ -57,10 +57,11 @@ class Entity(BaseResource):
     @app.require_oauth()
     def post(self):
         content = self._get_request_body()
-        self._abort_if_not_valid_json("Entity", content, entity_schema)
-        content["user"] = dict(current_token).get("email", "default_uploader")
+        user_id = dict(current_token).get("email", "default_uploader")
+        entity = self._decorate_entity(content, user_id)
         content["date_created"] = str(datetime.now())
         content["version"] = 1
+        self._abort_if_not_valid_json("Entity", entity, entity_schema)
         try:
             entity = self.storage.save_item_to_collection("entities", content)
         except util.NonUniqueException as ex:

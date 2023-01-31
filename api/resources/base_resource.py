@@ -91,6 +91,12 @@ class BaseResource(Resource):
         util.signal_entity_changed(entity)
         return mediafile
 
+    def _decorate_entity(self, entity, user_id):
+        default_entity = {
+            "type": "asset",
+        }
+        return {**default_entity, **entity}
+
     def _get_request_body(self):
         if (request_body := request.get_json(silent=True)) is not None:
             return request_body
