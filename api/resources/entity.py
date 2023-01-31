@@ -9,22 +9,6 @@ from resources.base_resource import BaseResource
 from validator import entity_schema, mediafile_schema
 
 
-class DefaultEntityMediafiles(BaseResource):
-    @app.require_oauth()
-    def post(self):
-        content = self._get_request_body()
-        user_id = dict(current_token).get("email", "default_uploader")
-        filename = content.get("filename", "filename.bin")
-        entity = self._create_default_entity(user_id, content.get("type", "asset"))
-        mediafile = self._create_mediafile_for_entity(
-            user_id, entity, filename, content.get("mediafile_is_public", False)
-        )
-        upload_location = (
-            f"{self.storage_api_url}/upload/{filename}?id={util.get_raw_id(mediafile)}"
-        )
-        return upload_location, 201
-
-
 class Entity(BaseResource):
     @app.require_oauth()
     def get(self):

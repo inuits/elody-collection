@@ -56,18 +56,6 @@ class BaseResource(Resource):
         entity["metadata"] = [*entity.get("metadata", []), *relations]
         return entity
 
-    def _create_default_entity(self, user_id, type="asset"):
-        content = {
-            "type": type,
-            "user": user_id,
-            "date_created": str(datetime.now()),
-            "version": 1,
-        }
-
-        entity = self.storage.save_item_to_collection("entities", content)
-        util.signal_entity_changed(entity)
-        return entity
-
     def _create_mediafile_for_entity(self, user_id, entity, filename):
         content = {
             "filename": filename,
