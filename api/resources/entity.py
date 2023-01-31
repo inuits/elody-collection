@@ -56,6 +56,10 @@ class Entity(BaseResource):
 
     @app.require_oauth()
     def post(self):
+        create_mediafile = int(request.args.get("create_mediafile", 0))
+        mediafile_filename = request.args.get("mediafile_filename", "")
+        if create_mediafile and not mediafile_filename:
+            return "Mediafile can't be created without filename", 400
         content = self._get_request_body()
         user_id = dict(current_token).get("email", "default_uploader")
         entity = self._decorate_entity(content, user_id)
@@ -66,6 +70,8 @@ class Entity(BaseResource):
             entity = self.storage.save_item_to_collection("entities", content)
         except util.NonUniqueException as ex:
             return str(ex), 409
+        if create_mediafile:
+            self._create_mediafile_for_entity(user_id, entity, mediafile_filename)
         util.signal_entity_changed(entity)
         return entity, 201
 

@@ -68,9 +68,7 @@ class BaseResource(Resource):
         util.signal_entity_changed(entity)
         return entity
 
-    def _create_mediafile_for_entity(
-        self, user_id, entity, filename, mediafile_is_public=False
-    ):
+    def _create_mediafile_for_entity(self, user_id, entity, filename):
         content = {
             "filename": filename,
             "user": user_id,
@@ -79,14 +77,12 @@ class BaseResource(Resource):
             "thumbnail_file_location": f"/iiif/3/{filename}/full/,150/0/default.jpg",
             "original_file_location": f"/download/{filename}",
         }
-
         mediafile = self.storage.save_item_to_collection("mediafiles", content)
-
         self.storage.add_mediafile_to_collection_item(
             "entities",
             util.get_raw_id(entity),
             mediafile["_id"],
-            mediafile_is_public,
+            False,
         )
         util.signal_entity_changed(entity)
         return mediafile
