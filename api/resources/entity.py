@@ -58,6 +58,7 @@ class Entity(BaseResource):
     def post(self):
         create_mediafile = int(request.args.get("create_mediafile", 0))
         mediafile_filename = request.args.get("mediafile_filename", "")
+        accept_header = request.headers.get("Accept", "")
         if create_mediafile and not mediafile_filename:
             return "Mediafile can't be created without filename", 400
         content = self._get_request_body()
@@ -71,7 +72,14 @@ class Entity(BaseResource):
         except util.NonUniqueException as ex:
             return str(ex), 409
         if create_mediafile:
-            self._create_mediafile_for_entity(user_id, entity, mediafile_filename)
+            mediafile = self._create_mediafile_for_entity(
+                user_id, entity, mediafile_filename
+            )
+            if accept_header == "text/uri-list":
+                return (
+                    f"{self.storage_api_url}/upload/{mediafile_filename}?id={util.get_raw_id(mediafile)}",
+                    201,
+                )
         util.signal_entity_changed(entity)
         return entity, 201
 
