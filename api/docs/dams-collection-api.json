@@ -827,6 +827,7 @@
     },
     "/entities/{entityId}/mediafiles/create": {
       "post": {
+        "deprecated": true,
         "tags": [
           "entity"
         ],

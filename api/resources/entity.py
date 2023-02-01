@@ -153,10 +153,14 @@ class EntityMediafiles(BaseResource):
     def post(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         content = self._get_request_body()
+        accept_header = request.headers.get("Accept", "")
         self._abort_if_not_valid_json("Mediafile", content, mediafile_schema)
-        mediafile = self._abort_if_item_doesnt_exist(
-            "mediafiles", util.get_raw_id(content)
-        )
+        if content.get("_id") or content.get("_key"):
+            mediafile = self._abort_if_item_doesnt_exist(
+                "mediafiles", util.get_raw_id(content)
+            )
+        else:
+            mediafile = self.storage.save_item_to_collection("mediafiles", content)
         if self._only_own_items():
             self._abort_if_no_access(entity, current_token)
             self._abort_if_no_access(mediafile, current_token, "mediafiles")
@@ -166,6 +170,11 @@ class EntityMediafiles(BaseResource):
             mediafile["_id"],
             util.mediafile_is_public(mediafile),
         )
+        if accept_header == "text/uri-list":
+            return (
+                f'{self.storage_api_url}/upload/{content["filename"]}?id={util.get_raw_id(mediafile)}',
+                201,
+            )
         util.signal_entity_changed(entity)
         return mediafile, 201
 
