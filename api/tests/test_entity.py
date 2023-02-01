@@ -63,7 +63,7 @@ class EntityTest(BaseCase):
             "/entities", headers={"content-type": "application/json"}, data=entity
         )
 
-        self.invalid_input(response)
+        self.invalid_input(response, "Invalid input")
 
     def test_invalid_content_type_entity_create(self):
         response = self.app.post(
@@ -72,7 +72,7 @@ class EntityTest(BaseCase):
             data=self.entity,
         )
 
-        self.invalid_input(response)
+        self.invalid_input(response, "Invalid input")
 
     def test_invalid_entity_create(self):
         response = self.app.post(
@@ -865,7 +865,7 @@ class EntityTest(BaseCase):
     def check_invalid_entity(self, response):
         self.assertEqual(str, type(response.json["message"]))
         self.assertEqual(
-            "Entity doesn't have a valid format. 'type' is a required property",
+            "Entity doesn't have a valid format. '123' is not of type 'array'",
             response.json["message"],
         )
         self.assertEqual(400, response.status_code)

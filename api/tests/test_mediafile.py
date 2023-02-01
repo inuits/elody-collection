@@ -19,7 +19,7 @@ class MediafileTest(BaseCase):
             "/mediafiles", headers={"content-type": "application/json"}, data=mediafile
         )
 
-        self.invalid_input(response)
+        self.invalid_input(response, "Invalid input")
 
     def test_invalid_content_type_mediafile_create(self):
         response = self.app.post(
@@ -28,7 +28,7 @@ class MediafileTest(BaseCase):
             data=self.mediafile,
         )
 
-        self.invalid_input(response)
+        self.invalid_input(response, "Invalid input")
 
     def test_invalid_mediafile_create(self):
         response = self.app.post(
