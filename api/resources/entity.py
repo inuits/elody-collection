@@ -2,7 +2,7 @@ import app
 import util
 
 from datetime import datetime
-from flask import request, after_this_request
+from flask import after_this_request, Response, request
 from flask_restful import abort
 from inuits_jwt_auth.authorization import current_token
 from resources.base_resource import BaseResource
@@ -60,9 +60,10 @@ class Entity(BaseResource):
                 user_id, entity, mediafile_filename
             )
             if accept_header == "text/uri-list":
-                return (
+                return Response(
                     f"{self.storage_api_url}/upload/{mediafile_filename}?id={util.get_raw_id(mediafile)}",
-                    201,
+                    status=201,
+                    mimetype="text/uri-list",
                 )
         util.signal_entity_changed(entity)
         return entity, 201
@@ -171,9 +172,10 @@ class EntityMediafiles(BaseResource):
             util.mediafile_is_public(mediafile),
         )
         if accept_header == "text/uri-list":
-            return (
+            return Response(
                 f'{self.storage_api_url}/upload/{content["filename"]}?id={util.get_raw_id(mediafile)}',
-                201,
+                status=201,
+                mimetype="text/uri-list",
             )
         util.signal_entity_changed(entity)
         return mediafile, 201
