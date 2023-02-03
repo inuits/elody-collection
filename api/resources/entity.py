@@ -1,4 +1,5 @@
 import app
+import mappers
 import util
 
 from datetime import datetime
@@ -211,12 +212,15 @@ class EntityMediafilesCreate(BaseResource):
 class EntityMetadata(BaseResource):
     @app.require_oauth()
     def get(self, id):
+        accept_header = request.headers.get("Accept", "")
         entity = self._abort_if_item_doesnt_exist("entities", id)
         if self._only_own_items(["read-entity-metadata-all"]):
             self._abort_if_no_access(entity, current_token)
         metadata = self.storage.get_collection_item_sub_item(
             "entities", util.get_raw_id(entity), "metadata"
         )
+        if accept_header == "text/csv":
+            return Response(mappers.map_metadata_to_csv(metadata), mimetype="text/csv")
         return metadata
 
     @app.require_oauth()
