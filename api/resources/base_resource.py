@@ -3,7 +3,7 @@ import os
 import util
 
 from datetime import datetime
-from flask import request
+from flask import request, Response
 from flask_restful import Resource, abort
 from storage.storagemanager import StorageManager
 from validator import validate_json
@@ -74,6 +74,21 @@ class BaseResource(Resource):
         )
         util.signal_entity_changed(entity)
         return mediafile
+
+    def _create_response_according_accept_header(
+        self, response_data, accept_header=None, status_code=200
+    ):
+        match accept_header:
+            case "text/csv":
+                return Response(response_data, status=status_code, mimetype="text/csv")
+            case "text/uri-list":
+                return Response(
+                    response_data, status=status_code, mimetype="text/uri-list"
+                )
+            case "application/json":
+                return response_data, status_code
+            case _:
+                return response_data, status_code
 
     def _decorate_entity(self, entity, user_id):
         default_entity = {

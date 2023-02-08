@@ -3,7 +3,7 @@ import mappers
 import util
 
 from datetime import datetime
-from flask import after_this_request, Response, request
+from flask import after_this_request, request
 from flask_restful import abort
 from inuits_jwt_auth.authorization import current_token
 from resources.base_resource import BaseResource
@@ -61,13 +61,13 @@ class Entity(BaseResource):
                 user_id, entity, mediafile_filename
             )
             if accept_header == "text/uri-list":
-                return Response(
+                return self._create_response_according_accept_header(
                     f"{self.storage_api_url}/upload/{mediafile_filename}?id={util.get_raw_id(mediafile)}",
-                    status=201,
-                    mimetype="text/uri-list",
+                    accept_header,
+                    201,
                 )
         util.signal_entity_changed(entity)
-        return entity, 201
+        return self._create_response_according_accept_header(entity, accept_header, 201)
 
 
 class EntityDetail(BaseResource):
@@ -173,13 +173,15 @@ class EntityMediafiles(BaseResource):
             util.mediafile_is_public(mediafile),
         )
         if accept_header == "text/uri-list":
-            return Response(
+            return self._create_response_according_accept_header(
                 f'{self.storage_api_url}/upload/{content["filename"]}?id={util.get_raw_id(mediafile)}',
-                status=201,
-                mimetype="text/uri-list",
+                accept_header,
+                201,
             )
         util.signal_entity_changed(entity)
-        return mediafile, 201
+        return self._create_response_according_accept_header(
+            mediafile, accept_header, 201
+        )
 
 
 class EntityMediafilesCreate(BaseResource):
@@ -220,8 +222,10 @@ class EntityMetadata(BaseResource):
             "entities", util.get_raw_id(entity), "metadata"
         )
         if accept_header == "text/csv":
-            return Response(mappers.map_metadata_to_csv(metadata), mimetype="text/csv")
-        return metadata
+            return self._create_response_according_accept_header(
+                mappers.map_metadata_to_csv(metadata), accept_header
+            )
+        return self._create_response_according_accept_header(metadata, accept_header)
 
     @app.require_oauth()
     def post(self, id):
