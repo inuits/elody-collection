@@ -61,6 +61,7 @@ class Entity(BaseResource):
                 user_id, entity, mediafile_filename
             )
             if accept_header == "text/uri-list":
+                util.signal_entity_changed(entity)
                 return self._create_response_according_accept_header(
                     f"{self.storage_api_url}/upload/{mediafile_filename}?id={util.get_raw_id(mediafile)}",
                     accept_header,
@@ -173,6 +174,7 @@ class EntityMediafiles(BaseResource):
             util.mediafile_is_public(mediafile),
         )
         if accept_header == "text/uri-list":
+            util.signal_entity_changed(entity)
             return self._create_response_according_accept_header(
                 f'{self.storage_api_url}/upload/{content["filename"]}?id={util.get_raw_id(mediafile)}',
                 accept_header,
