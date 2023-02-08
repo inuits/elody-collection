@@ -223,11 +223,10 @@ class EntityMetadata(BaseResource):
         metadata = self.storage.get_collection_item_sub_item(
             "entities", util.get_raw_id(entity), "metadata"
         )
-        if accept_header == "text/csv":
-            return self._create_response_according_accept_header(
-                mappers.map_metadata_to_csv(metadata), accept_header
-            )
-        return self._create_response_according_accept_header(metadata, accept_header)
+        return self._create_response_according_accept_header(
+            mappers.map_data_according_to_accept_header(metadata, accept_header),
+            accept_header,
+        )
 
     @app.require_oauth()
     def post(self, id):
