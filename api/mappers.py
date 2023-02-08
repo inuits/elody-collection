@@ -14,6 +14,7 @@ def map_to_csv(metadata):
     writer.writerow(values)
     return output.getvalue()
 
+
 def map_data_according_to_accept_header(data, accept_header):
     match accept_header:
         case "text/csv":

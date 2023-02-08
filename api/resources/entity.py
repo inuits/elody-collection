@@ -385,6 +385,7 @@ class EntitySetPrimaryMediafile(BaseResource):
         self.storage.set_primary_field_collection_item(
             "entities", util.get_raw_id(entity), mediafile_id, "is_primary"
         )
+        util.signal_entity_changed(entity)
         return "", 204
 
 
@@ -401,4 +402,5 @@ class EntitySetPrimaryThumbnail(BaseResource):
         self.storage.set_primary_field_collection_item(
             "entities", util.get_raw_id(entity), mediafile_id, "is_primary_thumbnail"
         )
+        util.signal_entity_changed(entity)
         return "", 204
