@@ -210,6 +210,12 @@ class EntityMediafilesCreate(BaseResource):
             util.mediafile_is_public(mediafile),
         )
         util.signal_entity_changed(entity)
+
+        @after_this_request
+        def add_header(response):
+            response.headers["Warning"] = "299 - Deprecated API"
+            return response
+
         return upload_location, 201
 
 
