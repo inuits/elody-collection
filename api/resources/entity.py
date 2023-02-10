@@ -156,33 +156,38 @@ class EntityMediafiles(BaseResource):
     def post(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         content = self._get_request_body()
+        mediafiles = content if isinstance(content, list) else [content]
         accept_header = request.headers.get("Accept", "")
-        self._abort_if_not_valid_json("Mediafile", content, mediafile_schema)
-        if content.get("_id") or content.get("_key"):
-            mediafile = self._abort_if_item_doesnt_exist(
-                "mediafiles", util.get_raw_id(content)
-            )
-        else:
-            mediafile = self.storage.save_item_to_collection("mediafiles", content)
-        if self._only_own_items():
-            self._abort_if_no_access(entity, current_token)
-            self._abort_if_no_access(mediafile, current_token, "mediafiles")
-        mediafile = self.storage.add_mediafile_to_collection_item(
-            "entities",
-            util.get_raw_id(entity),
-            mediafile["_id"],
-            util.mediafile_is_public(mediafile),
-        )
         if accept_header == "text/uri-list":
-            util.signal_entity_changed(entity)
-            return self._create_response_according_accept_header(
-                f'{self.storage_api_url}/upload/{content["filename"]}?id={util.get_raw_id(mediafile)}',
-                accept_header,
-                201,
+            response = ""
+        else:
+            response = list()
+        for mediafile in mediafiles:
+            self._abort_if_not_valid_json("Mediafile", mediafile, mediafile_schema)
+            if mediafile.get("_id") or mediafile.get("_key"):
+                mediafile = self._abort_if_item_doesnt_exist(
+                    "mediafiles", util.get_raw_id(mediafile)
+                )
+            else:
+                mediafile = self.storage.save_item_to_collection(
+                    "mediafiles", mediafile
+                )
+            if self._only_own_items():
+                self._abort_if_no_access(entity, current_token)
+                self._abort_if_no_access(mediafile, current_token, "mediafiles")
+            mediafile = self.storage.add_mediafile_to_collection_item(
+                "entities",
+                util.get_raw_id(entity),
+                mediafile["_id"],
+                util.mediafile_is_public(mediafile),
             )
+            if accept_header == "text/uri-list":
+                response += f'{self.storage_api_url}/upload/{mediafile["filename"]}?id={util.get_raw_id(mediafile)}\n'
+            else:
+                response.append(mediafile)
         util.signal_entity_changed(entity)
         return self._create_response_according_accept_header(
-            mediafile, accept_header, 201
+            response, accept_header, 201
         )
 
 
