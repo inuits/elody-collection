@@ -802,7 +802,16 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/mediafile"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/mediafile"
+                  }
+                }
+              },
+              "text/uri-list": {
+                "schema": {
+                  "type": "string",
+                  "format": "uri"
                 }
               }
             }
