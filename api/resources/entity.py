@@ -41,10 +41,14 @@ class Entity(BaseResource):
 
     @app.require_oauth()
     def post(self):
-        create_mediafile = int(request.args.get("create_mediafile", 0))
-        mediafile_filename = request.args.get("mediafile_filename", "")
+        create_mediafile = int(request.args.get("create_mediafile", 0)) or int(
+            request.args.get("create_mediafiles", 0)
+        )
+        mediafile_filenames = request.args.getlist(
+            "mediafile_filename"
+        ) + request.args.getlist("mediafile_filename[]")
         accept_header = request.headers.get("Accept", "")
-        if create_mediafile and not mediafile_filename:
+        if create_mediafile and not mediafile_filenames:
             return "Mediafile can't be created without filename", 400
         content = self._get_request_body()
         user_id = dict(current_token).get("email", "default_uploader")
@@ -54,21 +58,23 @@ class Entity(BaseResource):
         self._abort_if_not_valid_json("Entity", entity, entity_schema)
         try:
             entity = self.storage.save_item_to_collection("entities", content)
+            if accept_header == "text/uri-list":
+                response = ""
+            else:
+                response = entity
         except util.NonUniqueException as ex:
             return str(ex), 409
         if create_mediafile:
-            mediafile = self._create_mediafile_for_entity(
-                user_id, entity, mediafile_filename
-            )
-            if accept_header == "text/uri-list":
-                util.signal_entity_changed(entity)
-                return self._create_response_according_accept_header(
-                    f"{self.storage_api_url}/upload/{mediafile_filename}?id={util.get_raw_id(mediafile)}",
-                    accept_header,
-                    201,
+            for mediafile_filename in mediafile_filenames:
+                mediafile = self._create_mediafile_for_entity(
+                    user_id, entity, mediafile_filename
                 )
+                if accept_header == "text/uri-list":
+                    response += f"{self.storage_api_url}/upload/{mediafile_filename}?id={util.get_raw_id(mediafile)}\n"
         util.signal_entity_changed(entity)
-        return self._create_response_according_accept_header(entity, accept_header, 201)
+        return self._create_response_according_accept_header(
+            response, accept_header, 201
+        )
 
 
 class EntityDetail(BaseResource):
