@@ -497,10 +497,11 @@ class EntityTest(BaseCase):
             data=json.dumps(mediafile.json),
         )
 
-        self.valid_mediafile(response.json)
-        if "entities" in response.json:
-            self.assertEqual(list, type(response.json["entities"]))
-            self.assertEqual(3, len(response.json["entities"]))
+        for created_mediafile in response.json:
+            self.valid_mediafile(created_mediafile)
+            if "entities" in created_mediafile:
+                self.assertEqual(list, type(created_mediafile["entities"]))
+                self.assertEqual(3, len(created_mediafile["entities"]))
         self.assertEqual(201, response.status_code)
 
     def test_add_mediafile_to_non_existent_entity(self):
