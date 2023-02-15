@@ -10,8 +10,8 @@ class BaseFilterResource(BaseResource):
         self.filter_engine = FilterManager().get_filter_engine()
 
     def _execute_advanced_search_with_query(self, query, collection="entities"):
-        skip = int(request.args.get("skip", 0))
-        limit = int(request.args.get("limit", 20))
+        skip = request.args.get("skip", 0, int)
+        limit = request.args.get("limit", 20, int)
 
         @after_this_request
         def add_header(response):

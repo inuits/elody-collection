@@ -11,10 +11,10 @@ from validator import mediafile_schema
 class Mediafile(BaseResource):
     @app.require_oauth()
     def get(self):
-        skip = int(request.args.get("skip", 0))
-        limit = int(request.args.get("limit", 20))
+        skip = request.args.get("skip", 0, int)
+        limit = request.args.get("limit", 20, int)
         filters = {}
-        if ids := request.args.get("ids", None):
+        if ids := request.args.get("ids"):
             filters["ids"] = ids.split(",")
         if self._only_own_items():
             mediafiles = self.storage.get_items_from_collection(
@@ -90,7 +90,7 @@ class MediafileDetail(BaseResource):
         mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
         if self._only_own_items() and not util.mediafile_is_public(mediafile):
             self._abort_if_no_access(mediafile, current_token, "mediafiles")
-        if request.args.get("raw", None):
+        if request.args.get("raw"):
             return mediafile
         return self._inject_api_urls_into_mediafiles([mediafile])[0]
 

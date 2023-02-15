@@ -11,11 +11,11 @@ from validator import saved_search_schema
 class SavedSearch(BaseResource):
     @app.require_oauth()
     def get(self):
-        skip = int(request.args.get("skip", 0))
-        limit = int(request.args.get("limit", 20))
+        skip = request.args.get("skip", 0, int)
+        limit = request.args.get("limit", 20, int)
         filters = {}
         fields = {"type": "saved_search"}
-        if int(request.args.get("only_own", 0)) or self._only_own_items(
+        if request.args.get("only_own", 0, int) or self._only_own_items(
             ["read-saved-search-all"]
         ):
             filters["user_or_public"] = dict(current_token).get(

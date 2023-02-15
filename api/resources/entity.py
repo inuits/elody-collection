@@ -13,18 +13,18 @@ from validator import entity_schema, mediafile_schema
 class Entity(BaseResource):
     @app.require_oauth()
     def get(self):
-        skip = int(request.args.get("skip", 0))
-        limit = int(request.args.get("limit", 20))
+        skip = request.args.get("skip", 0, int)
+        limit = request.args.get("limit", 20, int)
         filters = {}
-        if int(request.args.get("only_own", 0)) or self._only_own_items(
+        if request.args.get("only_own", 0, int) or self._only_own_items(
             ["read-entity-all"]
         ):
             filters["user"] = dict(current_token).get("email", "default_uploader")
-        if item_type := request.args.get("type", None):
+        if item_type := request.args.get("type"):
             filters["type"] = item_type
-        if ids := request.args.get("ids", None):
+        if ids := request.args.get("ids"):
             filters["ids"] = ids.split(",")
-        skip_relations = int(request.args.get("skip_relations", 0))
+        skip_relations = request.args.get("skip_relations", 0, int)
         type_filter = f"type={item_type}&" if item_type else ""
         entities = self.storage.get_entities(skip, limit, skip_relations, filters)
         entities["limit"] = limit
@@ -41,13 +41,14 @@ class Entity(BaseResource):
 
     @app.require_oauth()
     def post(self):
-        create_mediafile = int(request.args.get("create_mediafile", 0)) or int(
-            request.args.get("create_mediafiles", 0)
-        )
-        mediafile_filenames = request.args.getlist(
-            "mediafile_filename"
-        ) + request.args.getlist("mediafile_filename[]")
-        accept_header = request.headers.get("Accept", "")
+        create_mediafile = request.args.get(
+            "create_mediafile", 0, int
+        ) or request.args.get("create_mediafiles", 0, int)
+        mediafile_filenames = [
+            *request.args.getlist("mediafile_filename"),
+            *request.args.getlist("mediafile_filename[]"),
+        ]
+        accept_header = request.headers.get("Accept")
         if create_mediafile and not mediafile_filenames:
             return "Mediafile can't be created without filename", 400
         content = self._get_request_body()
@@ -84,7 +85,7 @@ class EntityDetail(BaseResource):
         if self._only_own_items(["read-entity-detail-all"]):
             self._abort_if_no_access(entity, current_token)
         entity = self._set_entity_mediafile_and_thumbnail(entity)
-        if not int(request.args.get("skip_relations", 0)):
+        if not request.args.get("skip_relations", 0, int):
             entity = self._add_relations_to_metadata(entity)
         return self._inject_api_urls_into_entities([entity])[0]
 
@@ -163,7 +164,7 @@ class EntityMediafiles(BaseResource):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         content = self._get_request_body()
         mediafiles = content if isinstance(content, list) else [content]
-        accept_header = request.headers.get("Accept", "")
+        accept_header = request.headers.get("Accept")
         if accept_header == "text/uri-list":
             response = ""
         else:
@@ -233,7 +234,7 @@ class EntityMediafilesCreate(BaseResource):
 class EntityMetadata(BaseResource):
     @app.require_oauth()
     def get(self, id):
-        accept_header = request.headers.get("Accept", "")
+        accept_header = request.headers.get("Accept")
         entity = self._abort_if_item_doesnt_exist("entities", id)
         if self._only_own_items(["read-entity-metadata-all"]):
             self._abort_if_no_access(entity, current_token)

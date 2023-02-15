@@ -7,8 +7,8 @@ from resources.base_resource import BaseResource
 class Job(BaseResource):
     @app.require_oauth()
     def get(self):
-        skip = int(request.args.get("skip", 0))
-        limit = int(request.args.get("limit", 20))
+        skip = request.args.get("skip", 0, int)
+        limit = request.args.get("limit", 20, int)
         job_type = request.args.get("type")
         status = request.args.get("status")
         fields = {"parent_job_id": None}
