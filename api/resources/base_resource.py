@@ -134,11 +134,10 @@ class BaseResource(Resource):
         return "private" in item and not item["private"]
 
     def _only_own_items(self, permissions=None):
-        if not permissions:
-            permissions = ["show-all"]
-        else:
-            permissions.append("show-all")
-        if app.require_oauth.check_permissions(permissions):
+        all_permissions = ["show-all"]
+        if permissions:
+            all_permissions = [*all_permissions, *permissions]
+        if app.require_oauth.check_permissions(all_permissions):
             return False
         return True
 
