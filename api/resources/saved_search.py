@@ -41,7 +41,7 @@ class SavedSearch(BaseResource):
 
     @app.require_oauth()
     def post(self):
-        content = self._get_request_body()
+        content = request.get_json()
         self._abort_if_not_valid_json("Saved search", content, saved_search_schema)
         content["user"] = dict(current_token).get("email", "default_uploader")
         content["date_created"] = str(datetime.now())
@@ -66,7 +66,7 @@ class SavedSearchDetail(BaseResource):
     def put(self, id):
         saved_search = self._abort_if_item_doesnt_exist("abstracts", id)
         self._abort_if_not_valid_type(saved_search, "saved_search")
-        content = self._get_request_body()
+        content = request.get_json()
         self._abort_if_not_valid_json("Saved search", content, saved_search_schema)
         if self._only_own_items():
             self._abort_if_no_access(saved_search, current_token)
@@ -84,7 +84,7 @@ class SavedSearchDetail(BaseResource):
     def patch(self, id):
         saved_search = self._abort_if_item_doesnt_exist("abstracts", id)
         self._abort_if_not_valid_type(saved_search, "saved_search")
-        content = self._get_request_body()
+        content = request.get_json()
         if self._only_own_items():
             self._abort_if_no_access(saved_search, current_token)
         content["date_updated"] = str(datetime.now())

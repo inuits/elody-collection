@@ -42,7 +42,7 @@ class Mediafile(BaseResource):
 
     @app.require_oauth()
     def post(self):
-        content = self._get_request_body()
+        content = request.get_json()
         self._abort_if_not_valid_json("Mediafile", content, mediafile_schema)
         content["user"] = dict(current_token).get("email", "default_uploader")
         content["date_created"] = str(datetime.now())
@@ -97,7 +97,7 @@ class MediafileDetail(BaseResource):
     @app.require_oauth()
     def put(self, id):
         old_mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
-        content = self._get_request_body()
+        content = request.get_json()
         self._abort_if_not_valid_json("Mediafile", content, mediafile_schema)
         if self._only_own_items():
             self._abort_if_no_access(old_mediafile, current_token, "mediafiles")
@@ -113,7 +113,7 @@ class MediafileDetail(BaseResource):
     @app.require_oauth()
     def patch(self, id):
         old_mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
-        content = self._get_request_body()
+        content = request.get_json()
         if self._only_own_items():
             self._abort_if_no_access(old_mediafile, current_token, "mediafiles")
         content["date_updated"] = str(datetime.now())

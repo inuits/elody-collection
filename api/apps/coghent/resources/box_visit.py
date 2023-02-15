@@ -34,7 +34,7 @@ class BoxVisit(CoghentBaseResource):
 
     @app.require_oauth("create-box-visit")
     def post(self):
-        content = self._get_request_body()
+        content = request.get_json()
         return self._create_box_visit(content)
 
 
@@ -50,7 +50,7 @@ class BoxVisitDetail(CoghentBaseResource):
     @app.require_oauth("update-box-visit")
     def put(self, id):
         box_visit = self._abort_if_item_doesnt_exist("box_visits", id)
-        content = self._get_request_body()
+        content = request.get_json()
         self._abort_if_not_valid_json("BoxVisit", content, box_visit_schema)
         box_visit = self.storage.update_item_from_collection(
             "box_visits", util.get_raw_id(box_visit), content
@@ -60,7 +60,7 @@ class BoxVisitDetail(CoghentBaseResource):
     @app.require_oauth("patch-box-visit")
     def patch(self, id):
         box_visit = self._abort_if_item_doesnt_exist("box_visits", id)
-        content = self._get_request_body()
+        content = request.get_json()
         box_visit = self.storage.patch_item_from_collection(
             "box_visits", util.get_raw_id(box_visit), content
         )
@@ -92,7 +92,7 @@ class BoxVisitRelations(CoghentBaseResource):
     @app.require_oauth("add-box-visit-relations")
     def post(self, id):
         box_visit = self._abort_if_item_doesnt_exist("box_visits", id)
-        content = self._get_request_body()
+        content = request.get_json()
         relations = self.storage.add_relations_to_collection_item(
             "box_visits", util.get_raw_id(box_visit), content, False
         )
@@ -101,7 +101,7 @@ class BoxVisitRelations(CoghentBaseResource):
     @app.require_oauth("update-box-visit-relations")
     def put(self, id):
         box_visit = self._abort_if_item_doesnt_exist("box_visits", id)
-        content = self._get_request_body()
+        content = request.get_json()
         relations = self.storage.update_collection_item_relations(
             "box_visits", util.get_raw_id(box_visit), content, False
         )
@@ -110,7 +110,7 @@ class BoxVisitRelations(CoghentBaseResource):
     @app.require_oauth("patch-box-visit-relations")
     def patch(self, id):
         box_visit = self._abort_if_item_doesnt_exist("box_visits", id)
-        content = self._get_request_body()
+        content = request.get_json()
         relations = self.storage.patch_collection_item_relations(
             "box_visits", util.get_raw_id(box_visit), content, False
         )
@@ -119,7 +119,7 @@ class BoxVisitRelations(CoghentBaseResource):
     @app.require_oauth("delete-box-visit-relations")
     def delete(self, id):
         box_visit = self._abort_if_item_doesnt_exist("box_visits", id)
-        content = self._get_request_body()
+        content = request.get_json()
         self.storage.delete_collection_item_relations(
             "box_visits", util.get_raw_id(box_visit), content, False
         )

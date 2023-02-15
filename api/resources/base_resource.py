@@ -3,7 +3,7 @@ import os
 import util
 
 from datetime import datetime
-from flask import request, Response
+from flask import Response
 from flask_restful import Resource, abort
 from storage.storagemanager import StorageManager
 from validator import validate_json
@@ -95,11 +95,6 @@ class BaseResource(Resource):
             "type": "asset",
         }
         return {**default_entity, **entity}
-
-    def _get_request_body(self):
-        if (request_body := request.get_json(silent=True)) is not None:
-            return request_body
-        abort(400, message="Invalid input")
 
     def _inject_api_urls_into_entities(self, entities):
         for entity in entities:
