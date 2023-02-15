@@ -19,7 +19,10 @@ class MediafileTest(BaseCase):
             "/mediafiles", headers={"content-type": "application/json"}, data=mediafile
         )
 
-        self.invalid_input(response, "Invalid input")
+        self.invalid_input(
+            response,
+            "Failed to decode JSON object: Expecting value: line 1 column 1 (char 0)",
+        )
 
     def test_invalid_content_type_mediafile_create(self):
         response = self.app.post(
@@ -28,7 +31,10 @@ class MediafileTest(BaseCase):
             data=self.mediafile,
         )
 
-        self.invalid_input(response, "Invalid input")
+        self.invalid_input(
+            response,
+            "Did not attempt to load JSON data because the request Content-Type was not 'application/json'.",
+        )
 
     def test_invalid_mediafile_create(self):
         response = self.app.post(
