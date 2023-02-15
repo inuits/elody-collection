@@ -168,12 +168,37 @@
             }
           },
           {
+            "name": "create_mediafiles",
+            "in": "query",
+            "description": "Alias for create_mediafile",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0
+            }
+          },
+          {
             "name": "mediafile_filename",
             "in": "query",
             "description": "Filename for the to-be created mediafile",
             "required": false,
             "schema": {
-              "type": "string"
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "mediafile_filename[]",
+            "in": "query",
+            "description": "Alias for mediafile_filename",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
             }
           }
         ],
