@@ -90,11 +90,11 @@ class BaseResource(Resource):
             case _:
                 return response_data, status_code
 
-    def _decorate_entity(self, entity, user_id):
+    def _decorate_entity(self, entity):
         default_entity = {
             "type": "asset",
         }
-        return {**default_entity, **entity}
+        return default_entity | entity
 
     def _inject_api_urls_into_entities(self, entities):
         for entity in entities:

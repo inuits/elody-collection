@@ -53,12 +53,13 @@ class Entity(BaseResource):
             return "Mediafile can't be created without filename", 400
         content = request.get_json()
         user_id = dict(current_token).get("email", "default_uploader")
-        entity = self._decorate_entity(content, user_id)
-        content["date_created"] = str(datetime.now())
-        content["version"] = 1
+        entity = self._decorate_entity(content)
+        entity["user"] = user_id
+        entity["date_created"] = str(datetime.now())
+        entity["version"] = 1
         self._abort_if_not_valid_json("Entity", entity, entity_schema)
         try:
-            entity = self.storage.save_item_to_collection("entities", content)
+            entity = self.storage.save_item_to_collection("entities", entity)
             if accept_header == "text/uri-list":
                 response = ""
             else:
