@@ -25,7 +25,6 @@ class BaseResource(Resource):
         )
 
     def _abort_if_no_access(self, item, token, collection="entities"):
-        app.logger.info(f"Checking if {token} has access to {item}")
         is_owner = self._is_owner_of_item(item, token)
         is_public = self._is_public(item)
         if not is_owner and not is_public:
