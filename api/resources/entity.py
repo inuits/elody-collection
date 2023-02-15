@@ -132,6 +132,16 @@ class EntityDetail(BaseResource):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         if self._only_own_items():
             self._abort_if_no_access(entity, current_token)
+        if request.args.get("delete_mediafiles", 0, int):
+            mediafiles = self.storage.get_collection_item_mediafiles(
+                "entities", util.get_raw_id(entity)
+            )
+            for mediafile in mediafiles:
+                if self._only_own_items():
+                    self._abort_if_no_access(mediafile, current_token, "mediafiles")
+                self.storage.delete_item_from_collection(
+                    "mediafiles", util.get_raw_id(mediafile)
+                )
         self.storage.delete_item_from_collection("entities", util.get_raw_id(entity))
         util.signal_entity_deleted(entity)
         return "", 204

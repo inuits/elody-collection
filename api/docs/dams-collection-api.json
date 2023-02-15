@@ -418,6 +418,16 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "delete_mediafiles",
+            "in": "query",
+            "description": "Delete mediafiles linked to entity",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0
+            }
           }
         ],
         "responses": {
