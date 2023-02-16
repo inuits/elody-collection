@@ -12,7 +12,7 @@ DateTime==5.0
 decorator==5.1.1
 deprecation==2.1.0
 dnspython==2.3.0
-Flask==2.2.2
+Flask==2.2.3
 Flask-RESTful==0.3.9
 flask-swagger-ui==4.11.1
 future==0.18.3
