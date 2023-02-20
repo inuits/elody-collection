@@ -59,12 +59,14 @@ class MongoStorageManager(GenericStorageManager):
 
     def __map_entity_relation(self, relation):
         return {
-            "authoredBy": "authored",
-            "isIn": "contains",
-            "hasMediafile": "belongsTo",
             "authored": "authoredBy",
+            "authoredBy": "authored",
             "belongsTo": "hasMediafile",
+            "components": "parent",
             "contains": "isIn",
+            "hasMediafile": "belongsTo",
+            "isIn": "contains",
+            "parent": "components",
         }.get(relation)
 
     def __map_relation_to_collection(self, relation):
