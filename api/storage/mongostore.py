@@ -17,6 +17,7 @@ class MongoStorageManager(GenericStorageManager):
         mongo_db = os.getenv("MONGO_DB_NAME", "dams")
         client = MongoClient(mongo_host, mongo_port)
         self.db = client[mongo_db]
+        self.db.entities.create_index("identifiers", unique=True)
         self.db.entities.create_index("object_id", unique=True, sparse=True)
 
     def __add_child_relations(self, collection, id, relations):
