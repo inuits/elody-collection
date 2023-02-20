@@ -71,12 +71,14 @@ class MongoStorageManager(GenericStorageManager):
 
     def __map_relation_to_collection(self, relation):
         return {
-            "authoredBy": "entities",
-            "isIn": "entities",
-            "hasMediafile": "mediafiles",
             "authored": "entities",
+            "authoredBy": "entities",
             "belongsTo": "entities",
+            "components": "entities",
             "contains": "entities",
+            "hasMediafile": "mediafiles",
+            "isIn": "entities",
+            "parent": "entities",
         }.get(relation, "entities")
 
     def _prepare_mongo_document(self, document, reversed, id=None):
