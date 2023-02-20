@@ -1,4 +1,5 @@
 import os
+import pymongo.errors
 import util
 import uuid
 
@@ -16,6 +17,7 @@ class MongoStorageManager(GenericStorageManager):
         mongo_db = os.getenv("MONGO_DB_NAME", "dams")
         client = MongoClient(mongo_host, mongo_port)
         self.db = client[mongo_db]
+        self.db.entities.create_index("object_id", unique=True, sparse=True)
 
     def __add_child_relations(self, collection, id, relations):
         for relation in relations:
@@ -385,7 +387,12 @@ class MongoStorageManager(GenericStorageManager):
 
     def patch_item_from_collection(self, collection, id, content):
         content = self._prepare_mongo_document(content, False)
-        self.db[collection].update_one(self.__get_id_query(id), {"$set": content})
+        try:
+            self.db[collection].update_one(self.__get_id_query(id), {"$set": content})
+        except pymongo.errors.DuplicateKeyError as ex:
+            if ex.code == 11000:
+                raise util.NonUniqueException(ex.details)
+            raise ex
         return self.get_item_from_collection_by_id(collection, id)
 
     def reindex_mediafile_parents(self, mediafile=None, parents=None):
@@ -397,7 +404,12 @@ class MongoStorageManager(GenericStorageManager):
 
     def save_item_to_collection(self, collection, content):
         content = self._prepare_mongo_document(content, False, str(uuid.uuid4()))
-        item_id = self.db[collection].insert_one(content).inserted_id
+        try:
+            item_id = self.db[collection].insert_one(content).inserted_id
+        except pymongo.errors.DuplicateKeyError as ex:
+            if ex.code == 11000:
+                raise util.NonUniqueException(ex.details)
+            raise ex
         return self.get_item_from_collection_by_id(collection, item_id)
 
     def set_primary_field_collection_item(
@@ -430,5 +442,10 @@ class MongoStorageManager(GenericStorageManager):
 
     def update_item_from_collection(self, collection, id, content):
         content = self._prepare_mongo_document(content, False)
-        self.db[collection].replace_one(self.__get_id_query(id), content)
+        try:
+            self.db[collection].replace_one(self.__get_id_query(id), content)
+        except pymongo.errors.DuplicateKeyError as ex:
+            if ex.code == 11000:
+                raise util.NonUniqueException(ex.details)
+            raise ex
         return self.get_item_from_collection_by_id(collection, id)
