@@ -92,16 +92,11 @@ class ArangoStorageManager(GenericStorageManager):
     def __create_unique_indexes(self, arango_db_name):
         try:
             self.conn[arango_db_name]["entities"].ensureIndex(
+                fields=["identifiers[*]"], index_type="hash", unique=True
+            )
+            self.conn[arango_db_name]["entities"].ensureIndex(
                 fields=["object_id"], index_type="hash", unique=True, sparse=True
             )
-            """ Currently disabled because of LDES conflicts
-            self.conn[arango_db_name]["entities"].ensureIndex(
-                fields=["data.dcterms:isVersionOf"],
-                index_type="hash",
-                unique=True,
-                sparse=True,
-            )
-            """
             self.conn[arango_db_name]["box_visits"].ensureIndex(
                 fields=["code"], index_type="hash", unique=True, sparse=True
             )
