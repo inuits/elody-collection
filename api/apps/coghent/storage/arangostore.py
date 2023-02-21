@@ -13,7 +13,7 @@ class CoghentArangoStorageManager(ArangoStorageManager):
                 RETURN bv.code
         """
         bind = {"@collection": "box_visits", "code_list": codes}
-        results = list(self.db.AQLQuery(aql, rawResults=True, bindVars=bind))
+        results = list(self.db.aql.execute(aql, bind_vars=bind))
         return next((x for x in codes if x not in results), None)
 
     def generate_box_visit_code(self):
@@ -40,9 +40,9 @@ class CoghentArangoStorageManager(ArangoStorageManager):
         bind = {"skip": skip, "limit": limit}
         if ids:
             bind["ids"] = ids
-        results = self.db.AQLQuery(aql, rawResults=True, bindVars=bind, fullCount=True)
+        results = self.db.aql.execute(aql, bind_vars=bind, full_count=True)
         items = dict()
-        items["count"] = results.extra["stats"]["fullCount"]
+        items["count"] = results.statistics()["fullCount"]
         items["results"] = list(results)
         if ids:
             items["results"] = [
@@ -58,5 +58,5 @@ class CoghentArangoStorageManager(ArangoStorageManager):
                 RETURN TO_NUMBER(LAST(SPLIT(e.object_id, "_")))
         """
         used_ids = {*list(range(1000)), 100000}
-        used_ids.update(list(self.db.AQLQuery(aql, rawResults=True)))
+        used_ids.update(list(self.db.aql.execute(aql)))
         return f"cogent:CG_{str(min(set(range(1, max(used_ids) + 1)) - used_ids)).rjust(5, '0')}"

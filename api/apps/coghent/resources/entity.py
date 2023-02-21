@@ -4,7 +4,6 @@ import os
 from apps.coghent.resources.base_resource import CoghentBaseResource
 from flask import Blueprint
 from flask_restful import abort, Api
-from inuits_jwt_auth.authorization import current_token
 from resources.entity import (
     Entity,
     EntityDetail,

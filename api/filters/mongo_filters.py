@@ -1,4 +1,3 @@
-import app
 import sys
 
 from storage.mongostore import MongoStorageManager

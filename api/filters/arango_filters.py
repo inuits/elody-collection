@@ -1,4 +1,3 @@
-import app
 import sys
 
 from storage.arangostore import ArangoStorageManager
@@ -8,10 +7,10 @@ class ArangoFilters(ArangoStorageManager):
     def filter(self, output_type, body, skip, limit, collection="entities"):
         aql = self.__generate_aql_query(body, collection)
         bind = {"skip": skip, "limit": limit}
-        results = self.db.AQLQuery(aql, rawResults=True, fullCount=True, bindVars=bind)
+        results = self.db.aql.execute(aql, bind_vars=bind, full_count=True)
         filters = {"ids": list(results)}
         items = self.get_items_from_collection(collection, 0, limit, None, filters)
-        items["count"] = results.extra["stats"]["fullCount"]
+        items["count"] = results.statistics()["fullCount"]
         items["limit"] = limit
         return items
 
