@@ -82,13 +82,21 @@ class Entity(BaseResource):
 class EntityDetail(BaseResource):
     @app.require_oauth()
     def get(self, id):
+        accept_header = request.headers.get("Accept")
         entity = self._abort_if_item_doesnt_exist("entities", id)
         if self._only_own_items(["read-entity-detail-all"]):
             self._abort_if_no_access(entity, current_token)
         entity = self._set_entity_mediafile_and_thumbnail(entity)
         if not request.args.get("skip_relations", 0, int):
             entity = self._add_relations_to_metadata(entity)
-        return self._inject_api_urls_into_entities([entity])[0]
+        return self._create_response_according_accept_header(
+            mappers.map_data_according_to_accept_header(
+                self._inject_api_urls_into_entities([entity])[0],
+                accept_header,
+                "entity",
+            ),
+            accept_header,
+        )
 
     @app.require_oauth()
     def put(self, id):

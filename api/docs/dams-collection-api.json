@@ -271,6 +271,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/entity"
                 }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
               }
             }
           },
