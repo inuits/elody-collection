@@ -13,6 +13,7 @@ from validator import entity_schema, mediafile_schema
 class Entity(BaseResource):
     @app.require_oauth()
     def get(self):
+        accept_header = request.headers.get("Accept")
         skip = request.args.get("skip", 0, int)
         limit = request.args.get("limit", 20, int)
         filters = {}
@@ -37,7 +38,14 @@ class Entity(BaseResource):
                 "previous"
             ] = f"/entities?{type_filter}skip={max(0, skip - limit)}&limit={limit}&skip_relations={skip_relations}"
         entities["results"] = self._inject_api_urls_into_entities(entities["results"])
-        return entities
+        return self._create_response_according_accept_header(
+            mappers.map_data_according_to_accept_header(
+                entities,
+                accept_header,
+                "entities",
+            ),
+            accept_header,
+        )
 
     @app.require_oauth()
     def post(self):
