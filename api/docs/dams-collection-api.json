@@ -475,6 +475,11 @@
                     "$ref": "#/components/schemas/metadata"
                   }
                 }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
               }
             }
           },
