@@ -2,6 +2,12 @@ import csv
 import io
 
 
+def can_append_key(key, fields):
+    if not fields:
+        return True
+    return key in fields
+
+
 def csv_writter(header, rows):
     output = io.StringIO()
     writer = csv.writer(output)
@@ -11,29 +17,36 @@ def csv_writter(header, rows):
     return output.getvalue()
 
 
-def map_data_according_to_accept_header(data, accept_header, data_type="metadata"):
+def map_data_according_to_accept_header(
+    data, accept_header, data_type="metadata", fields=None
+):
     match accept_header:
         case "text/csv":
-            return map_to_csv(data, data_type)
+            return map_to_csv(data, data_type, fields)
         case _:
             return data
 
 
-def map_entities_to_csv(entities):
+def map_entities_to_csv(entities, fields=None):
     keys = list()
     root_values = list()
-    key_positions = dict()
     for entity in entities:
         values = list()
         for id in entity.get("identifiers", []):
+            if not can_append_key("identifiers", fields):
+                values.append({})
+                break
             if "identifier" not in keys:
                 keys.append("identifier")
             values.append({0: id})
-        if "type" not in keys:
-            keys.append("type")
-        values[0][1] = entity.get("type")
+        if can_append_key("type", fields):
+            if "type" not in keys:
+                keys.append("type")
+            values[0][1] = entity.get("type")
         for metadata in entity.get("metadata", []):
             key = metadata.get("key")
+            if not can_append_key(key, fields):
+                continue
             if key not in keys:
                 keys.append(metadata.get("key"))
             values[0][keys.index(key)] = metadata.get("value")
@@ -45,40 +58,53 @@ def map_entities_to_csv(entities):
     return csv_writter(keys, root_values)
 
 
-def map_entity_to_csv(entity):
+def map_entity_to_csv(entity, fields=None):
     keys = list()
     values = list()
     for id in entity.get("identifiers", []):
+        if not can_append_key("identifiers", fields):
+            values.append([])
+            break
         if "identifier" not in keys:
             keys.append("identifier")
         values.append([id])
-    keys.append("type")
-    values[0].append(entity.get("type"))
+    if can_append_key("type", fields):
+        keys.append("type")
+        values[0].append(entity.get("type"))
     for metadata in entity.get("metadata", []):
-        keys.append(metadata.get("key"))
+        key = metadata.get("key")
+        if not can_append_key(key, fields):
+            continue
+        keys.append(key)
         values[0].append(metadata.get("value"))
     for relation in entity.get("relations", []):
-        keys.append(relation.get("label"))
+        label = relation.get("label")
+        if not can_append_key(label, fields):
+            continue
+        keys.append(label)
         values[0].append(relation.get("key"))
     return csv_writter(keys, values)
 
 
-def map_metadata_to_csv(metadata):
+def map_metadata_to_csv(metadata, fields=None):
     keys = list()
     values = list()
     for field in metadata:
-        keys.append(field.get("key"))
+        key = field.get("key")
+        if not can_append_key(key, fields):
+            continue
+        keys.append(key)
         values.append(field.get("value"))
     return csv_writter(keys, [values])
 
 
-def map_to_csv(data, data_type):
+def map_to_csv(data, data_type, fields=None):
     match data_type:
         case "metadata":
-            return map_metadata_to_csv(data)
+            return map_metadata_to_csv(data, fields)
         case "entities":
-            return map_entities_to_csv(data["results"])
+            return map_entities_to_csv(data["results"], fields)
         case "entity":
-            return map_entity_to_csv(data)
+            return map_entity_to_csv(data, fields)
         case _:
             return data

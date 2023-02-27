@@ -16,6 +16,10 @@ class Entity(BaseResource):
         accept_header = request.headers.get("Accept")
         skip = request.args.get("skip", 0, int)
         limit = request.args.get("limit", 20, int)
+        fields = [
+            *request.args.getlist("field"),
+            *request.args.getlist("field[]"),
+        ]
         filters = {}
         if request.args.get("only_own", 0, int) or self._only_own_items(
             ["read-entity-all"]
@@ -43,6 +47,7 @@ class Entity(BaseResource):
                 entities,
                 accept_header,
                 "entities",
+                fields,
             ),
             accept_header,
         )
@@ -92,6 +97,10 @@ class EntityDetail(BaseResource):
     def get(self, id):
         accept_header = request.headers.get("Accept")
         entity = self._abort_if_item_doesnt_exist("entities", id)
+        fields = [
+            *request.args.getlist("field"),
+            *request.args.getlist("field[]"),
+        ]
         if self._only_own_items(["read-entity-detail-all"]):
             self._abort_if_no_access(entity, current_token)
         entity = self._set_entity_mediafile_and_thumbnail(entity)
@@ -102,6 +111,7 @@ class EntityDetail(BaseResource):
                 self._inject_api_urls_into_entities([entity])[0],
                 accept_header,
                 "entity",
+                fields,
             ),
             accept_header,
         )
@@ -263,13 +273,19 @@ class EntityMetadata(BaseResource):
     def get(self, id):
         accept_header = request.headers.get("Accept")
         entity = self._abort_if_item_doesnt_exist("entities", id)
+        fields = [
+            *request.args.getlist("field"),
+            *request.args.getlist("field[]"),
+        ]
         if self._only_own_items(["read-entity-metadata-all"]):
             self._abort_if_no_access(entity, current_token)
         metadata = self.storage.get_collection_item_sub_item(
             "entities", util.get_raw_id(entity), "metadata"
         )
         return self._create_response_according_accept_header(
-            mappers.map_data_according_to_accept_header(metadata, accept_header),
+            mappers.map_data_according_to_accept_header(
+                metadata, accept_header, "metadata", fields
+            ),
             accept_header,
         )
 

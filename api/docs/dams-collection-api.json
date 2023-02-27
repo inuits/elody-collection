@@ -129,6 +129,18 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "field",
+            "in": "query",
+            "description": "Only return specified fiels in output. Only works for output in CSV-format",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
           }
         ],
         "responses": {
@@ -265,6 +277,18 @@
             "required": true,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "field",
+            "in": "query",
+            "description": "Only return specified fiels in output. Only works for output in CSV-format",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
             }
           }
         ],
@@ -471,6 +495,18 @@
             "required": true,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "field",
+            "in": "query",
+            "description": "Only return specified fiels in output. Only works for output in CSV-format",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
             }
           }
         ],
