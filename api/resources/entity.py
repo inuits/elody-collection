@@ -126,6 +126,8 @@ class EntityDetail(BaseResource):
         content["date_updated"] = str(datetime.now())
         content["version"] = entity.get("version", 0) + 1
         content["last_editor"] = dict(current_token).get("email", "default_uploader")
+        content["user"] = entity.get("user", content["last_editor"])
+        content["date_created"] = entity.get("date_created", content["date_updated"])
         try:
             entity = self.storage.update_item_from_collection(
                 "entities", util.get_raw_id(entity), content
