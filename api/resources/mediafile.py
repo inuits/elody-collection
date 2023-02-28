@@ -46,7 +46,7 @@ class Mediafile(BaseResource):
         self._abort_if_not_valid_json("Mediafile", content, mediafile_schema)
         content["user"] = dict(current_token).get("email", "default_uploader")
         content["date_created"] = str(datetime.now())
-        content["version"] = content.get("version", 0) + 1
+        content["version"] = 1
         mediafile = self.storage.save_item_to_collection("mediafiles", content)
         return mediafile, 201
 
@@ -102,7 +102,7 @@ class MediafileDetail(BaseResource):
         if self._only_own_items():
             self._abort_if_no_access(old_mediafile, current_token, "mediafiles")
         content["date_updated"] = str(datetime.now())
-        content["version"] = content.get("version", 0) + 1
+        content["version"] = old_mediafile.get("version", 0) + 1
         content["last_editor"] = dict(current_token).get("email", "default_uploader")
         mediafile = self.storage.update_item_from_collection(
             "mediafiles", util.get_raw_id(old_mediafile), content
@@ -117,7 +117,7 @@ class MediafileDetail(BaseResource):
         if self._only_own_items():
             self._abort_if_no_access(old_mediafile, current_token, "mediafiles")
         content["date_updated"] = str(datetime.now())
-        content["version"] = content.get("version", 0) + 1
+        content["version"] = old_mediafile.get("version", 0) + 1
         content["last_editor"] = dict(current_token).get("email", "default_uploader")
         mediafile = self.storage.patch_item_from_collection(
             "mediafiles", util.get_raw_id(old_mediafile), content
