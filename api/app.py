@@ -11,7 +11,7 @@ from inuits_jwt_auth.authorization import JWTValidator, MyResourceProtector
 from rabbitmq_pika_flask import RabbitMQ
 from storage.storagemanager import StorageManager
 
-if os.getenv("SENTRY_ENABLED", False):
+if os.getenv("SENTRY_ENABLED", False) in ["True", "true", True]:
     import sentry_sdk
     from sentry_sdk.integrations.flask import FlaskIntegration
 
