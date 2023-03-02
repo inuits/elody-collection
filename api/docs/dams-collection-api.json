@@ -262,6 +262,104 @@
         }
       }
     },
+    "/entities/filter": {
+      "post": {
+        "tags": [
+          "entity"
+        ],
+        "summary": "Filter entities",
+        "operationId": "filterEntities",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Limit number of entities",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          },
+          {
+            "name": "skip",
+            "in": "query",
+            "description": "Skip number of entities",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Filter that needs to be executed",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/filter"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/entity"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/entities/filter/{savedSearchId}": {
+      "post": {
+        "tags": [
+          "entity"
+        ],
+        "summary": "Filter entities by saved search",
+        "operationId": "filterEntitiesBySavedSearchId",
+        "parameters": [
+          {
+            "name": "savedSearchId",
+            "in": "path",
+            "description": "saved_search identifier",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/entity"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
     "/entities/{entityId}": {
       "get": {
         "tags": [
@@ -1450,6 +1548,104 @@
         }
       }
     },
+    "/mediafiles/filter": {
+      "post": {
+        "tags": [
+          "mediafile"
+        ],
+        "summary": "Filter Mediafiles",
+        "operationId": "filterMediafiles",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Limit number of mediafiles",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          },
+          {
+            "name": "skip",
+            "in": "query",
+            "description": "Skip number of mediafiles",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Filter that needs to be executed",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/filter"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/mediafile"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/mediafiles/filter/{savedSearchId}": {
+      "post": {
+        "tags": [
+          "mediafile"
+        ],
+        "summary": "Filter mediafiles by saved search",
+        "operationId": "filterMediafilesBySavedSearchId",
+        "parameters": [
+          {
+            "name": "savedSearchId",
+            "in": "path",
+            "description": "saved_search identifier",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/mediafile"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
     "/mediafiles/{mediafileId}": {
       "get": {
         "tags": [
@@ -2124,6 +2320,44 @@
           "type": {
             "type": "string",
             "description": "entity value"
+          }
+        }
+      },
+      "filter": {
+        "type": "object",
+        "description": "Filter object",
+        "required": [
+          "type"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "filter type"
+          },
+          "value": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ],
+            "description": "Value to search on"
+          },
+          "key": {
+            "type": "string",
+            "description": "Key of metadata to apply query on"
+          },
+          "item_types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Item types to return, or relation types to search in, in case of a MultiSelectFilter"
           }
         }
       },
