@@ -382,7 +382,9 @@ class ArangoStorageManager(GenericStorageManager):
                                 relations.append(relation_object)
         return relations
 
-    def get_entities(self, skip=0, limit=20, skip_relations=0, filters=None):
+    def get_entities(
+        self, skip=0, limit=20, skip_relations=0, filters=None, order_by=None, asc=True
+    ):
         if not filters:
             filters = {}
         aql = f"""

@@ -93,7 +93,9 @@ class MemoryStorageManager(GenericStorageManager):
     ):
         return self.get_collection_item_sub_item(collection, obj_id, "relations")
 
-    def get_entities(self, skip=0, limit=20, skip_relations=0, filters=None):
+    def get_entities(
+        self, skip=0, limit=20, skip_relations=0, filters=None, order_by=None, asc=True
+    ):
         items = dict()
         items["results"] = list(self.collections["entities"].values())
         if "ids" in filters:
