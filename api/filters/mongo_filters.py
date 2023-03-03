@@ -31,6 +31,14 @@ class MongoFilters(MongoStorageManager):
         items["limit"] = limit
         return items
 
+    def __add_helper_queries(self, query):
+        sub_pipeline = list()
+        if len(query.get("item_types", [])):
+            sub_pipeline.append(self.__get_item_types_query(query["item_types"]))
+        if query.get("parent"):
+            sub_pipeline.append(self.__get_parent_filter(query["parent"]))
+        return sub_pipeline
+
     def __generate_aggregation_pipeline(self, queries, collection="entities"):
         pipeline = [
             {
@@ -78,9 +86,8 @@ class MongoFilters(MongoStorageManager):
                 }
             }
         }
-        sub_pipeline = [metadata_min_max_match]
-        if len(query.get("item_types", [])):
-            sub_pipeline.append(self.__get_item_types_query(query["item_types"]))
+        sub_pipeline = self.__add_helper_queries(query)
+        sub_pipeline.append(metadata_min_max_match)
         return sub_pipeline
 
     def __generate_min_max_relations_filter(self, query):
@@ -102,23 +109,20 @@ class MongoFilters(MongoStorageManager):
             }
         }
         min_max_match = {"$match": {"numberOfRelations": {"$gte": min, "$lte": max}}}
-        sub_pipeline = [relation_match, number_of_relations_calculator, min_max_match]
-        if len(query.get("item_types", [])):
-            sub_pipeline.append(self.__get_item_types_query(query["item_types"]))
+        sub_pipeline = self.__add_helper_queries(query)
+        sub_pipeline.extend(
+            [relation_match, number_of_relations_calculator, min_max_match]
+        )
         return sub_pipeline
 
     def __generate_multi_select_input_query(self, query):
-        sub_pipeline = list()
-        if len(query.get("item_types", [])):
-            sub_pipeline.append(self.__get_item_types_query(query["item_types"]))
+        sub_pipeline = self.__add_helper_queries(query)
         sub_pipeline.append(self.__get_multi_select_filter(query))
         return sub_pipeline
 
     def __generate_text_input_query(self, query):
         root_fields = ["filename", "mimetype"]
-        sub_pipeline = list()
-        if len(query.get("item_types", [])):
-            sub_pipeline.append(self.__get_item_types_query(query["item_types"]))
+        sub_pipeline = self.__add_helper_queries(query)
         if query.get("key") in root_fields:
             sub_pipeline.append(self.__get_text_input_root_field_filter(query))
         else:
@@ -158,6 +162,13 @@ class MongoFilters(MongoStorageManager):
                 "$in"
             ] = query["value"]
         return multi_select_match
+
+    def __get_parent_filter(self, parent_id):
+        return {
+            "$match": {
+                "relations": {"$elemMatch": {"key": parent_id, "type": "parent"}}
+            }
+        }
 
     def __get_text_input_metadata_filter(self, query):
         metadata_match = {"$match": {"metadata": {"$elemMatch": {}}}}

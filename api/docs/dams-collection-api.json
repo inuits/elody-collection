@@ -2358,6 +2358,18 @@
             "type": "string",
             "description": "Key of metadata to apply query on"
           },
+          "relation_types": {
+            "type": "string",
+            "description": "The relation to be within treshhold of MinMaxFilter"
+          },
+          "metadata_field": {
+            "type": "string",
+            "description": "The metadata field to be within treshhold of MinMaxFilter"
+          },
+          "parent": {
+            "type": "string",
+            "description": "The parent entity in which the query will be executed. Only work in combination with Mongo backend."
+          },
           "item_types": {
             "type": "array",
             "items": {
