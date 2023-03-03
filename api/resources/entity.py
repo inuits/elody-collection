@@ -20,6 +20,8 @@ class Entity(BaseResource):
             *request.args.getlist("field"),
             *request.args.getlist("field[]"),
         ]
+        order_by = request.args.get("order_by", None)
+        ascending = request.args.get("asc", 1, int)
         filters = {}
         if request.args.get("only_own", 0, int) or self._only_own_items(
             ["read-entity-all"]
@@ -31,7 +33,9 @@ class Entity(BaseResource):
             filters["ids"] = ids.split(",")
         skip_relations = request.args.get("skip_relations", 0, int)
         type_filter = f"type={item_type}&" if item_type else ""
-        entities = self.storage.get_entities(skip, limit, skip_relations, filters)
+        entities = self.storage.get_entities(
+            skip, limit, skip_relations, filters, order_by, ascending
+        )
         entities["limit"] = limit
         if skip + limit < entities["count"]:
             entities[

@@ -141,6 +141,24 @@
                 "type": "string"
               }
             }
+          },
+          {
+            "name": "order_by",
+            "in": "query",
+            "description": "Field to order results on",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "asc",
+            "in": "query",
+            "description": "Sort direction, ascending when 1, descending when 0",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
           }
         ],
         "responses": {

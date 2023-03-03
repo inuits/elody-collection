@@ -51,9 +51,11 @@ class MongoStorageManager(GenericStorageManager):
     def __get_ids_query(self, ids):
         return {"$or": [{"_id": {"$in": ids}}, {"identifiers": {"$in": ids}}]}
 
-    def __get_items_from_collection_by_ids(self, collection, ids):
+    def __get_items_from_collection_by_ids(self, collection, ids, sort=None, asc=True):
         items = dict()
         documents = self.db[collection].find(self.__get_ids_query(ids))
+        if sort:
+            documents.sort(sort, pymongo.ASCENDING if asc else pymongo.DESCENDING)
         items["count"] = self.db[collection].count_documents(self.__get_ids_query(ids))
         items["results"] = list()
         for document in documents:
@@ -223,10 +225,22 @@ class MongoStorageManager(GenericStorageManager):
         relations = self.get_collection_item_sub_item(collection, id, "relations")
         return relations if relations else []
 
-    def get_entities(self, skip=0, limit=20, skip_relations=0, filters=None):
+    def get_entities(
+        self,
+        skip=0,
+        limit=20,
+        skip_relations=0,
+        filters=None,
+        order_by=None,
+        ascending=True,
+    ):
         if "ids" in filters:
-            return self.__get_items_from_collection_by_ids("entities", filters["ids"])
-        return self.get_items_from_collection("entities", skip, limit, filters)
+            return self.__get_items_from_collection_by_ids(
+                "entities", filters["ids"], order_by, ascending
+            )
+        return self.get_items_from_collection(
+            "entities", skip, limit, filters, None, order_by, ascending
+        )
 
     def get_history_for_item(self, collection, id, timestamp=None, all_entries=None):
         query = {
@@ -312,6 +326,8 @@ class MongoStorageManager(GenericStorageManager):
         else:
             documents = self.db[collection].find(skip=skip, limit=limit)
             count = self.db[collection].count_documents({})
+        if sort:
+            documents.sort(sort, pymongo.ASCENDING if asc else pymongo.DESCENDING)
         items["count"] = count
         items["results"] = list()
         for document in documents:
