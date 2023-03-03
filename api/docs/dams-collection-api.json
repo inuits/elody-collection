@@ -297,7 +297,10 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/filter"
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/filter"
+                }
               }
             }
           }
@@ -1583,7 +1586,10 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/filter"
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/filter"
+                }
               }
             }
           }
