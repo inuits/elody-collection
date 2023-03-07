@@ -44,11 +44,21 @@ class Mediafile(BaseResource):
     def post(self):
         content = request.get_json()
         self._abort_if_not_valid_json("Mediafile", content, mediafile_schema)
+
         content["user"] = dict(current_token).get("email", "default_uploader")
         content["date_created"] = str(datetime.now())
         content["version"] = 1
         mediafile = self.storage.save_item_to_collection("mediafiles", content)
-        return mediafile, 201
+
+        accept_header = request.headers.get("Accept")
+        if accept_header == "text/uri-list":
+            response = f"{self.storage_api_url}/upload/{mediafile['filename'].strip()}?id={util.get_raw_id(mediafile)}"
+        else:
+            response = mediafile
+
+        return self._create_response_according_accept_header(
+            response, accept_header, 201
+        )
 
 
 class MediafileAssets(BaseResource):
