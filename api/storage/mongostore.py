@@ -13,11 +13,14 @@ class MongoStorageManager(GenericStorageManager):
     character_replace_map = {".": "="}
 
     def __init__(self):
-        mongo_host = quote_plus(os.getenv("MONGO_DB_HOST", "mongo"))
-        mongo_port = int(os.getenv("MONGO_DB_PORT", 27017))
-        mongo_db = os.getenv("MONGO_DB_NAME", "dams")
-        client = MongoClient(mongo_host, mongo_port)
-        self.db = client[mongo_db]
+        self.mongo_db_name = os.getenv("MONGODB_DB_NAME", "dams")
+        self.mongo_hosts = os.getenv("MONGODB_HOSTS", "mongo").split(",")
+        self.mongo_port = int(os.getenv("MONGODB_PORT", 27017))
+        self.mongo_replica_set = os.getenv("MONGODB_REPLICA_SET")
+        self.mongo_username = os.getenv("MONGODB_USERNAME")
+        self.mongo_password = os.getenv("MONGODB_PASSWORD")
+        self.client = MongoClient(self.__create_mongo_connection_string())
+        self.db = self.client[self.mongo_db_name]
         self.db.entities.create_index("identifiers", unique=True)
         self.db.entities.create_index("object_id", unique=True, sparse=True)
 
@@ -31,6 +34,22 @@ class MongoStorageManager(GenericStorageManager):
             self.add_sub_item_to_collection_item(
                 collection, dst_id, "relations", dst_content
             )
+
+    def __create_mongo_connection_string(self):
+        connection_string = "mongodb://"
+        if self.mongo_username and self.mongo_password:
+            connection_string += (
+                f"{quote_plus(self.mongo_username)}:{quote_plus(self.mongo_password)}@"
+            )
+        for i in range(len(self.mongo_hosts)):
+            connection_string += f"{self.mongo_hosts[i]}:{self.mongo_port}"
+            if i < len(self.mongo_hosts) - 1:
+                connection_string += ","
+        if self.mongo_username and self.mongo_password:
+            connection_string += f"/?authSource={self.mongo_db_name}"
+            if self.mongo_replica_set:
+                connection_string += f"&replicaSet={self.mongo_replica_set}"
+        return connection_string
 
     def __delete_impacted_relations(self, collection, id):
         relations = self.get_collection_item_sub_item(collection, id, "relations")
