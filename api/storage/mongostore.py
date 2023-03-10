@@ -6,13 +6,14 @@ import uuid
 from datetime import datetime
 from pymongo import MongoClient
 from storage.genericstore import GenericStorageManager
+from urllib.parse import quote_plus
 
 
 class MongoStorageManager(GenericStorageManager):
     character_replace_map = {".": "="}
 
     def __init__(self):
-        mongo_host = os.getenv("MONGO_DB_HOST", "mongo")
+        mongo_host = quote_plus(os.getenv("MONGO_DB_HOST", "mongo"))
         mongo_port = int(os.getenv("MONGO_DB_PORT", 27017))
         mongo_db = os.getenv("MONGO_DB_NAME", "dams")
         client = MongoClient(mongo_host, mongo_port)
