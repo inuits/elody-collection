@@ -16,6 +16,14 @@
       "saved_search",
       "story_box",
       "user"
-    ]
+    ],
+    "policies": {
+      "authentication": [
+        "token_based_policies.authlib_flask_oauth2_policy"
+      ],
+      "authorization": [
+        "super_admin_policy"
+      ]
+    }
   }
 }
