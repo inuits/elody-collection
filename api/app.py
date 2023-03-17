@@ -8,7 +8,7 @@ from flask import Flask
 from flask_restful import Api
 from flask_swagger_ui import get_swaggerui_blueprint
 from healthcheck import HealthCheck
-#from inuits_jwt_auth.authorization import JWTValidator, MyResourceProtector
+from inuits_jwt_auth.authorization import JWTValidator, MyResourceProtector
 from inuits_policy_based_auth import PolicyFactory
 from storage.storagemanager import StorageManager
 
@@ -51,21 +51,21 @@ logger = logging.getLogger(__name__)
 rabbit = AmqpManager().get_amqp_manager()
 rabbit.init_app(app, "basic", json.loads, json.dumps)
 
-#require_oauth = MyResourceProtector(
-#    logger,
-#    os.getenv("REQUIRE_TOKEN", True) in ["True", "true", True],
-#)
-#validator = JWTValidator(
-#    logger,
-#    os.getenv("STATIC_ISSUER", False),
-#    os.getenv("STATIC_PUBLIC_KEY", False),
-#    os.getenv("REALMS", "").split(","),
-#    os.getenv("ROLE_PERMISSION_FILE", "role_permission.json"),
-#    os.getenv("SUPER_ADMIN_ROLE", "role_super_admin"),
-#    os.getenv("REMOTE_TOKEN_VALIDATION", False) in ["True", "true", True],
-#    os.getenv("REMOTE_PUBLIC_KEY", False),
-#)
-#require_oauth.register_token_validator(validator)
+require_oauth = MyResourceProtector(
+    logger,
+    os.getenv("REQUIRE_TOKEN", True) in ["True", "true", True],
+)
+validator = JWTValidator(
+    logger,
+    os.getenv("STATIC_ISSUER", False),
+    os.getenv("STATIC_PUBLIC_KEY", False),
+    os.getenv("REALMS", "").split(","),
+    os.getenv("ROLE_PERMISSION_FILE", "role_permission.json"),
+    os.getenv("SUPER_ADMIN_ROLE", "role_super_admin"),
+    os.getenv("REMOTE_TOKEN_VALIDATION", False) in ["True", "true", True],
+    os.getenv("REMOTE_PUBLIC_KEY", False),
+)
+require_oauth.register_token_validator(validator)
 
 app.register_blueprint(swaggerui_blueprint)
 
