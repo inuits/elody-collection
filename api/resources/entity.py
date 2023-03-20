@@ -1,17 +1,16 @@
-import app
 import mappers
 import util
 
+from app import policy_factory
 from datetime import datetime
 from flask import after_this_request, request
 from flask_restful import abort
-from inuits_jwt_auth.authorization import current_token
 from resources.base_resource import BaseResource
 from validator import entity_schema, mediafile_schema
 
 
 class Entity(BaseResource):
-    @app.require_oauth()
+    @policy_factory.authenticate()
     def get(self):
         accept_header = request.headers.get("Accept")
         skip = request.args.get("skip", 0, int)
@@ -26,7 +25,9 @@ class Entity(BaseResource):
         if request.args.get("only_own", 0, int) or self._only_own_items(
             ["read-entity-all"]
         ):
-            filters["user"] = dict(current_token).get("email", "default_uploader")
+            filters["user"] = (
+                policy_factory.get_user_context().email or "default_uploader"
+            )
         if item_type := request.args.get("type"):
             filters["type"] = item_type
         if ids := request.args.get("ids"):
@@ -56,7 +57,7 @@ class Entity(BaseResource):
             accept_header,
         )
 
-    @app.require_oauth()
+    @policy_factory.authenticate()
     def post(self):
         create_mediafile = request.args.get(
             "create_mediafile", 0, int
@@ -69,7 +70,7 @@ class Entity(BaseResource):
         if create_mediafile and not mediafile_filenames:
             return "Mediafile can't be created without filename", 400
         content = request.get_json()
-        user_id = dict(current_token).get("email", "default_uploader")
+        user_id = policy_factory.get_user_context().email or "default_uploader"
         entity = self._decorate_entity(content)
         entity["user"] = user_id
         entity["date_created"] = str(datetime.now())
@@ -97,7 +98,7 @@ class Entity(BaseResource):
 
 
 class EntityDetail(BaseResource):
-    @app.require_oauth()
+    @policy_factory.authenticate()
     def get(self, id):
         accept_header = request.headers.get("Accept")
         entity = self._abort_if_item_doesnt_exist("entities", id)
@@ -106,7 +107,9 @@ class EntityDetail(BaseResource):
             *request.args.getlist("field[]"),
         ]
         if self._only_own_items(["read-entity-detail-all"]):
-            self._abort_if_no_access(entity, current_token)
+            self._abort_if_no_access(
+                entity, policy_factory.get_user_context().auth_objects[0]
+            )
         entity = self._set_entity_mediafile_and_thumbnail(entity)
         if not request.args.get("skip_relations", 0, int):
             entity = self._add_relations_to_metadata(entity)
@@ -120,16 +123,17 @@ class EntityDetail(BaseResource):
             accept_header,
         )
 
-    @app.require_oauth()
+    @policy_factory.authenticate()
     def put(self, id):
+        user_context = policy_factory.get_user_context()
         entity = self._abort_if_item_doesnt_exist("entities", id)
         content = request.get_json()
         self._abort_if_not_valid_json("Entity", content, entity_schema)
         if self._only_own_items():
-            self._abort_if_no_access(entity, current_token)
+            self._abort_if_no_access(entity, user_context.auth_objects[0])
         content["date_updated"] = str(datetime.now())
         content["version"] = entity.get("version", 0) + 1
-        content["last_editor"] = dict(current_token).get("email", "default_uploader")
+        content["last_editor"] = user_context.email or "default_uploader"
         content["user"] = entity.get("user", content["last_editor"])
         content["date_created"] = entity.get("date_created", content["date_updated"])
         try:
@@ -141,15 +145,16 @@ class EntityDetail(BaseResource):
         util.signal_entity_changed(entity)
         return entity, 201
 
-    @app.require_oauth()
+    @policy_factory.authenticate()
     def patch(self, id):
+        user_context = policy_factory.get_user_context()
         entity = self._abort_if_item_doesnt_exist("entities", id)
         content = request.get_json()
         if self._only_own_items():
-            self._abort_if_no_access(entity, current_token)
+            self._abort_if_no_access(entity, user_context.auth_objects[0])
         content["date_updated"] = str(datetime.now())
         content["version"] = entity.get("version", 0) + 1
-        content["last_editor"] = dict(current_token).get("email", "default_uploader")
+        content["last_editor"] = user_context.email or "default_uploader"
         try:
             entity = self.storage.patch_item_from_collection(
                 "entities", util.get_raw_id(entity), content
@@ -159,18 +164,19 @@ class EntityDetail(BaseResource):
         util.signal_entity_changed(entity)
         return entity, 201
 
-    @app.require_oauth()
+    @policy_factory.authenticate()
     def delete(self, id):
+        token = policy_factory.get_user_context().auth_objects[0]
         entity = self._abort_if_item_doesnt_exist("entities", id)
         if self._only_own_items():
-            self._abort_if_no_access(entity, current_token)
+            self._abort_if_no_access(entity, token)
         if request.args.get("delete_mediafiles", 0, int):
             mediafiles = self.storage.get_collection_item_mediafiles(
                 "entities", util.get_raw_id(entity)
             )
             for mediafile in mediafiles:
                 if self._only_own_items():
-                    self._abort_if_no_access(mediafile, current_token, "mediafiles")
+                    self._abort_if_no_access(mediafile, token, "mediafiles")
                 self.storage.delete_item_from_collection(
                     "mediafiles", util.get_raw_id(mediafile)
                 )
@@ -180,11 +186,13 @@ class EntityDetail(BaseResource):
 
 
 class EntityMediafiles(BaseResource):
-    @app.require_oauth()
+    @policy_factory.authenticate()
     def get(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         if self._only_own_items(["read-entity-mediafiles-all"]):
-            self._abort_if_no_access(entity, current_token)
+            self._abort_if_no_access(
+                entity, policy_factory.get_user_context().auth_objects[0]
+            )
         mediafiles = self.storage.get_collection_item_mediafiles(
             "entities", util.get_raw_id(entity)
         )
@@ -202,8 +210,9 @@ class EntityMediafiles(BaseResource):
 
         return self._inject_api_urls_into_mediafiles(mediafiles)
 
-    @app.require_oauth()
+    @policy_factory.authenticate()
     def post(self, id):
+        token = policy_factory.get_user_context().auth_objects[0]
         entity = self._abort_if_item_doesnt_exist("entities", id)
         content = request.get_json()
         mediafiles = content if isinstance(content, list) else [content]
@@ -223,8 +232,8 @@ class EntityMediafiles(BaseResource):
                     "mediafiles", mediafile
                 )
             if self._only_own_items():
-                self._abort_if_no_access(entity, current_token)
-                self._abort_if_no_access(mediafile, current_token, "mediafiles")
+                self._abort_if_no_access(entity, token)
+                self._abort_if_no_access(mediafile, token, "mediafiles")
             mediafile = self.storage.add_mediafile_to_collection_item(
                 "entities",
                 util.get_raw_id(entity),
@@ -242,18 +251,19 @@ class EntityMediafiles(BaseResource):
 
 
 class EntityMediafilesCreate(BaseResource):
-    @app.require_oauth()
+    @policy_factory.authenticate()
     def post(self, id):
+        user_context = policy_factory.get_user_context()
         entity = self._abort_if_item_doesnt_exist("entities", id)
         content = request.get_json()
         self._abort_if_not_valid_json("Mediafile", content, mediafile_schema)
         if self._only_own_items():
-            self._abort_if_no_access(entity, current_token)
+            self._abort_if_no_access(entity, user_context.auth_objects[0])
         content["original_file_location"] = f'/download/{content["filename"]}'
         content[
             "thumbnail_file_location"
         ] = f'/iiif/3/{content["filename"]}/full/,150/0/default.jpg'
-        content["user"] = dict(current_token).get("email", "default_uploader")
+        content["user"] = user_context.email or "default_uploader"
         content["date_created"] = str(datetime.now())
         content["version"] = 1
         mediafile = self.storage.save_item_to_collection("mediafiles", content)
@@ -275,7 +285,7 @@ class EntityMediafilesCreate(BaseResource):
 
 
 class EntityMetadata(BaseResource):
-    @app.require_oauth()
+    @policy_factory.authenticate()
     def get(self, id):
         accept_header = request.headers.get("Accept")
         entity = self._abort_if_item_doesnt_exist("entities", id)
@@ -284,7 +294,9 @@ class EntityMetadata(BaseResource):
             *request.args.getlist("field[]"),
         ]
         if self._only_own_items(["read-entity-metadata-all"]):
-            self._abort_if_no_access(entity, current_token)
+            self._abort_if_no_access(
+                entity, policy_factory.get_user_context().auth_objects[0]
+            )
         metadata = self.storage.get_collection_item_sub_item(
             "entities", util.get_raw_id(entity), "metadata"
         )
@@ -295,36 +307,42 @@ class EntityMetadata(BaseResource):
             accept_header,
         )
 
-    @app.require_oauth()
+    @policy_factory.authenticate()
     def post(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         content = request.get_json()
         if self._only_own_items():
-            self._abort_if_no_access(entity, current_token)
+            self._abort_if_no_access(
+                entity, policy_factory.get_user_context().auth_objects[0]
+            )
         metadata = self.storage.add_sub_item_to_collection_item(
             "entities", util.get_raw_id(entity), "metadata", content
         )
         util.signal_entity_changed(entity)
         return metadata, 201
 
-    @app.require_oauth()
+    @policy_factory.authenticate()
     def put(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         content = request.get_json()
         if self._only_own_items():
-            self._abort_if_no_access(entity, current_token)
+            self._abort_if_no_access(
+                entity, policy_factory.get_user_context().auth_objects[0]
+            )
         metadata = self.storage.update_collection_item_sub_item(
             "entities", util.get_raw_id(entity), "metadata", content
         )
         util.signal_entity_changed(entity)
         return metadata, 201
 
-    @app.require_oauth()
+    @policy_factory.authenticate()
     def patch(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         content = request.get_json()
         if self._only_own_items():
-            self._abort_if_no_access(entity, current_token)
+            self._abort_if_no_access(
+                entity, policy_factory.get_user_context().auth_objects[0]
+            )
         metadata = self.storage.patch_collection_item_metadata(
             "entities", util.get_raw_id(entity), content
         )
@@ -335,21 +353,25 @@ class EntityMetadata(BaseResource):
 
 
 class EntityMetadataKey(BaseResource):
-    @app.require_oauth()
+    @policy_factory.authenticate()
     def get(self, id, key):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         if self._only_own_items(["read-entity-metadata-key-all"]):
-            self._abort_if_no_access(entity, current_token)
+            self._abort_if_no_access(
+                entity, policy_factory.get_user_context().auth_objects[0]
+            )
         metadata = self.storage.get_collection_item_sub_item_key(
             "entities", util.get_raw_id(entity), "metadata", key
         )
         return metadata
 
-    @app.require_oauth()
+    @policy_factory.authenticate()
     def delete(self, id, key):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         if self._only_own_items():
-            self._abort_if_no_access(entity, current_token)
+            self._abort_if_no_access(
+                entity, policy_factory.get_user_context().auth_objects[0]
+            )
         self.storage.delete_collection_item_sub_item_key(
             "entities", util.get_raw_id(entity), "metadata", key
         )
@@ -358,11 +380,13 @@ class EntityMetadataKey(BaseResource):
 
 
 class EntityRelations(BaseResource):
-    @app.require_oauth()
+    @policy_factory.authenticate()
     def get(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         if self._only_own_items(["read-entity-relations-all"]):
-            self._abort_if_no_access(entity, current_token)
+            self._abort_if_no_access(
+                entity, policy_factory.get_user_context().auth_objects[0]
+            )
 
         @after_this_request
         def add_header(response):
@@ -373,48 +397,56 @@ class EntityRelations(BaseResource):
             "entities", util.get_raw_id(entity)
         )
 
-    @app.require_oauth()
+    @policy_factory.authenticate()
     def post(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         content = request.get_json()
         if self._only_own_items():
-            self._abort_if_no_access(entity, current_token)
+            self._abort_if_no_access(
+                entity, policy_factory.get_user_context().auth_objects[0]
+            )
         relations = self.storage.add_relations_to_collection_item(
             "entities", util.get_raw_id(entity), content
         )
         util.signal_entity_changed(entity)
         return relations, 201
 
-    @app.require_oauth()
+    @policy_factory.authenticate()
     def put(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         content = request.get_json()
         if self._only_own_items():
-            self._abort_if_no_access(entity, current_token)
+            self._abort_if_no_access(
+                entity, policy_factory.get_user_context().auth_objects[0]
+            )
         relations = self.storage.update_collection_item_relations(
             "entities", util.get_raw_id(entity), content
         )
         util.signal_entity_changed(entity)
         return relations, 201
 
-    @app.require_oauth()
+    @policy_factory.authenticate()
     def patch(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         content = request.get_json()
         if self._only_own_items():
-            self._abort_if_no_access(entity, current_token)
+            self._abort_if_no_access(
+                entity, policy_factory.get_user_context().auth_objects[0]
+            )
         relations = self.storage.patch_collection_item_relations(
             "entities", util.get_raw_id(entity), content
         )
         util.signal_entity_changed(entity)
         return relations, 201
 
-    @app.require_oauth()
+    @policy_factory.authenticate()
     def delete(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         content = request.get_json()
         if self._only_own_items():
-            self._abort_if_no_access(entity, current_token)
+            self._abort_if_no_access(
+                entity, policy_factory.get_user_context().auth_objects[0]
+            )
         self.storage.delete_collection_item_relations(
             "entities", util.get_raw_id(entity), content
         )
@@ -423,11 +455,13 @@ class EntityRelations(BaseResource):
 
 
 class EntityRelationsAll(BaseResource):
-    @app.require_oauth()
+    @policy_factory.authenticate()
     def get(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         if self._only_own_items(["read-entity-relations-all"]):
-            self._abort_if_no_access(entity, current_token)
+            self._abort_if_no_access(
+                entity, policy_factory.get_user_context().auth_objects[0]
+            )
 
         @after_this_request
         def add_header(response):
@@ -440,13 +474,14 @@ class EntityRelationsAll(BaseResource):
 
 
 class EntitySetPrimaryMediafile(BaseResource):
-    @app.require_oauth()
+    @policy_factory.authenticate()
     def put(self, id, mediafile_id):
+        token = policy_factory.get_user_context().auth_objects[0]
         entity = self._abort_if_item_doesnt_exist("entities", id)
         mediafile = self._abort_if_item_doesnt_exist("mediafiles", mediafile_id)
         if self._only_own_items():
-            self._abort_if_no_access(entity, current_token)
-            self._abort_if_no_access(mediafile, current_token, "mediafiles")
+            self._abort_if_no_access(entity, token)
+            self._abort_if_no_access(mediafile, token, "mediafiles")
         if not util.mediafile_is_public(mediafile):
             abort(400, message=f"Mediafile with id {mediafile_id} is not public")
         self.storage.set_primary_field_collection_item(
@@ -457,13 +492,14 @@ class EntitySetPrimaryMediafile(BaseResource):
 
 
 class EntitySetPrimaryThumbnail(BaseResource):
-    @app.require_oauth()
+    @policy_factory.authenticate()
     def put(self, id, mediafile_id):
+        token = policy_factory.get_user_context().auth_objects[0]
         entity = self._abort_if_item_doesnt_exist("entities", id)
         mediafile = self._abort_if_item_doesnt_exist("mediafiles", mediafile_id)
         if self._only_own_items():
-            self._abort_if_no_access(entity, current_token)
-            self._abort_if_no_access(mediafile, current_token, "mediafiles")
+            self._abort_if_no_access(entity, token)
+            self._abort_if_no_access(mediafile, token, "mediafiles")
         if not util.mediafile_is_public(mediafile):
             abort(400, message=f"Mediafile with id {mediafile_id} is not public")
         self.storage.set_primary_field_collection_item(
