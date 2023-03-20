@@ -8,8 +8,8 @@ from flask_restful import Api
 from flask_swagger_ui import get_swaggerui_blueprint
 from healthcheck import HealthCheck
 from inuits_jwt_auth.authorization import JWTValidator, MyResourceProtector
-from rabbitmq_pika_flask import RabbitMQ
 from storage.storagemanager import StorageManager
+from amqp.amqpmanager import AmqpManager
 
 if os.getenv("SENTRY_ENABLED", False) in ["True", "true", True]:
     import sentry_sdk
@@ -47,7 +47,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-rabbit = RabbitMQ()
+rabbit = AmqpManager().get_amqp_manager()
 rabbit.init_app(app, "basic", json.loads, json.dumps)
 
 require_oauth = MyResourceProtector(
