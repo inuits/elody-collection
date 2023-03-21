@@ -1,5 +1,6 @@
 import os
 
+from amqp.amqpstormmanager import AmqpStormManager
 from util import Singleton
 from amqp.pikamanager import PikaAmqpManager
 
@@ -14,5 +15,6 @@ class AmqpManager(metaclass=Singleton):
 
     def _init_amqp_managers(self):
         self.amqp_manager = {
-            "pika": PikaAmqpManager
+            "pika": PikaAmqpManager,
+            "amqpstorm": AmqpStormManager
         }.get(self.amqp_manager_name)()
