@@ -68,7 +68,7 @@ class MediafileAssets(BaseResource):
         if self._only_own_items():
             self._abort_if_no_access(
                 mediafile,
-                policy_factory.get_user_context().auth_objects[0],
+                policy_factory.get_user_context().auth_objects.get("token"),
                 "mediafiles",
             )
         entities = []
@@ -87,7 +87,7 @@ class MediafileCopyright(BaseResource):
     def get(self, id):
         mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
         if not self._only_own_items() or self._is_owner_of_item(
-            mediafile, policy_factory.get_user_context().auth_objects[0]
+            mediafile, policy_factory.get_user_context().auth_objects.get("token")
         ):
             return "full", 200
         if not util.mediafile_is_public(mediafile):
@@ -105,7 +105,7 @@ class MediafileDetail(BaseResource):
         if self._only_own_items() and not util.mediafile_is_public(mediafile):
             self._abort_if_no_access(
                 mediafile,
-                policy_factory.get_user_context().auth_objects[0],
+                policy_factory.get_user_context().auth_objects.get("token"),
                 "mediafiles",
             )
         if request.args.get("raw"):
@@ -120,7 +120,7 @@ class MediafileDetail(BaseResource):
         self._abort_if_not_valid_json("Mediafile", content, mediafile_schema)
         if self._only_own_items():
             self._abort_if_no_access(
-                old_mediafile, user_context.auth_objects[0], "mediafiles"
+                old_mediafile, user_context.auth_objects.get("token"), "mediafiles"
             )
         content["date_updated"] = str(datetime.now())
         content["version"] = old_mediafile.get("version", 0) + 1
@@ -138,7 +138,7 @@ class MediafileDetail(BaseResource):
         content = request.get_json()
         if self._only_own_items():
             self._abort_if_no_access(
-                old_mediafile, user_context.auth_objects[0], "mediafiles"
+                old_mediafile, user_context.auth_objects.get("token"), "mediafiles"
             )
         content["date_updated"] = str(datetime.now())
         content["version"] = old_mediafile.get("version", 0) + 1
@@ -155,7 +155,7 @@ class MediafileDetail(BaseResource):
         if self._only_own_items():
             self._abort_if_no_access(
                 mediafile,
-                policy_factory.get_user_context().auth_objects[0],
+                policy_factory.get_user_context().auth_objects.get("token"),
                 "mediafiles",
             )
         linked_entities = self.storage.get_mediafile_linked_entities(mediafile)

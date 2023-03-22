@@ -56,7 +56,7 @@ class SavedSearchDetail(BaseResource):
         saved_search = self._abort_if_item_doesnt_exist("abstracts", id)
         self._abort_if_not_valid_type(saved_search, "saved_search")
         if self._only_own_items(["read-saved-search-detail-all"]):
-            self._abort_if_no_access(saved_search, policy_factory.get_user_context().auth_objects[0])
+            self._abort_if_no_access(saved_search, policy_factory.get_user_context().auth_objects.get("token"))
         return saved_search
 
     @policy_factory.authenticate()
@@ -66,7 +66,7 @@ class SavedSearchDetail(BaseResource):
         content = request.get_json()
         self._abort_if_not_valid_json("Saved search", content, saved_search_schema)
         if self._only_own_items():
-            self._abort_if_no_access(saved_search, policy_factory.get_user_context().auth_objects[0])
+            self._abort_if_no_access(saved_search, policy_factory.get_user_context().auth_objects.get("token"))
         content["date_updated"] = str(datetime.now())
         content["version"] = saved_search.get("version", 0) + 1
         try:
@@ -83,7 +83,7 @@ class SavedSearchDetail(BaseResource):
         self._abort_if_not_valid_type(saved_search, "saved_search")
         content = request.get_json()
         if self._only_own_items():
-            self._abort_if_no_access(saved_search, policy_factory.get_user_context().auth_objects[0])
+            self._abort_if_no_access(saved_search, policy_factory.get_user_context().auth_objects.get("token"))
         content["date_updated"] = str(datetime.now())
         content["version"] = saved_search.get("version", 0) + 1
         try:
@@ -99,7 +99,7 @@ class SavedSearchDetail(BaseResource):
         saved_search = self._abort_if_item_doesnt_exist("abstracts", id)
         self._abort_if_not_valid_type(saved_search, "saved_search")
         if self._only_own_items():
-            self._abort_if_no_access(saved_search, policy_factory.get_user_context().auth_objects[0])
+            self._abort_if_no_access(saved_search, policy_factory.get_user_context().auth_objects.get("token"))
         self.storage.delete_item_from_collection(
             "abstracts", util.get_raw_id(saved_search)
         )
