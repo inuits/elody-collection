@@ -1,6 +1,6 @@
-import app
 import util
 
+from app import policy_factory
 from resources.base_resource import BaseResource
 
 
@@ -44,22 +44,16 @@ class Config(BaseResource):
     def __get_allowed_filters(self):
         allowed_filters = dict()
         filters = util.read_json_as_dict("filters_new.json")
-        permissions = app.require_oauth.get_token_permissions(
-            app.validator.role_permission_mapping
-        )
+        permissions = policy_factory.get_user_context().scopes
         for collection, collection_filters in filters.items():
             allowed_filters[collection] = list()
             for filter in collection_filters:
                 filter_permission = f"filter-on-{filter['key'].replace('_', '-')}"
-                if (
-                    not app.require_oauth.require_token
-                    or filter_permission in permissions
-                    or app.require_oauth.check_permission(filter_permission)
-                ):
+                if filter_permission in permissions:
                     allowed_filters[collection].append(filter)
         return allowed_filters
 
-    @app.require_oauth()
+    @policy_factory.authenticate()
     def get(self):
         config = dict()
         for collection, keys in self.keys_for_config.items():
