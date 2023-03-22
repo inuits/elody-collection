@@ -4,7 +4,7 @@ from storage.arangostore import ArangoStorageManager
 
 
 class ArangoFilters(ArangoStorageManager):
-    def filter(self, output_type, body, skip, limit, collection="entities"):
+    def filter(self, body, skip, limit, collection="entities"):
         aql = self.__generate_aql_query(body, collection)
         bind = {"skip": skip, "limit": limit}
         results = self.db.aql.execute(aql, bind_vars=bind, full_count=True)

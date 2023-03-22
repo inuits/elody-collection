@@ -2,6 +2,7 @@ import json
 import logging
 import os
 
+from amqp.amqpmanager import AmqpManager
 from apps.loader import load_apps
 from flask import Flask
 from flask_restful import Api
@@ -9,7 +10,6 @@ from flask_swagger_ui import get_swaggerui_blueprint
 from healthcheck import HealthCheck
 from inuits_jwt_auth.authorization import JWTValidator, MyResourceProtector
 from storage.storagemanager import StorageManager
-from amqp.amqpmanager import AmqpManager
 
 if os.getenv("SENTRY_ENABLED", False) in ["True", "true", True]:
     import sentry_sdk

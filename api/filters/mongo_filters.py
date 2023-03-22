@@ -13,7 +13,7 @@ class MongoFilters(MongoStorageManager):
         "<=": "$lte",
     }
 
-    def filter(self, output_type, body, skip, limit, collection="entities"):
+    def filter(self, body, skip, limit, collection="entities"):
         items = {"count": 0, "results": list()}
         pipeline = self.__generate_aggregation_pipeline(body, collection)
         pipeline_count = pipeline + [{"$count": "count"}]

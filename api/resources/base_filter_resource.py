@@ -22,7 +22,7 @@ class BaseFilterResource(BaseResource):
             abort(500, message="Failed to init search engine")
         self.validate_advanced_query_syntax(query)
 
-        items = self.filter_engine.filter("", query, skip, limit, collection)
+        items = self.filter_engine.filter(query, skip, limit, collection)
         if skip + limit < items["count"]:
             items["next"] = f"/{collection}/filter?skip={skip + limit}&limit={limit}"
         if skip > 0:

@@ -8,7 +8,7 @@ def can_append_key(key, fields):
     return key in fields
 
 
-def csv_writter(header, rows):
+def csv_writer(header, rows):
     output = io.StringIO()
     writer = csv.writer(output)
     writer.writerow(header)
@@ -55,7 +55,7 @@ def map_entities_to_csv(entities, fields=None):
                 values[0][i] = None
         values[0] = dict(sorted(values[0].items()))
         root_values += [list(row.values()) for row in values]
-    return csv_writter(keys, root_values)
+    return csv_writer(keys, root_values)
 
 
 def map_entity_to_csv(entity, fields=None):
@@ -83,7 +83,7 @@ def map_entity_to_csv(entity, fields=None):
             continue
         keys.append(label)
         values[0].append(relation.get("key"))
-    return csv_writter(keys, values)
+    return csv_writer(keys, values)
 
 
 def map_metadata_to_csv(metadata, fields=None):
@@ -95,7 +95,7 @@ def map_metadata_to_csv(metadata, fields=None):
             continue
         keys.append(key)
         values.append(field.get("value"))
-    return csv_writter(keys, [values])
+    return csv_writer(keys, [values])
 
 
 def map_to_csv(data, data_type, fields=None):
