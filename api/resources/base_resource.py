@@ -1,7 +1,7 @@
-import app
 import os
 import util
 
+from app import policy_factory
 from datetime import datetime
 from flask import Response
 from flask_restful import Resource, abort
@@ -137,7 +137,7 @@ class BaseResource(Resource):
         all_permissions = ["show-all"]
         if permissions:
             all_permissions = [*all_permissions, *permissions]
-        if app.require_oauth.check_permissions(all_permissions):
+        if all_permissions in policy_factory.get_user_context().scopes:
             return False
         return True
 

@@ -17,7 +17,9 @@ class SavedSearch(BaseResource):
         if request.args.get("only_own", 0, int) or self._only_own_items(
             ["read-saved-search-all"]
         ):
-            filters["user_or_public"] = policy_factory.get_user_context().email or "default_uploader"
+            filters["user_or_public"] = (
+                policy_factory.get_user_context().email or "default_uploader"
+            )
         if ids := request.args.get("ids"):
             filters["ids"] = ids.split(",")
         if title := request.args.get("title"):
@@ -56,7 +58,10 @@ class SavedSearchDetail(BaseResource):
         saved_search = self._abort_if_item_doesnt_exist("abstracts", id)
         self._abort_if_not_valid_type(saved_search, "saved_search")
         if self._only_own_items(["read-saved-search-detail-all"]):
-            self._abort_if_no_access(saved_search, policy_factory.get_user_context().auth_objects.get("token"))
+            self._abort_if_no_access(
+                saved_search,
+                policy_factory.get_user_context().auth_objects.get("token"),
+            )
         return saved_search
 
     @policy_factory.authenticate()
@@ -66,7 +71,10 @@ class SavedSearchDetail(BaseResource):
         content = request.get_json()
         self._abort_if_not_valid_json("Saved search", content, saved_search_schema)
         if self._only_own_items():
-            self._abort_if_no_access(saved_search, policy_factory.get_user_context().auth_objects.get("token"))
+            self._abort_if_no_access(
+                saved_search,
+                policy_factory.get_user_context().auth_objects.get("token"),
+            )
         content["date_updated"] = str(datetime.now())
         content["version"] = saved_search.get("version", 0) + 1
         try:
@@ -83,7 +91,10 @@ class SavedSearchDetail(BaseResource):
         self._abort_if_not_valid_type(saved_search, "saved_search")
         content = request.get_json()
         if self._only_own_items():
-            self._abort_if_no_access(saved_search, policy_factory.get_user_context().auth_objects.get("token"))
+            self._abort_if_no_access(
+                saved_search,
+                policy_factory.get_user_context().auth_objects.get("token"),
+            )
         content["date_updated"] = str(datetime.now())
         content["version"] = saved_search.get("version", 0) + 1
         try:
@@ -99,7 +110,10 @@ class SavedSearchDetail(BaseResource):
         saved_search = self._abort_if_item_doesnt_exist("abstracts", id)
         self._abort_if_not_valid_type(saved_search, "saved_search")
         if self._only_own_items():
-            self._abort_if_no_access(saved_search, policy_factory.get_user_context().auth_objects.get("token"))
+            self._abort_if_no_access(
+                saved_search,
+                policy_factory.get_user_context().auth_objects.get("token"),
+            )
         self.storage.delete_item_from_collection(
             "abstracts", util.get_raw_id(saved_search)
         )
