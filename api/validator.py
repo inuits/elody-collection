@@ -70,7 +70,7 @@ entity_schema = {
             "properties": {
                 "@context": {
                     "$id": "#/properties/data/properties/%40context",
-                    "type": "array",
+                    "type": ["array", "string"],
                     "default": [],
                     "additionalItems": True,
                     "items": {"$id": "#/properties/data/properties/%40context/items"},
