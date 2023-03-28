@@ -369,6 +369,8 @@ class MongoStorageManager(GenericStorageManager):
         return linked_entities
 
     def get_metadata_values_for_collection_item_by_key(self, collection, key):
+        if key in ["type"]:
+            return self.db[collection].distinct(key)
         distinct_values = list()
         aggregation = self.db[collection].aggregate(
             [

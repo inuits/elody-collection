@@ -511,13 +511,20 @@ class ArangoStorageManager(GenericStorageManager):
         return linked_entities
 
     def get_metadata_values_for_collection_item_by_key(self, collection, key):
-        aql = """
-            FOR c IN @@collection
-                FILTER c.metadata != NULL
-                FOR metadata IN c.metadata
-                    FILTER metadata.key == @key
-                    RETURN DISTINCT(metadata.value)
-        """
+        if key not in ["type"]:
+            aql = """
+                FOR c IN @@collection
+                    FILTER c.metadata != NULL
+                    FOR metadata IN c.metadata
+                        FILTER metadata.key == @key
+                        RETURN DISTINCT(metadata.value)
+            """
+        else:
+            aql = """
+                FOR c IN @@collection
+                    FILTER c.@key != NULL
+                    RETURN DISTINCT(@key)
+            """
         bind = {"@collection": collection, "key": key}
         results = self.db.aql.execute(aql, bind_vars=bind)
         return list(results)

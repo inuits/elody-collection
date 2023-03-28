@@ -10,6 +10,7 @@ class Config(BaseResource):
         "publication_status": "entities_publication_status_values",
         "rights": "mediafiles_rights_values",
         "source": "mediafiles_source_values",
+        "type": "entities_type_values",
     }
     hard_coded_values = {
         "publication_status": [
@@ -23,7 +24,7 @@ class Config(BaseResource):
     }
     keys_for_config = {
         "mediafiles": ["publication_status", "rights", "source"],
-        "entities": ["publication_status"],
+        "entities": ["publication_status", "type"],
     }
 
     def __add_options_to_filters(self, options, filters, filter_options_map):
