@@ -51,7 +51,7 @@ class MongoFilters(MongoStorageManager):
             }
         ]
         for query in queries:
-            if query.get("type") == "TextInput" and "value" in query:
+            if query.get("type") == "TextInput":
                 pipeline += self.__generate_text_input_query(query)
             elif query.get("type") == "MultiSelectInput":
                 pipeline += self.__generate_multi_select_input_query(query)
