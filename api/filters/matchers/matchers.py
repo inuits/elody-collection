@@ -15,13 +15,13 @@ class BaseMatcher(ABC):
         )()  # type: ignore
 
     @abstractmethod
-    def match(self, filter_request: dict):
+    def match(self, key: str, value: str, sub_key: str = "", **kwargs):
         pass
 
 
-class ExactMatcher(BaseMatcher):
+class CaseInsensitiveMatcher(BaseMatcher):
     def __init__(self):
         super().__init__()
 
-    def match(self, filter_request_body: dict):
-        self.matcher_engine.exact_match(filter_request_body)
+    def match(self, key, value, sub_key, **_):
+        self.matcher_engine.case_insensitive(key, value, sub_key)

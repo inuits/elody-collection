@@ -3,5 +3,5 @@ from abc import ABC, abstractmethod
 
 class BaseMatchers(ABC):
     @abstractmethod
-    def exact_match(self, filter_request_body: dict):
+    def case_insensitive(self, key: str, value: str, sub_key: str = ""):
         pass
