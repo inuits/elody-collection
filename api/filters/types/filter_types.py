@@ -2,7 +2,12 @@ import os
 
 from abc import ABC, abstractmethod
 from filters.matchers.matchers import BaseMatcher
-from filters.matchers.matchers import CaseInsensitiveMatcher
+from filters.matchers.matchers import (
+    ExactMatcher,
+    ContainsMatcher,
+    AnyMatcher,
+    NoneMatcher,
+)
 from filters.types.base_filter_type_query_generator import BaseFilterTypeQueryGenerator
 from filters.types.mongo_filter_type_query_generator import (
     MongoFilterTypeQueryGenerator,
@@ -35,7 +40,14 @@ class BaseFilterType(ABC):
 class TextFilterType(BaseFilterType):
     def __init__(self):
         super().__init__()
-        self.matchers.update({"case_insensitive": CaseInsensitiveMatcher})
+        self.matchers.update(
+            {
+                "exact": ExactMatcher,
+                "contains": ContainsMatcher,
+                "any": AnyMatcher,
+                "none": NoneMatcher,
+            }
+        )
 
     def generate_query(self, filter_criteria: dict):
         return self.filter_type_engine.generate_query_for_text_filter_type(

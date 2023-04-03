@@ -18,43 +18,36 @@ class MongoFilterTypeQueryGenerator(BaseFilterTypeQueryGenerator):
 
         if filter_criteria["key"] in root_fields:
             sub_pipeline.append(
-                matchers["case_insensitive"]().match(
+                matchers["contains"]().match(
                     filter_criteria["key"], filter_criteria["value"]
                 )
             )
         else:
-            match_exact = filter_criteria.get("match_exact")
-            operator = (
-                filter_criteria.get("operator")
-                and filter_criteria["operator"] in self.operator_map
-            )
             key_value_matcher_map = {
                 "label": {
                     "value": filter_criteria["label"],
-                    "matcher": "case_insensitive",
+                    "matcher": "contains",
                 },
                 "key": {"value": filter_criteria["key"], "matcher": "exact"},
                 "value": {
                     "value": filter_criteria["value"],
                     "matcher": "exact"
-                    if match_exact
-                    else "operator"
-                    if operator
-                    else "case_insensitive",
+                    if filter_criteria.get("match_exact")
+                    else "any"
+                    if filter_criteria["value"] == "*"
+                    else "none"
+                    if filter_criteria["value"] == ""
+                    else "contains",
                 },
             }
 
             for key, mapping in key_value_matcher_map.items():
-                sub_pipeline.append(
-                    matchers[mapping["matcher"]]().match(
-                        "metadata",
-                        mapping["value"],
-                        key,
-                        operator=self.operator_map[filter_criteria["operator"]]
-                        if operator
-                        else None,
+                if key in filter_criteria:
+                    sub_pipeline.append(
+                        matchers[mapping["matcher"]]().match(
+                            key, mapping["value"], "metadata"
+                        )
                     )
-                )
 
         return sub_pipeline
 

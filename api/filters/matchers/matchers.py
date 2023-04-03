@@ -15,13 +15,41 @@ class BaseMatcher(ABC):
         )()  # type: ignore
 
     @abstractmethod
-    def match(self, key: str, value: str, sub_key: str = "", **kwargs):
+    def match(self, key: str, value: str, parent_key: str = "", **kwargs):
         pass
 
 
-class CaseInsensitiveMatcher(BaseMatcher):
+class ExactMatcher(BaseMatcher):
     def __init__(self):
         super().__init__()
 
-    def match(self, key, value, sub_key, **_):
-        self.matcher_engine.case_insensitive(key, value, sub_key)
+    def match(self, key, value, parent_key, **_):
+        self.matcher_engine.exact(key, value, parent_key)
+
+
+class ContainsMatcher(BaseMatcher):
+    def __init__(self):
+        super().__init__()
+
+    def match(self, key, value, parent_key, **_):
+        self.matcher_engine.contains(key, value, parent_key)
+
+
+class AnyMatcher(BaseMatcher):
+    def __init__(self):
+        super().__init__()
+
+    def match(self, key, value, parent_key, **_):
+        self.matcher_engine.any(key)
+        del value
+        del parent_key
+
+
+class NoneMatcher(BaseMatcher):
+    def __init__(self):
+        super().__init__()
+
+    def match(self, key, value, parent_key, **_):
+        self.matcher_engine.none(key)
+        del value
+        del parent_key
