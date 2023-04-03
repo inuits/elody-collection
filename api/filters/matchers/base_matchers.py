@@ -2,6 +2,12 @@ from abc import ABC, abstractmethod
 
 
 class BaseMatchers(ABC):
+    separator = "|"
+
+    @abstractmethod
+    def id(self, key: str, value: str):
+        pass
+
     @abstractmethod
     def exact(self, key: str, value: str, parent_key: str = ""):
         pass

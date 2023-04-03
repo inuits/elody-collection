@@ -19,6 +19,15 @@ class BaseMatcher(ABC):
         pass
 
 
+class IdMatcher(BaseMatcher):
+    def __init__(self):
+        super().__init__()
+
+    def match(self, key, value, parent_key, **_):
+        self.matcher_engine.id(key, value)
+        del parent_key
+
+
 class ExactMatcher(BaseMatcher):
     def __init__(self):
         super().__init__()

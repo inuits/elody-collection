@@ -1,3 +1,4 @@
+from filters.matchers.base_matchers import BaseMatchers
 from filters.types.base_filter_type_query_generator import BaseFilterTypeQueryGenerator
 
 
@@ -11,6 +12,33 @@ class MongoFilterTypeQueryGenerator(BaseFilterTypeQueryGenerator):
             ">=": "$gte",
             "<=": "$lte",
         }
+
+    def generate_query_for_id_filter_type(self, matchers, filter_criteria):
+        if filter_criteria.get("key") != "identifiers":
+            return list()
+
+        sub_pipeline = self.__add_helper_queries(filter_criteria)
+        if isinstance(filter_criteria["value"], list):
+            sub_pipeline.append(
+                matchers["id"]().match(
+                    filter_criteria["key"],
+                    str.join(BaseMatchers.separator, filter_criteria["value"]),
+                )
+            )
+        elif filter_criteria.get("match_exact"):
+            sub_pipeline.append(
+                matchers["exact"]().match(
+                    filter_criteria["key"], filter_criteria["value"]
+                )
+            )
+        else:
+            sub_pipeline.append(
+                matchers["contains"]().match(
+                    filter_criteria["key"], filter_criteria["value"]
+                )
+            )
+
+        return sub_pipeline
 
     def generate_query_for_text_filter_type(self, matchers, filter_criteria):
         root_fields = ["filename", "mimetype"]

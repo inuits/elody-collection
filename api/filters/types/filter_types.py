@@ -3,6 +3,7 @@ import os
 from abc import ABC, abstractmethod
 from filters.matchers.matchers import BaseMatcher
 from filters.matchers.matchers import (
+    IdMatcher,
     ExactMatcher,
     ContainsMatcher,
     AnyMatcher,
@@ -35,6 +36,23 @@ class BaseFilterType(ABC):
     @abstractmethod
     def generate_query(self, filter_criteria: dict):
         pass
+
+
+class IdFilterType(BaseFilterType):
+    def __init__(self):
+        super().__init__()
+        self.matchers.update(
+            {
+                "id": IdMatcher,
+                "exact": ExactMatcher,
+                "contains": ContainsMatcher,
+            }
+        )
+
+    def generate_query(self, filter_criteria: dict):
+        return self.filter_type_engine.generate_query_for_id_filter_type(
+            self.matchers, filter_criteria
+        )
 
 
 class TextFilterType(BaseFilterType):
