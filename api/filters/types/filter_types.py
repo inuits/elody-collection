@@ -17,6 +17,8 @@ from typing import Type
 
 
 def get_filter(input_type: str):
+    if input_type == "IdInput":
+        return IdFilterType()
     if input_type == "TextInput":
         return TextFilterType()
 
