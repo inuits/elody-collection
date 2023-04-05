@@ -70,6 +70,18 @@ class MongoFilterTypeQueryGenerator(BaseFilterTypeQueryGenerator):
             included=value.get("included", False),
         )
 
+    def generate_query_for_selection_filter_type(self, matchers, filter_criteria):
+        return self.__apply_matchers(
+            self.__add_helper_queries(filter_criteria),
+            matchers,
+            filter_criteria["key"],
+            filter_criteria["value"],
+            "metadata"
+            if filter_criteria["key"] in ["rights", "source", "publication_status"]
+            else "relationDocuments.metadata",
+            match_exact=filter_criteria.get("match_exact"),
+        )
+
     def __add_helper_queries(self, filter_criteria):
         sub_pipeline = list()
 
@@ -98,7 +110,7 @@ class MongoFilterTypeQueryGenerator(BaseFilterTypeQueryGenerator):
         self,
         sub_pipeline: list,
         matchers: dict[str, Type[BaseMatcher]],
-        key: str,
+        key: str | list[str],
         value,
         parent_key: str = "",
         **kwargs

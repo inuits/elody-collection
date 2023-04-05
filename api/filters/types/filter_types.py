@@ -30,6 +30,8 @@ def get_filter(input_type: str):
         return DateFilterType()
     if input_type == "NumberInput":
         return NumberFilterType()
+    if input_type == "SelectionInput":
+        return SelectionFilterType()
 
     raise ValueError(f"No filter defined for input type '{input_type}'")
 
@@ -120,5 +122,22 @@ class NumberFilterType(BaseFilterType):
 
     def generate_query(self, filter_criteria: dict):
         return self.filter_type_engine.generate_query_for_number_filter_type(
+            self.matchers, filter_criteria
+        )
+
+
+class SelectionFilterType(BaseFilterType):
+    def __init__(self):
+        super().__init__()
+        self.matchers.update(
+            {
+                "exact": ExactMatcher,
+                "any": AnyMatcher,
+                "none": NoneMatcher,
+            }
+        )
+
+    def generate_query(self, filter_criteria: dict):
+        return self.filter_type_engine.generate_query_for_selection_filter_type(
             self.matchers, filter_criteria
         )

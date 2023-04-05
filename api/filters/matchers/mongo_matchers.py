@@ -9,6 +9,8 @@ class MongoMatchers(BaseMatchers):
         return {"$match": {"$or": match_values}}
 
     def exact(self, key, value, parent_key):
+        if isinstance(value, list):
+            return {"$match": {parent_key: {"$elemMatch": {key: {"$in": value}}}}}
         return self.__exact_contains_match(key, value, parent_key)
 
     def contains(self, key, value, parent_key):
@@ -43,16 +45,14 @@ class MongoMatchers(BaseMatchers):
     ):
         if parent_key:
             return {"$match": {parent_key: {"$elemMatch": {key: value}}}}
-        else:
-            return {"$match": {key: value}}
+        return {"$match": {key: value}}
 
     def __determine_range_relations_match(
         self, key: str | list[str], value: dict, parent_key: str
     ):
         if isinstance(key, str):
             return self.__range_match(key, value, parent_key)
-        else:
-            return self.__relations_match(key, value)
+        return self.__relations_match(key, value)
 
     def __range_match(self, key: str, value: dict, parent_key: str):
         return {"$match": {parent_key: {"$elemMatch": {f"{key}_float": value}}}}

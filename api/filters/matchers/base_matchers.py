@@ -7,7 +7,9 @@ class BaseMatchers(ABC):
         pass
 
     @abstractmethod
-    def exact(self, key: str, value: str | int, parent_key: str = "") -> dict | str:
+    def exact(
+        self, key: str, value: str | int | list[str], parent_key: str = ""
+    ) -> dict | str:
         pass
 
     @abstractmethod
