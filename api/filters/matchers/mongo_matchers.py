@@ -41,7 +41,7 @@ class MongoMatchers(BaseMatchers):
         return {"$match": {"$or": [{key: {"$exists": False}}, {key: {"$eq": None}}]}}
 
     def __exact_contains_match(
-        self, key: str, value: str | int | dict, parent_key: str = ""
+        self, key: str, value: str | int | bool | dict, parent_key: str = ""
     ):
         if parent_key:
             return {"$match": {parent_key: {"$elemMatch": {key: value}}}}

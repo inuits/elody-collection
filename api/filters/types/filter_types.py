@@ -32,6 +32,8 @@ def get_filter(input_type: str):
         return NumberFilterType()
     if input_type == "SelectionInput":
         return SelectionFilterType()
+    if input_type == "BooleanInput":
+        return BooleanFilterType()
 
     raise ValueError(f"No filter defined for input type '{input_type}'")
 
@@ -139,5 +141,16 @@ class SelectionFilterType(BaseFilterType):
 
     def generate_query(self, filter_criteria: dict):
         return self.filter_type_engine.generate_query_for_selection_filter_type(
+            self.matchers, filter_criteria
+        )
+
+
+class BooleanFilterType(BaseFilterType):
+    def __init__(self):
+        super().__init__()
+        self.matchers.update({"exact": ExactMatcher})
+
+    def generate_query(self, filter_criteria: dict):
+        return self.filter_type_engine.generate_query_for_boolean_filter_type(
             self.matchers, filter_criteria
         )

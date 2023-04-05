@@ -8,7 +8,7 @@ class BaseMatchers(ABC):
 
     @abstractmethod
     def exact(
-        self, key: str, value: str | int | list[str], parent_key: str = ""
+        self, key: str, value: str | int | bool | list[str], parent_key: str = ""
     ) -> dict | str:
         pass
 

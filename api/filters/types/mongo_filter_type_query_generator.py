@@ -50,7 +50,7 @@ class MongoFilterTypeQueryGenerator(BaseFilterTypeQueryGenerator):
             filter_criteria["key"],
             filter_criteria["value"],
             "metadata",
-            match_exact=filter_criteria.get("match_exact"),
+            match_exact=True,
             min=value.get("min"),
             max=value.get("max"),
             included=value.get("included", False),
@@ -64,7 +64,7 @@ class MongoFilterTypeQueryGenerator(BaseFilterTypeQueryGenerator):
             filter_criteria["key"],
             filter_criteria["value"],
             "metadata",
-            match_exact=filter_criteria.get("match_exact"),
+            match_exact=True,
             min=value.get("min"),
             max=value.get("max"),
             included=value.get("included", False),
@@ -79,7 +79,17 @@ class MongoFilterTypeQueryGenerator(BaseFilterTypeQueryGenerator):
             "metadata"
             if filter_criteria["key"] in ["rights", "source", "publication_status"]
             else "relationDocuments.metadata",
-            match_exact=filter_criteria.get("match_exact"),
+            match_exact=True,
+        )
+
+    def generate_query_for_boolean_filter_type(self, matchers, filter_criteria):
+        return self.__apply_matchers(
+            self.__add_helper_queries(filter_criteria),
+            matchers,
+            filter_criteria["key"],
+            filter_criteria["value"],
+            "metadata",
+            match_exact=True,
         )
 
     def __add_helper_queries(self, filter_criteria):
