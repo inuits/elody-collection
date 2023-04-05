@@ -6,10 +6,10 @@ from filters.matchers.matchers import (
     IdMatcher,
     ExactMatcher,
     ContainsMatcher,
-    AfterMatcher,
-    BeforeMatcher,
-    AfterOrEqualMatcher,
-    BeforeOrEqualMatcher,
+    MinMatcher,
+    MaxMatcher,
+    MinIncludedMatcher,
+    MaxIncludedMatcher,
     InBetweenMatcher,
     AnyMatcher,
     NoneMatcher,
@@ -90,8 +90,8 @@ class DateFilterType(BaseFilterType):
         self.matchers.update(
             {
                 "exact": ExactMatcher,
-                "after": AfterMatcher,
-                "before": BeforeMatcher,
+                "min": MinMatcher,
+                "max": MaxMatcher,
                 "in_between": InBetweenMatcher,
                 "any": AnyMatcher,
                 "none": NoneMatcher,
@@ -110,8 +110,8 @@ class NumberFilterType(BaseFilterType):
         self.matchers.update(
             {
                 "exact": ExactMatcher,
-                "after_or_equal": AfterOrEqualMatcher,
-                "before_or_equal": BeforeOrEqualMatcher,
+                "min_included": MinIncludedMatcher,
+                "max_included": MaxIncludedMatcher,
                 "in_between": InBetweenMatcher,
                 "any": AnyMatcher,
                 "none": NoneMatcher,

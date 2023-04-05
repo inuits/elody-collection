@@ -16,8 +16,8 @@ class BaseMatcher(ABC):
 
     @abstractmethod
     def match(
-        self, key: str, value, parent_key: str = "", **kwargs
-    ) -> dict | str | None:
+        self, key: str | list[str], value, parent_key: str = "", **kwargs
+    ) -> dict | str | list | None:
         pass
 
 
@@ -37,7 +37,11 @@ class ExactMatcher(BaseMatcher):
         super().__init__()
 
     def match(self, key, value, parent_key, **kwargs):
-        if isinstance(value, (str, int)) and kwargs["match_exact"]:
+        if (
+            isinstance(key, str)
+            and isinstance(value, (str, int))
+            and kwargs["match_exact"]
+        ):
             return self.matcher_engine.exact(key, value, parent_key)
 
 
@@ -46,43 +50,44 @@ class ContainsMatcher(BaseMatcher):
         super().__init__()
 
     def match(self, key, value, parent_key, **_):
-        return self.matcher_engine.contains(key, value, parent_key)
+        if isinstance(key, str):
+            return self.matcher_engine.contains(key, value, parent_key)
 
 
-class AfterMatcher(BaseMatcher):
+class MinMatcher(BaseMatcher):
     def __init__(self):
         super().__init__()
 
     def match(self, key, value, parent_key, **kwargs):
-        if kwargs["after"] and not kwargs["before"] and not kwargs["or_equal"]:
-            return self.matcher_engine.after(key, value, parent_key)
+        if kwargs["min"] and not kwargs["max"] and not kwargs["included"]:
+            return self.matcher_engine.min(key, value, parent_key)
 
 
-class BeforeMatcher(BaseMatcher):
+class MaxMatcher(BaseMatcher):
     def __init__(self):
         super().__init__()
 
     def match(self, key, value, parent_key, **kwargs):
-        if kwargs["before"] and not kwargs["after"] and not kwargs["or_equal"]:
-            return self.matcher_engine.before(key, value, parent_key)
+        if kwargs["max"] and not kwargs["min"] and not kwargs["included"]:
+            return self.matcher_engine.max(key, value, parent_key)
 
 
-class AfterOrEqualMatcher(BaseMatcher):
+class MinIncludedMatcher(BaseMatcher):
     def __init__(self):
         super().__init__()
 
     def match(self, key, value, parent_key, **kwargs):
-        if kwargs["after"] and not kwargs["before"] and kwargs["or_equal"]:
-            return self.matcher_engine.after_or_equal(key, value, parent_key)
+        if kwargs["min"] and not kwargs["max"] and kwargs["included"]:
+            return self.matcher_engine.min_included(key, value, parent_key)
 
 
-class BeforeOrEqualMatcher(BaseMatcher):
+class MaxIncludedMatcher(BaseMatcher):
     def __init__(self):
         super().__init__()
 
     def match(self, key, value, parent_key, **kwargs):
-        if kwargs["before"] and not kwargs["after"] and kwargs["or_equal"]:
-            return self.matcher_engine.before_or_equal(key, value, parent_key)
+        if kwargs["max"] and not kwargs["min"] and kwargs["included"]:
+            return self.matcher_engine.max_included(key, value, parent_key)
 
 
 class InBetweenMatcher(BaseMatcher):
@@ -90,9 +95,9 @@ class InBetweenMatcher(BaseMatcher):
         super().__init__()
 
     def match(self, key, _, parent_key, **kwargs):
-        if kwargs["after"] and kwargs["before"]:
+        if kwargs["min"] and kwargs["max"]:
             return self.matcher_engine.in_between(
-                key, kwargs["after"], kwargs["before"], parent_key
+                key, kwargs["min"], kwargs["max"], parent_key
             )
 
 
@@ -101,7 +106,7 @@ class AnyMatcher(BaseMatcher):
         super().__init__()
 
     def match(self, key, value, parent_key, **_):
-        if value == "*":
+        if isinstance(key, str) and value == "*":
             return self.matcher_engine.any(key)
 
         del parent_key
@@ -112,7 +117,7 @@ class NoneMatcher(BaseMatcher):
         super().__init__()
 
     def match(self, key, value, parent_key, **_):
-        if value == "":
+        if isinstance(key, str) and value == "":
             return self.matcher_engine.none(key)
 
         del parent_key

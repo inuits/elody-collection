@@ -51,9 +51,9 @@ class MongoFilterTypeQueryGenerator(BaseFilterTypeQueryGenerator):
             filter_criteria["value"],
             "metadata",
             match_exact=filter_criteria.get("match_exact"),
-            after=value.get("after"),
-            before=value.get("before"),
-            or_equal=value.get("or_equal", False),
+            min=value.get("min"),
+            max=value.get("max"),
+            included=value.get("included", False),
         )
 
     def generate_query_for_number_filter_type(self, matchers, filter_criteria):
@@ -65,9 +65,9 @@ class MongoFilterTypeQueryGenerator(BaseFilterTypeQueryGenerator):
             filter_criteria["value"],
             "metadata",
             match_exact=filter_criteria.get("match_exact"),
-            after=value.get("after"),
-            before=value.get("before"),
-            or_equal=value.get("or_equal", False),
+            min=value.get("min"),
+            max=value.get("max"),
+            included=value.get("included", False),
         )
 
     def __add_helper_queries(self, filter_criteria):
@@ -106,6 +106,9 @@ class MongoFilterTypeQueryGenerator(BaseFilterTypeQueryGenerator):
         for matcher in matchers.values():
             result = matcher().match(key, value, parent_key, **kwargs)
             if result:
-                sub_pipeline.append(result)
+                if isinstance(result, list):
+                    sub_pipeline.extend(result)
+                else:
+                    sub_pipeline.append(result)
 
         return sub_pipeline

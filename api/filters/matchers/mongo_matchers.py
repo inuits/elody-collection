@@ -15,20 +15,22 @@ class MongoMatchers(BaseMatchers):
         match_value = {"$regex": value, "$options": "i"}
         return self.__exact_contains_match(key, match_value, parent_key)
 
-    def after(self, key, value, parent_key):
-        return self.__range_match(key, value, parent_key, "$gt")
+    def min(self, key, value, parent_key):
+        return self.__determine_range_relations_match(key, {"$gt": value}, parent_key)
 
-    def before(self, key, value, parent_key):
-        return self.__range_match(key, value, parent_key, "$lt")
+    def max(self, key, value, parent_key):
+        return self.__determine_range_relations_match(key, {"$lt": value}, parent_key)
 
-    def after_or_equal(self, key, value, parent_key):
-        return self.__range_match(key, value, parent_key, "$gte")
+    def min_included(self, key, value, parent_key):
+        return self.__determine_range_relations_match(key, {"$gte": value}, parent_key)
 
-    def before_or_equal(self, key, value, parent_key):
-        return self.__range_match(key, value, parent_key, "$lte")
+    def max_included(self, key, value, parent_key):
+        return self.__determine_range_relations_match(key, {"$lte": value}, parent_key)
 
-    def in_between(self, key, after, before, parent_key):
-        return self.__range_match(key, [after, before], parent_key, ["$gte", "$lte"])
+    def in_between(self, key, min, max, parent_key):
+        return self.__determine_range_relations_match(
+            key, {"$gte": min, "$lte": max}, parent_key
+        )
 
     def any(self, key):
         return {"$match": {key: {"$exists": True, "$ne": None}}}
@@ -44,28 +46,31 @@ class MongoMatchers(BaseMatchers):
         else:
             return {"$match": {key: value}}
 
-    def __range_match(
-        self,
-        key: str,
-        value: str | int | list[str | int],
-        parent_key: str,
-        operator: str | list[str],
+    def __determine_range_relations_match(
+        self, key: str | list[str], value: dict, parent_key: str
     ):
-        if isinstance(value, (str, int)) and isinstance(operator, str):
-            return {
-                "$match": {
-                    parent_key: {"$elemMatch": {f"{key}_float": {operator: value}}}
+        if isinstance(key, str):
+            return self.__range_match(key, value, parent_key)
+        else:
+            return self.__relations_match(key, value)
+
+    def __range_match(self, key: str, value: dict, parent_key: str):
+        return {"$match": {parent_key: {"$elemMatch": {f"{key}_float": value}}}}
+
+    def __relations_match(self, keys: list[str], value: dict):
+        relation_match = {"$match": {"relations.type": {"$in": keys}}}
+        number_of_relations_calculator = {
+            "$addFields": {
+                "numberOfRelations": {
+                    "$size": {
+                        "$filter": {
+                            "input": "$relations",
+                            "as": "el",
+                            "cond": {"$in": ["$$el.type", keys]},
+                        }
+                    }
                 }
             }
-        elif isinstance(value, list) and isinstance(operator, list):
-            match_value = {}
-            for i in range(len(operator)):
-                match_value.update({operator[i]: value[i]})
-
-            return {
-                "$match": {parent_key: {"$elemMatch": {f"{key}_float": match_value}}}
-            }
-
-        raise TypeError(
-            f"Parameters 'value: {value}' and 'operator: {operator}' should have the same type"
-        )
+        }
+        min_max_match = {"$match": {"numberOfRelations": value}}
+        return [relation_match, number_of_relations_calculator, min_max_match]

@@ -15,24 +15,28 @@ class BaseMatchers(ABC):
         pass
 
     @abstractmethod
-    def after(self, key: str, value: str, parent_key: str) -> dict | str:
+    def min(self, key: str | list[str], value: str, parent_key: str) -> dict | str:
         pass
 
     @abstractmethod
-    def before(self, key: str, value: str, parent_key: str) -> dict | str:
+    def max(self, key: str | list[str], value: str, parent_key: str) -> dict | str:
         pass
 
     @abstractmethod
-    def after_or_equal(self, key: str, value: str, parent_key: str) -> dict | str:
+    def min_included(
+        self, key: str | list[str], value: str, parent_key: str
+    ) -> dict | str:
         pass
 
     @abstractmethod
-    def before_or_equal(self, key: str, value: str, parent_key: str) -> dict | str:
+    def max_included(
+        self, key: str | list[str], value: str, parent_key: str
+    ) -> dict | str:
         pass
 
     @abstractmethod
     def in_between(
-        self, key: str, after: str | int, before: str | int, parent_key: str
+        self, key: str, min: str | int, max: str | int, parent_key: str
     ) -> dict | str:
         pass
 
