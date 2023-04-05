@@ -56,6 +56,20 @@ class MongoFilterTypeQueryGenerator(BaseFilterTypeQueryGenerator):
             or_equal=value.get("or_equal", False),
         )
 
+    def generate_query_for_number_filter_type(self, matchers, filter_criteria):
+        value = filter_criteria.get("value", {})
+        return self.__apply_matchers(
+            self.__add_helper_queries(filter_criteria),
+            matchers,
+            filter_criteria["key"],
+            filter_criteria["value"],
+            "metadata",
+            match_exact=filter_criteria.get("match_exact"),
+            after=value.get("after"),
+            before=value.get("before"),
+            or_equal=value.get("or_equal", False),
+        )
+
     def __add_helper_queries(self, filter_criteria):
         sub_pipeline = list()
 

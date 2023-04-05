@@ -36,7 +36,9 @@ class MongoMatchers(BaseMatchers):
     def none(self, key):
         return {"$match": {"$or": [{key: {"$exists": False}}, {key: {"$eq": None}}]}}
 
-    def __exact_contains_match(self, key: str, value: str | dict, parent_key: str = ""):
+    def __exact_contains_match(
+        self, key: str, value: str | int | dict, parent_key: str = ""
+    ):
         if parent_key:
             return {"$match": {parent_key: {"$elemMatch": {key: value}}}}
         else:
@@ -45,11 +47,11 @@ class MongoMatchers(BaseMatchers):
     def __range_match(
         self,
         key: str,
-        value: str | list[str | int],
+        value: str | int | list[str | int],
         parent_key: str,
         operator: str | list[str],
     ):
-        if isinstance(value, str) and isinstance(operator, str):
+        if isinstance(value, (str, int)) and isinstance(operator, str):
             return {
                 "$match": {
                     parent_key: {"$elemMatch": {f"{key}_float": {operator: value}}}

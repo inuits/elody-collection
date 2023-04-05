@@ -37,7 +37,7 @@ class ExactMatcher(BaseMatcher):
         super().__init__()
 
     def match(self, key, value, parent_key, **kwargs):
-        if isinstance(value, str) and kwargs["match_exact"]:
+        if isinstance(value, (str, int)) and kwargs["match_exact"]:
             return self.matcher_engine.exact(key, value, parent_key)
 
 
