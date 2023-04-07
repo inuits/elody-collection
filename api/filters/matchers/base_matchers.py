@@ -43,9 +43,9 @@ class BaseMatchers(ABC):
         pass
 
     @abstractmethod
-    def any(self, key: str) -> dict | str:
+    def any(self, key: str, parent_key: str) -> dict | str:
         pass
 
     @abstractmethod
-    def none(self, key: str) -> dict | str:
+    def none(self, key: str, parent_key: str) -> dict | str:
         pass

@@ -36,7 +36,7 @@ class ExactMatcher(BaseMatcher):
     def __init__(self):
         super().__init__()
 
-    def match(self, key, value, parent_key, **kwargs):
+    def match(self, key, value, parent_key="", **kwargs):
         if (
             isinstance(key, str)
             and isinstance(value, (str, int, bool, list))
@@ -49,7 +49,7 @@ class ContainsMatcher(BaseMatcher):
     def __init__(self):
         super().__init__()
 
-    def match(self, key, value, parent_key, **_):
+    def match(self, key, value, parent_key="", **_):
         if isinstance(key, str):
             return self.matcher_engine.contains(key, value, parent_key)
 
@@ -107,9 +107,7 @@ class AnyMatcher(BaseMatcher):
 
     def match(self, key, value, parent_key, **_):
         if isinstance(key, str) and value == "*":
-            return self.matcher_engine.any(key)
-
-        del parent_key
+            return self.matcher_engine.any(key, parent_key)
 
 
 class NoneMatcher(BaseMatcher):
@@ -118,6 +116,6 @@ class NoneMatcher(BaseMatcher):
 
     def match(self, key, value, parent_key, **_):
         if isinstance(key, str) and value == "":
-            return self.matcher_engine.none(key)
+            return self.matcher_engine.none(key, parent_key)
 
         del parent_key

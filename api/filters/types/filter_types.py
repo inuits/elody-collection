@@ -93,12 +93,12 @@ class DateFilterType(BaseFilterType):
         super().__init__()
         self.matchers.update(
             {
+                "any": AnyMatcher,
+                "none": NoneMatcher,
                 "exact": ExactMatcher,
                 "min": MinMatcher,
                 "max": MaxMatcher,
                 "in_between": InBetweenMatcher,
-                "any": AnyMatcher,
-                "none": NoneMatcher,
             }
         )
 
@@ -113,12 +113,12 @@ class NumberFilterType(BaseFilterType):
         super().__init__()
         self.matchers.update(
             {
+                "any": AnyMatcher,
+                "none": NoneMatcher,
                 "exact": ExactMatcher,
                 "min_included": MinIncludedMatcher,
                 "max_included": MaxIncludedMatcher,
                 "in_between": InBetweenMatcher,
-                "any": AnyMatcher,
-                "none": NoneMatcher,
             }
         )
 

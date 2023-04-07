@@ -25,11 +25,12 @@ class MongoFilterTypeQueryGenerator(BaseFilterTypeQueryGenerator):
                 )
             )
         else:
-            sub_pipeline.append(
-                matchers["contains"]().match(
-                    "label", filter_criteria["label"], "metadata"
+            if filter_criteria.get("label"):
+                sub_pipeline.append(
+                    matchers["contains"]().match(
+                        "label", filter_criteria["label"], "metadata"
+                    )
                 )
-            )
 
             sub_pipeline = self.__apply_matchers(
                 sub_pipeline,
@@ -51,9 +52,9 @@ class MongoFilterTypeQueryGenerator(BaseFilterTypeQueryGenerator):
             filter_criteria["value"],
             "metadata",
             match_exact=True,
-            min=value.get("min"),
-            max=value.get("max"),
-            included=value.get("included", False),
+            min=value.get("min") if isinstance(value, dict) else None,
+            max=value.get("max") if isinstance(value, dict) else None,
+            included=value.get("included", False) if isinstance(value, dict) else False,
         )
 
     def generate_query_for_number_filter_type(self, matchers, filter_criteria):
@@ -65,9 +66,9 @@ class MongoFilterTypeQueryGenerator(BaseFilterTypeQueryGenerator):
             filter_criteria["value"],
             "metadata",
             match_exact=True,
-            min=value.get("min"),
-            max=value.get("max"),
-            included=value.get("included", False),
+            min=value.get("min") if isinstance(value, dict) else None,
+            max=value.get("max") if isinstance(value, dict) else None,
+            included=value.get("included", False) if isinstance(value, dict) else False,
         )
 
     def generate_query_for_selection_filter_type(self, matchers, filter_criteria):
@@ -132,5 +133,6 @@ class MongoFilterTypeQueryGenerator(BaseFilterTypeQueryGenerator):
                     sub_pipeline.extend(result)
                 else:
                     sub_pipeline.append(result)
+                return sub_pipeline
 
-        return sub_pipeline
+        return list()

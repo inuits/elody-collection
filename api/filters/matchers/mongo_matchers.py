@@ -34,17 +34,35 @@ class MongoMatchers(BaseMatchers):
             key, {"$gte": min, "$lte": max}, parent_key
         )
 
-    def any(self, key):
-        return {"$match": {key: {"$exists": True, "$ne": None}}}
+    def any(self, key, parent_key):
+        return self.__any_none_match(key, parent_key, "$nin")
 
-    def none(self, key):
-        return {"$match": {"$or": [{key: {"$exists": False}}, {key: {"$eq": None}}]}}
+    def none(self, key, parent_key):
+        return self.__any_none_match(key, parent_key, "$in")
 
     def __exact_contains_match(
         self, key: str, value: str | int | bool | dict, parent_key: str = ""
     ):
         if parent_key:
-            return {"$match": {parent_key: {"$elemMatch": {key: value}}}}
+            return {
+                "$match": {
+                    "$or": [
+                        {
+                            parent_key: {
+                                "$type": "array",
+                                "$elemMatch": {"key": key, "value": value},
+                            }
+                        },
+                        {
+                            "$and": [
+                                {parent_key: {"$type": "object"}},
+                                {f"{parent_key}.{key}": value},
+                            ]
+                        },
+                    ]
+                }
+            }
+
         return {"$match": {key: value}}
 
     def __determine_range_relations_match(
@@ -74,3 +92,33 @@ class MongoMatchers(BaseMatchers):
         }
         min_max_match = {"$match": {"numberOfRelations": value}}
         return [relation_match, number_of_relations_calculator, min_max_match]
+
+    def __any_none_match(
+        self, key: str, parent_key: str, operator_to_match_none_values: str
+    ):
+        return {
+            "$match": {
+                "$or": [
+                    {
+                        parent_key: {
+                            "$type": "array",
+                            "$elemMatch": {
+                                "key": key,
+                                "value": {operator_to_match_none_values: [None, ""]},
+                            },
+                        }
+                    },
+                    {
+                        "$and": [
+                            {parent_key: {"$type": "object"}},
+                            {f"{parent_key}.{key}": {"$exists": True}},
+                            {
+                                f"{parent_key}.{key}": {
+                                    operator_to_match_none_values: [None, ""]
+                                }
+                            },
+                        ]
+                    },
+                ]
+            }
+        }
