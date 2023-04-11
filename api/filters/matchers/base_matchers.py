@@ -17,22 +17,26 @@ class BaseMatchers(ABC):
         pass
 
     @abstractmethod
-    def min(self, key: str | list[str], value: str, parent_key: str) -> dict | str:
+    def min(
+        self, key: str | list[str], value: str | int, parent_key: str
+    ) -> dict | str:
         pass
 
     @abstractmethod
-    def max(self, key: str | list[str], value: str, parent_key: str) -> dict | str:
+    def max(
+        self, key: str | list[str], value: str | int, parent_key: str
+    ) -> dict | str:
         pass
 
     @abstractmethod
     def min_included(
-        self, key: str | list[str], value: str, parent_key: str
+        self, key: str | list[str], value: str | int, parent_key: str
     ) -> dict | str:
         pass
 
     @abstractmethod
     def max_included(
-        self, key: str | list[str], value: str, parent_key: str
+        self, key: str | list[str], value: str | int, parent_key: str
     ) -> dict | str:
         pass
 

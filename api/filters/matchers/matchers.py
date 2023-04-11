@@ -25,9 +25,9 @@ class IdMatcher(BaseMatcher):
     def __init__(self):
         super().__init__()
 
-    def match(self, key, _, parent_key, **kwargs):
-        if key == "identifiers" and isinstance(kwargs["ids"], list):
-            return self.matcher_engine.id(key, kwargs["ids"])
+    def match(self, key, value, parent_key, **_):
+        if key == "identifiers" and isinstance(value, list):
+            return self.matcher_engine.id(key, value)
 
         del parent_key
 
@@ -76,28 +76,38 @@ class MinIncludedMatcher(BaseMatcher):
     def __init__(self):
         super().__init__()
 
-    def match(self, key, value, parent_key, **kwargs):
-        if kwargs["min"] and not kwargs["max"] and kwargs["included"]:
-            return self.matcher_engine.min_included(key, value, parent_key)
+    def match(self, key, value, parent_key, **_):
+        if (
+            isinstance(value, dict)
+            and value.get("min")
+            and not value.get("max")
+            and value.get("included")
+        ):
+            return self.matcher_engine.min_included(key, value["min"], parent_key)
 
 
 class MaxIncludedMatcher(BaseMatcher):
     def __init__(self):
         super().__init__()
 
-    def match(self, key, value, parent_key, **kwargs):
-        if kwargs["max"] and not kwargs["min"] and kwargs["included"]:
-            return self.matcher_engine.max_included(key, value, parent_key)
+    def match(self, key, value, parent_key, **_):
+        if (
+            isinstance(value, dict)
+            and not value.get("min")
+            and value.get("max")
+            and value.get("included")
+        ):
+            return self.matcher_engine.max_included(key, value["max"], parent_key)
 
 
 class InBetweenMatcher(BaseMatcher):
     def __init__(self):
         super().__init__()
 
-    def match(self, key, _, parent_key, **kwargs):
-        if kwargs["min"] and kwargs["max"]:
+    def match(self, key, value, parent_key, **_):
+        if isinstance(value, dict) and value.get("min") and value.get("max"):
             return self.matcher_engine.in_between(
-                key, kwargs["min"], kwargs["max"], parent_key
+                key, value["min"], value["max"], parent_key
             )
 
 

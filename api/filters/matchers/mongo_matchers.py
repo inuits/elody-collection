@@ -11,11 +11,11 @@ class MongoMatchers(BaseMatchers):
     def exact(self, key, value, parent_key):
         if isinstance(value, list):
             return {"$match": {parent_key: {"$elemMatch": {key: {"$in": value}}}}}
-        return self.__exact_contains_match(key, value, parent_key)
+        return self.__exact_contains_range_match(key, value, parent_key)
 
     def contains(self, key, value, parent_key):
         match_value = {"$regex": value, "$options": "i"}
-        return self.__exact_contains_match(key, match_value, parent_key)
+        return self.__exact_contains_range_match(key, match_value, parent_key)
 
     def min(self, key, value, parent_key):
         return self.__determine_range_relations_match(key, {"$gt": value}, parent_key)
@@ -40,7 +40,7 @@ class MongoMatchers(BaseMatchers):
     def none(self, key, parent_key):
         return self.__any_none_match(key, parent_key, "$in")
 
-    def __exact_contains_match(
+    def __exact_contains_range_match(
         self, key: str, value: str | int | bool | dict, parent_key: str = ""
     ):
         if parent_key:
@@ -69,11 +69,8 @@ class MongoMatchers(BaseMatchers):
         self, key: str | list[str], value: dict, parent_key: str
     ):
         if isinstance(key, str):
-            return self.__range_match(key, value, parent_key)
+            return self.__exact_contains_range_match(key, value, parent_key)
         return self.__relations_match(key, value)
-
-    def __range_match(self, key: str, value: dict, parent_key: str):
-        return {"$match": {parent_key: {"$elemMatch": {f"{key}_float": value}}}}
 
     def __relations_match(self, keys: list[str], value: dict):
         relation_match = {"$match": {"relations.type": {"$in": keys}}}

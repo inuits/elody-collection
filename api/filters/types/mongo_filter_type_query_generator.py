@@ -10,7 +10,6 @@ class MongoFilterTypeQueryGenerator(BaseFilterTypeQueryGenerator):
             matchers,
             filter_criteria["key"],
             filter_criteria["value"],
-            ids=filter_criteria["value"],
             match_exact=filter_criteria.get("match_exact"),
         )
 
@@ -58,7 +57,6 @@ class MongoFilterTypeQueryGenerator(BaseFilterTypeQueryGenerator):
         )
 
     def generate_query_for_number_filter_type(self, matchers, filter_criteria):
-        value = filter_criteria.get("value", {})
         return self.__apply_matchers(
             self.__add_helper_queries(filter_criteria),
             matchers,
@@ -66,9 +64,6 @@ class MongoFilterTypeQueryGenerator(BaseFilterTypeQueryGenerator):
             filter_criteria["value"],
             "metadata",
             match_exact=True,
-            min=value.get("min") if isinstance(value, dict) else None,
-            max=value.get("max") if isinstance(value, dict) else None,
-            included=value.get("included", False) if isinstance(value, dict) else False,
         )
 
     def generate_query_for_selection_filter_type(self, matchers, filter_criteria):
