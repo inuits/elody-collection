@@ -10,7 +10,7 @@ class MongoMatchers(BaseMatchers):
 
     def exact(self, key, value, parent_key):
         if isinstance(value, list):
-            return {"$match": {parent_key: {"$elemMatch": {key: {"$in": value}}}}}
+            value = {"$in": value}
         return self.__exact_contains_range_match(key, value, parent_key)
 
     def contains(self, key, value, parent_key):

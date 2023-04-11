@@ -75,9 +75,9 @@ class TextFilterType(BaseFilterType):
         super().__init__()
         self.matchers.update(
             {
-                "exact": ExactMatcher,
                 "any": AnyMatcher,
                 "none": NoneMatcher,
+                "exact": ExactMatcher,
                 "contains": ContainsMatcher,
             }
         )
@@ -133,9 +133,9 @@ class SelectionFilterType(BaseFilterType):
         super().__init__()
         self.matchers.update(
             {
-                "exact": ExactMatcher,
                 "any": AnyMatcher,
                 "none": NoneMatcher,
+                "exact": ExactMatcher,
             }
         )
 
