@@ -43,7 +43,6 @@ class MongoFilterTypeQueryGenerator(BaseFilterTypeQueryGenerator):
         return sub_pipeline
 
     def generate_query_for_date_filter_type(self, matchers, filter_criteria):
-        value = filter_criteria.get("value", {})
         return self.__apply_matchers(
             self.__add_helper_queries(filter_criteria),
             matchers,
@@ -51,9 +50,7 @@ class MongoFilterTypeQueryGenerator(BaseFilterTypeQueryGenerator):
             filter_criteria["value"],
             "metadata",
             match_exact=True,
-            min=value.get("min") if isinstance(value, dict) else None,
-            max=value.get("max") if isinstance(value, dict) else None,
-            included=value.get("included", False) if isinstance(value, dict) else False,
+            is_datetime_value=True,
         )
 
     def generate_query_for_number_filter_type(self, matchers, filter_criteria):

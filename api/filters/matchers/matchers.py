@@ -42,7 +42,9 @@ class ExactMatcher(BaseMatcher):
             and isinstance(value, (str, int, bool, list))
             and kwargs["match_exact"]
         ):
-            return self.matcher_engine.exact(key, value, parent_key)
+            return self.matcher_engine.exact(
+                key, value, parent_key, kwargs["is_datetime_value"]
+            )
 
 
 class ContainsMatcher(BaseMatcher):
@@ -59,8 +61,15 @@ class MinMatcher(BaseMatcher):
         super().__init__()
 
     def match(self, key, value, parent_key, **kwargs):
-        if kwargs["min"] and not kwargs["max"] and not kwargs["included"]:
-            return self.matcher_engine.min(key, value, parent_key)
+        if (
+            isinstance(value, dict)
+            and value.get("min")
+            and not value.get("max")
+            and not value.get("included")
+        ):
+            return self.matcher_engine.min(
+                key, value["min"], parent_key, kwargs["is_datetime_value"]
+            )
 
 
 class MaxMatcher(BaseMatcher):
@@ -68,46 +77,62 @@ class MaxMatcher(BaseMatcher):
         super().__init__()
 
     def match(self, key, value, parent_key, **kwargs):
-        if kwargs["max"] and not kwargs["min"] and not kwargs["included"]:
-            return self.matcher_engine.max(key, value, parent_key)
+        if (
+            isinstance(value, dict)
+            and not value.get("min")
+            and value.get("max")
+            and not value.get("included")
+        ):
+            return self.matcher_engine.max(
+                key, value["max"], parent_key, kwargs["is_datetime_value"]
+            )
 
 
 class MinIncludedMatcher(BaseMatcher):
     def __init__(self):
         super().__init__()
 
-    def match(self, key, value, parent_key, **_):
+    def match(self, key, value, parent_key, **kwargs):
         if (
             isinstance(value, dict)
             and value.get("min")
             and not value.get("max")
             and value.get("included")
         ):
-            return self.matcher_engine.min_included(key, value["min"], parent_key)
+            return self.matcher_engine.min_included(
+                key, value["min"], parent_key, kwargs["is_datetime_value"]
+            )
 
 
 class MaxIncludedMatcher(BaseMatcher):
     def __init__(self):
         super().__init__()
 
-    def match(self, key, value, parent_key, **_):
+    def match(self, key, value, parent_key, **kwargs):
         if (
             isinstance(value, dict)
             and not value.get("min")
             and value.get("max")
             and value.get("included")
         ):
-            return self.matcher_engine.max_included(key, value["max"], parent_key)
+            return self.matcher_engine.max_included(
+                key, value["max"], parent_key, kwargs["is_datetime_value"]
+            )
 
 
 class InBetweenMatcher(BaseMatcher):
     def __init__(self):
         super().__init__()
 
-    def match(self, key, value, parent_key, **_):
-        if isinstance(value, dict) and value.get("min") and value.get("max"):
+    def match(self, key, value, parent_key, **kwargs):
+        if (
+            isinstance(key, str)
+            and isinstance(value, dict)
+            and value.get("min")
+            and value.get("max")
+        ):
             return self.matcher_engine.in_between(
-                key, value["min"], value["max"], parent_key
+                key, value["min"], value["max"], parent_key, kwargs["is_datetime_value"]
             )
 
 

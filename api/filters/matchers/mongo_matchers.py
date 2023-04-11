@@ -1,3 +1,5 @@
+import re as regex
+
 from filters.matchers.base_matchers import BaseMatchers
 
 
@@ -8,28 +10,47 @@ class MongoMatchers(BaseMatchers):
             match_values.append({key: {"$elemMatch": {"$eq": value}}})
         return {"$match": {"$or": match_values}}
 
-    def exact(self, key, value, parent_key):
+    def exact(self, key, value, parent_key, is_datetime_value):
         if isinstance(value, list):
             value = {"$in": value}
+        elif is_datetime_value:
+            value = self.__get_datetime_query_value(value, range_match=False)
+
         return self.__exact_contains_range_match(key, value, parent_key)
 
     def contains(self, key, value, parent_key):
         match_value = {"$regex": value, "$options": "i"}
         return self.__exact_contains_range_match(key, match_value, parent_key)
 
-    def min(self, key, value, parent_key):
+    def min(self, key, value, parent_key, is_datetime_value):
+        if is_datetime_value:
+            value = self.__get_datetime_query_value(value, range_match=True)
+
         return self.__determine_range_relations_match(key, {"$gt": value}, parent_key)
 
-    def max(self, key, value, parent_key):
+    def max(self, key, value, parent_key, is_datetime_value):
+        if is_datetime_value:
+            value = self.__get_datetime_query_value(value, range_match=True)
+
         return self.__determine_range_relations_match(key, {"$lt": value}, parent_key)
 
-    def min_included(self, key, value, parent_key):
+    def min_included(self, key, value, parent_key, is_datetime_value):
+        if is_datetime_value:
+            value = self.__get_datetime_query_value(value, range_match=True)
+
         return self.__determine_range_relations_match(key, {"$gte": value}, parent_key)
 
-    def max_included(self, key, value, parent_key):
+    def max_included(self, key, value, parent_key, is_datetime_value):
+        if is_datetime_value:
+            value = self.__get_datetime_query_value(value, range_match=True)
+
         return self.__determine_range_relations_match(key, {"$lte": value}, parent_key)
 
-    def in_between(self, key, min, max, parent_key):
+    def in_between(self, key, min, max, parent_key, is_datetime_value):
+        if is_datetime_value:
+            min = self.__get_datetime_query_value(min, range_match=True)
+            max = self.__get_datetime_query_value(max, range_match=True)
+
         return self.__determine_range_relations_match(
             key, {"$gte": min, "$lte": max}, parent_key
         )
@@ -40,9 +61,7 @@ class MongoMatchers(BaseMatchers):
     def none(self, key, parent_key):
         return self.__any_none_match(key, parent_key, "$in")
 
-    def __exact_contains_range_match(
-        self, key: str, value: str | int | bool | dict, parent_key: str = ""
-    ):
+    def __exact_contains_range_match(self, key: str, value, parent_key: str = ""):
         if parent_key:
             return {
                 "$match": {
@@ -119,3 +138,12 @@ class MongoMatchers(BaseMatchers):
                 ]
             }
         }
+
+    def __get_datetime_query_value(self, value, range_match: bool) -> dict | str:
+        if not regex.match(BaseMatchers.datetime_pattern, value):
+            raise ValueError(f"{value} is not a valid datetime")
+
+        date, time = value.split(" ")
+        if range_match:
+            return f"{date}T{time}"
+        return {"$regex": f"^{date}(T| ){time}"}
