@@ -22,12 +22,6 @@ class CoghentBaseResource(BaseResource):
             os.getenv("STAM_ID"): "all-stam",
         }
 
-    def __is_super_admin(self):
-        return (
-            os.getenv("SUPER_ADMIN_ROLE", "role_super_admin")
-            in policy_factory.get_user_context().roles
-        )
-
     def _abort_if_no_access(self, item, token, collection="entities"):
         try:
             super()._abort_if_no_access(item, token)
@@ -79,10 +73,6 @@ class CoghentBaseResource(BaseResource):
     def _get_item_permissions(self, item_id, collection):
         item = self._abort_if_item_doesnt_exist(collection, item_id)
         full = ["can-get", "can-put", "can-patch", "can-delete"]
-        if not self._auth_enabled():
-            return full, 200
-        if self.__is_super_admin():
-            return full, 200
         if self._is_owner_of_item(
             item, policy_factory.get_user_context().auth_objects.get("token")
         ):

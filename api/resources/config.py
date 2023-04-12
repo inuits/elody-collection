@@ -49,7 +49,7 @@ class Config(BaseResource):
             allowed_filters[collection] = list()
             for filter in collection_filters:
                 filter_permission = f"filter-on-{filter['key'].replace('_', '-')}"
-                if filter_permission in permissions or not self._auth_enabled():
+                if filter_permission in permissions:
                     allowed_filters[collection].append(filter)
         return allowed_filters
 
