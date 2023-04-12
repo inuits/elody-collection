@@ -307,7 +307,7 @@ class EntityMetadata(BaseResource):
         util.signal_entity_changed(entity)
         return metadata, 201
 
-    @app.require_oauth("update-entity-metadata")
+    @app.require_oauth()
     def put(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         content = request.get_json()
