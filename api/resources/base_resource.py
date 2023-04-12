@@ -140,7 +140,7 @@ class BaseResource(Resource):
         all_permissions = ["show-all"]
         if permissions:
             all_permissions = [*all_permissions, *permissions]
-        if all_permissions in policy_factory.get_user_context().scopes:
+        if any(x in policy_factory.get_user_context().scopes for x in all_permissions):
             return False
         return True
 
