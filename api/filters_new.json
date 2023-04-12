@@ -1,0 +1,246 @@
+{
+  "mediafileFilters": [
+    {
+      "key": "identifiers",
+      "label": "ID",
+      "type": "id"
+    },
+    {
+      "key": "title",
+      "label": "Title",
+      "type": "text"
+    },
+    {
+      "key": "description",
+      "label": "Description",
+      "type": "text"
+    },
+    {
+      "key": "creator",
+      "label": "Creator",
+      "type": "selection"
+    },
+    {
+      "key": "uploader",
+      "label": "Uploader",
+      "type": "selection"
+    },
+    {
+      "key": "type",
+      "label": "Type",
+      "type": "selection"
+    },
+    {
+      "key": "owner",
+      "label": "Owner",
+      "type": "selection"
+    },
+    {
+      "key": "filetype",
+      "label": "Filetype",
+      "type": "selection"
+    },
+    {
+      "key": "filename",
+      "label": "Filename",
+      "type": "text"
+    },
+    {
+      "key": "license",
+      "label": "License",
+      "type": "selection"
+    },
+    {
+      "key": "tags",
+      "label": "Tags",
+      "type": "selection"
+    },
+    {
+      "key": "created",
+      "label": "Created",
+      "type": "date"
+    },
+    {
+      "key": "dating",
+      "label": "Dating",
+      "type": "date"
+    },
+    {
+      "key": "source",
+      "label": "Source",
+      "type": "text"
+    },
+    {
+      "key": "language",
+      "label": "Language",
+      "type": "selection"
+    },
+    {
+      "key": "creator_media",
+      "label": "Creator media",
+      "type": "selection"
+    },
+    {
+      "key": "adlib_link",
+      "label": "Adlib link",
+      "type": "text"
+    },
+    {
+      "key": "arches_link",
+      "label": "Arches link",
+      "type": "text"
+    },
+    {
+      "key": "brocade_archive_link",
+      "label": "Brocade archive link",
+      "type": "text"
+    },
+    {
+      "key": "brocade_library_link",
+      "label": "Brocade library link",
+      "type": "text"
+    },
+    {
+      "key": "ocr",
+      "label": "OCR",
+      "type": "boolean"
+    },
+    {
+      "key": "ocr_date",
+      "label": "OCR date",
+      "type": "date"
+    },
+    {
+      "key": "viaa",
+      "label": "VIAA",
+      "type": "text"
+    },
+    {
+      "key": "edepot",
+      "label": "eDepot",
+      "type": "boolean"
+    }
+  ],
+  "entityFilters": [
+    {
+      "key": "identifiers",
+      "label": "ID",
+      "type": "id"
+    },
+    {
+      "key": "title",
+      "label": "Title",
+      "type": "text"
+    },
+    {
+      "key": "description",
+      "label": "Description",
+      "type": "text"
+    },
+    {
+      "key": "creator",
+      "label": "Creator",
+      "type": "selection"
+    },
+    {
+      "key": "uploader",
+      "label": "Uploader",
+      "type": "selection"
+    },
+    {
+      "key": "type",
+      "label": "Type",
+      "type": "selection"
+    },
+    {
+      "key": "owner",
+      "label": "Owner",
+      "type": "selection"
+    },
+    {
+      "key": "filetype",
+      "label": "Filetype",
+      "type": "selection"
+    },
+    {
+      "key": "filename",
+      "label": "Filename",
+      "type": "text"
+    },
+    {
+      "key": "license",
+      "label": "License",
+      "type": "selection"
+    },
+    {
+      "key": "tags",
+      "label": "Tags",
+      "type": "selection"
+    },
+    {
+      "key": "created",
+      "label": "Created",
+      "type": "date"
+    },
+    {
+      "key": "dating",
+      "label": "Dating",
+      "type": "date"
+    },
+    {
+      "key": "source",
+      "label": "Source",
+      "type": "text"
+    },
+    {
+      "key": "language",
+      "label": "Language",
+      "type": "selection"
+    },
+    {
+      "key": "creator_media",
+      "label": "Creator media",
+      "type": "selection"
+    },
+    {
+      "key": "adlib_link",
+      "label": "Adlib link",
+      "type": "text"
+    },
+    {
+      "key": "arches_link",
+      "label": "Arches link",
+      "type": "text"
+    },
+    {
+      "key": "brocade_archive_link",
+      "label": "Brocade archive link",
+      "type": "text"
+    },
+    {
+      "key": "brocade_library_link",
+      "label": "Brocade library link",
+      "type": "text"
+    },
+    {
+      "key": "ocr",
+      "label": "OCR",
+      "type": "boolean"
+    },
+    {
+      "key": "ocr_date",
+      "label": "OCR date",
+      "type": "date"
+    },
+    {
+      "key": "viaa",
+      "label": "VIAA",
+      "type": "text"
+    },
+    {
+      "key": "edepot",
+      "label": "eDepot",
+      "type": "boolean"
+    }
+  ]
+}

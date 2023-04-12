@@ -43,7 +43,7 @@ class Config(BaseResource):
 
     def __get_allowed_filters(self):
         allowed_filters = dict()
-        filters = util.read_json_as_dict("filters.json")
+        filters = util.read_json_as_dict("filters_new.json")
         permissions = app.require_oauth.get_token_permissions(
             app.validator.role_permission_mapping
         )
