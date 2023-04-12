@@ -10,6 +10,7 @@
       "box_visit",
       "config",
       "entity",
+      "filter",
       "job",
       "key_value_store",
       "mediafile",
