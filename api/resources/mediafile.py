@@ -83,7 +83,7 @@ class MediafileAssets(BaseResource):
 
 
 class MediafileCopyright(BaseResource):
-    @policy_factory.apply_policies(RequestContext(request, ["get-mediafile-copyright"]))
+    @policy_factory.authenticate()
     def get(self, id):
         mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
         if not self._only_own_items() or self._is_owner_of_item(
