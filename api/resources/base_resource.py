@@ -134,7 +134,7 @@ class BaseResource(Resource):
         return "private" in item and not item["private"]
 
     def _only_own_items(self, permissions=None):
-        all_permissions = ["show-all"]
+        all_permissions = ["has-full-control"]
         if permissions:
             all_permissions = [*all_permissions, *permissions]
         if any(x in policy_factory.get_user_context().scopes for x in all_permissions):
