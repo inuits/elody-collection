@@ -1,11 +1,10 @@
-import app
 import os
 import util
 
+from app import policy_factory
 from apps.coghent.storage.storagemanager import CoghentStorageManager
 from datetime import datetime
 from flask_restful import abort
-from inuits_jwt_auth.authorization import current_token
 from resources.base_resource import BaseResource
 from werkzeug.exceptions import HTTPException
 
@@ -22,6 +21,12 @@ class CoghentBaseResource(BaseResource):
             os.getenv("SIXTH_COLLECTION_ID"): "all-sixth",
             os.getenv("STAM_ID"): "all-stam",
         }
+
+    def __is_super_admin(self):
+        return (
+            os.getenv("SUPER_ADMIN_ROLE", "role_super_admin")
+            in policy_factory.get_user_context().roles
+        )
 
     def _abort_if_no_access(self, item, token, collection="entities"):
         try:
@@ -74,11 +79,13 @@ class CoghentBaseResource(BaseResource):
     def _get_item_permissions(self, item_id, collection):
         item = self._abort_if_item_doesnt_exist(collection, item_id)
         full = ["can-get", "can-put", "can-patch", "can-delete"]
-        if not app.require_oauth.require_token:
+        if not self._auth_enabled():
             return full, 200
-        if app.require_oauth.is_super_admin():
+        if self.__is_super_admin():
             return full, 200
-        if self._is_owner_of_item(item, current_token):
+        if self._is_owner_of_item(
+            item, policy_factory.get_user_context().auth_objects.get("token")
+        ):
             return full, 200
         if self._has_access_to_item(item, collection):
             return full, 200
@@ -104,4 +111,6 @@ class CoghentBaseResource(BaseResource):
         for entity_id in entity_ids:
             if permission := self.mapping.get(self._get_museum_id(entity_id)):
                 permissions.add(permission)
-        return permissions and app.require_oauth.check_permissions(permissions)
+        return permissions and any(
+            x in policy_factory.get_user_context().scopes for x in permissions
+        )

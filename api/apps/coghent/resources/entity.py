@@ -1,9 +1,10 @@
-import app
 import os
 
+from app import policy_factory
 from apps.coghent.resources.base_resource import CoghentBaseResource
-from flask import Blueprint
+from flask import Blueprint, request
 from flask_restful import abort, Api
+from inuits_policy_based_auth import RequestContext
 from resources.entity import (
     Entity,
     EntityDetail,
@@ -22,133 +23,151 @@ api = Api(api_bp)
 
 
 class CoghentEntity(CoghentBaseResource, Entity):
-    @app.require_oauth(permissions=["read-entity", "read-entity-all"])
+    @policy_factory.apply_policies(
+        RequestContext(request, ["read-entity", "read-entity-all"])
+    )
     def get(self):
         return super().get()
 
-    @app.require_oauth("create-entity")
+    @policy_factory.apply_policies(RequestContext(request, ["create-entity"]))
     def post(self):
         return super().post()
 
 
 class CoghentEntityDetail(CoghentBaseResource, EntityDetail):
-    @app.require_oauth(permissions=["read-entity-detail", "read-entity-detail-all"])
+    @policy_factory.apply_policies(
+        RequestContext(request, ["read-entity-detail", "read-entity-detail-all"])
+    )
     def get(self, id):
         return super().get(id)
 
-    @app.require_oauth("update-entity")
+    @policy_factory.apply_policies(RequestContext(request, ["update-entity"]))
     def put(self, id):
         return super().put(id)
 
-    @app.require_oauth("patch-entity")
+    @policy_factory.apply_policies(RequestContext(request, ["patch-entity"]))
     def patch(self, id):
         return super().patch(id)
 
-    @app.require_oauth("delete-entity")
+    @policy_factory.apply_policies(RequestContext(request, ["delete-entity"]))
     def delete(self, id):
         return super().delete(id)
 
 
 class CoghentEntityMediafiles(CoghentBaseResource, EntityMediafiles):
-    @app.require_oauth(
-        permissions=["read-entity-mediafiles", "read-entity-mediafiles-all"]
+    @policy_factory.apply_policies(
+        RequestContext(
+            request, ["read-entity-mediafiles", "read-entity-mediafiles-all"]
+        )
     )
     def get(self, id):
         return super().get(id)
 
-    @app.require_oauth("add-entity-mediafiles")
+    @policy_factory.apply_policies(RequestContext(request, ["add-entity-mediafiles"]))
     def post(self, id):
         return super().post(id)
 
 
 class CoghentEntityMediafilesCreate(CoghentBaseResource, EntityMediafilesCreate):
-    @app.require_oauth("create-entity-mediafile")
+    @policy_factory.apply_policies(RequestContext(request, ["create-entity-mediafile"]))
     def post(self, id):
         return super().post(id)
 
 
 class CoghentEntityMetadata(CoghentBaseResource, EntityMetadata):
-    @app.require_oauth(permissions=["read-entity-metadata", "read-entity-metadata-all"])
+    @policy_factory.apply_policies(
+        RequestContext(request, ["read-entity-metadata", "read-entity-metadata-all"])
+    )
     def get(self, id):
         return super().get(id)
 
-    @app.require_oauth("add-entity-metadata")
+    @policy_factory.apply_policies(RequestContext(request, ["add-entity-metadata"]))
     def post(self, id):
         return super().post(id)
 
-    @app.require_oauth("update-entity-metadata")
+    @policy_factory.apply_policies(RequestContext(request, ["update-entity-metadata"]))
     def put(self, id):
         return super().put(id)
 
-    @app.require_oauth("patch-entity-metadata")
+    @policy_factory.apply_policies(RequestContext(request, ["patch-entity-metadata"]))
     def patch(self, id):
         return super().patch(id)
 
 
 class CoghentEntityMetadataKey(CoghentBaseResource, EntityMetadataKey):
-    @app.require_oauth(
-        permissions=["read-entity-metadata-key", "read-entity-metadata-key-all"]
+    @policy_factory.apply_policies(
+        RequestContext(
+            request, ["read-entity-metadata-key", "read-entity-metadata-key-all"]
+        )
     )
     def get(self, id, key):
         return super().get(id, key)
 
-    @app.require_oauth("delete-entity-metadata-key")
+    @policy_factory.apply_policies(
+        RequestContext(request, ["delete-entity-metadata-key"])
+    )
     def delete(self, id, key):
         return super().delete(id, key)
 
 
 class CoghentEntityRelations(CoghentBaseResource, EntityRelations):
-    @app.require_oauth(
-        permissions=["read-entity-relations", "read-entity-relations-all"]
+    @policy_factory.apply_policies(
+        RequestContext(request, ["read-entity-relations", "read-entity-relations-all"])
     )
     def get(self, id):
         return super().get(id)
 
-    @app.require_oauth("add-entity-relations")
+    @policy_factory.apply_policies(RequestContext(request, ["add-entity-relations"]))
     def post(self, id):
         return super().post(id)
 
-    @app.require_oauth("update-entity-relations")
+    @policy_factory.apply_policies(RequestContext(request, ["update-entity-relations"]))
     def put(self, id):
         return super().put(id)
 
-    @app.require_oauth("patch-entity-relations")
+    @policy_factory.apply_policies(RequestContext(request, ["patch-entity-relations"]))
     def patch(self, id):
         return super().patch(id)
 
-    @app.require_oauth("delete-entity-relations")
+    @policy_factory.apply_policies(RequestContext(request, ["delete-entity-relations"]))
     def delete(self, id):
         return super().delete(id)
 
 
 class CoghentEntityRelationsAll(CoghentBaseResource, EntityRelationsAll):
-    @app.require_oauth(
-        permissions=["read-entity-relations", "read-entity-relations-all"]
+    @policy_factory.apply_policies(
+        RequestContext(request, ["read-entity-relations", "read-entity-relations-all"])
     )
     def get(self, id):
         return super().get(id)
 
 
 class CoghentEntitySetPrimaryMediafile(CoghentBaseResource, EntitySetPrimaryMediafile):
-    @app.require_oauth("set-entity-primary-mediafile")
+    @policy_factory.apply_policies(
+        RequestContext(request, ["set-entity-primary-mediafile"])
+    )
     def put(self, id, mediafile_id):
         return super().put(id, mediafile_id)
 
 
 class CoghentEntitySetPrimaryThumbnail(CoghentBaseResource, EntitySetPrimaryThumbnail):
-    @app.require_oauth("set-entity-primary-thumbnail")
+    @policy_factory.apply_policies(
+        RequestContext(request, ["set-entity-primary-thumbnail"])
+    )
     def put(self, id, mediafile_id):
         return super().put(id, mediafile_id)
 
 
 class EntityPermissions(CoghentBaseResource):
-    @app.require_oauth("get-entity-permissions")
+    @policy_factory.apply_policies(RequestContext(request, ["get-entity-permissions"]))
     def get(self, id):
         return self._get_item_permissions(id, "entities")
 
 
 class EntitySixthCollectionEntityId(CoghentBaseResource):
-    @app.require_oauth("get-entity-sixth-collection-entity-id")
+    @policy_factory.apply_policies(
+        RequestContext(request, ["get-entity-sixth-collection-entity-id"])
+    )
     def get(self):
         if entity_id := os.getenv("SIXTH_COLLECTION_ID"):
             return entity_id
@@ -160,7 +179,9 @@ class EntitySixthCollectionEntityId(CoghentBaseResource):
 
 
 class EntitySixthCollectionId(CoghentBaseResource):
-    @app.require_oauth("get-entity-sixth-collection-id")
+    @policy_factory.apply_policies(
+        RequestContext(request, ["get-entity-sixth-collection-id"])
+    )
     def get(self):
         return self.storage.get_sixth_collection_id()
 

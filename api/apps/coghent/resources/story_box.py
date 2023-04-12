@@ -1,13 +1,13 @@
-import app
 import requests
 import srt
 import util
 
+from app import policy_factory
 from apps.coghent.resources.base_resource import CoghentBaseResource
 from datetime import timedelta
 from flask import Blueprint, request
 from flask_restful import abort, Api
-from inuits_jwt_auth.authorization import current_token
+from inuits_policy_based_auth import RequestContext
 from srt import Subtitle
 
 api_bp = Blueprint("story_box", __name__)
@@ -15,19 +15,21 @@ api = Api(api_bp)
 
 
 class StoryBox(CoghentBaseResource):
-    @app.require_oauth("get-story-box")
+    @policy_factory.apply_policies(RequestContext(request, ["get-story-box"]))
     def get(self):
-        self._abort_if_not_logged_in(current_token)
-        fields = {"type": "frame", "user": current_token["email"]}
+        token = policy_factory.get_user_context().auth_objects.get("token")
+        self._abort_if_not_logged_in(token)
+        fields = {"type": "frame", "user": token["email"]}
         skip = int(request.args.get("skip", 0))
         limit = int(request.args.get("limit", 20))
         return self.storage.get_items_from_collection("entities", skip, limit, fields)
 
 
 class StoryBoxLink(CoghentBaseResource):
-    @app.require_oauth("link-story-box")
+    @policy_factory.apply_policies(RequestContext(request, ["link-story-box"]))
     def post(self, code):
-        self._abort_if_not_logged_in(current_token)
+        token = policy_factory.get_user_context().auth_objects.get("token")
+        self._abort_if_not_logged_in(token)
         box_visit = self._abort_if_item_doesnt_exist("box_visits", code)
         relations = self.storage.get_collection_item_relations(
             "box_visits", util.get_raw_id(box_visit)
@@ -39,7 +41,7 @@ class StoryBoxLink(CoghentBaseResource):
             self.storage.patch_collection_item_relations(
                 "box_visits", util.get_raw_id(box_visit), [story_box], False
             )
-            content = {"user": current_token["email"]}
+            content = {"user": token["email"]}
             story_box = self.storage.patch_item_from_collection(
                 "entities", story_box["key"].removeprefix("entities/"), content
             )
@@ -47,7 +49,7 @@ class StoryBoxLink(CoghentBaseResource):
             content = {
                 "type": "frame",
                 "metadata": [{"key": "type", "value": "frame", "language": "en"}],
-                "user": current_token["email"],
+                "user": token["email"],
             }
             story_box = self.storage.save_item_to_collection("entities", content)
             content = [{"key": story_box["_id"], "type": "story_box", "linked": True}]
@@ -58,9 +60,11 @@ class StoryBoxLink(CoghentBaseResource):
 
 
 class StoryBoxPublish(CoghentBaseResource):
-    @app.require_oauth("publish-story-box")
+    @policy_factory.apply_policies(RequestContext(request, ["publish-story-box"]))
     def post(self, id):
-        self._abort_if_not_logged_in(current_token)
+        self._abort_if_not_logged_in(
+            policy_factory.get_user_context().auth_objects.get("token")
+        )
         story_box = self._abort_if_item_doesnt_exist("entities", id)
         story_box_relations = self.storage.get_collection_item_relations(
             "entities", util.get_raw_id(story_box)
@@ -99,9 +103,10 @@ class StoryBoxPublish(CoghentBaseResource):
 
 
 class StoryBoxSubtitles(CoghentBaseResource):
-    @app.require_oauth("subtitles-story-box")
+    @policy_factory.apply_policies(RequestContext(request, ["subtitles-story-box"]))
     def post(self, id):
-        self._abort_if_not_logged_in(current_token)
+        token = policy_factory.get_user_context().auth_objects.get("token")
+        self._abort_if_not_logged_in(token)
         story_box = self._abort_if_item_doesnt_exist("entities", id)
         relations = [
             x
@@ -137,7 +142,7 @@ class StoryBoxSubtitles(CoghentBaseResource):
             {
                 "filename": "storybox_srt.srt",
                 "metadata": [],
-                "user": current_token["email"],
+                "user": token["email"],
             },
         )
         if not mediafile:

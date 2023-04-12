@@ -1,19 +1,17 @@
-import app
-
+from app import policy_factory
 from apps.coghent.resources.base_resource import CoghentBaseResource
-from flask import Blueprint
+from flask import Blueprint, request
 from flask_restful import Api
+from inuits_policy_based_auth import RequestContext
 
 api_bp = Blueprint("user", __name__)
 api = Api(api_bp)
 
 
 class UserPermissions(CoghentBaseResource):
-    @app.require_oauth("get-user-permissions")
+    @policy_factory.apply_policies(RequestContext(request, ["get-user-permissions"]))
     def get(self):
-        return app.require_oauth.get_token_permissions(
-            app.validator.role_permission_mapping
-        )
+        return policy_factory.get_user_context().scopes
 
 
 api.add_resource(UserPermissions, "/user/permissions")

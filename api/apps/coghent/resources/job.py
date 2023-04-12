@@ -1,8 +1,8 @@
-import app
-
+from app import policy_factory
 from apps.coghent.resources.base_resource import CoghentBaseResource
-from flask import Blueprint
+from flask import Blueprint, request
 from flask_restful import Api
+from inuits_policy_based_auth import RequestContext
 from resources.job import Job, JobDetail
 
 api_bp = Blueprint("job", __name__)
@@ -10,13 +10,13 @@ api = Api(api_bp)
 
 
 class CoghentJob(CoghentBaseResource, Job):
-    @app.require_oauth("read-job")
+    @policy_factory.apply_policies(RequestContext(request, ["read-job"]))
     def get(self):
         return super().get()
 
 
 class CoghentJobDetail(CoghentBaseResource, JobDetail):
-    @app.require_oauth("read-job")
+    @policy_factory.apply_policies(RequestContext(request, ["read-job"]))
     def get(self, id):
         return super().get(id)
 

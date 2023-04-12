@@ -1,9 +1,10 @@
-import app
 import util
 
+from app import policy_factory
 from apps.coghent.resources.base_resource import CoghentBaseResource
 from flask import Blueprint, request, after_this_request
 from flask_restful import Api
+from inuits_policy_based_auth import RequestContext
 from validator import box_visit_schema
 
 api_bp = Blueprint("box_visit", __name__)
@@ -11,7 +12,7 @@ api = Api(api_bp)
 
 
 class BoxVisit(CoghentBaseResource):
-    @app.require_oauth("read-box-visit")
+    @policy_factory.apply_policies(RequestContext(request, ["read-box-visit"]))
     def get(self):
         skip = int(request.args.get("skip", 0))
         limit = int(request.args.get("limit", 20))
@@ -32,14 +33,14 @@ class BoxVisit(CoghentBaseResource):
             ] = f"/box_visits?{type_filter}skip={max(0, skip - limit)}&limit={limit}"
         return box_visits
 
-    @app.require_oauth("create-box-visit")
+    @policy_factory.apply_policies(RequestContext(request, ["create-box-visit"]))
     def post(self):
         content = request.get_json()
         return self._create_box_visit(content)
 
 
 class BoxVisitDetail(CoghentBaseResource):
-    @app.require_oauth("read-box-visit")
+    @policy_factory.apply_policies(RequestContext(request, ["read-box-visit"]))
     def get(self, id):
         box_visit = self._abort_if_item_doesnt_exist("box_visits", id)
         box_visit = self._add_relations_to_metadata(
@@ -47,7 +48,7 @@ class BoxVisitDetail(CoghentBaseResource):
         )
         return box_visit
 
-    @app.require_oauth("update-box-visit")
+    @policy_factory.apply_policies(RequestContext(request, ["update-box-visit"]))
     def put(self, id):
         box_visit = self._abort_if_item_doesnt_exist("box_visits", id)
         content = request.get_json()
@@ -57,7 +58,7 @@ class BoxVisitDetail(CoghentBaseResource):
         )
         return box_visit, 201
 
-    @app.require_oauth("patch-box-visit")
+    @policy_factory.apply_policies(RequestContext(request, ["patch-box-visit"]))
     def patch(self, id):
         box_visit = self._abort_if_item_doesnt_exist("box_visits", id)
         content = request.get_json()
@@ -66,7 +67,7 @@ class BoxVisitDetail(CoghentBaseResource):
         )
         return box_visit, 201
 
-    @app.require_oauth("delete-box-visit")
+    @policy_factory.apply_policies(RequestContext(request, ["delete-box-visit"]))
     def delete(self, id):
         box_visit = self._abort_if_item_doesnt_exist("box_visits", id)
         self.storage.delete_item_from_collection(
@@ -76,7 +77,7 @@ class BoxVisitDetail(CoghentBaseResource):
 
 
 class BoxVisitRelations(CoghentBaseResource):
-    @app.require_oauth("get-box-visit-relations")
+    @policy_factory.apply_policies(RequestContext(request, ["get-box-visit-relations"]))
     def get(self, id):
         box_visit = self._abort_if_item_doesnt_exist("box_visits", id)
 
@@ -89,7 +90,7 @@ class BoxVisitRelations(CoghentBaseResource):
             "box_visits", util.get_raw_id(box_visit)
         )
 
-    @app.require_oauth("add-box-visit-relations")
+    @policy_factory.apply_policies(RequestContext(request, ["add-box-visit-relations"]))
     def post(self, id):
         box_visit = self._abort_if_item_doesnt_exist("box_visits", id)
         content = request.get_json()
@@ -98,7 +99,9 @@ class BoxVisitRelations(CoghentBaseResource):
         )
         return relations, 201
 
-    @app.require_oauth("update-box-visit-relations")
+    @policy_factory.apply_policies(
+        RequestContext(request, ["update-box-visit-relations"])
+    )
     def put(self, id):
         box_visit = self._abort_if_item_doesnt_exist("box_visits", id)
         content = request.get_json()
@@ -107,7 +110,9 @@ class BoxVisitRelations(CoghentBaseResource):
         )
         return relations, 201
 
-    @app.require_oauth("patch-box-visit-relations")
+    @policy_factory.apply_policies(
+        RequestContext(request, ["patch-box-visit-relations"])
+    )
     def patch(self, id):
         box_visit = self._abort_if_item_doesnt_exist("box_visits", id)
         content = request.get_json()
@@ -116,7 +121,9 @@ class BoxVisitRelations(CoghentBaseResource):
         )
         return relations, 201
 
-    @app.require_oauth("delete-box-visit-relations")
+    @policy_factory.apply_policies(
+        RequestContext(request, ["delete-box-visit-relations"])
+    )
     def delete(self, id):
         box_visit = self._abort_if_item_doesnt_exist("box_visits", id)
         content = request.get_json()
@@ -127,7 +134,7 @@ class BoxVisitRelations(CoghentBaseResource):
 
 
 class BoxVisitRelationsAll(CoghentBaseResource):
-    @app.require_oauth("get-box-visit-relations")
+    @policy_factory.apply_policies(RequestContext(request, ["get-box-visit-relations"]))
     def get(self, id):
         box_visit = self._abort_if_item_doesnt_exist("box_visits", id)
 

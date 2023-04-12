@@ -1,8 +1,8 @@
-import app
-
+from app import policy_factory
 from apps.coghent.resources.base_resource import CoghentBaseResource
-from flask import Blueprint
+from flask import Blueprint, request
 from flask_restful import Api
+from inuits_policy_based_auth import RequestContext
 from resources.mediafile import (
     Mediafile,
     MediafileAssets,
@@ -15,23 +15,23 @@ api = Api(api_bp)
 
 
 class CoghentMediafile(CoghentBaseResource, Mediafile):
-    @app.require_oauth("read-mediafile")
+    @policy_factory.apply_policies(RequestContext(request, ["read-mediafile"]))
     def get(self):
         return super().get()
 
-    @app.require_oauth("create-mediafile")
+    @policy_factory.apply_policies(RequestContext(request, ["create-mediafile"]))
     def post(self):
         return super().post()
 
 
 class CoghentMediafileAssets(CoghentBaseResource, MediafileAssets):
-    @app.require_oauth("get-mediafile-assets")
+    @policy_factory.apply_policies(RequestContext(request, ["get-mediafile-assets"]))
     def get(self, id):
         return super().get(id)
 
 
 class CoghentMediafileCopyright(CoghentBaseResource, MediafileCopyright):
-    @app.require_oauth("get-mediafile-copyright")
+    @policy_factory.apply_policies(RequestContext(request, ["get-mediafile-copyright"]))
     def get(self, id):
         ret_val, ret_code = super().get(id)
         if ret_val == "full":
@@ -43,25 +43,27 @@ class CoghentMediafileCopyright(CoghentBaseResource, MediafileCopyright):
 
 
 class CoghentMediafileDetail(CoghentBaseResource, MediafileDetail):
-    @app.require_oauth("read-mediafile")
+    @policy_factory.apply_policies(RequestContext(request, ["read-mediafile"]))
     def get(self, id):
         return super().get(id)
 
-    @app.require_oauth("update-mediafile")
+    @policy_factory.apply_policies(RequestContext(request, ["update-mediafile"]))
     def put(self, id):
         return super().put(id)
 
-    @app.require_oauth("patch-mediafile")
+    @policy_factory.apply_policies(RequestContext(request, ["patch-mediafile"]))
     def patch(self, id):
         return super().patch(id)
 
-    @app.require_oauth("delete-mediafile")
+    @policy_factory.apply_policies(RequestContext(request, ["delete-mediafile"]))
     def delete(self, id):
         return super().delete(id)
 
 
 class MediafilePermissions(CoghentBaseResource):
-    @app.require_oauth("get-mediafile-permissions")
+    @policy_factory.apply_policies(
+        RequestContext(request, ["get-mediafile-permissions"])
+    )
     def get(self, id):
         return self._get_item_permissions(id, "mediafiles")
 

@@ -55,6 +55,9 @@ class BaseResource(Resource):
         entity["metadata"] = [*entity.get("metadata", []), *relations]
         return entity
 
+    def _auth_enabled(self):
+        return os.getenv("REQUIRE_TOKEN", True) in ["True", "true", True]
+
     def _create_mediafile_for_entity(self, user_id, entity, filename):
         content = {
             "filename": filename,
