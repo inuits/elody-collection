@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import sys
 
 from amqp.amqpmanager import AmqpManager
 from apps.loader import load_apps
@@ -34,6 +35,8 @@ app.config.update(
     {
         "MQ_EXCHANGE": os.getenv("RABMQ_SEND_EXCHANGE_NAME"),
         "MQ_URL": os.getenv("RABMQ_RABBITMQ_URL"),
+        "DURABLE_EXCHANGE": True if os.getenv("DURABLE_EXCHANGE", False) in [1, "1", "True", "true", True] else False,
+        "PASSIVE_EXCHANGE": True if os.getenv("PASSIVE_EXCHANGE", False) in [1, "1", "True", "true", True] else False,
         "SECRET_KEY": "SomethingNotEntirelySecret",
         "TESTING": True,
         "DEBUG": True,
