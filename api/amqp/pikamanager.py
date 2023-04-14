@@ -1,26 +1,26 @@
 import itertools
 import json
-from datetime import datetime
-from hashlib import sha256
-from threading import Thread
-from typing import Callable, List, Union
 
+from datetime import datetime
 from flask.app import Flask
+from hashlib import sha256
 from pika import spec
 from pika.adapters.blocking_connection import BlockingChannel
 from pika.exceptions import AMQPConnectionError
 from rabbitmq_pika_flask import RabbitMQ
-from rabbitmq_pika_flask.QueueParams import QueueParams
-from rabbitmq_pika_flask.RabbitMQ import MessageErrorCallback
-from retry import retry
-from retry.api import retry_call
-
 from rabbitmq_pika_flask.ExchangeType import ExchangeType
+from rabbitmq_pika_flask.QueueParams import QueueParams
 from rabbitmq_pika_flask.RabbitConsumerMiddleware import (
     RabbitConsumerMessage,
     RabbitConsumerMiddleware,
     call_middlewares,
 )
+from rabbitmq_pika_flask.RabbitMQ import MessageErrorCallback
+from retry import retry
+from retry.api import retry_call
+from threading import Thread
+from typing import Callable, List, Union
+
 
 class PikaAmqpManager(RabbitMQ):
     def __init__(self):
@@ -29,16 +29,24 @@ class PikaAmqpManager(RabbitMQ):
         self.passive_exchange = False
 
     def init_app(
-            self,
-            app: Flask,
-            queue_prefix: str,
-            body_parser: Callable = lambda body: body,
-            msg_parser: Callable = lambda msg: msg,
-            development: bool = False,
-            on_message_error_callback: Union[MessageErrorCallback, None] = None,
-            middlewares: Union[List[RabbitConsumerMiddleware], None] = None,
+        self,
+        app: Flask,
+        queue_prefix: str,
+        body_parser: Callable = lambda body: body,
+        msg_parser: Callable = lambda msg: msg,
+        development: bool = False,
+        on_message_error_callback: Union[MessageErrorCallback, None] = None,
+        middlewares: Union[List[RabbitConsumerMiddleware], None] = None,
     ):
-        super().init_app(app, queue_prefix, body_parser, msg_parser, development, on_message_error_callback, middlewares)
+        super().init_app(
+            app,
+            queue_prefix,
+            body_parser,
+            msg_parser,
+            development,
+            on_message_error_callback,
+            middlewares,
+        )
         self.durable_exchange = self.config["DURABLE_EXCHANGE"]
         self.passive_exchange = self.config["PASSIVE_EXCHANGE"]
 
@@ -49,7 +57,7 @@ class PikaAmqpManager(RabbitMQ):
         exchange_type: ExchangeType,
         auto_ack: bool,
         dead_letter_exchange: bool,
-        props_needed: List[str]
+        props_needed: List[str],
     ):
         """Setup new queue connection in a new thread
 
@@ -69,21 +77,22 @@ class PikaAmqpManager(RabbitMQ):
                 exchange_type,
                 auto_ack,
                 dead_letter_exchange,
-                props_needed
+                props_needed,
             )
 
         thread = Thread(target=create_queue, name=self._build_queue_name(func))
         thread.daemon = True
         thread.start()
+
     @retry((AMQPConnectionError, AssertionError), delay=5, jitter=(5, 15))
     def _add_exchange_queue(
-            self,
-            func: Callable,
-            routing_key: Union[str, List[str]],
-            exchange_type: ExchangeType,
-            auto_ack: bool,
-            dead_letter_exchange: bool,
-            props_needed: List[str]
+        self,
+        func: Callable,
+        routing_key: Union[str, List[str]],
+        exchange_type: ExchangeType,
+        auto_ack: bool,
+        dead_letter_exchange: bool,
+        props_needed: List[str],
     ):
         """Creates or connects to new queue, retries connection on failure
 
@@ -103,11 +112,19 @@ class PikaAmqpManager(RabbitMQ):
         # declare dead letter exchange if needed
         if dead_letter_exchange:
             dead_letter_exchange_name = f"dead.letter.{self.exchange_name}"
-            channel.exchange_declare(exchange=dead_letter_exchange_name, exchange_type=ExchangeType.DIRECT, durable=self.durable_exchange, passive=self.passive_exchange)
+            channel.exchange_declare(
+                exchange=dead_letter_exchange_name,
+                exchange_type=ExchangeType.DIRECT,
+                durable=self.durable_exchange,
+                passive=self.passive_exchange,
+            )
 
         # Declare exchange
         channel.exchange_declare(
-            exchange=self.exchange_name, exchange_type=exchange_type, durable=self.durable_exchange, passive=self.passive_exchange
+            exchange=self.exchange_name,
+            exchange_type=exchange_type,
+            durable=self.durable_exchange,
+            passive=self.passive_exchange,
         )
 
         # Creates new queue or connects to existing one
@@ -159,10 +176,10 @@ class PikaAmqpManager(RabbitMQ):
             call_next(message)
 
         def callback(
-                _: BlockingChannel,
-                method: spec.Basic.Deliver,
-                props: spec.BasicProperties,
-                body: bytes,
+            _: BlockingChannel,
+            method: spec.Basic.Deliver,
+            props: spec.BasicProperties,
+            body: bytes,
         ):
             with self.app.app_context():
                 decoded_body = body.decode()
@@ -179,7 +196,8 @@ class PikaAmqpManager(RabbitMQ):
                         routing_key, body, self.body_parser(decoded_body), method, props
                     )
                     call_middlewares(
-                        message, itertools.chain(list(self.middlewares), [user_consumer])
+                        message,
+                        itertools.chain(list(self.middlewares), [user_consumer]),
                     )
 
                     if not auto_ack:
@@ -197,7 +215,12 @@ class PikaAmqpManager(RabbitMQ):
                     finally:
                         if self.on_message_error_callback is not None:
                             self.on_message_error_callback(
-                                queue_name, dead_letter_queue_name, method, props, decoded_body, err
+                                queue_name,
+                                dead_letter_queue_name,
+                                method,
+                                props,
+                                decoded_body,
+                                err,
                             )
 
         channel.basic_consume(
@@ -212,6 +235,7 @@ class PikaAmqpManager(RabbitMQ):
             connection.close()
 
             raise AMQPConnectionError from err
+
     def send(
         self,
         body,
@@ -219,7 +243,7 @@ class PikaAmqpManager(RabbitMQ):
         exchange_type: ExchangeType = ExchangeType.DEFAULT,
         retries: int = 5,
         message_version: str = "v1.0.0",
-        **properties
+        **properties,
     ):
         """Sends a message to a given routing key
 
@@ -247,7 +271,7 @@ class PikaAmqpManager(RabbitMQ):
         exchange_type: ExchangeType = ExchangeType.DEFAULT,
         retries: int = 5,
         message_version: str = "v1.0.0",
-        **properties
+        **properties,
     ):
         """Sends a message to a given routing key synchronously
 
@@ -267,24 +291,34 @@ class PikaAmqpManager(RabbitMQ):
             exceptions=(AMQPConnectionError, AssertionError),
             tries=retries,
             delay=5,
-            jitter=(5, 15)
+            jitter=(5, 15),
         )
 
     def _send_msg(
-        self, body, routing_key, exchange_type, message_version: str = "v1.0.0", **properties
+        self,
+        body,
+        routing_key,
+        exchange_type,
+        message_version: str = "v1.0.0",
+        **properties,
     ):
         try:
             channel = self.get_connection().channel()
 
             channel.exchange_declare(
-                exchange=self.exchange_name, exchange_type=exchange_type, durable=self.durable_exchange, passive=self.passive_exchange
+                exchange=self.exchange_name,
+                exchange_type=exchange_type,
+                durable=self.durable_exchange,
+                passive=self.passive_exchange,
             )
 
             if self.msg_parser:
                 body = self.msg_parser(body)
 
             if "message_id" not in properties:
-                properties["message_id"] = sha256(json.dumps(body).encode("utf-8")).hexdigest()
+                properties["message_id"] = sha256(
+                    json.dumps(body).encode("utf-8")
+                ).hexdigest()
             if "timestamp" not in properties:
                 properties["timestamp"] = int(datetime.now().timestamp())
 
