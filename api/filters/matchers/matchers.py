@@ -2,13 +2,14 @@ import os
 
 from abc import ABC, abstractmethod
 from filters.matchers.base_matchers import BaseMatchers
+from filters.matchers.arango_matchers import ArangoMatchers
 from filters.matchers.mongo_matchers import MongoMatchers
 
 
 class BaseMatcher(ABC):
     def __init__(self):
         self.matcher_engine: BaseMatchers = {
-            "arango": "ArangoMatchers",
+            "arango": ArangoMatchers,
             "mongo": MongoMatchers,
         }.get(
             os.getenv("DB_ENGINE", "arango")
@@ -43,7 +44,7 @@ class ExactMatcher(BaseMatcher):
             and kwargs["match_exact"]
         ):
             return self.matcher_engine.exact(
-                key, value, parent_key, kwargs["is_datetime_value"]
+                key, value, parent_key, kwargs.get("is_datetime_value", False)
             )
 
 
@@ -68,7 +69,7 @@ class MinMatcher(BaseMatcher):
             and not value.get("included")
         ):
             return self.matcher_engine.min(
-                key, value["min"], parent_key, kwargs["is_datetime_value"]
+                key, value["min"], parent_key, kwargs.get("is_datetime_value", False)
             )
 
 
@@ -84,7 +85,7 @@ class MaxMatcher(BaseMatcher):
             and not value.get("included")
         ):
             return self.matcher_engine.max(
-                key, value["max"], parent_key, kwargs["is_datetime_value"]
+                key, value["max"], parent_key, kwargs.get("is_datetime_value", False)
             )
 
 
@@ -100,7 +101,7 @@ class MinIncludedMatcher(BaseMatcher):
             and value.get("included")
         ):
             return self.matcher_engine.min_included(
-                key, value["min"], parent_key, kwargs["is_datetime_value"]
+                key, value["min"], parent_key, kwargs.get("is_datetime_value", False)
             )
 
 
@@ -116,7 +117,7 @@ class MaxIncludedMatcher(BaseMatcher):
             and value.get("included")
         ):
             return self.matcher_engine.max_included(
-                key, value["max"], parent_key, kwargs["is_datetime_value"]
+                key, value["max"], parent_key, kwargs.get("is_datetime_value", False)
             )
 
 
@@ -132,7 +133,11 @@ class InBetweenMatcher(BaseMatcher):
             and value.get("max")
         ):
             return self.matcher_engine.in_between(
-                key, value["min"], value["max"], parent_key, kwargs["is_datetime_value"]
+                key,
+                value["min"],
+                value["max"],
+                parent_key,
+                kwargs.get("is_datetime_value", False),
             )
 
 

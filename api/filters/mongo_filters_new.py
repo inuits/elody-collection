@@ -40,7 +40,7 @@ class MongoFiltersNew(MongoStorageManager):
 
         for filter_criteria in filter_request_body:
             filter = get_filter(filter_criteria["type"])
-            pipeline += filter.generate_query(filter_criteria)
+            pipeline += filter.generate_query(filter_criteria)  # type: ignore
 
         pipeline.append(
             {"$project": {"relationDocuments": 0, "numberOfRelations": 0}}  # type: ignore

@@ -15,6 +15,9 @@ from filters.matchers.matchers import (
     NoneMatcher,
 )
 from filters.types.base_filter_type_query_generator import BaseFilterTypeQueryGenerator
+from filters.types.arango_filter_type_query_generator import (
+    ArangoFilterTypeQueryGenerator,
+)
 from filters.types.mongo_filter_type_query_generator import (
     MongoFilterTypeQueryGenerator,
 )
@@ -41,7 +44,7 @@ def get_filter(input_type: str):
 class BaseFilterType(ABC):
     def __init__(self):
         self.filter_type_engine: BaseFilterTypeQueryGenerator = {
-            "arango": "ArangoFilterTypes",
+            "arango": ArangoFilterTypeQueryGenerator,
             "mongo": MongoFilterTypeQueryGenerator,
         }.get(
             os.getenv("DB_ENGINE", "arango")
@@ -49,7 +52,7 @@ class BaseFilterType(ABC):
         self.matchers: dict[str, Type[BaseMatcher]] = {}
 
     @abstractmethod
-    def generate_query(self, filter_criteria: dict) -> list:
+    def generate_query(self, filter_criteria: dict) -> list | str:
         pass
 
 
