@@ -31,6 +31,11 @@
       "type": "selection"
     },
     {
+      "key": "museum",
+      "label": "Museum",
+      "type": "selection"
+    },
+    {
       "key": "owner",
       "label": "Owner",
       "type": "selection"
@@ -150,6 +155,11 @@
     {
       "key": "type",
       "label": "Type",
+      "type": "selection"
+    },
+    {
+      "key": "museum",
+      "label": "Museum",
       "type": "selection"
     },
     {
