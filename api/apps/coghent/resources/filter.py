@@ -31,7 +31,7 @@ class CoghentFilterEntitiesBySavedSearchId(
 class CoghentFilterMediafiles(CoghentBaseFilterResource, FilterMediafiles):
     @policy_factory.apply_policies(RequestContext(request, ["search-advanced"]))
     def post(self):
-        super().post()
+        return super().post()
 
 
 class CoghentFilterMediafilesBySavedSearchId(
@@ -39,7 +39,7 @@ class CoghentFilterMediafilesBySavedSearchId(
 ):
     @policy_factory.apply_policies(RequestContext(request, ["search-advanced"]))
     def post(self, id):
-        super().post(id)
+        return super().post(id)
 
 
 api.add_resource(CoghentFilterEntities, "/entities/filter")
