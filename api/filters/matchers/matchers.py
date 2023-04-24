@@ -52,8 +52,8 @@ class ContainsMatcher(BaseMatcher):
     def __init__(self):
         super().__init__()
 
-    def match(self, key, value, parent_key="", **_):
-        if isinstance(key, str):
+    def match(self, key, value, parent_key="", **kwargs):
+        if isinstance(key, str) and not kwargs.get("match_exact", False):
             return self.matcher_engine.contains(key, value, parent_key)
 
 
