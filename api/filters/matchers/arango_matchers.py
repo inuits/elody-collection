@@ -10,12 +10,10 @@ class ArangoMatchers(BaseMatchers):
             return self.__value_match_with_parent_key_of_type_array(
                 key, parent_key, "==", [value]
             )
-        return self.__value_match_without_parent_key(key, value, parent_key, exact=True)
+        return self.__value_match_without_parent_key(key, value, exact=True)
 
     def contains(self, key, value, parent_key):
-        return self.__value_match_without_parent_key(
-            key, value, parent_key, exact=False
-        )
+        return self.__value_match_without_parent_key(key, value, exact=False)
 
     def min(self, key, value, parent_key, is_datetime_value):
         raise NotImplemented
@@ -38,9 +36,7 @@ class ArangoMatchers(BaseMatchers):
     def none(self, key, parent_key):
         return self.__value_match_with_parent_key_of_type_array(key, parent_key, "==")
 
-    def __value_match_without_parent_key(
-        self, key: str, value, parent_key: str = "", *, exact: bool
-    ):
+    def __value_match_without_parent_key(self, key: str, value, *, exact: bool):
         if exact:
             array_condition = f'"{value}" IN doc.{key}'
             equality_operator = "=="
@@ -49,9 +45,6 @@ class ArangoMatchers(BaseMatchers):
             array_condition = f'CONTAINS(doc.{key}, "{value}")'
             equality_operator = "LIKE"
             prefix, suffix = 2 * "%"
-
-        if parent_key:
-            raise NotImplemented
 
         return f"""
             FILTER (
