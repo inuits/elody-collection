@@ -13,7 +13,30 @@ class ArangoFilterTypeQueryGenerator(BaseFilterTypeQueryGenerator):
         )
 
     def generate_query_for_text_filter_type(self, matchers, filter_criteria):
-        raise NotImplemented
+        root_fields = ["filename", "mimetype"]
+
+        if filter_criteria["key"] in root_fields:
+            return matchers["contains"]().match(
+                filter_criteria["key"], filter_criteria["value"]
+            )
+        else:
+            aql = ""
+            if filter_criteria.get("label"):
+                result = matchers["contains"]().match(
+                    "label", filter_criteria["label"], "metadata"
+                )
+                if result and isinstance(result, str):
+                    aql += result
+
+            aql += self.__apply_matchers(
+                matchers,
+                filter_criteria["key"],
+                filter_criteria["value"],
+                "metadata",
+                match_exact=filter_criteria.get("match_exact"),
+            )
+
+            return aql
 
     def generate_query_for_date_filter_type(self, matchers, filter_criteria):
         raise NotImplemented

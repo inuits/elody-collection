@@ -27,10 +27,10 @@ class ArangoMatchers(BaseMatchers):
         raise NotImplemented
 
     def any(self, key, parent_key):
-        raise NotImplemented
+        return self.__any_none_match(key, parent_key, "!=")
 
     def none(self, key, parent_key):
-        raise NotImplemented
+        return self.__any_none_match(key, parent_key, "==")
 
     def __exact_contains_match(
         self, key: str, value, parent_key: str = "", *, exact: bool
@@ -52,5 +52,28 @@ class ArangoMatchers(BaseMatchers):
                 IS_ARRAY(doc.{key}) AND {array_condition}
             ) OR (
                 doc.{key} {equality_operator} "{prefix}{value}{suffix}"
+            )
+        """
+
+    def __any_none_match(
+        self, key: str, parent_key: str, operator_to_match_none_values: str
+    ):
+        and_or_condition = "AND" if operator_to_match_none_values == "!=" else "OR"
+        return f"""
+            FILTER (
+                IS_ARRAY(doc.{parent_key})
+                AND (
+                    LENGTH(
+                        FOR item IN doc.{parent_key}
+                            FILTER (
+                                item.key == "{key}"
+                                AND (
+                                    item.value {operator_to_match_none_values} "{None}"
+                                    {and_or_condition} item.value {operator_to_match_none_values} ""
+                                )
+                            )
+                            RETURN item
+                    ) > 0
+                )
             )
         """
