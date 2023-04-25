@@ -42,7 +42,13 @@ class ArangoFilterTypeQueryGenerator(BaseFilterTypeQueryGenerator):
         raise NotImplemented
 
     def generate_query_for_number_filter_type(self, matchers, filter_criteria):
-        raise NotImplemented
+        return self.__apply_matchers(
+            matchers,
+            filter_criteria["key"],
+            filter_criteria["value"],
+            "metadata",
+            match_exact=True,
+        )
 
     def generate_query_for_selection_filter_type(self, matchers, filter_criteria):
         return self.__apply_matchers(
