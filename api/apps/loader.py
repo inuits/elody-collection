@@ -30,11 +30,12 @@ def load_policies(policy_factory, logger):
             for policy_module_name in apps[app]["policies"].get(auth_type):
                 policy = __get_class(app, auth_type, policy_module_name)
                 policy_factory.register_authorization_policy(f"apps.{app}", policy())
+            # FIXME: don't always set last app as fallback
+            policy_factory.set_fallback_key_for_policy_mapping(f"apps.{app}")
         except Exception as error:
             raise PolicyFactoryException(
                 f"Policy factory was not configured correctly: {str(error)}"
             ).with_traceback(error.__traceback__)
-    policy_factory.set_fallback_key_for_policy_mapping("apps.[app_name]")
 
 
 def __get_class(app, auth_type, policy_module_name):
