@@ -6,7 +6,9 @@ class ArangoMatchers(BaseMatchers):
         return f"FILTER LENGTH(INTERSECTION(doc.{key}, {values})) > 0"
 
     def exact(self, key, value, parent_key, is_datetime_value):
-        return self.__exact_contains_match(key, value, parent_key, "==")
+        return self.__exact_contains_match(
+            key, value, parent_key, "IN" if isinstance(value, list) else "=="
+        )
 
     def contains(self, key, value, parent_key):
         return self.__exact_contains_match(key, value, parent_key, "LIKE")

@@ -69,9 +69,7 @@ class MongoFilterTypeQueryGenerator(BaseFilterTypeQueryGenerator):
             matchers,
             filter_criteria["key"],
             filter_criteria["value"],
-            "metadata"
-            if filter_criteria["key"] in ["rights", "source", "publication_status"]
-            else "relationDocuments.metadata",
+            "metadata",
             match_exact=True,
         )
 
