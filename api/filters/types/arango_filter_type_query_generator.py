@@ -54,7 +54,13 @@ class ArangoFilterTypeQueryGenerator(BaseFilterTypeQueryGenerator):
         )
 
     def generate_query_for_boolean_filter_type(self, matchers, filter_criteria):
-        raise NotImplemented
+        return self.__apply_matchers(
+            matchers,
+            filter_criteria["key"],
+            filter_criteria["value"],
+            "metadata",
+            match_exact=True,
+        )
 
     def __apply_matchers(
         self,
