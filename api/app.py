@@ -3,7 +3,7 @@ import logging
 import os
 
 from amqp.amqpmanager import AmqpManager
-from apps.loader import load_apps
+from apps.loader import load_apps, load_policies
 from flask import Flask
 from flask_restful import Api
 from flask_swagger_ui import get_swaggerui_blueprint
@@ -71,8 +71,8 @@ if os.getenv("HEALTH_CHECK_EXTERNAL_SERVICES", True) in ["True", "true", True]:
     health.add_check(rabbit_available)
 app.add_url_rule("/health", "healthcheck", view_func=lambda: health.run())
 
-policy_factory = PolicyFactory(logger)
-load_apps(app, policy_factory)
+load_apps(app)
+load_policies(PolicyFactory(), logger)
 
 from resources.config import Config
 from resources.entity import (

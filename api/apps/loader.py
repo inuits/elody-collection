@@ -2,48 +2,48 @@ import os
 import util
 
 from importlib import import_module
-from inuits_policy_based_auth import PolicyFactory
 from inuits_policy_based_auth.exceptions import (
     PolicyFactoryException,
 )
 
 
-def load_apps(flask_app, policy_factory: PolicyFactory):
+def load_apps(flask_app):
+    apps = util.read_json_as_dict(os.getenv("APPS_MANIFEST"))
+    for app in apps:
+        for resource in apps[app].get("resources", []):
+            api_bp = import_module(f"apps.{app}.resources.{resource}").api_bp
+            flask_app.register_blueprint(api_bp)
+
+
+def load_policies(policy_factory, logger):
     apps = util.read_json_as_dict(os.getenv("APPS_MANIFEST"))
     for app in apps:
         try:
-            for resource in apps[app].get("resources", []):
-                api_bp = import_module(f"apps.{app}.resources.{resource}").api_bp
-                flask_app.register_blueprint(api_bp)
-
             auth_type = "authentication"
             for policy_module_name in apps[app]["policies"].get(auth_type):
                 policy = __get_class(app, auth_type, policy_module_name)
                 policy = __instantiate_authentication_policy(
-                    policy_module_name, policy, policy_factory.logger
+                    policy_module_name, policy, logger
                 )
-                policy_factory.register_authentication_policy(policy)
-
+                policy_factory.register_authentication_policy(f"apps.{app}", policy)
             auth_type = "authorization"
             for policy_module_name in apps[app]["policies"].get(auth_type):
                 policy = __get_class(app, auth_type, policy_module_name)
-                policy_factory.register_authorization_policy(policy())
+                policy_factory.register_authorization_policy(f"apps.{app}", policy())
         except Exception as error:
             raise PolicyFactoryException(
                 f"Policy factory was not configured correctly: {str(error)}"
             ).with_traceback(error.__traceback__)
+    policy_factory.set_fallback_key_for_policy_mapping("apps.[app_name]")
 
 
 def __get_class(app, auth_type, policy_module_name):
-    module = None
-
     try:
         module = import_module(f"apps.{app}.policies.{auth_type}.{policy_module_name}")
     except:
         module = import_module(
             f"inuits_policy_based_auth.{auth_type}.policies.{policy_module_name}"
         )
-
     policy_class_name = module.__name__.split(".")[-1].title().replace("_", "")
     policy = getattr(module, policy_class_name)
     return policy
@@ -56,9 +56,8 @@ def __instantiate_authentication_policy(policy_module_name, policy, logger):
             os.getenv("STATIC_ISSUER", False),
             os.getenv("STATIC_PUBLIC_KEY", False),
             os.getenv("REALMS", "").split(","),
-            os.getenv("ROLE_SCOPE_MAPPING", "role_scope_mapping.json"),
+            os.getenv("ROLE_SCOPE_MAPPING", os.getenv("TEST_API_SCOPES")),
             os.getenv("REMOTE_TOKEN_VALIDATION", False) in ["True", "true", True],
             os.getenv("REMOTE_PUBLIC_KEY", False),
         )
-
     return policy()
