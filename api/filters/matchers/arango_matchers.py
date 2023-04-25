@@ -28,12 +28,12 @@ class ArangoMatchers(BaseMatchers):
 
     def any(self, key, parent_key):
         return self.__value_match_with_parent_key_of_type_array(
-            key, parent_key, "!=", [None, ""]
+            key, parent_key, "!=", ["null", ""]
         )
 
     def none(self, key, parent_key):
         return self.__value_match_with_parent_key_of_type_array(
-            key, parent_key, "==", [None, ""]
+            key, parent_key, "==", ["null", ""]
         )
 
     def __exact_contains_match(
@@ -67,15 +67,20 @@ class ArangoMatchers(BaseMatchers):
         and_or_condition = "AND" if operator == "!=" else "OR"
 
         value_match = f'item.value {operator} "{prefix}{values[0]}{suffix}"'
-        for i in range(1, len(values)):
-            value_match += f' {and_or_condition} item.value {operator} "{prefix}{values[i]}{suffix}"'
+        for i in range(0, len(values)):
+            if not isinstance(values[i], str) or values[i] == "null":
+                value_match = value_match.replace(f'"{values[i]}"', f"{values[i]}")
+            try:
+                value_match += f' {and_or_condition} item.value {operator} "{prefix}{values[i + 1]}{suffix}"'
+            except IndexError:
+                break
 
         return f"""
             FILTER (
                 IS_ARRAY(doc.{parent_key})
                 AND (
                     LENGTH(
-                        FOR item IN doc.{parent_key}
+                        FOR item IN IS_ARRAY(doc.{parent_key}) ? doc.{parent_key} : []
                             FILTER (
                                 item.key == "{key}"
                                 AND ({value_match})
@@ -83,5 +88,8 @@ class ArangoMatchers(BaseMatchers):
                             RETURN item
                     ) > 0
                 )
+            ) OR (
+                HAS(doc.{parent_key}, "{key}")
+                AND ({value_match.replace("item.value", f"doc.{parent_key}.{key}")})
             )
         """
