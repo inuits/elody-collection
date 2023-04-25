@@ -71,8 +71,9 @@ if os.getenv("HEALTH_CHECK_EXTERNAL_SERVICES", True) in ["True", "true", True]:
     health.add_check(rabbit_available)
 app.add_url_rule("/health", "healthcheck", view_func=lambda: health.run())
 
+policy_factory = PolicyFactory()
 load_apps(app)
-load_policies(PolicyFactory(), logger)
+load_policies(policy_factory, logger)
 
 from resources.config import Config
 from resources.entity import (
