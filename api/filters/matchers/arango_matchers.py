@@ -20,37 +20,44 @@ class ArangoMatchers(BaseMatchers):
         raise NotImplemented
 
     def min_included(self, key, value, parent_key, is_datetime_value):
+        if isinstance(key, str):
+            return self.__value_match_with_parent_key_of_type_array(
+                key, [value], parent_key, ">="
+            )
         raise NotImplemented
 
     def max_included(self, key, value, parent_key, is_datetime_value):
+        if isinstance(key, str):
+            return self.__value_match_with_parent_key_of_type_array(
+                key, [value], parent_key, "<="
+            )
         raise NotImplemented
 
     def in_between(self, key, min, max, parent_key, is_datetime_value):
-        raise NotImplemented
+        return self.__value_match_with_parent_key_of_type_array(
+            key, [min, max], parent_key, [">=", "<="]
+        )
 
     def any(self, key, parent_key):
         return self.__value_match_with_parent_key_of_type_array(
-            key, parent_key, "!=", ["null", ""]
+            key, ["null", ""], parent_key, "!="
         )
 
     def none(self, key, parent_key):
         return self.__value_match_with_parent_key_of_type_array(
-            key, parent_key, "==", ["null", ""]
+            key, ["null", ""], parent_key, "=="
         )
 
     def __exact_contains_match(
-        self, key: str, value, parent_key: str, equality_operator
+        self, key: str, value, parent_key: str, equality_operator: str
     ):
         if parent_key:
             return self.__value_match_with_parent_key_of_type_array(
-                key, parent_key, equality_operator, [value]
+                key, [value], parent_key, equality_operator
             )
         return self.__value_match_without_parent_key(key, value, equality_operator)
 
-    def __get_prefix_and_suffix(self, equality_operator):
-        return (2 * "%") if equality_operator == "LIKE" else ("", "")
-
-    def __value_match_without_parent_key(self, key: str, value, equality_operator):
+    def __value_match_without_parent_key(self, key: str, value, equality_operator: str):
         if equality_operator == "LIKE":
             array_condition = f'CONTAINS(doc.{key}, "{value}")'
         else:
@@ -63,17 +70,21 @@ class ArangoMatchers(BaseMatchers):
         """
 
     def __value_match_with_parent_key_of_type_array(
-        self, key: str, parent_key: str, operator: str, values: list
+        self, key: str, values: list, parent_key: str, operator: str | list[str]
     ):
-        prefix, suffix = self.__get_prefix_and_suffix(operator)
-        and_or_condition = "AND" if operator == "!=" else "OR"
+        comparison_operators, logical_operator = self.__determine_query_operators(
+            operator, values
+        )
+        prefix, suffix = self.__get_prefix_and_suffix(comparison_operators[0])
 
-        value_match = f'item.value {operator} "{prefix}{values[0]}{suffix}"'
+        value_match = (
+            f'item.value {comparison_operators[0]} "{prefix}{values[0]}{suffix}"'
+        )
         for i in range(0, len(values)):
             if not isinstance(values[i], str) or values[i] == "null":
                 value_match = value_match.replace(f'"{values[i]}"', f"{values[i]}")
             try:
-                value_match += f' {and_or_condition} item.value {operator} "{prefix}{values[i + 1]}{suffix}"'
+                value_match += f' {logical_operator} item.value {comparison_operators[i + 1]} "{prefix}{values[i + 1]}{suffix}"'
             except IndexError:
                 break
 
@@ -95,3 +106,12 @@ class ArangoMatchers(BaseMatchers):
                 AND ({value_match.replace("item.value", f"doc.{parent_key}.{key}")})
             )
         """
+
+    def __get_prefix_and_suffix(self, equality_operator: str):
+        return (2 * "%") if equality_operator == "LIKE" else ("", "")
+
+    def __determine_query_operators(self, operator: str | list[str], values: list):
+        if isinstance(operator, str):
+            return len(values) * [operator], "AND" if operator == "!=" else "OR"
+        else:
+            return operator, "AND"

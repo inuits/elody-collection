@@ -24,10 +24,14 @@ class ArangoFiltersNew(ArangoStorageManager):
 
         for filter_criteria in filter_request_body:
             filter = get_filter(filter_criteria["type"])
+            generated_query = filter.generate_query(filter_criteria)
+            if generated_query == "":
+                raise ValueError("No matcher was able to handle filter request.")
+
             aql += f"""
                 LET results{counter} = (
                     FOR doc IN {collection}
-                        {filter.generate_query(filter_criteria)}
+                        {generated_query}
                         RETURN doc._id
                 )
             """
