@@ -39,7 +39,14 @@ class ArangoFilterTypeQueryGenerator(BaseFilterTypeQueryGenerator):
             return aql
 
     def generate_query_for_date_filter_type(self, matchers, filter_criteria):
-        raise NotImplemented
+        return self.__apply_matchers(
+            matchers,
+            filter_criteria["key"],
+            filter_criteria["value"],
+            "metadata",
+            match_exact=True,
+            is_datetime_value=True,
+        )
 
     def generate_query_for_number_filter_type(self, matchers, filter_criteria):
         return self.__apply_matchers(

@@ -2,40 +2,54 @@ from filters.matchers.base_matchers import BaseMatchers
 
 
 class ArangoMatchers(BaseMatchers):
+    DATE_FORMAT = "%yyyy-%mm-%dd %hh:%ii:%ss"
+
     def id(self, key, values):
         return f"FILTER LENGTH(INTERSECTION(doc.{key}, {values})) > 0"
 
     def exact(self, key, value, parent_key, is_datetime_value):
         return self.__exact_contains_match(
-            key, value, parent_key, "IN" if isinstance(value, list) else "=="
+            key,
+            value,
+            parent_key,
+            "IN" if isinstance(value, list) else "==",
+            is_datetime_value,
         )
 
     def contains(self, key, value, parent_key):
         return self.__exact_contains_match(key, value, parent_key, "LIKE")
 
     def min(self, key, value, parent_key, is_datetime_value):
+        if isinstance(key, str):
+            return self.__value_match_with_parent_key_of_type_array(
+                key, [value], parent_key, ">", is_datetime_value
+            )
         raise NotImplemented
 
     def max(self, key, value, parent_key, is_datetime_value):
+        if isinstance(key, str):
+            return self.__value_match_with_parent_key_of_type_array(
+                key, [value], parent_key, "<", is_datetime_value
+            )
         raise NotImplemented
 
     def min_included(self, key, value, parent_key, is_datetime_value):
         if isinstance(key, str):
             return self.__value_match_with_parent_key_of_type_array(
-                key, [value], parent_key, ">="
+                key, [value], parent_key, ">=", is_datetime_value
             )
         raise NotImplemented
 
     def max_included(self, key, value, parent_key, is_datetime_value):
         if isinstance(key, str):
             return self.__value_match_with_parent_key_of_type_array(
-                key, [value], parent_key, "<="
+                key, [value], parent_key, "<=", is_datetime_value
             )
         raise NotImplemented
 
     def in_between(self, key, min, max, parent_key, is_datetime_value):
         return self.__value_match_with_parent_key_of_type_array(
-            key, [min, max], parent_key, [">=", "<="]
+            key, [min, max], parent_key, [">=", "<="], is_datetime_value
         )
 
     def any(self, key, parent_key):
@@ -49,11 +63,16 @@ class ArangoMatchers(BaseMatchers):
         )
 
     def __exact_contains_match(
-        self, key: str, value, parent_key: str, equality_operator: str
+        self,
+        key: str,
+        value,
+        parent_key: str,
+        equality_operator: str,
+        is_datetime_value=False,
     ):
         if parent_key:
             return self.__value_match_with_parent_key_of_type_array(
-                key, [value], parent_key, equality_operator
+                key, [value], parent_key, equality_operator, is_datetime_value
             )
         return self.__value_match_without_parent_key(key, value, equality_operator)
 
@@ -70,23 +89,19 @@ class ArangoMatchers(BaseMatchers):
         """
 
     def __value_match_with_parent_key_of_type_array(
-        self, key: str, values: list, parent_key: str, operator: str | list[str]
+        self,
+        key: str,
+        values: list,
+        parent_key: str,
+        operator: str | list[str],
+        is_datetime_value=False,
     ):
         comparison_operators, logical_operator = self.__determine_query_operators(
             operator, values
         )
-        prefix, suffix = self.__get_prefix_and_suffix(comparison_operators[0])
-
-        value_match = (
-            f'item.value {comparison_operators[0]} "{prefix}{values[0]}{suffix}"'
+        value_match = self.__get_value_match(
+            values, comparison_operators, logical_operator, is_datetime_value
         )
-        for i in range(0, len(values)):
-            if not isinstance(values[i], str) or values[i] == "null":
-                value_match = value_match.replace(f'"{values[i]}"', f"{values[i]}")
-            try:
-                value_match += f' {logical_operator} item.value {comparison_operators[i + 1]} "{prefix}{values[i + 1]}{suffix}"'
-            except IndexError:
-                break
 
         return f"""
             FILTER (
@@ -115,3 +130,46 @@ class ArangoMatchers(BaseMatchers):
             return len(values) * [operator], "AND" if operator == "!=" else "OR"
         else:
             return operator, "AND"
+
+    def __get_value_match(
+        self,
+        values: list,
+        comparison_operators: list[str],
+        logical_operator: str,
+        is_datetime_value=False,
+    ):
+        prefix, suffix = self.__get_prefix_and_suffix(comparison_operators[0])
+        date_split = "SPLIT(item.value, '+')[0]"
+
+        if is_datetime_value:
+            value_match = f"""
+                DATE_FORMAT(
+                    {date_split},
+                    "{self.DATE_FORMAT}"
+                ) {comparison_operators[0]} "{values[0]}"
+            """
+        else:
+            value_match = (
+                f'item.value {comparison_operators[0]} "{prefix}{values[0]}{suffix}"'
+            )
+
+        for i in range(0, len(values)):
+            if not isinstance(values[i], str) or values[i] == "null":
+                value_match = value_match.replace(f'"{values[i]}"', f"{values[i]}")
+
+            try:
+                next_i = i + 1
+
+                if is_datetime_value:
+                    value_match += f"""
+                        {logical_operator} DATE_FORMAT(
+                            {date_split},
+                            "{self.DATE_FORMAT}"
+                        ) {comparison_operators[next_i]} "{values[next_i]}"
+                    """
+                else:
+                    value_match += f' {logical_operator} item.value {comparison_operators[next_i]} "{prefix}{values[next_i]}{suffix}"'
+            except IndexError:
+                break
+
+        return value_match
