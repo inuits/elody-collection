@@ -28,9 +28,15 @@ class ArangoFiltersNew(ArangoStorageManager):
             if generated_query == "":
                 raise ValueError("No matcher was able to handle filter request.")
 
+            item_types = filter_criteria.get("item_types", [])
             aql += f"""
                 LET results{counter} = (
                     FOR doc IN {collection}
+                        {
+                            f'FILTER doc.type IN {item_types}'
+                            if collection == "entities" and len(item_types) > 0
+                            else ""
+                        }
                         {generated_query}
                         RETURN doc._id
                 )
