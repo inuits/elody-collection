@@ -39,8 +39,6 @@ app.config.update(
         "PASSIVE_EXCHANGE": os.getenv("PASSIVE_EXCHANGE", False)
         in [1, "1", "True", "true", True],
         "SECRET_KEY": "SomethingNotEntirelySecret",
-        "TESTING": True,
-        "DEBUG": True,
     }
 )
 
@@ -153,4 +151,4 @@ api.add_resource(AsyncAPISpec, "/spec/dams-collection-api-events.html")
 api.add_resource(OpenAPISpec, "/spec/dams-collection-api.json")
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run()
