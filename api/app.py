@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import secrets
 
 from amqp.amqpmanager import AmqpManager
 from apps.loader import load_apps, load_policies
@@ -30,13 +31,7 @@ swaggerui_blueprint = get_swaggerui_blueprint(SWAGGER_URL, API_URL)
 
 app = Flask(__name__)
 api = Api(app)
-app.config.update(
-    {
-        "MQ_EXCHANGE": os.getenv("RABMQ_SEND_EXCHANGE_NAME"),
-        "MQ_URL": os.getenv("RABMQ_RABBITMQ_URL"),
-        "SECRET_KEY": "SomethingNotEntirelySecret",
-    }
-)
+app.secret_key = os.getenv("SECRET_KEY", secrets.token_hex(16))
 
 logging.basicConfig(
     format="%(asctime)s %(process)d,%(threadName)s %(filename)s:%(lineno)d [%(levelname)s] %(message)s",
