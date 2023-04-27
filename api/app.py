@@ -34,10 +34,6 @@ app.config.update(
     {
         "MQ_EXCHANGE": os.getenv("RABMQ_SEND_EXCHANGE_NAME"),
         "MQ_URL": os.getenv("RABMQ_RABBITMQ_URL"),
-        "DURABLE_EXCHANGE": os.getenv("DURABLE_EXCHANGE", False)
-        in [1, "1", "True", "true", True],
-        "PASSIVE_EXCHANGE": os.getenv("PASSIVE_EXCHANGE", False)
-        in [1, "1", "True", "true", True],
         "SECRET_KEY": "SomethingNotEntirelySecret",
     }
 )
