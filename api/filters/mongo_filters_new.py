@@ -27,7 +27,8 @@ class MongoFiltersNew(MongoStorageManager):
     def __generate_aggregation_pipeline(
         self, filter_request_body: list[dict], collection="entities"
     ):
-        pipeline = [
+        pipeline = []
+        pipeline.append(
             {
                 "$lookup": {
                     "from": collection,
@@ -36,14 +37,28 @@ class MongoFiltersNew(MongoStorageManager):
                     "as": "relationDocuments",
                 }
             }
-        ]
+        )
 
         for filter_criteria in filter_request_body:
             filter = get_filter(filter_criteria["type"])
-            pipeline += filter.generate_query(filter_criteria)  # type: ignore
+            item_types = filter_criteria.get("item_types", [])
+            if len(item_types) > 0:
+                pipeline.append({"$match": {"type": {"$in": item_types}}})
+            if filter_criteria.get("parent"):
+                pipeline.append(
+                    {
+                        "$match": {
+                            "relations": {
+                                "$elemMatch": {
+                                    "key": filter_criteria["parent"],
+                                    "type": "parent",
+                                }
+                            }
+                        }
+                    }
+                )
 
-        pipeline.append(
-            {"$project": {"relationDocuments": 0, "numberOfRelations": 0}}  # type: ignore
-        )
+            pipeline.extend(filter.generate_query(filter_criteria))
 
+        pipeline.append({"$project": {"relationDocuments": 0, "numberOfRelations": 0}})
         return pipeline

@@ -1,16 +1,10 @@
-from filters.matchers.matchers import BaseMatcher
 from filters.types.base_filter_type_query_generator import BaseFilterTypeQueryGenerator
-from typing import Type
 
 
 class ArangoFilterTypeQueryGenerator(BaseFilterTypeQueryGenerator):
     def generate_query_for_id_filter_type(self, matchers, filter_criteria):
-        return self.__apply_matchers(
-            matchers,
-            filter_criteria["key"],
-            filter_criteria["value"],
-            match_exact=filter_criteria.get("match_exact"),
-        )
+        filter = super().generate_query_for_id_filter_type(matchers, filter_criteria)
+        return self.__parse_query(filter)
 
     def generate_query_for_text_filter_type(self, matchers, filter_criteria):
         root_fields = ["filename", "mimetype"]
@@ -28,64 +22,42 @@ class ArangoFilterTypeQueryGenerator(BaseFilterTypeQueryGenerator):
                 if result and isinstance(result, str):
                     aql += result
 
-            aql += self.__apply_matchers(
-                matchers,
-                filter_criteria["key"],
-                filter_criteria["value"],
-                "metadata",
-                match_exact=filter_criteria.get("match_exact"),
+            aql += str(
+                super()._apply_matchers(
+                    matchers,
+                    filter_criteria["key"],
+                    filter_criteria["value"],
+                    "metadata",
+                    match_exact=filter_criteria.get("match_exact"),
+                )
             )
 
             return aql
 
     def generate_query_for_date_filter_type(self, matchers, filter_criteria):
-        return self.__apply_matchers(
-            matchers,
-            filter_criteria["key"],
-            filter_criteria["value"],
-            "metadata",
-            match_exact=True,
-            is_datetime_value=True,
-        )
+        filter = super().generate_query_for_date_filter_type(matchers, filter_criteria)
+        return self.__parse_query(filter)
 
     def generate_query_for_number_filter_type(self, matchers, filter_criteria):
-        return self.__apply_matchers(
-            matchers,
-            filter_criteria["key"],
-            filter_criteria["value"],
-            "metadata",
-            match_exact=True,
+        filter = super().generate_query_for_number_filter_type(
+            matchers, filter_criteria
         )
+        return self.__parse_query(filter)
 
     def generate_query_for_selection_filter_type(self, matchers, filter_criteria):
-        return self.__apply_matchers(
-            matchers,
-            filter_criteria["key"],
-            filter_criteria["value"],
-            "metadata",
-            match_exact=True,
+        filter = super().generate_query_for_selection_filter_type(
+            matchers, filter_criteria
         )
+        return self.__parse_query(filter)
 
     def generate_query_for_boolean_filter_type(self, matchers, filter_criteria):
-        return self.__apply_matchers(
-            matchers,
-            filter_criteria["key"],
-            filter_criteria["value"],
-            "metadata",
-            match_exact=True,
+        filter = super().generate_query_for_boolean_filter_type(
+            matchers, filter_criteria
         )
+        return self.__parse_query(filter)
 
-    def __apply_matchers(
-        self,
-        matchers: dict[str, Type[BaseMatcher]],
-        key: str | list[str],
-        value,
-        parent_key: str = "",
-        **kwargs
-    ) -> str:
-        for matcher in matchers.values():
-            result = matcher().match(key, value, parent_key, **kwargs)
-            if result and isinstance(result, str):
-                return result
+    def __parse_query(self, filter) -> str:
+        if filter and isinstance(filter, str):
+            return filter
 
         return ""
