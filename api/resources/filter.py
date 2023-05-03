@@ -14,7 +14,11 @@ class FilterEntities(BaseFilterResource):
             *request.args.getlist("field"),
             *request.args.getlist("field[]"),
         ]
-        entities = self._execute_advanced_search_with_query(query, "entities")
+        order_by = request.args.get("order_by", None)
+        ascending = request.args.get("asc", 1, int)
+        entities = self._execute_advanced_search_with_query(
+            query, "entities", order_by, ascending
+        )
         return self._create_response_according_accept_header(
             mappers.map_data_according_to_accept_header(
                 entities,
@@ -34,7 +38,11 @@ class FilterEntitiesBySavedSearchId(BaseFilterResource):
             *request.args.getlist("field"),
             *request.args.getlist("field[]"),
         ]
-        entities = self._execute_advanced_search_with_saved_search(id, "entities")
+        order_by = request.args.get("order_by", None)
+        ascending = request.args.get("asc", 1, int)
+        entities = self._execute_advanced_search_with_saved_search(
+            id, "entities", order_by, ascending
+        )
         return self._create_response_according_accept_header(
             mappers.map_data_according_to_accept_header(
                 entities,

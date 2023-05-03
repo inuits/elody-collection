@@ -1,9 +1,19 @@
+import pymongo
+
 from filters.types.filter_types import get_filter
 from storage.mongostore import MongoStorageManager
 
 
 class MongoFilters(MongoStorageManager):
-    def filter(self, filter_request_body, skip, limit, collection="entities"):
+    def filter(
+        self,
+        filter_request_body,
+        skip,
+        limit,
+        collection="entities",
+        order_by=None,
+        asc=True,
+    ):
         items = {"count": 0, "results": list()}
         pipeline = self.__generate_aggregation_pipeline(filter_request_body, collection)
         pipeline_count = pipeline + [{"$count": "count"}]
@@ -16,7 +26,10 @@ class MongoFilters(MongoStorageManager):
             {"$skip": skip},
             {"$limit": limit},
         ]
-
+        if order_by:
+            pipeline += [
+                {"$sort": {order_by: pymongo.ASCENDING if asc else pymongo.DESCENDING}},
+            ]
         documents = self.db[collection].aggregate(pipeline)
         for document in documents:
             items["results"].append(self._prepare_mongo_document(document, True))

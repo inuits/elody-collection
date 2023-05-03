@@ -3,11 +3,11 @@ from storage.arangostore import ArangoStorageManager
 
 
 class ArangoFilters(ArangoStorageManager):
-    def filter(self, body, skip, limit, collection="entities"):
+    def filter(self, body, skip, limit, collection="entities", order_by=None, asc=True):
         if not self.db:
             raise ValueError("DB is not initialized")
 
-        aql = self.__generate_aql_query(body, collection)
+        aql = self.__generate_aql_query(body, collection, order_by, asc)
         bind = {"skip": skip, "limit": limit}
         results = self.db.aql.execute(aql, bind_vars=bind, full_count=True)
         filters = {"ids": list(results)}  # type: ignore
@@ -17,7 +17,9 @@ class ArangoFilters(ArangoStorageManager):
         items["limit"] = limit
         return items
 
-    def __generate_aql_query(self, filter_request_body, collection="entities"):
+    def __generate_aql_query(
+        self, filter_request_body, collection="entities", order_by=None, asc=True
+    ):
         aql = ""
         result_set = ""
         counter = 0
@@ -46,6 +48,7 @@ class ArangoFilters(ArangoStorageManager):
 
         aql += f"""
             FOR result IN {result_set}
+                {f'SORT c.{order_by} {"ASC" if asc else "DESC"}' if order_by else ""}
                 LIMIT @skip, @limit
                 RETURN DOCUMENT(result)._key
         """
