@@ -41,7 +41,7 @@ class ExactMatcher(BaseMatcher):
         if (
             isinstance(key, str)
             and isinstance(value, (str, int, bool, list))
-            and kwargs["match_exact"]
+            and kwargs.get("match_exact", False)
         ):
             return self.matcher_engine.exact(
                 key, value, parent_key, kwargs.get("is_datetime_value", False)
