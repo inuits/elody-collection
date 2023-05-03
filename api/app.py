@@ -4,7 +4,7 @@ import os
 import secrets
 
 from amqp.amqpmanager import AmqpManager
-from apps.loader import load_apps, load_policies
+from apps.loader import load_apps, load_policies, load_queues
 from flask import Flask
 from flask_restful import Api
 from flask_swagger_ui import get_swaggerui_blueprint
@@ -97,7 +97,6 @@ from resources.saved_search import (
     SavedSearchDetail,
 )
 from resources.spec import AsyncAPISpec, OpenAPISpec
-import resources.queues
 
 api.add_resource(Config, "/config")
 api.add_resource(Entity, "/entities")
@@ -140,6 +139,10 @@ api.add_resource(SavedSearchDetail, "/saved_searches/<string:id>")
 
 api.add_resource(AsyncAPISpec, "/spec/dams-collection-api-events.html")
 api.add_resource(OpenAPISpec, "/spec/dams-collection-api.json")
+
+# Initialize RabbitMQ Queues
+load_queues()
+import resources.queues
 
 if __name__ == "__main__":
     app.run()

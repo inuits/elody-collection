@@ -38,6 +38,15 @@ def load_policies(policy_factory, logger):
             ).with_traceback(error.__traceback__)
 
 
+def load_queues():
+    apps = util.read_json_as_dict(os.getenv("APPS_MANIFEST"))
+    for app in apps:
+        try:
+            import_module(f"apps.{app}.resources.queues")
+        except ModuleNotFoundError:
+            pass
+
+
 def __get_class(app, auth_type, policy_module_name):
     try:
         module = import_module(f"apps.{app}.policies.{auth_type}.{policy_module_name}")
