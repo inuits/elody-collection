@@ -50,6 +50,12 @@ class BaseFilterTypeQueryGenerator(ABC):
     def generate_query_for_selection_filter_type(
         self, matchers: dict[str, Type[BaseMatcher]], filter_criteria: dict
     ):
+        root_fields = ["type"]
+        if filter_criteria["key"] in root_fields:
+            return matchers["exact"]().match(
+                filter_criteria["key"], filter_criteria["value"], match_exact=True
+            )
+
         return self._apply_matchers(
             matchers,
             filter_criteria["key"],
