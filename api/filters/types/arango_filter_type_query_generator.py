@@ -7,32 +7,29 @@ class ArangoFilterTypeQueryGenerator(BaseFilterTypeQueryGenerator):
         return self.__parse_query(filter)
 
     def generate_query_for_text_filter_type(self, matchers, filter_criteria):
-        root_fields = ["filename", "mimetype"]
+        filter = super().generate_query_for_text_filter_type(matchers, filter_criteria)
+        if filter != None:
+            return filter
 
-        if filter_criteria["key"] in root_fields:
-            return matchers["contains"]().match(
-                filter_criteria["key"], filter_criteria["value"]
+        aql = ""
+        if filter_criteria.get("label"):
+            result = matchers["contains"]().match(
+                "label", filter_criteria["label"], "metadata"
             )
-        else:
-            aql = ""
-            if filter_criteria.get("label"):
-                result = matchers["contains"]().match(
-                    "label", filter_criteria["label"], "metadata"
-                )
-                if result and isinstance(result, str):
-                    aql += result
+            if result and isinstance(result, str):
+                aql += result
 
-            aql += str(
-                super()._apply_matchers(
-                    matchers,
-                    filter_criteria["key"],
-                    filter_criteria["value"],
-                    "metadata",
-                    match_exact=filter_criteria.get("match_exact"),
-                )
+        aql += str(
+            super()._apply_matchers(
+                matchers,
+                filter_criteria["key"],
+                filter_criteria["value"],
+                "metadata",
+                match_exact=filter_criteria.get("match_exact"),
             )
+        )
 
-            return aql
+        return aql
 
     def generate_query_for_date_filter_type(self, matchers, filter_criteria):
         filter = super().generate_query_for_date_filter_type(matchers, filter_criteria)

@@ -19,7 +19,13 @@ class BaseFilterTypeQueryGenerator(ABC):
     def generate_query_for_text_filter_type(
         self, matchers: dict[str, Type[BaseMatcher]], filter_criteria: dict
     ):
-        pass
+        root_fields = ["filename", "mimetype"]
+        if filter_criteria["key"] in root_fields:
+            return matchers["contains"]().match(
+                filter_criteria["key"], filter_criteria["value"]
+            )
+
+        return None
 
     @abstractmethod
     def generate_query_for_date_filter_type(
