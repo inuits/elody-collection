@@ -1,6 +1,6 @@
 import os
-import uuid
 import util
+import uuid
 
 from arango import (
     ArangoClient,
@@ -588,15 +588,20 @@ class ArangoStorageManager(GenericStorageManager):
             entity = self.db.document(item["entity_id"])
             util.signal_entity_changed(entity)
 
-    def save_item_to_collection(self, collection, content):
-        _id = str(uuid.uuid4())
-        content["_key"] = _id
+    def save_item_to_collection(
+        self, collection, content, item_id=None, only_return_id=False
+    ):
+        item_id = item_id if item_id else str(uuid.uuid4())
+        content["_key"] = item_id
         if "identifiers" not in content:
-            content["identifiers"] = [_id]
+            content["identifiers"] = [item_id]
         else:
-            content["identifiers"].insert(0, _id)
+            content["identifiers"].insert(0, item_id)
         try:
-            return self.db.insert_document(collection, content, return_new=True)["new"]
+            ret = self.db.insert_document(
+                collection, content, return_new=not only_return_id
+            )
+            return ret["_key"] if only_return_id else ret["new"]
         except DocumentInsertError as ex:
             if ex.error_code == 1210:
                 raise util.NonUniqueException(ex.error_message)

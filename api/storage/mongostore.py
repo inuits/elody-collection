@@ -442,8 +442,11 @@ class MongoStorageManager(GenericStorageManager):
             entity = self.get_item_from_collection_by_id("entities", item["entity_id"])
             util.signal_entity_changed(entity)
 
-    def save_item_to_collection(self, collection, content, only_return_id=False):
-        content = self._prepare_mongo_document(content, False, str(uuid.uuid4()))
+    def save_item_to_collection(
+        self, collection, content, item_id=None, only_return_id=False
+    ):
+        item_id = item_id if item_id else str(uuid.uuid4())
+        content = self._prepare_mongo_document(content, False, item_id)
         try:
             item_id = self.db[collection].insert_one(content).inserted_id
         except pymongo.errors.DuplicateKeyError as ex:

@@ -173,15 +173,17 @@ class MemoryStorageManager(GenericStorageManager):
             return self.collections[collection][gen_id]
         return None
 
-    def save_item_to_collection(self, collection, content):
-        gen_id = str(uuid.uuid4())
+    def save_item_to_collection(
+        self, collection, content, item_id=None, only_return_id=False
+    ):
+        gen_id = item_id if item_id else str(uuid.uuid4())
         content["_id"] = gen_id
         if "identifiers" not in content:
             content["identifiers"] = [gen_id]
         else:
             content["identifiers"].insert(0, gen_id)
         self.collections[collection][gen_id] = content
-        return self.collections[collection][gen_id]
+        return gen_id if only_return_id else self.collections[collection][gen_id]["_id"]
 
     def update_collection_item_relations(
         self, collection, obj_id, content, parent=True
