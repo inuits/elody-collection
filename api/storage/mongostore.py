@@ -442,7 +442,7 @@ class MongoStorageManager(GenericStorageManager):
             entity = self.get_item_from_collection_by_id("entities", item["entity_id"])
             util.signal_entity_changed(entity)
 
-    def save_item_to_collection(self, collection, content):
+    def save_item_to_collection(self, collection, content, only_return_id=False):
         content = self._prepare_mongo_document(content, False, str(uuid.uuid4()))
         try:
             item_id = self.db[collection].insert_one(content).inserted_id
@@ -450,7 +450,11 @@ class MongoStorageManager(GenericStorageManager):
             if ex.code == 11000:
                 raise util.NonUniqueException(ex.details)
             raise ex
-        return self.get_item_from_collection_by_id(collection, item_id)
+        return (
+            item_id
+            if only_return_id
+            else self.get_item_from_collection_by_id(collection, item_id)
+        )
 
     def set_primary_field_collection_item(
         self, collection, entity_id, mediafile_id, field
