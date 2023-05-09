@@ -39,4 +39,4 @@ sentry-sdk[flask]==0.10.2
 six==1.16.0
 srt==3.5.3
 urllib3==1.26.15
-Werkzeug==2.3.3
+Werkzeug==2.3.4
