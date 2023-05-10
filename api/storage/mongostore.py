@@ -35,6 +35,17 @@ class MongoStorageManager(GenericStorageManager):
                 collection, dst_id, "relations", dst_content
             )
 
+    def __create_sortable_metadata(self, metadata):
+        sort = dict()
+        for metadata_object in metadata:
+            sort_key = metadata_object["key"]
+            if sort_key not in sort:
+                sort[sort_key] = list()
+            sort[sort_key].append(
+                {key: value for key, value in metadata_object.items() if key != "key"}
+            )
+        return sort
+
     def __create_mongo_connection_string(self):
         connection_string = "mongodb://"
         if self.mongo_username and self.mongo_password:
@@ -117,6 +128,10 @@ class MongoStorageManager(GenericStorageManager):
             document["data"] = self.__replace_dictionary_keys(
                 document["data"], reversed
             )
+        if "metadata" in document and not reversed:
+            document["sort"] = self.__create_sortable_metadata(document["metadata"])
+        if "sort" in document and reversed:
+            document.pop("sort")
         return document
 
     def __replace_dictionary_keys(self, data, reversed):
