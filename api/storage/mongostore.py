@@ -86,7 +86,10 @@ class MongoStorageManager(GenericStorageManager):
         items = dict()
         documents = self.db[collection].find(self.__get_ids_query(ids))
         if sort:
-            documents.sort(sort, pymongo.ASCENDING if asc else pymongo.DESCENDING)
+            documents.sort(
+                self.get_sort_field(sort),
+                pymongo.ASCENDING if asc else pymongo.DESCENDING,
+            )
         items["count"] = self.db[collection].count_documents(self.__get_ids_query(ids))
         items["results"] = list()
         for document in documents:
@@ -362,7 +365,10 @@ class MongoStorageManager(GenericStorageManager):
             documents = self.db[collection].find(skip=skip, limit=limit)
             count = self.db[collection].count_documents({})
         if sort:
-            documents.sort(sort, pymongo.ASCENDING if asc else pymongo.DESCENDING)
+            documents.sort(
+                self.get_sort_field(sort),
+                pymongo.ASCENDING if asc else pymongo.DESCENDING,
+            )
         items["count"] = count
         items["results"] = list()
         for document in documents:
@@ -404,6 +410,11 @@ class MongoStorageManager(GenericStorageManager):
             for distinct_value in result["distinctValues"]:
                 distinct_values.append(distinct_value)
         return distinct_values
+
+    def get_sort_field(self, field):
+        if field not in ["_id", "date_created", "object_id", "type", "user", "version"]:
+            return f"sort.{field}.value"
+        return field
 
     def handle_mediafile_deleted(self, parents):
         for item in parents:

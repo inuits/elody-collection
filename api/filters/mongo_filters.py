@@ -28,7 +28,13 @@ class MongoFilters(MongoStorageManager):
         ]
         if order_by:
             pipeline += [
-                {"$sort": {order_by: pymongo.ASCENDING if asc else pymongo.DESCENDING}},
+                {
+                    "$sort": {
+                        self.get_sort_field(order_by): pymongo.ASCENDING
+                        if asc
+                        else pymongo.DESCENDING
+                    }
+                },
             ]
         documents = self.db[collection].aggregate(pipeline)
         for document in documents:
