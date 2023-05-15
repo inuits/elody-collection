@@ -173,7 +173,30 @@
                   }
                 }
               },
+              "application/ld+json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                }
+              },
+              "application/n-triples": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/rdf+xml": {
+                "schema": {
+                  "type": "string"
+                }
+              },
               "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "text/turtle": {
                 "schema": {
                   "type": "string"
                 }
@@ -244,6 +267,26 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/entity"
+              }
+            },
+            "application/ld+json": {
+              "schema": {
+                "type": "string"
+              }
+            },
+            "application/n-triples": {
+              "schema": {
+                "type": "string"
+              }
+            },
+            "application/rdf+xml": {
+              "schema": {
+                "type": "string"
+              }
+            },
+            "text/turtle": {
+              "schema": {
+                "type": "string"
               }
             }
           }
@@ -420,7 +463,30 @@
                   "$ref": "#/components/schemas/entity"
                 }
               },
+              "application/ld+json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                }
+              },
+              "application/n-triples": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/rdf+xml": {
+                "schema": {
+                  "type": "string"
+                }
+              },
               "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "text/turtle": {
                 "schema": {
                   "type": "string"
                 }

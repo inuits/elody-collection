@@ -1,3 +1,5 @@
+import json
+import mappers
 import os
 import util
 
@@ -55,6 +57,18 @@ class BaseResource(Resource):
         entity["metadata"] = [*entity.get("metadata", []), *relations]
         return entity
 
+    def _create_linked_data(self, request, content_type):
+        content = request.get_data(as_text=True)
+        try:
+            data = mappers.map_data_to_ldjson(content, content_type)
+            rdf_data = json.loads(data)
+        except Exception as ex:
+            abort(
+                400,
+                message="The request failed during mapping the data to ldjson. Check if the given RDF format is valid.",
+            )
+        return {"data": rdf_data}
+
     def _create_mediafile_for_entity(self, user_id, entity, filename):
         content = {
             "filename": filename,
@@ -78,14 +92,30 @@ class BaseResource(Resource):
         self, response_data, accept_header=None, status_code=200
     ):
         match accept_header:
+            case "application/json":
+                return response_data, status_code
+            case "application/ld+json":
+                return Response(
+                    response_data, status=status_code, mimetype="application/ld+json"
+                )
+            case "application/n-triples":
+                return Response(
+                    response_data, status=status_code, mimetype="application/n-triples"
+                )
+            case "application/rdf+xml":
+                return Response(
+                    response_data, status=status_code, mimetype="application/rdf+xml"
+                )
             case "text/csv":
                 return Response(response_data, status=status_code, mimetype="text/csv")
+            case "text/turtle":
+                return Response(
+                    response_data, status=status_code, mimetype="text/turtle"
+                )
             case "text/uri-list":
                 return Response(
                     response_data, status=status_code, mimetype="text/uri-list"
                 )
-            case "application/json":
-                return response_data, status_code
             case _:
                 return response_data, status_code
 
@@ -132,6 +162,14 @@ class BaseResource(Resource):
 
     def _is_public(self, item):
         return "private" in item and not item["private"]
+
+    def _is_rdf_post_call(self, content_type):
+        return content_type in [
+            "application/ld+json",
+            "application/n-triples",
+            "application/rdf+xml",
+            "text/turtle",
+        ]
 
     def _only_own_items(self, permissions=None):
         all_permissions = ["has-full-control"]

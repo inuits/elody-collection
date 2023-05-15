@@ -1,5 +1,8 @@
 import csv
 import io
+import json
+
+from rdflib import Graph
 
 
 def can_append_key(key, fields):
@@ -21,10 +24,33 @@ def map_data_according_to_accept_header(
     data, accept_header, data_type="metadata", fields=None
 ):
     match accept_header:
+        case "application/ld+json":
+            return map_to_rdf_data(data, data_type, format="json-ld")
+        case "application/n-triples":
+            return map_to_rdf_data(data, data_type, format="nt")
+        case "application/rdf+xml":
+            return map_to_rdf_data(data, data_type, format="pretty-xml")
         case "text/csv":
             return map_to_csv(data, data_type, fields)
+        case "text/turtle":
+            return map_to_rdf_data(data, data_type, format="turtle")
         case _:
             return data
+
+
+def map_data_to_ldjson(data, format):
+    match format:
+        case "application/ld+json":
+            format = "json-ld"
+        case "application/n-triples":
+            format = "nt"
+        case "application/rdf+xml":
+            format = "xml"
+        case "text/turtle":
+            format = "turtle"
+    graph = Graph()
+    graph.parse(data=data, format=format)
+    return graph.serialize(format="json-ld")
 
 
 def map_entities_to_csv(entities, fields=None):
@@ -86,6 +112,17 @@ def map_entity_to_csv(entity, fields=None):
     return csv_writer(keys, values)
 
 
+def map_entity_to_rdf_data(objects, format):
+    graph = Graph()
+    for object in objects:
+        if "data" not in object:
+            continue
+        data = json.dumps(object["data"])
+        graph.parse(data=data, format="json-ld")
+    rdf_data = graph.serialize(format=format)
+    return rdf_data
+
+
 def map_metadata_to_csv(metadata, fields=None):
     keys = list()
     values = list()
@@ -108,3 +145,11 @@ def map_to_csv(data, data_type, fields=None):
             return map_entity_to_csv(data, fields)
         case _:
             return data
+
+
+def map_to_rdf_data(data, data_type, format):
+    match data_type:
+        case "entity":
+            return map_entity_to_rdf_data([data], format)
+        case "entities":
+            return map_entity_to_rdf_data(data.get("results"), format)

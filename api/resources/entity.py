@@ -59,6 +59,8 @@ class Entity(BaseResource):
 
     @policy_factory.authenticate()
     def post(self):
+        content_type = request.content_type
+        linked_data_request = self._is_rdf_post_call(content_type)
         create_mediafile = request.args.get(
             "create_mediafile", 0, int
         ) or request.args.get("create_mediafiles", 0, int)
@@ -66,16 +68,20 @@ class Entity(BaseResource):
             *request.args.getlist("mediafile_filename"),
             *request.args.getlist("mediafile_filename[]"),
         ]
-        accept_header = request.headers.get("Accept")
         if create_mediafile and not mediafile_filenames:
             return "Mediafile can't be created without filename", 400
-        content = request.get_json()
+        if linked_data_request:
+            content = self._create_linked_data(request, content_type)
+        else:
+            content = request.get_json()
+        accept_header = request.headers.get("Accept")
         user_id = policy_factory.get_user_context().email or "default_uploader"
         entity = self._decorate_entity(content)
         entity["user"] = user_id
         entity["date_created"] = str(datetime.now())
         entity["version"] = 1
-        self._abort_if_not_valid_json("Entity", entity, entity_schema)
+        if not linked_data_request:
+            self._abort_if_not_valid_json("Entity", entity, entity_schema)
         try:
             entity = self.storage.save_item_to_collection("entities", entity)
             if accept_header == "text/uri-list":
