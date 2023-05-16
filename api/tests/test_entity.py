@@ -66,6 +66,7 @@ class EntityTest(BaseCase):
         self.invalid_input(
             response,
             "The browser (or proxy) sent a request that this server could not understand.",
+            400,
         )
 
     def test_invalid_content_type_entity_create(self):
@@ -186,7 +187,7 @@ class EntityTest(BaseCase):
             data=json.dumps({}),
         )
 
-        self.invalid_input(response)
+        self.invalid_input(response, None, 400)
 
     def test_create_mediafile_from_non_existent_entity(self):
         response = self.app.post(

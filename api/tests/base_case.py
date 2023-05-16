@@ -108,12 +108,12 @@ class BaseCase(unittest.TestCase):
         self.assertEqual(str, type(self._get_raw_id(mediafile)))
         self.assertEqual(str, type(mediafile["filename"]))
 
-    def invalid_input(self, response, expected_message=None):
+    def invalid_input(self, response, expected_message=None, status_code=415):
         if not expected_message:
             expected_message = "doesn't have a valid format"
         self.assertEqual(str, type(response.json["message"]))
         self.assertIn(expected_message, response.json["message"])
-        self.assertEqual(400, response.status_code)
+        self.assertEqual(status_code, response.status_code)
 
     def not_found(self, response):
         self.assertEqual(1, len(response.json))

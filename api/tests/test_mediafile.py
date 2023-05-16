@@ -22,6 +22,7 @@ class MediafileTest(BaseCase):
         self.invalid_input(
             response,
             "The browser (or proxy) sent a request that this server could not understand.",
+            400,
         )
 
     def test_invalid_content_type_mediafile_create(self):
