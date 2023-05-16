@@ -65,7 +65,7 @@ class EntityTest(BaseCase):
 
         self.invalid_input(
             response,
-            "Failed to decode JSON object: Expecting value: line 1 column 1 (char 0)",
+            "The browser (or proxy) sent a request that this server could not understand.",
         )
 
     def test_invalid_content_type_entity_create(self):
