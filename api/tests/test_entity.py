@@ -60,7 +60,9 @@ class EntityTest(BaseCase):
         entity = "<entity><title>Schilderij</title><entity>"
 
         response = self.app.post(
-            "/entities", headers={**self.headers, **{"Content-Type": "application/json"}}, data=entity
+            "/entities",
+            headers={**self.headers, **{"Content-Type": "application/json"}},
+            data=entity,
         )
 
         self.invalid_input(
@@ -201,7 +203,8 @@ class EntityTest(BaseCase):
         _id = self.create_entity_get_id()
 
         response = self.app.get(
-            "/entities/{}".format(_id), headers={**self.headers, **{"Content-Type": "application/json"}}
+            "/entities/{}".format(_id),
+            headers={**self.headers, **{"Content-Type": "application/json"}},
         )
 
         self.valid_entity(response.json, 3, 4)
@@ -209,7 +212,8 @@ class EntityTest(BaseCase):
 
     def test_non_existent_entity_get(self):
         response = self.app.get(
-            "/entities/non-existent-id", headers={**self.headers, **{"Content-Type": "application/json"}}
+            "/entities/non-existent-id",
+            headers={**self.headers, **{"Content-Type": "application/json"}},
         )
 
         self.not_found(response)
@@ -450,7 +454,8 @@ class EntityTest(BaseCase):
         _id = self.create_entity_get_id()
 
         response = self.app.delete(
-            "/entities/{}".format(_id), headers={**self.headers, **{"Content-Type": "application/json"}}
+            "/entities/{}".format(_id),
+            headers={**self.headers, **{"Content-Type": "application/json"}},
         )
 
         self.assertFalse(response.data)
@@ -458,7 +463,8 @@ class EntityTest(BaseCase):
 
     def test_non_existent_entity_delete(self):
         response = self.app.delete(
-            "/entities/non-existent-id", headers={**self.headers, **{"Content-Type": "application/json"}}
+            "/entities/non-existent-id",
+            headers={**self.headers, **{"Content-Type": "application/json"}},
         )
 
         self.not_found(response)
@@ -832,7 +838,8 @@ class EntityTest(BaseCase):
             entities.append(self.create_entity().json)
 
         response = self.app.get(
-            "/entities?type=entity", headers={**self.headers, **{"Content-Type": "application/json"}}
+            "/entities?type=entity",
+            headers={**self.headers, **{"Content-Type": "application/json"}},
         )
         self.assertEqual(200, response.status_code)
         self.assertEqual(dict, type(response.json))
@@ -848,14 +855,16 @@ class EntityTest(BaseCase):
         self.assertEqual(201, response.status_code)
 
         response = self.app.get(
-            "/entities?type=asset", headers={**self.headers, **{"Content-Type": "application/json"}}
+            "/entities?type=asset",
+            headers={**self.headers, **{"Content-Type": "application/json"}},
         )
         self.assertEqual(dict, type(response.json))
         self.assertEqual(list, type(response.json["results"]))
         self.assertEqual(1, len(response.json["results"]))
 
         response = self.app.get(
-            "/entities?type=person", headers={**self.headers, **{"Content-Type": "application/json"}}
+            "/entities?type=person",
+            headers={**self.headers, **{"Content-Type": "application/json"}},
         )
         self.assertEqual(dict, type(response.json))
         self.assertEqual(list, type(response.json["results"]))

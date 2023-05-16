@@ -16,7 +16,9 @@ class MediafileTest(BaseCase):
         mediafile = "<mediafile><original_file_location>http://dams-storage.inuits.io/1234-abcd</original_file_location><mediafile>"
 
         response = self.app.post(
-            "/mediafiles", headers={**self.headers, **{"content-type": "application/json"}}, data=mediafile
+            "/mediafiles",
+            headers={**self.headers, **{"content-type": "application/json"}},
+            data=mediafile,
         )
 
         self.invalid_input(
@@ -50,7 +52,8 @@ class MediafileTest(BaseCase):
         _id = self.create_mediafile_get_id()
 
         response = self.app.get(
-            "/mediafiles/{}".format(_id), headers={**self.headers, **{"Content-Type": "application/json"}}
+            "/mediafiles/{}".format(_id),
+            headers={**self.headers, **{"Content-Type": "application/json"}},
         )
 
         self.valid_mediafile(response.json)
@@ -84,7 +87,8 @@ class MediafileTest(BaseCase):
 
     def test_non_existent_mediafile_get(self):
         response = self.app.get(
-            "/mediafiles/non-existent-id", headers={**self.headers, **{"Content-Type": "application/json"}}
+            "/mediafiles/non-existent-id",
+            headers={**self.headers, **{"Content-Type": "application/json"}},
         )
 
         self.not_found(response)
@@ -172,7 +176,8 @@ class MediafileTest(BaseCase):
         _id = self.create_mediafile_get_id()
 
         response = self.app.delete(
-            "/mediafiles/{}".format(_id), headers={**self.headers, **{"Content-Type": "application/json"}}
+            "/mediafiles/{}".format(_id),
+            headers={**self.headers, **{"Content-Type": "application/json"}},
         )
 
         self.assertFalse(response.data)
@@ -180,7 +185,8 @@ class MediafileTest(BaseCase):
 
     def test_non_existent_mediafile_delete(self):
         response = self.app.delete(
-            "/mediafiles/non-existent-id", headers={**self.headers, **{"Content-Type": "application/json"}}
+            "/mediafiles/non-existent-id",
+            headers={**self.headers, **{"Content-Type": "application/json"}},
         )
 
         self.not_found(response)

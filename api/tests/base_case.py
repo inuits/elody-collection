@@ -85,7 +85,9 @@ class BaseCase(unittest.TestCase):
 
     def create_entity(self):
         return self.app.post(
-            "/entities", headers={**self.headers, **{"Content-Type": "application/json"}}, data=self.entity
+            "/entities",
+            headers={**self.headers, **{"Content-Type": "application/json"}},
+            data=self.entity,
         )
 
     def create_entity_get_id(self):
