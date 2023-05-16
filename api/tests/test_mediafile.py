@@ -16,7 +16,7 @@ class MediafileTest(BaseCase):
         mediafile = "<mediafile><original_file_location>http://dams-storage.inuits.io/1234-abcd</original_file_location><mediafile>"
 
         response = self.app.post(
-            "/mediafiles", headers={"content-type": "application/json"}, data=mediafile
+            "/mediafiles", headers={**self.headers, **{"content-type": "application/json"}}, data=mediafile
         )
 
         self.invalid_input(
@@ -27,7 +27,7 @@ class MediafileTest(BaseCase):
     def test_invalid_content_type_mediafile_create(self):
         response = self.app.post(
             "/mediafiles",
-            headers={"Content-Type": "multipart/form-data"},
+            headers={**self.headers, **{"Content-Type": "multipart/form-data"}},
             data=self.mediafile,
         )
 
@@ -39,7 +39,7 @@ class MediafileTest(BaseCase):
     def test_invalid_mediafile_create(self):
         response = self.app.post(
             "/mediafiles",
-            headers={"content-type": "application/json"},
+            headers={**self.headers, **{"Content-Type": "application/json"}},
             data=self.invalid_mediafile,
         )
 
@@ -49,7 +49,7 @@ class MediafileTest(BaseCase):
         _id = self.create_mediafile_get_id()
 
         response = self.app.get(
-            "/mediafiles/{}".format(_id), headers={"Content-Type": "application/json"}
+            "/mediafiles/{}".format(_id), headers={**self.headers, **{"Content-Type": "application/json"}}
         )
 
         self.valid_mediafile(response.json)
@@ -60,17 +60,17 @@ class MediafileTest(BaseCase):
 
         self.app.post(
             "/entities/{}/mediafiles/create".format(_id),
-            headers={"Content-Type": "application/json"},
+            headers={**self.headers, **{"Content-Type": "application/json"}},
             data=self.filename_with_metadata,
         )
         response = self.app.get(
             "/entities/{}/mediafiles?non_public=1".format(_id),
-            headers={"Content-Type": "application/json"},
+            headers={**self.headers, **{"Content-Type": "application/json"}},
         )
 
         response = self.app.get(
             "/mediafiles/{}?raw=1".format(self._get_raw_id(response.json[0])),
-            headers={"Content-Type": "application/json"},
+            headers={**self.headers, **{"Content-Type": "application/json"}},
         )
         self.assertEqual(200, response.status_code)
 
@@ -83,7 +83,7 @@ class MediafileTest(BaseCase):
 
     def test_non_existent_mediafile_get(self):
         response = self.app.get(
-            "/mediafiles/non-existent-id", headers={"Content-Type": "application/json"}
+            "/mediafiles/non-existent-id", headers={**self.headers, **{"Content-Type": "application/json"}}
         )
 
         self.not_found(response)
@@ -104,7 +104,7 @@ class MediafileTest(BaseCase):
 
         response = self.app.put(
             "/mediafiles/{}".format(self._get_raw_id(mediafile)),
-            headers={"Content-Type": "application/json"},
+            headers={**self.headers, **{"Content-Type": "application/json"}},
             data=update,
         )
 
@@ -125,7 +125,7 @@ class MediafileTest(BaseCase):
 
         response = self.app.put(
             "/mediafiles/non-existent-id",
-            headers={"Content-Type": "application/json"},
+            headers={**self.headers, **{"Content-Type": "application/json"}},
             data=update,
         )
 
@@ -142,7 +142,7 @@ class MediafileTest(BaseCase):
 
         response = self.app.patch(
             "/mediafiles/{}".format(_id),
-            headers={"Content-Type": "application/json"},
+            headers={**self.headers, **{"Content-Type": "application/json"}},
             data=update,
         )
 
@@ -161,7 +161,7 @@ class MediafileTest(BaseCase):
 
         response = self.app.patch(
             "/mediafiles/non-existent-id",
-            headers={"Content-Type": "application/json"},
+            headers={**self.headers, **{"Content-Type": "application/json"}},
             data=update,
         )
 
@@ -171,7 +171,7 @@ class MediafileTest(BaseCase):
         _id = self.create_mediafile_get_id()
 
         response = self.app.delete(
-            "/mediafiles/{}".format(_id), headers={"Content-Type": "application/json"}
+            "/mediafiles/{}".format(_id), headers={**self.headers, **{"Content-Type": "application/json"}}
         )
 
         self.assertFalse(response.data)
@@ -179,7 +179,7 @@ class MediafileTest(BaseCase):
 
     def test_non_existent_mediafile_delete(self):
         response = self.app.delete(
-            "/mediafiles/non-existent-id", headers={"Content-Type": "application/json"}
+            "/mediafiles/non-existent-id", headers={**self.headers, **{"Content-Type": "application/json"}}
         )
 
         self.not_found(response)
@@ -206,7 +206,7 @@ class MediafileTest(BaseCase):
 
         response = self.app.get(
             "/mediafiles?skip={}&limit={}".format(skip, limit),
-            headers={"Content-Type": "application/json"},
+            headers={**self.headers, **{"Content-Type": "application/json"}},
         )
 
         self.assertEqual(count, response.json["count"])

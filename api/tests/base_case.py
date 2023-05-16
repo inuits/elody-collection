@@ -1,4 +1,5 @@
 import json
+import os
 import unittest
 
 from app import app
@@ -78,13 +79,13 @@ class BaseCase(unittest.TestCase):
 
     def setUp(self):
         app.testing = True
-
         self.app = app.test_client()
         self.addCleanup(StorageManager().get_db_engine().drop_all_collections)
+        self.headers = {"Authorization": f"Bearer {os.getenv('STATIC_JWT', '')}"}
 
     def create_entity(self):
         return self.app.post(
-            "/entities", headers={"Content-Type": "application/json"}, data=self.entity
+            "/entities", headers={**self.headers, **{"Content-Type": "application/json"}}, data=self.entity
         )
 
     def create_entity_get_id(self):
@@ -93,7 +94,7 @@ class BaseCase(unittest.TestCase):
     def create_mediafile(self):
         return self.app.post(
             "/mediafiles",
-            headers={"Content-Type": "application/json"},
+            headers={**self.headers, **{"Content-Type": "application/json"}},
             data=self.mediafile,
         )
 
