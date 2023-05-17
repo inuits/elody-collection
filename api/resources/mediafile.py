@@ -3,7 +3,6 @@ import util
 from app import policy_factory
 from datetime import datetime
 from flask import request
-from inuits_policy_based_auth import RequestContext
 from resources.base_resource import BaseResource
 from validator import mediafile_schema
 

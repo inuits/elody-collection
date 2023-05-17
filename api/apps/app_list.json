@@ -15,8 +15,7 @@
       "key_value_store",
       "mediafile",
       "saved_search",
-      "story_box",
-      "user"
+      "story_box"
     ],
     "policies": {
       "authentication": [
