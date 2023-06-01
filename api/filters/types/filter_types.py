@@ -1,19 +1,8 @@
 import os
 
 from abc import ABC, abstractmethod
+from filters.filter_matcher_mapping import FilterMatcherMapping
 from filters.matchers.matchers import BaseMatcher
-from filters.matchers.matchers import (
-    IdMatcher,
-    ExactMatcher,
-    ContainsMatcher,
-    MinMatcher,
-    MaxMatcher,
-    MinIncludedMatcher,
-    MaxIncludedMatcher,
-    InBetweenMatcher,
-    AnyMatcher,
-    NoneMatcher,
-)
 from filters.types.base_filter_type_query_generator import BaseFilterTypeQueryGenerator
 from filters.types.arango_filter_type_query_generator import (
     ArangoFilterTypeQueryGenerator,
@@ -59,13 +48,7 @@ class BaseFilterType(ABC):
 class IdFilterType(BaseFilterType):
     def __init__(self):
         super().__init__()
-        self.matchers.update(
-            {
-                "id": IdMatcher,
-                "exact": ExactMatcher,
-                "contains": ContainsMatcher,
-            }
-        )
+        self.matchers.update(FilterMatcherMapping.mapping["id"])
 
     def generate_query(self, filter_criteria: dict):
         return self.filter_type_engine.generate_query_for_id_filter_type(
@@ -76,14 +59,7 @@ class IdFilterType(BaseFilterType):
 class TextFilterType(BaseFilterType):
     def __init__(self):
         super().__init__()
-        self.matchers.update(
-            {
-                "any": AnyMatcher,
-                "none": NoneMatcher,
-                "exact": ExactMatcher,
-                "contains": ContainsMatcher,
-            }
-        )
+        self.matchers.update(FilterMatcherMapping.mapping["text"])
 
     def generate_query(self, filter_criteria: dict):
         return self.filter_type_engine.generate_query_for_text_filter_type(
@@ -94,16 +70,7 @@ class TextFilterType(BaseFilterType):
 class DateFilterType(BaseFilterType):
     def __init__(self):
         super().__init__()
-        self.matchers.update(
-            {
-                "any": AnyMatcher,
-                "none": NoneMatcher,
-                "exact": ExactMatcher,
-                "min": MinMatcher,
-                "max": MaxMatcher,
-                "in_between": InBetweenMatcher,
-            }
-        )
+        self.matchers.update(FilterMatcherMapping.mapping["date"])
 
     def generate_query(self, filter_criteria: dict):
         return self.filter_type_engine.generate_query_for_date_filter_type(
@@ -114,16 +81,7 @@ class DateFilterType(BaseFilterType):
 class NumberFilterType(BaseFilterType):
     def __init__(self):
         super().__init__()
-        self.matchers.update(
-            {
-                "any": AnyMatcher,
-                "none": NoneMatcher,
-                "exact": ExactMatcher,
-                "min_included": MinIncludedMatcher,
-                "max_included": MaxIncludedMatcher,
-                "in_between": InBetweenMatcher,
-            }
-        )
+        self.matchers.update(FilterMatcherMapping.mapping["number"])
 
     def generate_query(self, filter_criteria: dict):
         return self.filter_type_engine.generate_query_for_number_filter_type(
@@ -134,13 +92,7 @@ class NumberFilterType(BaseFilterType):
 class SelectionFilterType(BaseFilterType):
     def __init__(self):
         super().__init__()
-        self.matchers.update(
-            {
-                "any": AnyMatcher,
-                "none": NoneMatcher,
-                "exact": ExactMatcher,
-            }
-        )
+        self.matchers.update(FilterMatcherMapping.mapping["selection"])
 
     def generate_query(self, filter_criteria: dict):
         return self.filter_type_engine.generate_query_for_selection_filter_type(
@@ -151,7 +103,7 @@ class SelectionFilterType(BaseFilterType):
 class BooleanFilterType(BaseFilterType):
     def __init__(self):
         super().__init__()
-        self.matchers.update({"exact": ExactMatcher})
+        self.matchers.update(FilterMatcherMapping.mapping["boolean"])
 
     def generate_query(self, filter_criteria: dict):
         return self.filter_type_engine.generate_query_for_boolean_filter_type(

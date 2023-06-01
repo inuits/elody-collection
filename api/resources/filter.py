@@ -2,7 +2,17 @@ import mappers
 
 from app import policy_factory
 from flask import request
+from filters.filter_matcher_mapping import FilterMatcherMapping
 from resources.base_filter_resource import BaseFilterResource
+
+
+class FilterMatchers(BaseFilterResource):
+    @policy_factory.authenticate()
+    def get(self):
+        return {
+            key: list(value.keys())
+            for key, value in FilterMatcherMapping.mapping.items()
+        }, 200
 
 
 class FilterEntities(BaseFilterResource):

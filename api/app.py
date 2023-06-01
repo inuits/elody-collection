@@ -78,6 +78,7 @@ from resources.entity import (
     EntitySetPrimaryThumbnail,
 )
 from resources.filter import (
+    FilterMatchers,
     FilterEntities,
     FilterEntitiesBySavedSearchId,
     FilterMediafiles,
@@ -117,6 +118,7 @@ api.add_resource(
     "/entities/<string:id>/set_primary_thumbnail/<string:mediafile_id>",
 )
 
+api.add_resource(FilterMatchers, "/filter/matchers")
 api.add_resource(FilterEntities, "/entities/filter")
 api.add_resource(FilterEntitiesBySavedSearchId, "/entities/filter/<string:id>")
 api.add_resource(FilterMediafiles, "/mediafiles/filter")
