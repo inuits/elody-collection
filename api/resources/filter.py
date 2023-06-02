@@ -10,7 +10,7 @@ class FilterMatchers(BaseFilterResource):
     @policy_factory.authenticate()
     def get(self):
         return {
-            key: list(value.keys())
+            key: [matcher.__name__ for _, matcher in value.items()]
             for key, value in FilterMatcherMapping.mapping.items()
         }, 200
 
