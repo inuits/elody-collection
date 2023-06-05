@@ -14,17 +14,17 @@ from typing import Type
 
 
 def get_filter(input_type: str):
-    if input_type == "IdInput":
+    if input_type == "id":
         return IdFilterType()
-    if input_type == "TextInput":
+    if input_type == "text":
         return TextFilterType()
-    if input_type == "DateInput":
+    if input_type == "date":
         return DateFilterType()
-    if input_type == "NumberInput":
+    if input_type == "number":
         return NumberFilterType()
-    if input_type == "SelectionInput":
+    if input_type == "selection":
         return SelectionFilterType()
-    if input_type == "BooleanInput":
+    if input_type == "boolean":
         return BooleanFilterType()
 
     raise ValueError(f"No filter defined for input type '{input_type}'")
