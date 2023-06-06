@@ -77,7 +77,42 @@ class MongoFilters(MongoStorageManager):
                     }
                 )
 
-            pipeline.extend(filter.generate_query(filter_criteria))
+            pipeline.extend(filter.generate_query(filter_criteria))  # type: ignore
+
+            if filter_criteria.get("provide_value_options_for_key"):
+                key = filter_criteria["key"]
+                pipeline.extend(
+                    [
+                        {
+                            "$project": {
+                                "_id": 0,
+                                key: {
+                                    "$arrayElemAt": [
+                                        {
+                                            "$map": {
+                                                "input": {
+                                                    "$filter": {
+                                                        "input": "$metadata",
+                                                        "as": "item",
+                                                        "cond": {
+                                                            "$eq": ["$$item.key", key]
+                                                        },
+                                                    }
+                                                },
+                                                "as": "filteredItem",
+                                                "in": "$$filteredItem.value",
+                                            }
+                                        },
+                                        0,
+                                    ]
+                                },
+                            }
+                        },
+                        {"$group": {"_id": None, "options": {"$addToSet": f"${key}"}}},
+                        {"$project": {"_id": 0, "options": 1}},
+                    ]
+                )
+                break
 
         pipeline.append({"$project": {"relationDocuments": 0, "numberOfRelations": 0}})
         return pipeline
