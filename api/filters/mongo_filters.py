@@ -41,6 +41,19 @@ class MongoFilters(MongoStorageManager):
             items["results"].append(self._prepare_mongo_document(document, True))
         items["limit"] = limit
 
+        if any(
+            "provide_value_options_for_key" in value
+            and value["provide_value_options_for_key"] == True
+            for value in filter_request_body
+        ):
+            for i in range(len(items["results"])):
+                if isinstance(items["results"][i]["options"][0], list):
+                    items["results"][i]["options"] = [
+                        item
+                        for sublist in items["results"][i]["options"]
+                        for item in sublist
+                    ]
+
         return items
 
     def __generate_aggregation_pipeline(
