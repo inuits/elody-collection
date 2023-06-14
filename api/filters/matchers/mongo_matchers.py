@@ -112,32 +112,34 @@ class MongoMatchers(BaseMatchers):
     def __any_none_match(
         self, key: str, parent_key: str, operator_to_match_none_values: str
     ):
-        return {
-            "$match": {
-                "$or": [
+        or_conditions = [
+            {
+                parent_key: {
+                    "$type": "array",
+                    "$elemMatch": {
+                        "key": key,
+                        "value": {operator_to_match_none_values: [None, ""]},
+                    },
+                }
+            },
+            {
+                "$and": [
+                    {parent_key: {"$type": "object"}},
+                    {f"{parent_key}.{key}": {"$exists": True}},
                     {
-                        parent_key: {
-                            "$type": "array",
-                            "$elemMatch": {
-                                "key": key,
-                                "value": {operator_to_match_none_values: [None, ""]},
-                            },
+                        f"{parent_key}.{key}": {
+                            operator_to_match_none_values: [None, ""]
                         }
                     },
-                    {
-                        "$and": [
-                            {parent_key: {"$type": "object"}},
-                            {f"{parent_key}.{key}": {"$exists": True}},
-                            {
-                                f"{parent_key}.{key}": {
-                                    operator_to_match_none_values: [None, ""]
-                                }
-                            },
-                        ]
-                    },
                 ]
-            }
-        }
+            },
+        ]
+        if operator_to_match_none_values == "$in":
+            or_conditions.append(
+                {parent_key: {"$type": "array", "$not": {"$elemMatch": {"key": key}}}},
+            )
+
+        return {"$match": {"$or": or_conditions}}
 
     def __get_datetime_query_value(self, value, range_match: bool) -> dict | str:
         if not regex.match(BaseMatchers.datetime_pattern, value):
