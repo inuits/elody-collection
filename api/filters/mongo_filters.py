@@ -53,6 +53,7 @@ class MongoFilters(MongoStorageManager):
                         for sublist in items["results"][i]["options"]
                         for item in sublist
                     ]
+            items["results"][0]["options"] = items["results"][0]["options"][:limit]
 
         return items
 
