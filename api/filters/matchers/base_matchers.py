@@ -5,7 +5,7 @@ class BaseMatchers(ABC):
     datetime_pattern = r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$"
 
     @abstractmethod
-    def id(self, key: str, values: list[str]) -> dict | str:
+    def id(self, key: str, values: list[str], parent_key: str) -> dict | str:
         pass
 
     @abstractmethod

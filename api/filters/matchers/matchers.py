@@ -28,9 +28,7 @@ class IdMatcher(BaseMatcher):
 
     def match(self, key, value, parent_key, **_):
         if key == "identifiers" and isinstance(value, list):
-            return self.matcher_engine.id(key, value)
-
-        del parent_key
+            return self.matcher_engine.id(key, value, parent_key)
 
 
 class ExactMatcher(BaseMatcher):

@@ -4,11 +4,8 @@ from filters.matchers.base_matchers import BaseMatchers
 
 
 class MongoMatchers(BaseMatchers):
-    def id(self, key, values):
-        match_values = []
-        for value in values:
-            match_values.append({key: {"$elemMatch": {"$eq": value}}})
-        return {"$match": {"$or": match_values}}
+    def id(self, key, values, parent_key):
+        return self.__exact_contains_range_match(key, {"$in": values}, parent_key)
 
     def exact(self, key, value, parent_key, is_datetime_value):
         if isinstance(value, list):

@@ -12,6 +12,7 @@ class BaseFilterTypeQueryGenerator(ABC):
             matchers,
             filter_criteria["key"],
             filter_criteria["value"],
+            "metadata",
             match_exact=filter_criteria.get("match_exact"),
         )
 
