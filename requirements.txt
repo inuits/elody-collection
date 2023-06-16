@@ -40,6 +40,5 @@ requests-toolbelt==1.0.0
 retry==0.9.2
 sentry-sdk[flask]==0.10.2
 six==1.16.0
-srt==3.5.3
 urllib3==1.26.15
 Werkzeug==2.3.6
