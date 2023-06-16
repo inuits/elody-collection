@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 
 class BaseMatchers(ABC):
-    datetime_pattern = r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$"
+    datetime_pattern = r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$"
 
     @abstractmethod
     def id(self, key: str, values: list[str], parent_key: str) -> dict | str:
