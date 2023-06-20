@@ -15,6 +15,22 @@ class ArangoFilters(ArangoStorageManager):
         items = self.get_items_from_collection(collection, 0, limit, None, filters)
         items["count"] = results.statistics()["fullCount"]  # type: ignore
         items["limit"] = limit
+
+        if any(
+            "provide_value_options_for_key" in value
+            and value["provide_value_options_for_key"] == True
+            for value in body
+        ):
+            options = []
+            for result in items["results"]:
+                for metadata in result["metadata"]:
+                    if metadata["key"] == body[0]["key"]:
+                        if isinstance(metadata["value"], list):
+                            options.extend(metadata["value"])
+                        else:
+                            options.append(metadata["value"])
+            items["results"] = [{"options": options}]
+
         return items
 
     def __generate_aql_query(
