@@ -1,3 +1,4 @@
+import json
 import os
 import util
 
@@ -69,5 +70,13 @@ def __instantiate_authentication_policy(policy_module_name, policy, logger):
             os.getenv("ROLE_SCOPE_MAPPING", "role_scope_mapping.json"),
             os.getenv("REMOTE_TOKEN_VALIDATION", False) in ["True", "true", True],
             os.getenv("REMOTE_PUBLIC_KEY", False),
+            remote_jwks=__get_remote_jwks(),
         )
     return policy()
+
+
+def __get_remote_jwks():
+    remote_jwks = os.getenv("REMOTE_JWKS", "remote_jwks.json")
+    if os.path.exists(remote_jwks):
+        return json.load(open(remote_jwks, "r"))
+    return None
