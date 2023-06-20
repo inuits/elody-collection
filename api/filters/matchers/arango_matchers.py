@@ -2,10 +2,10 @@ from filters.matchers.base_matchers import BaseMatchers
 
 
 class ArangoMatchers(BaseMatchers):
-    DATE_FORMAT = "%yyyy-%mm-%dd %hh:%ii:%ss"
+    DATE_FORMAT = "%yyyy-%mm-%ddT%hh:%ii"
 
-    def id(self, key, values):
-        return f"FILTER LENGTH(INTERSECTION(doc.{key}, {values})) > 0"
+    def id(self, key, values, parent_key):
+        return self.__exact_contains_match(key, values, parent_key, "IN")
 
     def exact(self, key, value, parent_key, is_datetime_value):
         return self.__exact_contains_match(
@@ -102,6 +102,17 @@ class ArangoMatchers(BaseMatchers):
         value_match = self.__get_value_match(
             values, comparison_operators, logical_operator, is_datetime_value
         )
+        extra_condition = ""
+        if "null" in values and "" in values and operator == "==":
+            extra_condition = f"""
+                OR (
+                    LENGTH(
+                        FOR item IN IS_ARRAY(doc.{parent_key}) ? doc.{parent_key} : []
+                            FILTER item.key == "{key}"
+                            RETURN item
+                    ) == 0
+                )
+            """
 
         return f"""
             FILTER (
@@ -115,6 +126,7 @@ class ArangoMatchers(BaseMatchers):
                             )
                             RETURN item
                     ) > 0
+                    {extra_condition}
                 )
             ) OR (
                 HAS(doc.{parent_key}, "{key}")
@@ -139,12 +151,11 @@ class ArangoMatchers(BaseMatchers):
         is_datetime_value=False,
     ):
         prefix, suffix = self.__get_prefix_and_suffix(comparison_operators[0])
-        date_split = "SPLIT(item.value, '+')[0]"
 
         if is_datetime_value:
             value_match = f"""
                 DATE_FORMAT(
-                    {date_split},
+                    item.value,
                     "{self.DATE_FORMAT}"
                 ) {comparison_operators[0]} "{values[0]}"
             """
@@ -163,7 +174,7 @@ class ArangoMatchers(BaseMatchers):
                 if is_datetime_value:
                     value_match += f"""
                         {logical_operator} DATE_FORMAT(
-                            {date_split},
+                            item.value,
                             "{self.DATE_FORMAT}"
                         ) {comparison_operators[next_i]} "{values[next_i]}"
                     """
