@@ -29,7 +29,7 @@ py==1.11.0
 py-healthcheck==1.10.1
 pycparser==2.21
 PyJWT==2.7.0
-pymongo==4.3.3
+pymongo==4.4.0
 pyparsing==3.1.0
 pyrsistent==0.19.3
 python-arango==7.5.8
