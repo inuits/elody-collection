@@ -47,6 +47,8 @@ class BaseResource(Resource):
             abort(400, message=f"Item has the wrong type")
 
     def _abort_if_no_tenant_given(self, headers, token):
+        if "apikey" in headers:
+            return headers["apikey"]
         if "X-Tenant-Id" in headers:
             return headers["X-Tenant-Id"]
         if "tenantid" in token:
