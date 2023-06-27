@@ -127,7 +127,9 @@ class MongoStorageManager(GenericStorageManager):
             "parent": "entities",
         }.get(relation, "entities")
 
-    def _prepare_mongo_document(self, document, reversed, id=None):
+    def _prepare_mongo_document(
+        self, document, reversed, id=None, create_sortable_metadata=True
+    ):
         if id:
             document["_id"] = id
             if "identifiers" not in document:
@@ -138,10 +140,10 @@ class MongoStorageManager(GenericStorageManager):
             document["data"] = self.__replace_dictionary_keys(
                 document["data"], reversed
             )
-        if "metadata" in document and not reversed:
+        if "metadata" not in document:
+            return document
+        if not reversed and create_sortable_metadata:
             document["sort"] = self.__create_sortable_metadata(document["metadata"])
-        if "sort" in document and reversed:
-            document.pop("sort")
         return document
 
     def __replace_dictionary_keys(self, data, reversed):
@@ -458,8 +460,12 @@ class MongoStorageManager(GenericStorageManager):
         self.__add_child_relations(collection, id, content)
         return content
 
-    def patch_item_from_collection(self, collection, id, content):
-        content = self._prepare_mongo_document(content, False)
+    def patch_item_from_collection(
+        self, collection, id, content, create_sortable_metadata=True
+    ):
+        content = self._prepare_mongo_document(
+            content, False, create_sortable_metadata=create_sortable_metadata
+        )
         try:
             self.db[collection].update_one(self.__get_id_query(id), {"$set": content})
         except pymongo.errors.DuplicateKeyError as ex:
@@ -476,10 +482,17 @@ class MongoStorageManager(GenericStorageManager):
             util.signal_entity_changed(entity)
 
     def save_item_to_collection(
-        self, collection, content, item_id=None, only_return_id=False
+        self,
+        collection,
+        content,
+        item_id=None,
+        only_return_id=False,
+        create_sortable_metadata=True,
     ):
         item_id = item_id if item_id else str(uuid.uuid4())
-        content = self._prepare_mongo_document(content, False, item_id)
+        content = self._prepare_mongo_document(
+            content, False, item_id, create_sortable_metadata
+        )
         try:
             item_id = self.db[collection].insert_one(content).inserted_id
         except pymongo.errors.DuplicateKeyError as ex:
@@ -520,8 +533,12 @@ class MongoStorageManager(GenericStorageManager):
         self.__add_child_relations(collection, id, content)
         return content
 
-    def update_item_from_collection(self, collection, id, content):
-        content = self._prepare_mongo_document(content, False)
+    def update_item_from_collection(
+        self, collection, id, content, create_sortable_metadata=True
+    ):
+        content = self._prepare_mongo_document(
+            content, False, create_sortable_metadata=create_sortable_metadata
+        )
         try:
             self.db[collection].replace_one(self.__get_id_query(id), content)
         except pymongo.errors.DuplicateKeyError as ex:

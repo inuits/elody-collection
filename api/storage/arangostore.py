@@ -568,7 +568,9 @@ class ArangoStorageManager(GenericStorageManager):
         self.delete_collection_item_relations(collection, id, content, parent)
         return self.add_relations_to_collection_item(collection, id, content, parent)
 
-    def patch_item_from_collection(self, collection, id, content):
+    def patch_item_from_collection(
+        self, collection, id, content, create_sortable_metadata=True
+    ):
         try:
             item = self.db.collection(collection).update(
                 {"_key": self.__get_key_for_collection_item(collection, id)} | content,
@@ -590,7 +592,12 @@ class ArangoStorageManager(GenericStorageManager):
             util.signal_entity_changed(entity)
 
     def save_item_to_collection(
-        self, collection, content, item_id=None, only_return_id=False
+        self,
+        collection,
+        content,
+        item_id=None,
+        only_return_id=False,
+        create_sortable_metadata=True,
     ):
         item_id = item_id if item_id else str(uuid.uuid4())
         content["_key"] = item_id
@@ -630,7 +637,9 @@ class ArangoStorageManager(GenericStorageManager):
                 self.db.delete_document(edge)
         return self.add_relations_to_collection_item(collection, id, content, parent)
 
-    def update_item_from_collection(self, collection, id, content):
+    def update_item_from_collection(
+        self, collection, id, content, create_sortable_metadata=True
+    ):
         try:
             item = self.db.collection(collection).replace(
                 {"_key": self.__get_key_for_collection_item(collection, id)} | content,

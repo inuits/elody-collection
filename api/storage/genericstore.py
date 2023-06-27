@@ -98,13 +98,22 @@ class GenericStorageManager:
     def patch_collection_item_relations(self, collection, id, content, parent=True):
         pass
 
-    def patch_item_from_collection(self, collection, id, content) -> dict:
+    def patch_item_from_collection(
+        self, collection, id, content, create_sortable_metadata=True
+    ) -> dict:
         pass
 
     def reindex_mediafile_parents(self, mediafile=None, parents=None):
         pass
 
-    def save_item_to_collection(self, collection, content):
+    def save_item_to_collection(
+        self,
+        collection,
+        content,
+        item_id=None,
+        only_return_id=False,
+        create_sortable_metadata=True,
+    ):
         pass
 
     def set_primary_field_collection_item(
@@ -120,7 +129,9 @@ class GenericStorageManager:
         item = self.patch_item_from_collection(collection, id, patch_data)
         return item[sub_item]
 
-    def update_item_from_collection(self, collection, id, content):
+    def update_item_from_collection(
+        self, collection, id, content, create_sortable_metadata=True
+    ):
         pass
 
     def update_parent_relation_values(self, collection, parent_id):

@@ -164,7 +164,9 @@ class MemoryStorageManager(GenericStorageManager):
         self.__add_child_relations(collection, obj_id, content)
         return content
 
-    def patch_item_from_collection(self, collection, obj_id, content):
+    def patch_item_from_collection(
+        self, collection, obj_id, content, create_sortable_metadata=True
+    ):
         if gen_id := self.__get_collection_item_gen_id_by_identifier(
             collection, obj_id
         ):
@@ -174,7 +176,12 @@ class MemoryStorageManager(GenericStorageManager):
         return None
 
     def save_item_to_collection(
-        self, collection, content, item_id=None, only_return_id=False
+        self,
+        collection,
+        content,
+        item_id=None,
+        only_return_id=False,
+        create_sortable_metadata=True,
     ):
         gen_id = item_id if item_id else str(uuid.uuid4())
         content["_id"] = gen_id
@@ -196,7 +203,9 @@ class MemoryStorageManager(GenericStorageManager):
         self.__add_child_relations(collection, obj_id, content)
         return content
 
-    def update_item_from_collection(self, collection, obj_id, content):
+    def update_item_from_collection(
+        self, collection, obj_id, content, create_sortable_metadata=True
+    ):
         if gen_id := self.__get_collection_item_gen_id_by_identifier(
             collection, obj_id
         ):
