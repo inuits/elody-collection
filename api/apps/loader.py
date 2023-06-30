@@ -63,14 +63,7 @@ def __get_class(app, auth_type, policy_module_name):
 def __instantiate_authentication_policy(policy_module_name, policy, logger):
     if policy_module_name == "token_based_policies.authlib_flask_oauth2_policy":
         return policy(
-            logger,
-            os.getenv("STATIC_ISSUER", False),
-            os.getenv("STATIC_PUBLIC_KEY", False),
-            os.getenv("REALMS", "").split(","),
-            os.getenv("ROLE_SCOPE_MAPPING", "role_scope_mapping.json"),
-            os.getenv("REMOTE_TOKEN_VALIDATION", False) in ["True", "true", True],
-            os.getenv("REMOTE_PUBLIC_KEY", False),
-            remote_jwks=__get_remote_jwks(),
+            logger, os.getenv("ROLE_SCOPE_MAPPING", "role_scope_mapping.json")
         )
     return policy()
 
