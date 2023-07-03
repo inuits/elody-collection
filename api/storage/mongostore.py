@@ -24,8 +24,10 @@ class MongoStorageManager(GenericStorageManager):
         self.db.entities.create_index("identifiers", unique=True)
         self.db.entities.create_index("object_id", unique=True, sparse=True)
 
-    def __add_child_relations(self, collection, id, relations):
+    def __add_child_relations(self, id, relations, collection=None):
         for relation in relations:
+            if not collection:
+                collection = self.__map_relation_to_collection(relation["type"])
             dst_relation = relation.copy()
             dst_relation["type"] = self.__map_entity_relation(relation["type"])
             dst_relation["key"] = id
@@ -220,9 +222,7 @@ class MongoStorageManager(GenericStorageManager):
         self, collection, id, relations, parent=True, dst_collection=None
     ):
         self.add_sub_item_to_collection_item(collection, id, "relations", relations)
-        if not dst_collection:
-            dst_collection = collection
-        self.__add_child_relations(dst_collection, id, relations)
+        self.__add_child_relations(id, relations, dst_collection)
         return relations
 
     def add_sub_item_to_collection_item(self, collection, id, sub_item, content):
@@ -457,7 +457,7 @@ class MongoStorageManager(GenericStorageManager):
         relations = self.get_collection_item_sub_item(collection, id, "relations")
         relations = [*relations, *content] if relations else content
         self.update_collection_item_sub_item(collection, id, "relations", relations)
-        self.__add_child_relations(collection, id, content)
+        self.__add_child_relations(id, content)
         return content
 
     def patch_item_from_collection(
@@ -530,7 +530,7 @@ class MongoStorageManager(GenericStorageManager):
                 collection, item["key"], "relations", id
             )
         self.update_collection_item_sub_item(collection, id, "relations", content)
-        self.__add_child_relations(collection, id, content)
+        self.__add_child_relations(id, content)
         return content
 
     def update_item_from_collection(
