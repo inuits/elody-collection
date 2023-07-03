@@ -392,8 +392,8 @@ class MongoStorageManager(GenericStorageManager):
             linked_entities.append(
                 {
                     "entity_id": relation["key"],
-                    "primary_mediafile": relation["is_primary"],
-                    "primary_thumbnail": relation["is_primary_thumbnail"],
+                    "primary_mediafile": relation.get("is_primary"),
+                    "primary_thumbnail": relation.get("is_primary_thumbnail"),
                 }
             )
         return linked_entities
