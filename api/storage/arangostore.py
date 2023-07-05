@@ -398,8 +398,9 @@ class ArangoStorageManager(GenericStorageManager):
             FOR c IN entities
                 {"FILTER c._key IN @ids" if "ids" in filters else ""}
                 {f'FILTER c.type == "{filters["type"]}"' if "type" in filters else ""}
-                {f'FILTER c.user == "{filters["user"]}"' if "user" in filters else ""}
+                {f'FILTER c.user == "{filters["user"]}"' if filters.get("only_own", False) else ""}
                 {f'FILTER c.tenants != null AND "{filters["tenants"]}" IN c.tenants' if "tenants" in filters else ""}
+                {f'FILTER c.metadata == null OR {{"key": "publication_status", "value": "niet-publiek"}} NOT IN c.metadata OR c.user == "{filters["user"]}"' if not filters.get("allow_private", False) else ""}
         """
         if skip_relations == 1:
             aql2 = "LET all_metadata = {'metadata': c.metadata}"
