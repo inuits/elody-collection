@@ -46,15 +46,6 @@ class BaseResource(Resource):
         if type and item["type"] != type:
             abort(400, message=f"Item has the wrong type")
 
-    def _abort_if_no_tenant_given(self, headers, token):
-        if "apikey" in headers:
-            return headers["apikey"]
-        if "X-Tenant-Id" in headers:
-            return headers["X-Tenant-Id"]
-        if "tenantid" in token:
-            return token["tenantid"]
-        abort(400, message="No tenant-id was specified")
-
     def _add_relations_to_metadata(self, entity, collection="entities", sort_by=None):
         relations = self.storage.get_collection_item_relations(
             collection, util.get_raw_id(entity), exclude=["story_box_visits"]
