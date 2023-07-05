@@ -50,7 +50,15 @@ class GenericStorageManager:
             return list(filter(lambda x: x["key"] == key, sub_items))
         return None
 
-    def get_entities(self, skip=0, limit=20, skip_relations=0, filters=None):
+    def get_entities(
+        self,
+        skip=0,
+        limit=20,
+        skip_relations=0,
+        filters=None,
+        order_by=None,
+        ascending=True,
+    ):
         pass
 
     def get_history_for_item(self, collection, id, timestamp=None, all_entries=None):

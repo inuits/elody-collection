@@ -383,7 +383,13 @@ class ArangoStorageManager(GenericStorageManager):
         return relations
 
     def get_entities(
-        self, skip=0, limit=20, skip_relations=0, filters=None, order_by=None, asc=True
+        self,
+        skip=0,
+        limit=20,
+        skip_relations=0,
+        filters=None,
+        order_by=None,
+        ascending=True,
     ):
         if not filters:
             filters = {}
