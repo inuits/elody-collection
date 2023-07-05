@@ -285,6 +285,8 @@ class MongoStorageManager(GenericStorageManager):
             return self.__get_items_from_collection_by_ids(
                 "entities", filters["ids"], order_by, ascending
             )
+        if not filters.get("only_own", False):
+            del filters["user"]
         return self.get_items_from_collection(
             "entities", skip, limit, filters, None, order_by, ascending
         )
