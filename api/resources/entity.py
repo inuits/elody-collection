@@ -22,7 +22,9 @@ class Entity(BaseResource):
         ]
         order_by = request.args.get("order_by", None)
         ascending = request.args.get("asc", 1, int)
-        filters = {}
+        filters = {
+            "user": policy_factory.get_user_context().email or "default_uploader"
+        }
         if app.multitenancy_enabled:
             tenant_id = policy_factory.get_user_context().tenant
             tenant = self.storage.get_item_from_collection_by_id("entities", tenant_id)
@@ -41,9 +43,9 @@ class Entity(BaseResource):
         if request.args.get("only_own", 0, int) or self._only_own_items(
             ["read-entity-all"]
         ):
-            filters["user"] = (
-                policy_factory.get_user_context().email or "default_uploader"
-            )
+            filters["only_own"] = True
+        if self._can_see_private_assets():
+            filters["allow_private"] = True
         if item_type := request.args.get("type"):
             filters["type"] = item_type
         if ids := request.args.get("ids"):
@@ -157,10 +159,13 @@ class EntityDetail(BaseResource):
             *request.args.getlist("field"),
             *request.args.getlist("field[]"),
         ]
-        if self._only_own_items(["read-entity-detail-all"]):
-            self._abort_if_no_access(
-                entity, policy_factory.get_user_context().auth_objects.get("token")
-            )
+        token = policy_factory.get_user_context().auth_objects.get("token")
+        if (
+            self._only_own_items(["read-entity-detail-all"])
+            or self._is_private(entity)
+            or (self._is_private_asset(entity) and not self._can_see_private_assets())
+        ):
+            self._abort_if_no_access(entity, token)
         entity = self._set_entity_mediafile_and_thumbnail(entity)
         if not request.args.get("skip_relations", 0, int):
             entity = self._add_relations_to_metadata(entity)
@@ -240,10 +245,13 @@ class EntityMediafiles(BaseResource):
     @policy_factory.authenticate()
     def get(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
-        if self._only_own_items(["read-entity-mediafiles-all"]):
-            self._abort_if_no_access(
-                entity, policy_factory.get_user_context().auth_objects.get("token")
-            )
+        token = policy_factory.get_user_context().auth_objects.get("token")
+        if (
+            self._only_own_items(["read-entity-mediafiles-all"])
+            or self._is_private(entity)
+            or (self._is_private_asset(entity) and not self._can_see_private_assets())
+        ):
+            self._abort_if_no_access(entity, token)
         mediafiles = self.storage.get_collection_item_mediafiles(
             "entities", util.get_raw_id(entity)
         )
@@ -344,10 +352,13 @@ class EntityMetadata(BaseResource):
             *request.args.getlist("field"),
             *request.args.getlist("field[]"),
         ]
-        if self._only_own_items(["read-entity-metadata-all"]):
-            self._abort_if_no_access(
-                entity, policy_factory.get_user_context().auth_objects.get("token")
-            )
+        token = policy_factory.get_user_context().auth_objects.get("token")
+        if (
+            self._only_own_items(["read-entity-metadata-all"])
+            or self._is_private(entity)
+            or (self._is_private_asset(entity) and not self._can_see_private_assets())
+        ):
+            self._abort_if_no_access(entity, token)
         metadata = self.storage.get_collection_item_sub_item(
             "entities", util.get_raw_id(entity), "metadata"
         )
@@ -407,10 +418,13 @@ class EntityMetadataKey(BaseResource):
     @policy_factory.authenticate()
     def get(self, id, key):
         entity = self._abort_if_item_doesnt_exist("entities", id)
-        if self._only_own_items(["read-entity-metadata-key-all"]):
-            self._abort_if_no_access(
-                entity, policy_factory.get_user_context().auth_objects.get("token")
-            )
+        token = policy_factory.get_user_context().auth_objects.get("token")
+        if (
+            self._only_own_items(["read-entity-metadata-key-all"])
+            or self._is_private(entity)
+            or (self._is_private_asset(entity) and not self._can_see_private_assets())
+        ):
+            self._abort_if_no_access(entity, token)
         metadata = self.storage.get_collection_item_sub_item_key(
             "entities", util.get_raw_id(entity), "metadata", key
         )
@@ -434,10 +448,13 @@ class EntityRelations(BaseResource):
     @policy_factory.authenticate()
     def get(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
-        if self._only_own_items(["read-entity-relations-all"]):
-            self._abort_if_no_access(
-                entity, policy_factory.get_user_context().auth_objects.get("token")
-            )
+        token = policy_factory.get_user_context().auth_objects.get("token")
+        if (
+            self._only_own_items(["read-entity-relations-all"])
+            or self._is_private(entity)
+            or (self._is_private_asset(entity) and not self._can_see_private_assets())
+        ):
+            self._abort_if_no_access(entity, token)
 
         @after_this_request
         def add_header(response):
@@ -509,10 +526,13 @@ class EntityRelationsAll(BaseResource):
     @policy_factory.authenticate()
     def get(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
-        if self._only_own_items(["read-entity-relations-all"]):
-            self._abort_if_no_access(
-                entity, policy_factory.get_user_context().auth_objects.get("token")
-            )
+        token = policy_factory.get_user_context().auth_objects.get("token")
+        if (
+            self._only_own_items(["read-entity-relations-all"])
+            or self._is_private(entity)
+            or (self._is_private_asset(entity) and not self._can_see_private_assets())
+        ):
+            self._abort_if_no_access(entity, token)
 
         @after_this_request
         def add_header(response):

@@ -27,10 +27,12 @@ class BaseResource(Resource):
         )
 
     def _abort_if_no_access(self, item, token, collection="entities"):
-        is_owner = self._is_owner_of_item(item, token)
-        is_public = self._is_public(item)
-        if not is_owner and not is_public:
-            abort(403, message="Access denied")
+        if (
+            "has-full-control" in policy_factory.get_user_context().scopes
+            or self._is_owner_of_item(item, token)
+        ):
+            return
+        abort(403, message="Access denied")
 
     def _abort_if_not_logged_in(self, token):
         if "email" not in token:
@@ -56,6 +58,12 @@ class BaseResource(Resource):
             relations = sorted(relations, key=lambda x: x[sort_by])
         entity["metadata"] = [*entity.get("metadata", []), *relations]
         return entity
+
+    def _can_see_private_assets(self):
+        return any(
+            x in policy_factory.get_user_context().scopes
+            for x in ["has-full-control", "can-see-private-assets"]
+        )
 
     def _create_linked_data(self, request, content_type):
         content = request.get_data(as_text=True)
@@ -160,8 +168,13 @@ class BaseResource(Resource):
     def _is_owner_of_item(self, item, token):
         return "user" in item and item["user"] == token["email"]
 
-    def _is_public(self, item):
-        return "private" in item and not item["private"]
+    def _is_private(self, item):
+        return item.get("private", False)
+
+    def _is_private_asset(self, asset):
+        return (
+            util.get_item_metadata_value(asset, "publication_status") == "niet-publiek"
+        )
 
     def _is_rdf_post_call(self, content_type):
         return content_type in [
