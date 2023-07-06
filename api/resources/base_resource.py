@@ -168,6 +168,10 @@ class BaseResource(Resource):
         return mediafiles
 
     def _is_owner_of_item(self, item, token):
+        if item is None:
+            item = {}
+        if token is None:
+            token = {}
         return "user" in item and "email" in token and item["user"] == token["email"]
 
     def _is_private(self, item):
