@@ -32,6 +32,8 @@ class BaseResource(Resource):
             or self._is_owner_of_item(item, token)
         ):
             return
+        if "tenants" in item and policy_factory.get_user_context().tenant in item["tenants"]:
+            return
         abort(403, message="Access denied")
 
     def _abort_if_not_logged_in(self, token):
@@ -166,7 +168,7 @@ class BaseResource(Resource):
         return mediafiles
 
     def _is_owner_of_item(self, item, token):
-        return "user" in item and item["user"] == token["email"]
+        return "user" in item and "email" in token and item["user"] == token["email"]
 
     def _is_private(self, item):
         return item.get("private", False)
