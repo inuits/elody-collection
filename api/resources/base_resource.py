@@ -30,10 +30,6 @@ class BaseResource(Resource):
         if not self._has_access_to_item(item, collection):
             abort(403, message="Access denied")
 
-    def _abort_if_not_logged_in(self, token):
-        if "email" not in token:
-            abort(401, message="You must be logged in to access this feature")
-
     def _abort_if_not_valid_json(self, type, json, schema):
         if validation_error := validate_json(json, schema):
             abort(
