@@ -85,7 +85,7 @@ class MediafileDetail(BaseResource):
     def get(self, id):
         mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
         self._abort_if_no_access(mediafile, collection="mediafiles")
-        if request.args.get("raw"):
+        if request.args.get("raw", 0, int):
             return mediafile
         return self._inject_api_urls_into_mediafiles([mediafile])[0]
 
