@@ -1,8 +1,9 @@
 import util
 
-from app import policy_factory
+from app import multitenancy_enabled, policy_factory
 from datetime import datetime
 from flask import request
+from flask_restful import abort
 from resources.base_resource import BaseResource
 from validator import mediafile_schema
 
@@ -12,11 +13,20 @@ class Mediafile(BaseResource):
     def get(self):
         skip = request.args.get("skip", 0, int)
         limit = request.args.get("limit", 20, int)
+        fields = {}
         filters = {}
+        if multitenancy_enabled:
+            if not (tenant := self._get_tenant(create_tenant=False)):
+                abort(400, message="Tenant not found")
+            filters["tenants"] = tenant["tenant_id"]
         if ids := request.args.get("ids"):
             filters["ids"] = ids.split(",")
+        if request.args.get("only_own", 1, int) and not multitenancy_enabled:
+            fields["user"] = (
+                policy_factory.get_user_context().email or "default_uploader"
+            )
         mediafiles = self.storage.get_items_from_collection(
-            "mediafiles", skip, limit, filters=filters
+            "mediafiles", skip, limit, fields, filters
         )
         mediafiles["limit"] = limit
         if skip + limit < mediafiles["count"]:
@@ -34,6 +44,10 @@ class Mediafile(BaseResource):
     def post(self):
         content = request.get_json()
         self._abort_if_not_valid_json("Mediafile", content, mediafile_schema)
+        if multitenancy_enabled:
+            if not (tenant := self._get_tenant()):
+                abort(400, message="Tenant not found")
+            content["tenants"] = [tenant["tenant_id"]]
         content["user"] = policy_factory.get_user_context().email or "default_uploader"
         content["date_created"] = str(datetime.now())
         content["version"] = 1

@@ -487,6 +487,7 @@ class ArangoStorageManager(GenericStorageManager):
             FOR c IN @@collection
                 {"FILTER c._key IN @ids" if "ids" in filters else ""}
                 {"FILTER c.user == @user_or_public OR NOT c.private" if "user_or_public" in filters else ""}
+                {f'FILTER c.tenants != null AND "{filters["tenants"]}" IN c.tenants' if "tenants" in filters else ""}
                 {extra_query}
                 {title_filter}
                 {f'SORT c.{sort} {"ASC" if asc else "DESC"}' if sort else ""}
