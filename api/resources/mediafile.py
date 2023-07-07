@@ -15,18 +15,9 @@ class Mediafile(BaseResource):
         filters = {}
         if ids := request.args.get("ids"):
             filters["ids"] = ids.split(",")
-        if self._only_own_items():
-            mediafiles = self.storage.get_items_from_collection(
-                "mediafiles",
-                skip,
-                limit,
-                {"user": policy_factory.get_user_context().email or "default_uploader"},
-                filters,
-            )
-        else:
-            mediafiles = self.storage.get_items_from_collection(
-                "mediafiles", skip, limit, filters=filters
-            )
+        mediafiles = self.storage.get_items_from_collection(
+            "mediafiles", skip, limit, filters=filters
+        )
         mediafiles["limit"] = limit
         if skip + limit < mediafiles["count"]:
             mediafiles["next"] = f"/mediafiles?skip={skip + limit}&limit={limit}"
@@ -64,12 +55,7 @@ class MediafileAssets(BaseResource):
     @policy_factory.authenticate()
     def get(self, id):
         mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
-        if self._only_own_items():
-            self._abort_if_no_access(
-                mediafile,
-                policy_factory.get_user_context().auth_objects.get("token"),
-                "mediafiles",
-            )
+        self._abort_if_no_access(mediafile, collection="mediafiles")
         entities = []
         for item in self.storage.get_mediafile_linked_entities(mediafile):
             entity = self.storage.get_item_from_collection_by_id(
@@ -85,9 +71,7 @@ class MediafileCopyright(BaseResource):
     @policy_factory.authenticate()
     def get(self, id):
         mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
-        if not self._only_own_items() or self._is_owner_of_item(
-            mediafile, policy_factory.get_user_context().auth_objects.get("token")
-        ):
+        if self._has_access_to_item(mediafile, collection="mediafiles"):
             return "full", 200
         if not util.mediafile_is_public(mediafile):
             return "none", 200
@@ -101,29 +85,23 @@ class MediafileDetail(BaseResource):
     @policy_factory.authenticate()
     def get(self, id):
         mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
-        if self._only_own_items() and not util.mediafile_is_public(mediafile):
-            self._abort_if_no_access(
-                mediafile,
-                policy_factory.get_user_context().auth_objects.get("token"),
-                "mediafiles",
-            )
+        if not util.mediafile_is_public(mediafile):
+            self._abort_if_no_access(mediafile, collection="mediafiles")
         if request.args.get("raw"):
             return mediafile
         return self._inject_api_urls_into_mediafiles([mediafile])[0]
 
     @policy_factory.authenticate()
     def put(self, id):
-        user_context = policy_factory.get_user_context()
         old_mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
+        self._abort_if_no_access(old_mediafile, collection="mediafiles")
         content = request.get_json()
         self._abort_if_not_valid_json("Mediafile", content, mediafile_schema)
-        if self._only_own_items():
-            self._abort_if_no_access(
-                old_mediafile, user_context.auth_objects.get("token"), "mediafiles"
-            )
         content["date_updated"] = str(datetime.now())
         content["version"] = old_mediafile.get("version", 0) + 1
-        content["last_editor"] = user_context.email or "default_uploader"
+        content["last_editor"] = (
+            policy_factory.get_user_context().email or "default_uploader"
+        )
         mediafile = self.storage.update_item_from_collection(
             "mediafiles", util.get_raw_id(old_mediafile), content
         )
@@ -134,11 +112,8 @@ class MediafileDetail(BaseResource):
     def patch(self, id):
         user_context = policy_factory.get_user_context()
         old_mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
+        self._abort_if_no_access(old_mediafile, collection="mediafiles")
         content = request.get_json()
-        if self._only_own_items():
-            self._abort_if_no_access(
-                old_mediafile, user_context.auth_objects.get("token"), "mediafiles"
-            )
         content["date_updated"] = str(datetime.now())
         content["version"] = old_mediafile.get("version", 0) + 1
         content["last_editor"] = user_context.email or "default_uploader"
@@ -151,12 +126,7 @@ class MediafileDetail(BaseResource):
     @policy_factory.authenticate()
     def delete(self, id):
         mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
-        if self._only_own_items():
-            self._abort_if_no_access(
-                mediafile,
-                policy_factory.get_user_context().auth_objects.get("token"),
-                "mediafiles",
-            )
+        self._abort_if_no_access(mediafile, collection="mediafiles")
         linked_entities = self.storage.get_mediafile_linked_entities(mediafile)
         self.storage.delete_item_from_collection(
             "mediafiles", util.get_raw_id(mediafile)

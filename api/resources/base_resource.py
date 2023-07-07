@@ -3,7 +3,7 @@ import mappers
 import os
 import util
 
-from app import policy_factory
+from app import auto_create_tenants, multitenancy_enabled, policy_factory
 from datetime import datetime
 from flask import Response
 from flask_restful import Resource, abort
@@ -26,15 +26,9 @@ class BaseResource(Resource):
             404, message=f"Item with id {id} doesn't exist in collection {collection}"
         )
 
-    def _abort_if_no_access(self, item, token, collection="entities"):
-        if (
-            "has-full-control" in policy_factory.get_user_context().scopes
-            or self._is_owner_of_item(item, token)
-        ):
-            return
-        if "tenants" in item and policy_factory.get_user_context().tenant in item["tenants"]:
-            return
-        abort(403, message="Access denied")
+    def _abort_if_no_access(self, item, collection="entities"):
+        if not self._has_access_to_item(item, collection):
+            abort(403, message="Access denied")
 
     def _abort_if_not_logged_in(self, token):
         if "email" not in token:
@@ -60,12 +54,6 @@ class BaseResource(Resource):
             relations = sorted(relations, key=lambda x: x[sort_by])
         entity["metadata"] = [*entity.get("metadata", []), *relations]
         return entity
-
-    def _can_see_private_assets(self):
-        return any(
-            x in policy_factory.get_user_context().scopes
-            for x in ["has-full-control", "can-see-private-assets"]
-        )
 
     def _create_linked_data(self, request, content_type):
         content = request.get_data(as_text=True)
@@ -135,6 +123,38 @@ class BaseResource(Resource):
         }
         return default_entity | entity
 
+    def _get_tenant(self, create_tenant=True):
+        if not (tenant_id := policy_factory.get_user_context().tenant):
+            return None
+        if tenant := self.storage.get_item_from_collection_by_id("entities", tenant_id):
+            return tenant
+        if not auto_create_tenants or not create_tenant:
+            return None
+        return self.storage.save_item_to_collection(
+            "entities",
+            {"tenant_id": tenant_id, "identifiers": [tenant_id], "type": "tenant"},
+        )
+
+    def _has_access_to_item(self, item, collection):
+        if (
+            scopes := policy_factory.get_user_context().scopes
+        ) and "has-full-control" in scopes:
+            return True
+        if (
+            (email := policy_factory.get_user_context().email)
+            and "user" in item
+            and item["user"] == email
+        ):
+            return True
+        if (
+            multitenancy_enabled
+            and (tenant := self._get_tenant(create_tenant=False))
+            and "tenants" in item
+            and tenant["tenant_id"] in item["tenants"]
+        ):
+            return True
+        return False
+
     def _inject_api_urls_into_entities(self, entities):
         for entity in entities:
             if "primary_mediafile_location" in entity:
@@ -167,21 +187,6 @@ class BaseResource(Resource):
                 ] = f'{self.storage_api_url_ext}{mediafile["transcode_file_location"]}'
         return mediafiles
 
-    def _is_owner_of_item(self, item, token):
-        if item is None:
-            item = {}
-        if token is None:
-            token = {}
-        return "user" in item and "email" in token and item["user"] == token["email"]
-
-    def _is_private(self, item):
-        return item.get("private", False)
-
-    def _is_private_asset(self, asset):
-        return (
-            util.get_item_metadata_value(asset, "publication_status") == "niet-publiek"
-        )
-
     def _is_rdf_post_call(self, content_type):
         return content_type in [
             "application/ld+json",
@@ -189,14 +194,6 @@ class BaseResource(Resource):
             "application/rdf+xml",
             "text/turtle",
         ]
-
-    def _only_own_items(self, permissions=None):
-        all_permissions = ["has-full-control"]
-        if permissions:
-            all_permissions = [*all_permissions, *permissions]
-        if any(x in policy_factory.get_user_context().scopes for x in all_permissions):
-            return False
-        return True
 
     def _set_entity_mediafile_and_thumbnail(self, entity):
         mediafiles = self.storage.get_collection_item_mediafiles(
