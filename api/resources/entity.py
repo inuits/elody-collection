@@ -27,7 +27,9 @@ class Entity(BaseResource):
                 abort(400, message="Tenant not found")
             filters["tenants"] = tenant["tenant_id"]
         if request.args.get("only_own", 1, int) and not multitenancy_enabled:
-            filters["only_own"] = True
+            filters["user"] = (
+                policy_factory.get_user_context().email or "default_uploader"
+            )
         if item_type := request.args.get("type"):
             filters["type"] = item_type
         if ids := request.args.get("ids"):
