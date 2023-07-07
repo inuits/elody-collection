@@ -1,8 +1,7 @@
-import app
 import mappers
 import util
 
-from app import policy_factory
+from app import multitenancy_enabled, policy_factory
 from datetime import datetime
 from flask import after_this_request, request
 from flask_restful import abort
@@ -22,14 +21,12 @@ class Entity(BaseResource):
         ]
         order_by = request.args.get("order_by", None)
         ascending = request.args.get("asc", 1, int)
-        filters = {
-            "user": policy_factory.get_user_context().email or "default_uploader"
-        }
-        if app.multitenancy_enabled:
+        filters = {}
+        if multitenancy_enabled:
             if not (tenant := self._get_tenant(create_tenant=False)):
                 abort(400, message="Tenant not found")
             filters["tenants"] = tenant["tenant_id"]
-        if request.args.get("only_own", 0, int):
+        if request.args.get("only_own", 1, int) and not multitenancy_enabled:
             filters["only_own"] = True
         if item_type := request.args.get("type"):
             filters["type"] = item_type
@@ -79,7 +76,7 @@ class Entity(BaseResource):
             content = request.get_json()
         accept_header = request.headers.get("Accept")
         user_id = policy_factory.get_user_context().email or "default_uploader"
-        if app.multitenancy_enabled:
+        if multitenancy_enabled:
             if not (tenant := self._get_tenant()):
                 abort(400, message="Tenant not found")
             content["tenants"] = [tenant["tenant_id"]]
@@ -200,12 +197,11 @@ class EntityMediafiles(BaseResource):
         mediafiles = self.storage.get_collection_item_mediafiles(
             "entities", util.get_raw_id(entity)
         )
-        if not request.args.get("non_public"):
-            mediafiles = [
-                mediafile
-                for mediafile in mediafiles
-                if util.mediafile_is_public(mediafile)
-            ]
+        mediafiles = [
+            x
+            for x in mediafiles
+            if self._has_access_to_item(x, collection="mediafiles")
+        ]
 
         @after_this_request
         def add_header(response):
@@ -227,15 +223,15 @@ class EntityMediafiles(BaseResource):
             response = list()
         for mediafile in mediafiles:
             self._abort_if_not_valid_json("Mediafile", mediafile, mediafile_schema)
-            if mediafile.get("_id") or mediafile.get("_key"):
+            if any(x in mediafile for x in ["_id", "_key"]):
                 mediafile = self._abort_if_item_doesnt_exist(
                     "mediafiles", util.get_raw_id(mediafile)
                 )
+                self._abort_if_no_access(mediafile, collection="mediafiles")
             else:
                 mediafile = self.storage.save_item_to_collection(
                     "mediafiles", mediafile
                 )
-                self._abort_if_no_access(mediafile, "mediafiles")
             mediafile = self.storage.add_mediafile_to_collection_item(
                 "entities",
                 util.get_raw_id(entity),

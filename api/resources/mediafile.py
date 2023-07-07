@@ -34,18 +34,15 @@ class Mediafile(BaseResource):
     def post(self):
         content = request.get_json()
         self._abort_if_not_valid_json("Mediafile", content, mediafile_schema)
-
         content["user"] = policy_factory.get_user_context().email or "default_uploader"
         content["date_created"] = str(datetime.now())
         content["version"] = 1
         mediafile = self.storage.save_item_to_collection("mediafiles", content)
-
         accept_header = request.headers.get("Accept")
         if accept_header == "text/uri-list":
             response = f"{self.storage_api_url}/upload/{mediafile['filename'].strip()}?id={util.get_raw_id(mediafile)}"
         else:
             response = mediafile
-
         return self._create_response_according_accept_header(
             response, accept_header, 201
         )
@@ -61,10 +58,12 @@ class MediafileAssets(BaseResource):
             entity = self.storage.get_item_from_collection_by_id(
                 "entities", item["entity_id"].removeprefix("entities/")
             )
+            if not self._has_access_to_item(entity):
+                continue
             entity = self._set_entity_mediafile_and_thumbnail(entity)
             entity = self._add_relations_to_metadata(entity)
-            entities.append(self._inject_api_urls_into_entities([entity])[0])
-        return entities, 200
+            entities.append(entity)
+        return self._inject_api_urls_into_entities(entities)
 
 
 class MediafileCopyright(BaseResource):
@@ -85,8 +84,7 @@ class MediafileDetail(BaseResource):
     @policy_factory.authenticate()
     def get(self, id):
         mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
-        if not util.mediafile_is_public(mediafile):
-            self._abort_if_no_access(mediafile, collection="mediafiles")
+        self._abort_if_no_access(mediafile, collection="mediafiles")
         if request.args.get("raw"):
             return mediafile
         return self._inject_api_urls_into_mediafiles([mediafile])[0]

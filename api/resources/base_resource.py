@@ -131,7 +131,7 @@ class BaseResource(Resource):
             {"tenant_id": tenant_id, "identifiers": [tenant_id], "type": "tenant"},
         )
 
-    def _has_access_to_item(self, item, collection):
+    def _has_access_to_item(self, item, collection="entities"):
         if (
             scopes := policy_factory.get_user_context().scopes
         ) and "has-full-control" in scopes:
