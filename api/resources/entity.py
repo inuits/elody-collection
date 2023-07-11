@@ -1,4 +1,5 @@
 import mappers
+import os
 import util
 
 from app import multitenancy_enabled, policy_factory
@@ -11,7 +12,7 @@ from validator import entity_schema, mediafile_schema
 
 class Entity(BaseResource):
     @policy_factory.authenticate()
-    def get(self, all_by_default=False):
+    def get(self):
         accept_header = request.headers.get("Accept")
         skip = request.args.get("skip", 0, int)
         limit = request.args.get("limit", 20, int)
@@ -26,9 +27,11 @@ class Entity(BaseResource):
             if not (tenant := self._get_tenant(create_tenant=False)):
                 abort(400, message="Tenant not found")
             filters["tenants"] = tenant["tenant_id"]
-        if (
-            request.args.get("only_own", type=int) or not all_by_default
-        ) and not multitenancy_enabled:
+        elif (
+            request.args.get("only_own", 1, int)
+            and not os.getenv("SUPER_ADMIN_ROLE")
+            in policy_factory.get_user_context().roles
+        ):
             filters["user"] = (
                 policy_factory.get_user_context().email or "default_uploader"
             )
