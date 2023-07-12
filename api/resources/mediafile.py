@@ -1,6 +1,6 @@
-import util
+import elody.util as util
 
-from app import multitenancy_enabled, policy_factory
+from app import multitenancy_enabled, policy_factory, rabbit
 from datetime import datetime
 from flask import request
 from flask_restful import abort
@@ -117,7 +117,7 @@ class MediafileDetail(BaseResource):
         mediafile = self.storage.update_item_from_collection(
             "mediafiles", util.get_raw_id(old_mediafile), content
         )
-        util.signal_mediafile_changed(old_mediafile, mediafile)
+        util.signal_mediafile_changed(rabbit, old_mediafile, mediafile)
         return mediafile, 201
 
     @policy_factory.authenticate()
@@ -132,7 +132,7 @@ class MediafileDetail(BaseResource):
         mediafile = self.storage.patch_item_from_collection(
             "mediafiles", util.get_raw_id(old_mediafile), content
         )
-        util.signal_mediafile_changed(old_mediafile, mediafile)
+        util.signal_mediafile_changed(rabbit, old_mediafile, mediafile)
         return mediafile, 201
 
     @policy_factory.authenticate()
@@ -143,5 +143,5 @@ class MediafileDetail(BaseResource):
         self.storage.delete_item_from_collection(
             "mediafiles", util.get_raw_id(mediafile)
         )
-        util.signal_mediafile_deleted(mediafile, linked_entities)
+        util.signal_mediafile_deleted(rabbit, mediafile, linked_entities)
         return "", 204

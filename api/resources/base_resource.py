@@ -1,9 +1,9 @@
 import json
 import mappers
 import os
-import util
+import elody.util as util
 
-from app import auto_create_tenants, multitenancy_enabled, policy_factory
+from app import auto_create_tenants, multitenancy_enabled, policy_factory, rabbit
 from datetime import datetime
 from flask import Response
 from flask_restful import Resource, abort
@@ -79,7 +79,7 @@ class BaseResource(Resource):
             mediafile["_id"],
             False,
         )
-        util.signal_entity_changed(entity)
+        util.signal_entity_changed(rabbit, entity)
         return mediafile
 
     def _create_response_according_accept_header(

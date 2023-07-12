@@ -3,7 +3,7 @@ import os
 from storage.arangostore import ArangoStorageManager
 from storage.memorystore import MemoryStorageManager
 from storage.mongostore import MongoStorageManager
-from util import Singleton
+from elody.util import Singleton
 
 
 class StorageManager(metaclass=Singleton):

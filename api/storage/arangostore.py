@@ -1,5 +1,6 @@
+import app
 import os
-import util
+import elody.util as util
 import uuid
 
 from arango import (
@@ -588,7 +589,7 @@ class ArangoStorageManager(GenericStorageManager):
             if ex.error_code == 1210:
                 raise util.NonUniqueException(ex.error_message)
             raise ex
-        util.signal_child_relation_changed(collection, id)
+        util.signal_child_relation_changed(app.rabbit, collection, id)
         return item
 
     def reindex_mediafile_parents(self, mediafile=None, parents=None):
@@ -596,7 +597,7 @@ class ArangoStorageManager(GenericStorageManager):
             parents = self.get_mediafile_linked_entities(mediafile)
         for item in parents:
             entity = self.db.document(item["entity_id"])
-            util.signal_entity_changed(entity)
+            util.signal_entity_changed(app.rabbit, entity)
 
     def save_item_to_collection(
         self,
@@ -657,7 +658,7 @@ class ArangoStorageManager(GenericStorageManager):
             if ex.error_code == 1210:
                 raise util.NonUniqueException(ex.error_message)
             raise ex
-        util.signal_child_relation_changed(collection, id)
+        util.signal_child_relation_changed(app.rabbit, collection, id)
         return item
 
     def update_parent_relation_values(self, collection, parent_id):
@@ -682,4 +683,4 @@ class ArangoStorageManager(GenericStorageManager):
                     self.db.update_document(edge)
                     changed_ids.add(entity["_key"])
         if len(changed_ids):
-            util.signal_edge_changed(changed_ids)
+            util.signal_edge_changed(app.rabbit, changed_ids)

@@ -4,7 +4,7 @@ import os
 import secrets
 
 from amqp.amqpmanager import AmqpManager
-from apps.loader import load_apps, load_policies, load_queues
+from elody.loader import load_apps, load_policies, load_queues
 from flask import Flask
 from flask_restful import Api
 from flask_swagger_ui import get_swaggerui_blueprint
@@ -64,7 +64,7 @@ if os.getenv("HEALTH_CHECK_EXTERNAL_SERVICES", True) in ["True", "true", True]:
 app.add_url_rule("/health", "healthcheck", view_func=lambda: health.run())
 
 policy_factory = PolicyFactory()
-load_apps(app)
+load_apps(app, logger)
 load_policies(policy_factory, logger)
 
 from resources.config import Config
@@ -149,7 +149,7 @@ api.add_resource(AsyncAPISpec, "/spec/dams-collection-api-events.html")
 api.add_resource(OpenAPISpec, "/spec/dams-collection-api.json")
 
 # Initialize RabbitMQ Queues
-load_queues()
+load_queues(logger)
 import resources.queues
 
 if __name__ == "__main__":

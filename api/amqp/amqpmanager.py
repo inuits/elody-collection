@@ -2,7 +2,7 @@ import os
 
 from amqp.amqpstormmanager import AmqpStormManager
 from amqp.pikamanager import PikaAmqpManager
-from util import Singleton
+from elody.util import Singleton
 
 
 class AmqpManager(metaclass=Singleton):

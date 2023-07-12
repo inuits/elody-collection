@@ -1,8 +1,8 @@
 import mappers
 import os
-import util
+import elody.util as util
 
-from app import multitenancy_enabled, policy_factory
+from app import multitenancy_enabled, policy_factory, rabbit
 from datetime import datetime
 from flask import after_this_request, request
 from flask_restful import abort
@@ -108,7 +108,7 @@ class Entity(BaseResource):
                 )
                 if accept_header == "text/uri-list":
                     response += f"{self.storage_api_url}/upload/{mediafile_filename}?id={util.get_raw_id(mediafile)}\n"
-        util.signal_entity_changed(entity)
+        util.signal_entity_changed(rabbit, entity)
         return self._create_response_according_accept_header(
             response, accept_header, 201
         )
@@ -156,7 +156,7 @@ class EntityDetail(BaseResource):
             )
         except util.NonUniqueException as ex:
             return str(ex), 409
-        util.signal_entity_changed(entity)
+        util.signal_entity_changed(rabbit, entity)
         return entity, 201
 
     @policy_factory.authenticate()
@@ -175,7 +175,7 @@ class EntityDetail(BaseResource):
             )
         except util.NonUniqueException as ex:
             return str(ex), 409
-        util.signal_entity_changed(entity)
+        util.signal_entity_changed(rabbit, entity)
         return entity, 201
 
     @policy_factory.authenticate()
@@ -192,7 +192,7 @@ class EntityDetail(BaseResource):
                     "mediafiles", util.get_raw_id(mediafile)
                 )
         self.storage.delete_item_from_collection("entities", util.get_raw_id(entity))
-        util.signal_entity_deleted(entity)
+        util.signal_entity_deleted(rabbit, entity)
         return "", 204
 
 
@@ -249,7 +249,7 @@ class EntityMediafiles(BaseResource):
                 response += f'{self.storage_api_url}/upload/{mediafile["filename"]}?id={util.get_raw_id(mediafile)}\n'
             else:
                 response.append(mediafile)
-        util.signal_entity_changed(entity)
+        util.signal_entity_changed(rabbit, entity)
         return self._create_response_according_accept_header(
             response, accept_header, 201
         )
@@ -277,7 +277,7 @@ class EntityMediafilesCreate(BaseResource):
             mediafile["_id"],
             util.mediafile_is_public(mediafile),
         )
-        util.signal_entity_changed(entity)
+        util.signal_entity_changed(rabbit, entity)
 
         @after_this_request
         def add_header(response):
@@ -317,7 +317,7 @@ class EntityMetadata(BaseResource):
         metadata = self.storage.add_sub_item_to_collection_item(
             "entities", util.get_raw_id(entity), "metadata", content
         )
-        util.signal_entity_changed(entity)
+        util.signal_entity_changed(rabbit, entity)
         return metadata, 201
 
     @policy_factory.authenticate()
@@ -328,7 +328,7 @@ class EntityMetadata(BaseResource):
         metadata = self.storage.update_collection_item_sub_item(
             "entities", util.get_raw_id(entity), "metadata", content
         )
-        util.signal_entity_changed(entity)
+        util.signal_entity_changed(rabbit, entity)
         return metadata, 201
 
     @policy_factory.authenticate()
@@ -341,7 +341,7 @@ class EntityMetadata(BaseResource):
         )
         if not metadata:
             abort(400, message=f"Entity with id {id} has no metadata")
-        util.signal_entity_changed(entity)
+        util.signal_entity_changed(rabbit, entity)
         return metadata, 201
 
 
@@ -361,7 +361,7 @@ class EntityMetadataKey(BaseResource):
         self.storage.delete_collection_item_sub_item_key(
             "entities", util.get_raw_id(entity), "metadata", key
         )
-        util.signal_entity_changed(entity)
+        util.signal_entity_changed(rabbit, entity)
         return "", 204
 
 
@@ -388,7 +388,7 @@ class EntityRelations(BaseResource):
         relations = self.storage.add_relations_to_collection_item(
             "entities", util.get_raw_id(entity), content
         )
-        util.signal_entity_changed(entity)
+        util.signal_entity_changed(rabbit, entity)
         return relations, 201
 
     @policy_factory.authenticate()
@@ -399,7 +399,7 @@ class EntityRelations(BaseResource):
         relations = self.storage.update_collection_item_relations(
             "entities", util.get_raw_id(entity), content
         )
-        util.signal_entity_changed(entity)
+        util.signal_entity_changed(rabbit, entity)
         return relations, 201
 
     @policy_factory.authenticate()
@@ -410,7 +410,7 @@ class EntityRelations(BaseResource):
         relations = self.storage.patch_collection_item_relations(
             "entities", util.get_raw_id(entity), content
         )
-        util.signal_entity_changed(entity)
+        util.signal_entity_changed(rabbit, entity)
         return relations, 201
 
     @policy_factory.authenticate()
@@ -421,7 +421,7 @@ class EntityRelations(BaseResource):
         self.storage.delete_collection_item_relations(
             "entities", util.get_raw_id(entity), content
         )
-        util.signal_entity_changed(entity)
+        util.signal_entity_changed(rabbit, entity)
         return "", 204
 
 
@@ -453,7 +453,7 @@ class EntitySetPrimaryMediafile(BaseResource):
         self.storage.set_primary_field_collection_item(
             "entities", util.get_raw_id(entity), mediafile_id, "is_primary"
         )
-        util.signal_entity_changed(entity)
+        util.signal_entity_changed(rabbit, entity)
         return "", 204
 
 
@@ -469,5 +469,5 @@ class EntitySetPrimaryThumbnail(BaseResource):
         self.storage.set_primary_field_collection_item(
             "entities", util.get_raw_id(entity), mediafile_id, "is_primary_thumbnail"
         )
-        util.signal_entity_changed(entity)
+        util.signal_entity_changed(rabbit, entity)
         return "", 204

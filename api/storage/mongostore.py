@@ -1,6 +1,7 @@
+import app
 import os
 import pymongo.errors
-import util
+import elody.util as util
 import uuid
 
 from datetime import datetime
@@ -479,7 +480,7 @@ class MongoStorageManager(GenericStorageManager):
             parents = self.get_mediafile_linked_entities(mediafile)
         for item in parents:
             entity = self.get_item_from_collection_by_id("entities", item["entity_id"])
-            util.signal_entity_changed(entity)
+            util.signal_entity_changed(app.rabbit, entity)
 
     def save_item_to_collection(
         self,

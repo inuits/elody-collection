@@ -1,5 +1,5 @@
 import app
-import util
+import elody.util as util
 
 from datetime import datetime
 from storage.storagemanager import StorageManager

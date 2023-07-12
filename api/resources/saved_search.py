@@ -1,4 +1,4 @@
-import util
+import elody.util as util
 
 from app import policy_factory
 from datetime import datetime

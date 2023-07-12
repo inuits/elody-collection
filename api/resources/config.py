@@ -1,6 +1,6 @@
-import util
+import elody.util as util
 
-from app import policy_factory
+from app import logger, policy_factory
 from resources.base_resource import BaseResource
 
 
@@ -43,7 +43,7 @@ class Config(BaseResource):
 
     def __get_allowed_filters(self):
         allowed_filters = dict()
-        filters = util.read_json_as_dict("filters_new.json")
+        filters = util.read_json_as_dict("filters_new.json", logger)
         permissions = policy_factory.get_user_context().scopes
         for collection, collection_filters in filters.items():
             allowed_filters[collection] = list()
