@@ -119,15 +119,6 @@ class ArangoStorageManager(GenericStorageManager):
             return key
         return None
 
-    def __get_mediafile_index(self, mediafile, highest_order):
-        if "order" in mediafile:
-            return mediafile["order"]
-        if mediafile.get("is_primary", False):
-            return highest_order + 1
-        if mediafile.get("is_primary_thumbnail", False):
-            return highest_order + 2
-        return highest_order + 3
-
     def __get_primary_items(self, entity):
         result = {"primary_mediafile": "", "primary_thumbnail": ""}
         for edge in self.db.collection("hasMediafile").find({"_from": entity["_id"]}):
@@ -298,19 +289,16 @@ class ArangoStorageManager(GenericStorageManager):
     def get_collection_item_mediafiles(self, collection, id):
         entity = self.get_item_from_collection_by_id(collection, id)
         mediafiles = list()
-        highest_order = -1
-        for edge in self.db.collection("hasMediafile").find({"_from": entity["_id"]}):
+        edges = list(self.db.collection("hasMediafile").find({"_from": entity["_id"]}))
+        edges.sort(key=lambda x: x["order"] if "order" in x else len(edges) + 1)
+        for edge in edges:
             mediafile = self.db.document(edge["_to"])
             if "is_primary" in edge:
                 mediafile["is_primary"] = edge["is_primary"]
             if "is_primary_thumbnail" in edge:
                 mediafile["is_primary_thumbnail"] = edge["is_primary_thumbnail"]
-            if "order" in mediafile and mediafile["order"] > highest_order:
-                highest_order = mediafile["order"]
             mediafiles.append(mediafile)
-        return sorted(
-            mediafiles, key=lambda x: self.__get_mediafile_index(x, highest_order)
-        )
+        return mediafiles
 
     def get_collection_item_relations(
         self, collection, id, include_sub_relations=False, exclude=None

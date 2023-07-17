@@ -198,24 +198,22 @@ class MongoStorageManager(GenericStorageManager):
     ):
         primary_mediafile = mediafile_public
         primary_thumbnail = mediafile_public
+        relation = {
+            "key": mediafile_id,
+            "label": "hasMediafile",
+            "type": "hasMediafile",
+            "is_primary": primary_mediafile,
+            "is_primary_thumbnail": primary_thumbnail,
+        }
         if mediafile_public:
             relations = self.get_collection_item_relations(collection, id)
             for relation in relations:
                 if relation.get("is_primary", False):
-                    primary_mediafile = False
+                    relation["is_primary"] = False
                 if relation.get("is_primary_thumbnail", False):
-                    primary_thumbnail = False
-        relations = [
-            {
-                "key": mediafile_id,
-                "label": "hasMediafile",
-                "type": "hasMediafile",
-                "is_primary": primary_mediafile,
-                "is_primary_thumbnail": primary_thumbnail,
-            }
-        ]
+                    relation["is_primary_thumbnail"] = False
         self.add_relations_to_collection_item(
-            collection, id, relations, True, "mediafiles"
+            collection, id, [relation], True, "mediafiles"
         )
         return self.db["mediafiles"].find_one(self.__get_id_query(mediafile_id))
 
@@ -265,6 +263,18 @@ class MongoStorageManager(GenericStorageManager):
         mediafiles = []
         for mediafile in self.db["mediafiles"].find({"relations.key": id}):
             mediafiles.append(mediafile)
+        mediafiles.sort(
+            key=lambda x, y=id, z=len(mediafiles): next(
+                (
+                    relation["order"]
+                    for relation in x.get("relations", [])
+                    if relation["type"] == "belongsTo"
+                    and "order" in relation
+                    and relation["key"] == y
+                ),
+                z,
+            )
+        )
         return mediafiles
 
     def get_collection_item_relations(
