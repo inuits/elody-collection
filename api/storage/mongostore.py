@@ -463,7 +463,10 @@ class MongoStorageManager(GenericStorageManager):
                 collection, id, "relations", item["key"]
             )
             self.delete_collection_item_sub_item_key(
-                collection, item["key"], "relations", id
+                self.__map_relation_to_collection(item["type"]),
+                item["key"],
+                "relations",
+                id,
             )
         relations = self.get_collection_item_sub_item(collection, id, "relations")
         relations = [*relations, *content] if relations else content
