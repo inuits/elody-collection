@@ -193,7 +193,7 @@ class MemoryStorageManager(GenericStorageManager):
         content["_id"] = gen_id
         if "identifiers" not in content:
             content["identifiers"] = [gen_id]
-        else:
+        elif gen_id not in content["identifiers"]:
             content["identifiers"].insert(0, gen_id)
         self.collections[collection][gen_id] = content
         return gen_id if only_return_id else self.collections[collection][gen_id]

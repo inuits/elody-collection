@@ -137,7 +137,7 @@ class MongoStorageManager(GenericStorageManager):
             document["_id"] = id
             if "identifiers" not in document:
                 document["identifiers"] = [id]
-            else:
+            elif id not in document["identifiers"]:
                 document["identifiers"].insert(0, id)
         if "data" in document:
             document["data"] = self.__replace_dictionary_keys(

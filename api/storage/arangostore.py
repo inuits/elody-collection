@@ -599,7 +599,7 @@ class ArangoStorageManager(GenericStorageManager):
         content["_key"] = item_id
         if "identifiers" not in content:
             content["identifiers"] = [item_id]
-        else:
+        elif item_id not in content["identifiers"]:
             content["identifiers"].insert(0, item_id)
         try:
             ret = self.db.insert_document(
