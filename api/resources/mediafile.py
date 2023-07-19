@@ -1,4 +1,5 @@
 import elody.util as util
+import os
 
 from app import multitenancy_enabled, policy_factory, rabbit
 from datetime import datetime
@@ -21,7 +22,12 @@ class Mediafile(BaseResource):
             filters["tenants"] = tenant["tenant_id"]
         if ids := request.args.get("ids"):
             filters["ids"] = ids.split(",")
-        if request.args.get("only_own", 1, int) and not multitenancy_enabled:
+        if (
+            request.args.get("only_own", 1, int)
+            and not multitenancy_enabled
+            and not os.getenv("SUPER_ADMIN_ROLE")
+            in policy_factory.get_user_context().roles
+        ):
             fields["user"] = (
                 policy_factory.get_user_context().email or "default_uploader"
             )
