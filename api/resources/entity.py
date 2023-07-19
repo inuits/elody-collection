@@ -310,9 +310,7 @@ class EntityMetadata(BaseResource):
     @policy_factory.authenticate()
     def post(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
-        self._abort_if_no_access(
-            entity, policy_factory.get_user_context().auth_objects.get("token")
-        )
+        self._abort_if_no_access(entity)
         content = request.get_json()
         metadata = self.storage.add_sub_item_to_collection_item(
             "entities", util.get_raw_id(entity), "metadata", content
