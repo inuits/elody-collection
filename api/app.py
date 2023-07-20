@@ -5,6 +5,7 @@ import secrets
 
 from amqp.amqpmanager import AmqpManager
 from elody.loader import load_apps, load_policies, load_queues
+from elody.util import CustomJSONEncoder
 from flask import Flask
 from flask_restful import Api
 from flask_swagger_ui import get_swaggerui_blueprint
@@ -30,6 +31,7 @@ API_URL = (
 swaggerui_blueprint = get_swaggerui_blueprint(SWAGGER_URL, API_URL)
 
 app = Flask(__name__)
+app.config["RESTFUL_JSON"] = {"cls": CustomJSONEncoder}
 api = Api(app)
 app.secret_key = os.getenv("SECRET_KEY", secrets.token_hex(16))
 
