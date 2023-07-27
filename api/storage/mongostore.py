@@ -259,9 +259,9 @@ class MongoStorageManager(GenericStorageManager):
         self.db.jobs.drop()
         self.db.mediafiles.drop()
 
-    def get_collection_item_mediafiles(self, collection, id):
+    def get_collection_item_mediafiles(self, collection, id, skip=0, limit=0):
         mediafiles = []
-        for mediafile in self.db["mediafiles"].find({"relations.key": id}):
+        for mediafile in self.db["mediafiles"].find({"relations.key": id}, skip=skip, limit=limit):
             mediafiles.append(mediafile)
         mediafiles.sort(
             key=lambda x, y=id, z=len(mediafiles): next(
@@ -560,3 +560,7 @@ class MongoStorageManager(GenericStorageManager):
                 raise util.NonUniqueException(ex.details)
             raise ex
         return self.get_item_from_collection_by_id(collection, id)
+    
+    def get_collection_item_mediafiles_count(self, id):
+        return self.db["mediafiles"].count_documents({"relations.key": id})
+

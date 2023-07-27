@@ -199,23 +199,38 @@ class EntityDetail(BaseResource):
 class EntityMediafiles(BaseResource):
     @policy_factory.authenticate()
     def get(self, id):
+        skip = request.args.get("skip", 0, int)
+        limit = request.args.get("limit", 20, int)
         entity = self._abort_if_item_doesnt_exist("entities", id)
         self._abort_if_no_access(entity)
-        mediafiles = self.storage.get_collection_item_mediafiles(
-            "entities", util.get_raw_id(entity)
+        mediafiles = dict()
+        mediafiles["count"] = self.storage.get_collection_item_mediafiles_count(id)
+        mediafiles_list = self.storage.get_collection_item_mediafiles(
+            "entities", util.get_raw_id(entity), skip, limit
         )
-        mediafiles = [
+        mediafiles["results"] = [
             x
-            for x in mediafiles
+            for x in mediafiles_list
             if self._has_access_to_item(x, collection="mediafiles")
         ]
+        mediafiles["limit"] = limit
+        mediafiles["skip"] = skip
+        if skip + limit < mediafiles["count"]:
+            mediafiles[
+                "next"
+            ] = f"/entities/{id}/mediafiles?skip={skip + limit}&limit={limit}"
+        if skip > 0:
+            mediafiles[
+                "previous"
+            ] = f"/entities/{id}/mediafiles?skip={max(0, skip - limit)}&limit={limit}"
+        self._inject_api_urls_into_mediafiles(mediafiles["results"])
 
         @after_this_request
         def add_header(response):
             response.headers["Access-Control-Allow-Origin"] = "*"
             return response
 
-        return self._inject_api_urls_into_mediafiles(mediafiles)
+        return mediafiles
 
     @policy_factory.authenticate()
     def post(self, id):
