@@ -35,7 +35,7 @@ py-healthcheck==1.10.1
 pycparser==2.21
 PyJWT==2.8.0
 pymongo==4.4.1
-pyparsing==3.1.0
+pyparsing==3.1.1
 python-arango==7.5.9
 pytz==2023.3
 rabbitmq-pika-flask==1.2.33
