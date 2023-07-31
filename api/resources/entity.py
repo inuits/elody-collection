@@ -1,9 +1,15 @@
 import mappers
 import os
-import elody.util as util
 
 from app import multitenancy_enabled, policy_factory, rabbit
 from datetime import datetime
+from elody.exceptions import NonUniqueException
+from elody.util import (
+    get_raw_id,
+    mediafile_is_public,
+    signal_entity_changed,
+    signal_entity_deleted,
+)
 from flask import after_this_request, request
 from flask_restful import abort
 from resources.base_resource import BaseResource
@@ -99,7 +105,7 @@ class Entity(BaseResource):
                 response = ""
             else:
                 response = entity
-        except util.NonUniqueException as ex:
+        except NonUniqueException as ex:
             return str(ex), 409
         if create_mediafile:
             for mediafile_filename in mediafile_filenames:
@@ -107,8 +113,8 @@ class Entity(BaseResource):
                     user_id, entity, mediafile_filename
                 )
                 if accept_header == "text/uri-list":
-                    response += f"{self.storage_api_url}/upload/{mediafile_filename}?id={util.get_raw_id(mediafile)}\n"
-        util.signal_entity_changed(rabbit, entity)
+                    response += f"{self.storage_api_url}/upload/{mediafile_filename}?id={get_raw_id(mediafile)}\n"
+        signal_entity_changed(rabbit, entity)
         return self._create_response_according_accept_header(
             response, accept_header, 201
         )
@@ -152,11 +158,11 @@ class EntityDetail(BaseResource):
         content["date_created"] = entity.get("date_created", content["date_updated"])
         try:
             entity = self.storage.update_item_from_collection(
-                "entities", util.get_raw_id(entity), content
+                "entities", get_raw_id(entity), content
             )
-        except util.NonUniqueException as ex:
+        except NonUniqueException as ex:
             return str(ex), 409
-        util.signal_entity_changed(rabbit, entity)
+        signal_entity_changed(rabbit, entity)
         return entity, 201
 
     @policy_factory.authenticate()
@@ -171,11 +177,11 @@ class EntityDetail(BaseResource):
         )
         try:
             entity = self.storage.patch_item_from_collection(
-                "entities", util.get_raw_id(entity), content
+                "entities", get_raw_id(entity), content
             )
-        except util.NonUniqueException as ex:
+        except NonUniqueException as ex:
             return str(ex), 409
-        util.signal_entity_changed(rabbit, entity)
+        signal_entity_changed(rabbit, entity)
         return entity, 201
 
     @policy_factory.authenticate()
@@ -184,15 +190,15 @@ class EntityDetail(BaseResource):
         self._abort_if_no_access(entity)
         if request.args.get("delete_mediafiles", 0, int):
             mediafiles = self.storage.get_collection_item_mediafiles(
-                "entities", util.get_raw_id(entity)
+                "entities", get_raw_id(entity)
             )
             for mediafile in mediafiles:
                 self._abort_if_no_access(mediafile, collection="mediafiles")
                 self.storage.delete_item_from_collection(
-                    "mediafiles", util.get_raw_id(mediafile)
+                    "mediafiles", get_raw_id(mediafile)
                 )
-        self.storage.delete_item_from_collection("entities", util.get_raw_id(entity))
-        util.signal_entity_deleted(rabbit, entity)
+        self.storage.delete_item_from_collection("entities", get_raw_id(entity))
+        signal_entity_deleted(rabbit, entity)
         return "", 204
 
 
@@ -206,7 +212,7 @@ class EntityMediafiles(BaseResource):
         mediafiles = dict()
         mediafiles["count"] = self.storage.get_collection_item_mediafiles_count(id)
         mediafiles_list = self.storage.get_collection_item_mediafiles(
-            "entities", util.get_raw_id(entity), skip, limit
+            "entities", get_raw_id(entity), skip, limit
         )
         mediafiles["results"] = [
             x
@@ -247,7 +253,7 @@ class EntityMediafiles(BaseResource):
             self._abort_if_not_valid_json("Mediafile", mediafile, mediafile_schema)
             if any(x in mediafile for x in ["_id", "_key"]):
                 mediafile = self._abort_if_item_doesnt_exist(
-                    "mediafiles", util.get_raw_id(mediafile)
+                    "mediafiles", get_raw_id(mediafile)
                 )
                 self._abort_if_no_access(mediafile, collection="mediafiles")
             else:
@@ -256,15 +262,15 @@ class EntityMediafiles(BaseResource):
                 )
             mediafile = self.storage.add_mediafile_to_collection_item(
                 "entities",
-                util.get_raw_id(entity),
+                get_raw_id(entity),
                 mediafile["_id"],
-                util.mediafile_is_public(mediafile),
+                mediafile_is_public(mediafile),
             )
             if accept_header == "text/uri-list":
-                response += f'{self.storage_api_url}/upload/{mediafile["filename"]}?id={util.get_raw_id(mediafile)}\n'
+                response += f'{self.storage_api_url}/upload/{mediafile["filename"]}?id={get_raw_id(mediafile)}\n'
             else:
                 response.append(mediafile)
-        util.signal_entity_changed(rabbit, entity)
+        signal_entity_changed(rabbit, entity)
         return self._create_response_according_accept_header(
             response, accept_header, 201
         )
@@ -285,14 +291,14 @@ class EntityMediafilesCreate(BaseResource):
         content["date_created"] = str(datetime.now())
         content["version"] = 1
         mediafile = self.storage.save_item_to_collection("mediafiles", content)
-        upload_location = f'{self.storage_api_url}/upload/{content["filename"]}?id={util.get_raw_id(mediafile)}'
+        upload_location = f'{self.storage_api_url}/upload/{content["filename"]}?id={get_raw_id(mediafile)}'
         self.storage.add_mediafile_to_collection_item(
             "entities",
-            util.get_raw_id(entity),
+            get_raw_id(entity),
             mediafile["_id"],
-            util.mediafile_is_public(mediafile),
+            mediafile_is_public(mediafile),
         )
-        util.signal_entity_changed(rabbit, entity)
+        signal_entity_changed(rabbit, entity)
 
         @after_this_request
         def add_header(response):
@@ -308,7 +314,7 @@ class EntityMetadata(BaseResource):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         self._abort_if_no_access(entity)
         metadata = self.storage.get_collection_item_sub_item(
-            "entities", util.get_raw_id(entity), "metadata"
+            "entities", get_raw_id(entity), "metadata"
         )
         accept_header = request.headers.get("Accept")
         fields = [
@@ -328,9 +334,9 @@ class EntityMetadata(BaseResource):
         self._abort_if_no_access(entity)
         content = request.get_json()
         metadata = self.storage.add_sub_item_to_collection_item(
-            "entities", util.get_raw_id(entity), "metadata", content
+            "entities", get_raw_id(entity), "metadata", content
         )
-        util.signal_entity_changed(rabbit, entity)
+        signal_entity_changed(rabbit, entity)
         return metadata, 201
 
     @policy_factory.authenticate()
@@ -339,9 +345,9 @@ class EntityMetadata(BaseResource):
         self._abort_if_no_access(entity)
         content = request.get_json()
         metadata = self.storage.update_collection_item_sub_item(
-            "entities", util.get_raw_id(entity), "metadata", content
+            "entities", get_raw_id(entity), "metadata", content
         )
-        util.signal_entity_changed(rabbit, entity)
+        signal_entity_changed(rabbit, entity)
         return metadata, 201
 
     @policy_factory.authenticate()
@@ -350,11 +356,11 @@ class EntityMetadata(BaseResource):
         self._abort_if_no_access(entity)
         content = request.get_json()
         metadata = self.storage.patch_collection_item_metadata(
-            "entities", util.get_raw_id(entity), content
+            "entities", get_raw_id(entity), content
         )
         if not metadata:
             abort(400, message=f"Entity with id {id} has no metadata")
-        util.signal_entity_changed(rabbit, entity)
+        signal_entity_changed(rabbit, entity)
         return metadata, 201
 
 
@@ -364,7 +370,7 @@ class EntityMetadataKey(BaseResource):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         self._abort_if_no_access(entity)
         return self.storage.get_collection_item_sub_item_key(
-            "entities", util.get_raw_id(entity), "metadata", key
+            "entities", get_raw_id(entity), "metadata", key
         )
 
     @policy_factory.authenticate()
@@ -372,9 +378,9 @@ class EntityMetadataKey(BaseResource):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         self._abort_if_no_access(entity)
         self.storage.delete_collection_item_sub_item_key(
-            "entities", util.get_raw_id(entity), "metadata", key
+            "entities", get_raw_id(entity), "metadata", key
         )
-        util.signal_entity_changed(rabbit, entity)
+        signal_entity_changed(rabbit, entity)
         return "", 204
 
 
@@ -390,7 +396,7 @@ class EntityRelations(BaseResource):
             return response
 
         return self.storage.get_collection_item_relations(
-            "entities", util.get_raw_id(entity)
+            "entities", get_raw_id(entity)
         )
 
     @policy_factory.authenticate()
@@ -399,9 +405,9 @@ class EntityRelations(BaseResource):
         self._abort_if_no_access(entity)
         content = request.get_json()
         relations = self.storage.add_relations_to_collection_item(
-            "entities", util.get_raw_id(entity), content
+            "entities", get_raw_id(entity), content
         )
-        util.signal_entity_changed(rabbit, entity)
+        signal_entity_changed(rabbit, entity)
         return relations, 201
 
     @policy_factory.authenticate()
@@ -410,9 +416,9 @@ class EntityRelations(BaseResource):
         self._abort_if_no_access(entity)
         content = request.get_json()
         relations = self.storage.update_collection_item_relations(
-            "entities", util.get_raw_id(entity), content
+            "entities", get_raw_id(entity), content
         )
-        util.signal_entity_changed(rabbit, entity)
+        signal_entity_changed(rabbit, entity)
         return relations, 201
 
     @policy_factory.authenticate()
@@ -421,9 +427,9 @@ class EntityRelations(BaseResource):
         self._abort_if_no_access(entity)
         content = request.get_json()
         relations = self.storage.patch_collection_item_relations(
-            "entities", util.get_raw_id(entity), content
+            "entities", get_raw_id(entity), content
         )
-        util.signal_entity_changed(rabbit, entity)
+        signal_entity_changed(rabbit, entity)
         return relations, 201
 
     @policy_factory.authenticate()
@@ -432,9 +438,9 @@ class EntityRelations(BaseResource):
         self._abort_if_no_access(entity)
         content = request.get_json()
         self.storage.delete_collection_item_relations(
-            "entities", util.get_raw_id(entity), content
+            "entities", get_raw_id(entity), content
         )
-        util.signal_entity_changed(rabbit, entity)
+        signal_entity_changed(rabbit, entity)
         return "", 204
 
 
@@ -450,7 +456,7 @@ class EntityRelationsAll(BaseResource):
             return response
 
         return self.storage.get_collection_item_relations(
-            "entities", util.get_raw_id(entity), include_sub_relations=True
+            "entities", get_raw_id(entity), include_sub_relations=True
         )
 
 
@@ -461,12 +467,12 @@ class EntitySetPrimaryMediafile(BaseResource):
         self._abort_if_no_access(entity)
         mediafile = self._abort_if_item_doesnt_exist("mediafiles", mediafile_id)
         self._abort_if_no_access(mediafile, collection="mediafiles")
-        if not util.mediafile_is_public(mediafile):
+        if not mediafile_is_public(mediafile):
             abort(400, message=f"Mediafile with id {mediafile_id} is not public")
         self.storage.set_primary_field_collection_item(
-            "entities", util.get_raw_id(entity), mediafile_id, "is_primary"
+            "entities", get_raw_id(entity), mediafile_id, "is_primary"
         )
-        util.signal_entity_changed(rabbit, entity)
+        signal_entity_changed(rabbit, entity)
         return "", 204
 
 
@@ -477,10 +483,10 @@ class EntitySetPrimaryThumbnail(BaseResource):
         self._abort_if_no_access(entity)
         mediafile = self._abort_if_item_doesnt_exist("mediafiles", mediafile_id)
         self._abort_if_no_access(mediafile, collection="mediafiles")
-        if not util.mediafile_is_public(mediafile):
+        if not mediafile_is_public(mediafile):
             abort(400, message=f"Mediafile with id {mediafile_id} is not public")
         self.storage.set_primary_field_collection_item(
-            "entities", util.get_raw_id(entity), mediafile_id, "is_primary_thumbnail"
+            "entities", get_raw_id(entity), mediafile_id, "is_primary_thumbnail"
         )
-        util.signal_entity_changed(rabbit, entity)
+        signal_entity_changed(rabbit, entity)
         return "", 204

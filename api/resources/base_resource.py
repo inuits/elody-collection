@@ -1,10 +1,10 @@
 import json
 import mappers
 import os
-import elody.util as util
 
 from app import auto_create_tenants, multitenancy_enabled, policy_factory, rabbit
 from datetime import datetime
+from elody.util import get_raw_id, signal_entity_changed
 from flask import Response
 from flask_restful import Resource, abort
 from storage.storagemanager import StorageManager
@@ -42,7 +42,7 @@ class BaseResource(Resource):
 
     def _add_relations_to_metadata(self, entity, collection="entities", sort_by=None):
         relations = self.storage.get_collection_item_relations(
-            collection, util.get_raw_id(entity), exclude=["story_box_visits"]
+            collection, get_raw_id(entity), exclude=["story_box_visits"]
         )
         if not relations:
             return entity
@@ -75,11 +75,11 @@ class BaseResource(Resource):
         mediafile = self.storage.save_item_to_collection("mediafiles", content)
         self.storage.add_mediafile_to_collection_item(
             "entities",
-            util.get_raw_id(entity),
+            get_raw_id(entity),
             mediafile["_id"],
             False,
         )
-        util.signal_entity_changed(rabbit, entity)
+        signal_entity_changed(rabbit, entity)
         return mediafile
 
     def _create_response_according_accept_header(
@@ -193,7 +193,7 @@ class BaseResource(Resource):
 
     def _set_entity_mediafile_and_thumbnail(self, entity):
         mediafiles = self.storage.get_collection_item_mediafiles(
-            "entities", util.get_raw_id(entity)
+            "entities", get_raw_id(entity)
         )
         for mediafile in mediafiles:
             if mediafile.get("is_primary", False):

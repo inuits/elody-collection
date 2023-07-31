@@ -1,10 +1,11 @@
 import app
 import os
 import pymongo.errors
-import elody.util as util
 import uuid
 
 from datetime import datetime
+from elody.exceptions import NonUniqueException
+from elody.util import mediafile_is_public, signal_entity_changed
 from pymongo import MongoClient
 from storage.genericstore import GenericStorageManager
 from urllib.parse import quote_plus
@@ -178,7 +179,7 @@ class MongoStorageManager(GenericStorageManager):
             potential_mediafile = self.get_item_from_collection_by_id(
                 "mediafiles", relation["key"]
             )
-            if not util.mediafile_is_public(potential_mediafile):
+            if not mediafile_is_public(potential_mediafile):
                 continue
             if mediafile:
                 self.set_primary_field_collection_item(
@@ -261,7 +262,9 @@ class MongoStorageManager(GenericStorageManager):
 
     def get_collection_item_mediafiles(self, collection, id, skip=0, limit=0):
         mediafiles = []
-        for mediafile in self.db["mediafiles"].find({"relations.key": id}, skip=skip, limit=limit):
+        for mediafile in self.db["mediafiles"].find(
+            {"relations.key": id}, skip=skip, limit=limit
+        ):
             mediafiles.append(mediafile)
         mediafiles.sort(
             key=lambda x, y=id, z=len(mediafiles): next(
@@ -484,7 +487,7 @@ class MongoStorageManager(GenericStorageManager):
             self.db[collection].update_one(self.__get_id_query(id), {"$set": content})
         except pymongo.errors.DuplicateKeyError as ex:
             if ex.code == 11000:
-                raise util.NonUniqueException(ex.details)
+                raise NonUniqueException(ex.details)
             raise ex
         return self.get_item_from_collection_by_id(collection, id)
 
@@ -493,7 +496,7 @@ class MongoStorageManager(GenericStorageManager):
             parents = self.get_mediafile_linked_entities(mediafile)
         for item in parents:
             entity = self.get_item_from_collection_by_id("entities", item["entity_id"])
-            util.signal_entity_changed(app.rabbit, entity)
+            signal_entity_changed(app.rabbit, entity)
 
     def save_item_to_collection(
         self,
@@ -511,7 +514,7 @@ class MongoStorageManager(GenericStorageManager):
             item_id = self.db[collection].insert_one(content).inserted_id
         except pymongo.errors.DuplicateKeyError as ex:
             if ex.code == 11000:
-                raise util.NonUniqueException(ex.details)
+                raise NonUniqueException(ex.details)
             raise ex
         return (
             item_id
@@ -557,10 +560,9 @@ class MongoStorageManager(GenericStorageManager):
             self.db[collection].replace_one(self.__get_id_query(id), content)
         except pymongo.errors.DuplicateKeyError as ex:
             if ex.code == 11000:
-                raise util.NonUniqueException(ex.details)
+                raise NonUniqueException(ex.details)
             raise ex
         return self.get_item_from_collection_by_id(collection, id)
-    
+
     def get_collection_item_mediafiles_count(self, id):
         return self.db["mediafiles"].count_documents({"relations.key": id})
-

@@ -1,8 +1,8 @@
 import os
 
+from elody.util import Singleton
 from filters.arango_filters import ArangoFilters
 from filters.mongo_filters import MongoFilters
-from elody.util import Singleton
 
 
 class FilterManager(metaclass=Singleton):

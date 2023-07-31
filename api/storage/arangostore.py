@@ -1,6 +1,5 @@
 import app
 import os
-import elody.util as util
 import uuid
 
 from arango import (
@@ -8,6 +7,13 @@ from arango import (
     DocumentInsertError,
     DocumentReplaceError,
     DocumentUpdateError,
+)
+from elody.exceptions import NonUniqueException
+from elody.util import (
+    mediafile_is_public,
+    signal_child_relation_changed,
+    signal_edge_changed,
+    signal_entity_changed,
 )
 from storage.genericstore import GenericStorageManager
 
@@ -180,7 +186,7 @@ class ArangoStorageManager(GenericStorageManager):
     def __set_new_primary(self, entity, mediafile=False, thumbnail=False):
         for edge in self.db.collection("hasMediafile").find({"_from": entity["_id"]}):
             potential_mediafile = self.db.document(edge["_to"])
-            if util.mediafile_is_public(potential_mediafile):
+            if mediafile_is_public(potential_mediafile):
                 if mediafile:
                     edge["is_primary"] = True
                 if thumbnail:
@@ -538,7 +544,7 @@ class ArangoStorageManager(GenericStorageManager):
         for edge in self.db.collection("hasMediafile").find({"_to": mediafile["_id"]}):
             entity = self.db.document(edge["_from"])
             primary_items = self.__get_primary_items(entity)
-            if util.mediafile_is_public(mediafile):
+            if mediafile_is_public(mediafile):
                 if not primary_items["primary_mediafile"]:
                     edge["is_primary"] = True
                     self.db.update_document(edge)
@@ -575,9 +581,9 @@ class ArangoStorageManager(GenericStorageManager):
             )["new"]
         except DocumentUpdateError as ex:
             if ex.error_code == 1210:
-                raise util.NonUniqueException(ex.error_message)
+                raise NonUniqueException(ex.error_message)
             raise ex
-        util.signal_child_relation_changed(app.rabbit, collection, id)
+        signal_child_relation_changed(app.rabbit, collection, id)
         return item
 
     def reindex_mediafile_parents(self, mediafile=None, parents=None):
@@ -585,7 +591,7 @@ class ArangoStorageManager(GenericStorageManager):
             parents = self.get_mediafile_linked_entities(mediafile)
         for item in parents:
             entity = self.db.document(item["entity_id"])
-            util.signal_entity_changed(app.rabbit, entity)
+            signal_entity_changed(app.rabbit, entity)
 
     def save_item_to_collection(
         self,
@@ -608,7 +614,7 @@ class ArangoStorageManager(GenericStorageManager):
             return ret["_key"] if only_return_id else ret["new"]
         except DocumentInsertError as ex:
             if ex.error_code == 1210:
-                raise util.NonUniqueException(ex.error_message)
+                raise NonUniqueException(ex.error_message)
             raise ex
 
     def set_primary_field_collection_item(
@@ -644,9 +650,9 @@ class ArangoStorageManager(GenericStorageManager):
             )["new"]
         except DocumentReplaceError as ex:
             if ex.error_code == 1210:
-                raise util.NonUniqueException(ex.error_message)
+                raise NonUniqueException(ex.error_message)
             raise ex
-        util.signal_child_relation_changed(app.rabbit, collection, id)
+        signal_child_relation_changed(app.rabbit, collection, id)
         return item
 
     def update_parent_relation_values(self, collection, parent_id):
@@ -671,4 +677,4 @@ class ArangoStorageManager(GenericStorageManager):
                     self.db.update_document(edge)
                     changed_ids.add(entity["_key"])
         if len(changed_ids):
-            util.signal_edge_changed(app.rabbit, changed_ids)
+            signal_edge_changed(app.rabbit, changed_ids)
