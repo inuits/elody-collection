@@ -1,4 +1,5 @@
-from jsonschema import validate, ValidationError
+from jsonschema.exceptions import ValidationError
+from jsonschema.validators import validate
 
 box_visit_schema = {
     "$schema": "http://json-schema.org/draft-07/schema#",
