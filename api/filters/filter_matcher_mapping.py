@@ -50,4 +50,7 @@ class FilterMatcherMapping(ABC):
         "boolean": {
             "exact": ExactMatcher,
         },
+        "relation": {
+            "any": AnyMatcher,
+        },
     }

@@ -109,32 +109,38 @@ class MongoMatchers(BaseMatchers):
     def __any_none_match(
         self, key: str, parent_key: str, operator_to_match_none_values: str
     ):
-        or_conditions = [
-            {
-                parent_key: {
-                    "$type": "array",
-                    "$elemMatch": {
-                        "key": key,
-                        "value": {operator_to_match_none_values: [None, ""]},
-                    },
-                }
-            },
-            {
-                "$and": [
-                    {parent_key: {"$type": "object"}},
-                    {f"{parent_key}.{key}": {"$exists": True}},
+        value = {operator_to_match_none_values: [None, ""]}
+
+        if parent_key:
+            or_conditions = [
+                {
+                    parent_key: {
+                        "$type": "array",
+                        "$elemMatch": {
+                            "key": key,
+                            "value": value,
+                        },
+                    }
+                },
+                {
+                    "$and": [
+                        {parent_key: {"$type": "object"}},
+                        {f"{parent_key}.{key}": {"$exists": True}},
+                        {f"{parent_key}.{key}": value},
+                    ]
+                },
+            ]
+            if operator_to_match_none_values == "$in":
+                or_conditions.append(
                     {
-                        f"{parent_key}.{key}": {
-                            operator_to_match_none_values: [None, ""]
+                        parent_key: {
+                            "$type": "array",
+                            "$not": {"$elemMatch": {"key": key}},
                         }
                     },
-                ]
-            },
-        ]
-        if operator_to_match_none_values == "$in":
-            or_conditions.append(
-                {parent_key: {"$type": "array", "$not": {"$elemMatch": {"key": key}}}},
-            )
+                )
+        else:
+            or_conditions = [{key: value}]
 
         return {"$match": {"$or": or_conditions}}
 
