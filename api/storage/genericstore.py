@@ -118,7 +118,6 @@ class GenericStorageManager:
         self,
         collection,
         content,
-        item_id=None,
         only_return_id=False,
         create_sortable_metadata=True,
     ):

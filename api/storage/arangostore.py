@@ -597,16 +597,15 @@ class ArangoStorageManager(GenericStorageManager):
         self,
         collection,
         content,
-        item_id=None,
         only_return_id=False,
         create_sortable_metadata=True,
     ):
-        item_id = item_id if item_id else str(uuid.uuid4())
-        content["_key"] = item_id
+        if not content.get("_key"):
+            content["_key"] = str(uuid.uuid4())
         if "identifiers" not in content:
-            content["identifiers"] = [item_id]
-        elif item_id not in content["identifiers"]:
-            content["identifiers"].insert(0, item_id)
+            content["identifiers"] = [content["_key"]]
+        elif content["_key"] not in content["identifiers"]:
+            content["identifiers"].insert(0, content["_key"])
         try:
             ret = self.db.insert_document(
                 collection, content, return_new=not only_return_id

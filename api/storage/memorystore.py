@@ -185,18 +185,21 @@ class MemoryStorageManager(GenericStorageManager):
         self,
         collection,
         content,
-        item_id=None,
         only_return_id=False,
         create_sortable_metadata=True,
     ):
-        gen_id = item_id if item_id else str(uuid.uuid4())
-        content["_id"] = gen_id
+        if not content.get("_id"):
+            content["_id"] = str(uuid.uuid4())
         if "identifiers" not in content:
-            content["identifiers"] = [gen_id]
-        elif gen_id not in content["identifiers"]:
-            content["identifiers"].insert(0, gen_id)
-        self.collections[collection][gen_id] = content
-        return gen_id if only_return_id else self.collections[collection][gen_id]
+            content["identifiers"] = [content["_id"]]
+        elif content["_id"] not in content["identifiers"]:
+            content["identifiers"].insert(0, content["_id"])
+        self.collections[collection][content["_id"]] = content
+        return (
+            content["_id"]
+            if only_return_id
+            else self.collections[collection][content["_id"]]
+        )
 
     def update_collection_item_relations(
         self, collection, obj_id, content, parent=True
