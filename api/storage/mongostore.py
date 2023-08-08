@@ -134,10 +134,6 @@ class MongoStorageManager(GenericStorageManager):
     def _prepare_mongo_document(
         self, document, reversed, create_sortable_metadata=True
     ):
-        if "identifiers" not in document:
-            document["identifiers"] = [document["_id"]]
-        elif document["_id"] not in document["identifiers"]:
-            document["identifiers"].insert(0, document["_id"])
         if "data" in document:
             document["data"] = self.__replace_dictionary_keys(
                 document["data"], reversed
@@ -505,6 +501,10 @@ class MongoStorageManager(GenericStorageManager):
     ):
         if not content.get("_id"):
             content["_id"] = str(uuid.uuid4())
+        if "identifiers" not in content:
+            content["identifiers"] = [content["_id"]]
+        elif content["_id"] not in content["identifiers"]:
+            content["identifiers"].insert(0, content["_id"])
         content = self._prepare_mongo_document(content, False, create_sortable_metadata)
         try:
             item_id = self.db[collection].insert_one(content).inserted_id
