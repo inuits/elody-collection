@@ -113,7 +113,8 @@ class Entity(BaseResource):
                     user_id, entity, mediafile_filename
                 )
                 if accept_header == "text/uri-list":
-                    response += f"{self.storage_api_url}/upload/{mediafile_filename}?id={get_raw_id(mediafile)}\n"
+                    ticket_id = self._create_ticket(mediafile_filename, user_id)
+                    response += f"{self.storage_api_url}/upload-with-ticket/{mediafile_filename}?id={get_raw_id(mediafile)}&ticket_id={ticket_id}\n"
         signal_entity_changed(rabbit, entity)
         return self._create_response_according_accept_header(
             response, accept_header, 201

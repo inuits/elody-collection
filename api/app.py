@@ -107,6 +107,7 @@ from resources.saved_search import (
     SavedSearchDetail,
 )
 from resources.user import UserPermissions
+from resources.ticket import TicketDetail
 from resources.spec import AsyncAPISpec, OpenAPISpec
 
 api.add_resource(Config, "/config")
@@ -150,6 +151,8 @@ api.add_resource(SavedSearch, "/saved_searches")
 api.add_resource(SavedSearchDetail, "/saved_searches/<string:id>")
 
 api.add_resource(UserPermissions, "/user/permissions")
+
+api.add_resource(TicketDetail, "/ticket/<string:id>")
 
 api.add_resource(AsyncAPISpec, "/spec/dams-collection-api-events.html")
 api.add_resource(OpenAPISpec, "/spec/dams-collection-api.json")

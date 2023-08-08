@@ -3,7 +3,7 @@ import mappers
 import os
 
 from app import auto_create_tenants, multitenancy_enabled, policy_factory, rabbit
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from elody.util import get_raw_id, signal_entity_changed
 from flask import Response
 from flask_restful import Resource, abort
@@ -214,3 +214,15 @@ class BaseResource(Resource):
                     "thumbnail_file_location"
                 ]
         return entity
+
+    def _create_ticket(self, filename: str, user_id: str) -> str:
+        content = {
+            "location": filename,
+            "exp": (datetime.now(tz=timezone.utc) + timedelta(minutes=1)).timestamp(),
+            "user": user_id,
+            "type": "ticket",
+        }
+        ticket_id = self.storage.save_item_to_collection(
+            "abstracts", content, only_return_id=True, create_sortable_metadata=False
+        )
+        return ticket_id

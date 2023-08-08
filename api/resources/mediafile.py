@@ -50,17 +50,19 @@ class Mediafile(BaseResource):
     def post(self):
         content = request.get_json()
         self._abort_if_not_valid_json("Mediafile", content, mediafile_schema)
+        user_id = policy_factory.get_user_context().email or "default_uploader"
         if multitenancy_enabled:
             if not (tenant := self._get_tenant()):
                 abort(400, message="Tenant not found")
             content["tenants"] = [tenant["tenant_id"]]
-        content["user"] = policy_factory.get_user_context().email or "default_uploader"
+        content["user"] = user_id
         content["date_created"] = str(datetime.now())
         content["version"] = 1
         mediafile = self.storage.save_item_to_collection("mediafiles", content)
         accept_header = request.headers.get("Accept")
         if accept_header == "text/uri-list":
-            response = f"{self.storage_api_url}/upload/{mediafile['filename'].strip()}?id={util.get_raw_id(mediafile)}"
+            ticket_id = self._create_ticket(mediafile["filename"], user_id)
+            response = f"{self.storage_api_url}/upload-with-ticket/{mediafile['filename'].strip()}?id={util.get_raw_id(mediafile)}&ticket_id={ticket_id}"
         else:
             response = mediafile
         return self._create_response_according_accept_header(
