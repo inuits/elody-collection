@@ -219,7 +219,9 @@ class ArangoStorageManager(GenericStorageManager):
         )
         return self.db.document(mediafile_id)
 
-    def add_relations_to_collection_item(self, collection, id, relations, parent=True):
+    def add_relations_to_collection_item(
+        self, collection, id, relations, parent=True, dst_collection=None
+    ):
         entity = self.get_item_from_collection_by_id(collection, id)
         if not entity:
             return None

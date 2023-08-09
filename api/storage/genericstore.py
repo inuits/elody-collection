@@ -4,7 +4,9 @@ class GenericStorageManager:
     ):
         pass
 
-    def add_relations_to_collection_item(self, collection, id, relations, parent=True):
+    def add_relations_to_collection_item(
+        self, collection, id, relations, parent=True, dst_collection=None
+    ):
         pass
 
     def add_sub_item_to_collection_item(self, collection, id, sub_item, content):

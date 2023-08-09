@@ -51,7 +51,9 @@ class MemoryStorageManager(GenericStorageManager):
             return self.collections["mediafiles"][mediafile_id]
         return None
 
-    def add_relations_to_collection_item(self, collection, id, relations, parent=True):
+    def add_relations_to_collection_item(
+        self, collection, id, relations, parent=True, dst_collection=None
+    ):
         self.add_sub_item_to_collection_item(collection, id, "relations", relations)
         self.__add_child_relations(collection, id, relations)
         return self.get_collection_item_sub_item(collection, id, "relations")
