@@ -29,9 +29,9 @@ class MongoStorageManager(GenericStorageManager):
     def __add_child_relations(self, id, relations, collection=None):
         for relation in relations:
             if not collection:
-                collection = self.__map_relation_to_collection(relation["type"])
+                collection = self._map_relation_to_collection(relation["type"])
             dst_relation = relation.copy()
-            dst_relation["type"] = self.__map_entity_relation(relation["type"])
+            dst_relation["type"] = self._map_entity_relation(relation["type"])
             dst_relation["key"] = id
             dst_id = relation["key"]
             dst_content = [dst_relation]
@@ -71,7 +71,7 @@ class MongoStorageManager(GenericStorageManager):
         relations = relations if relations else []
         for obj in relations:
             self.delete_collection_item_sub_item_key(
-                self.__map_relation_to_collection(obj["type"]),
+                self._map_relation_to_collection(obj["type"]),
                 obj["key"],
                 "relations",
                 id,
@@ -106,43 +106,6 @@ class MongoStorageManager(GenericStorageManager):
         for document in documents:
             items["results"].append(self._prepare_mongo_document(document, True))
         return items
-
-    def __map_entity_relation(self, relation):
-        return {
-            "authored": "authoredBy",
-            "authoredBy": "authored",
-            "belongsTo": "hasMediafile",
-            "components": "parent",
-            "contains": "isIn",
-            "hasMediafile": "belongsTo",
-            "isIn": "contains",
-            "parent": "components",
-        }.get(relation)
-
-    def __map_relation_to_collection(self, relation):
-        return {
-            "authored": "entities",
-            "authoredBy": "entities",
-            "belongsTo": "entities",
-            "components": "entities",
-            "contains": "entities",
-            "hasMediafile": "mediafiles",
-            "isIn": "entities",
-            "parent": "entities",
-        }.get(relation, "entities")
-
-    def _prepare_mongo_document(
-        self, document, reversed, create_sortable_metadata=True
-    ):
-        if "data" in document:
-            document["data"] = self.__replace_dictionary_keys(
-                document["data"], reversed
-            )
-        if "metadata" not in document:
-            return document
-        if not reversed and create_sortable_metadata:
-            document["sort"] = self.__create_sortable_metadata(document["metadata"])
-        return document
 
     def __replace_dictionary_keys(self, data, reversed):
         if type(data) is dict:
@@ -188,6 +151,43 @@ class MongoStorageManager(GenericStorageManager):
                 )
             break
 
+    def _map_entity_relation(self, relation):
+        return {
+            "authored": "authoredBy",
+            "authoredBy": "authored",
+            "belongsTo": "hasMediafile",
+            "components": "parent",
+            "contains": "isIn",
+            "hasMediafile": "belongsTo",
+            "isIn": "contains",
+            "parent": "components",
+        }.get(relation)
+
+    def _map_relation_to_collection(self, relation):
+        return {
+            "authored": "entities",
+            "authoredBy": "entities",
+            "belongsTo": "entities",
+            "components": "entities",
+            "contains": "entities",
+            "hasMediafile": "mediafiles",
+            "isIn": "entities",
+            "parent": "entities",
+        }.get(relation, "entities")
+
+    def _prepare_mongo_document(
+        self, document, reversed, create_sortable_metadata=True
+    ):
+        if "data" in document:
+            document["data"] = self.__replace_dictionary_keys(
+                document["data"], reversed
+            )
+        if "metadata" not in document:
+            return document
+        if not reversed and create_sortable_metadata:
+            document["sort"] = self.__create_sortable_metadata(document["metadata"])
+        return document
+
     def add_mediafile_to_collection_item(
         self, collection, id, mediafile_id, mediafile_public
     ):
@@ -232,7 +232,7 @@ class MongoStorageManager(GenericStorageManager):
     def delete_collection_item_relations(self, collection, id, relations, parent=True):
         for relation in relations:
             impacted_ids = [id, relation["key"]]
-            types = [relation["type"], self.__map_entity_relation(relation["type"])]
+            types = [relation["type"], self._map_entity_relation(relation["type"])]
             self.db[collection].update_many(
                 self.__get_ids_query(impacted_ids),
                 {
@@ -460,7 +460,7 @@ class MongoStorageManager(GenericStorageManager):
                 collection, id, "relations", item["key"]
             )
             self.delete_collection_item_sub_item_key(
-                self.__map_relation_to_collection(item["type"]),
+                self._map_relation_to_collection(item["type"]),
                 item["key"],
                 "relations",
                 id,
