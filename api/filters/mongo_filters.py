@@ -84,7 +84,6 @@ class MongoFilters(MongoStorageManager):
                             "relations": {
                                 "$elemMatch": {
                                     "key": filter_criteria["parent"],
-                                    "type": {"$regex": "component|belongsTo"},
                                 }
                             }
                         }
