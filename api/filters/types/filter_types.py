@@ -28,6 +28,8 @@ def get_filter(input_type: str):
         return BooleanFilterType()
     if input_type == "relation":
         return RelationFilterType()
+    if input_type == "type":
+        return TypeFilterType()
 
     raise ValueError(f"No filter defined for input type '{input_type}'")
 
@@ -120,5 +122,16 @@ class RelationFilterType(BaseFilterType):
 
     def generate_query(self, filter_criteria: dict):
         return self.filter_type_engine.generate_query_for_relation_filter_type(
+            self.matchers, filter_criteria
+        )
+
+
+class TypeFilterType(BaseFilterType):
+    def __init__(self):
+        super().__init__()
+        self.matchers.update(FilterMatcherMapping.mapping["type"])
+
+    def generate_query(self, filter_criteria: dict):
+        return self.filter_type_engine.generate_query_for_type_filter_type(
             self.matchers, filter_criteria
         )

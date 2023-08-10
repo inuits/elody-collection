@@ -89,6 +89,18 @@ class BaseFilterTypeQueryGenerator(ABC):
             match_exact=True,
         )
 
+    @abstractmethod
+    def generate_query_for_type_filter_type(
+        self, matchers: dict[str, Type[BaseMatcher]], filter_criteria: dict
+    ):
+        return self._apply_matchers(
+            matchers,
+            filter_criteria["key"],
+            filter_criteria["value"],
+            "",
+            match_exact=True,
+        )
+
     def _apply_matchers(
         self,
         matchers: dict[str, Type[BaseMatcher]],

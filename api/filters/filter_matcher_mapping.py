@@ -53,4 +53,9 @@ class FilterMatcherMapping(ABC):
         "relation": {
             "any": AnyMatcher,
         },
+        "type": {
+            "any": AnyMatcher,
+            "none": NoneMatcher,
+            "exact": ExactMatcher,
+        },
     }
