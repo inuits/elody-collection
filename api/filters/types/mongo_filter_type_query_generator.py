@@ -60,9 +60,7 @@ class MongoFilterTypeQueryGenerator(BaseFilterTypeQueryGenerator):
         return self.__parse_query(filter)
 
     def generate_query_for_type_filter_type(self, matchers, filter_criteria):
-        filter = super().generate_query_for_type_filter_type(
-            matchers, filter_criteria
-        )
+        filter = super().generate_query_for_type_filter_type(matchers, filter_criteria)
         return self.__parse_query(filter)
 
     def __parse_query(self, filter) -> list:

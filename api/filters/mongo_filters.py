@@ -77,13 +77,13 @@ class MongoFilters(MongoStorageManager):
             item_types = filter_criteria.get("item_types", [])
             if len(item_types) > 0:
                 pipeline.append({"$match": {"type": {"$in": item_types}}})
-            if filter_criteria.get("parent"):
+            if filter_criteria.get("parents"):
                 pipeline.append(
                     {
                         "$match": {
                             "relations": {
                                 "$elemMatch": {
-                                    "key": filter_criteria["parent"],
+                                    "key": {"$in": filter_criteria["parents"]},
                                 }
                             }
                         }
