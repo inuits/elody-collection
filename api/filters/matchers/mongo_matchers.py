@@ -148,7 +148,6 @@ class MongoMatchers(BaseMatchers):
         if not regex.match(BaseMatchers.datetime_pattern, value):
             raise ValueError(f"{value} is not a valid datetime")
 
-        date, time = value.split("T")
         if range_match:
-            return f"{date} {time}"
-        return {"$regex": f"^{date} {time}"}
+            return f"{value}"
+        return {"$regex": f"^{value}"}
