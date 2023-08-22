@@ -2,7 +2,7 @@ import elody.util as util
 import os
 
 from app import multitenancy_enabled, policy_factory, rabbit
-from datetime import datetime
+from datetime import datetime, timezone
 from flask import request
 from flask_restful import abort
 from resources.base_resource import BaseResource
@@ -56,7 +56,7 @@ class Mediafile(BaseResource):
                 abort(400, message="Tenant not found")
             content["tenants"] = [tenant["tenant_id"]]
         content["user"] = user_id
-        content["date_created"] = str(datetime.now())
+        content["date_created"] = datetime.now(timezone.utc).isoformat()
         content["version"] = 1
         mediafile = self.storage.save_item_to_collection("mediafiles", content)
         accept_header = request.headers.get("Accept")
@@ -117,7 +117,7 @@ class MediafileDetail(BaseResource):
         self._abort_if_no_access(old_mediafile, collection="mediafiles")
         content = request.get_json()
         self._abort_if_not_valid_json("Mediafile", content, mediafile_schema)
-        content["date_updated"] = str(datetime.now())
+        content["date_updated"] = datetime.now(timezone.utc).isoformat()
         content["version"] = old_mediafile.get("version", 0) + 1
         content["last_editor"] = (
             policy_factory.get_user_context().email or "default_uploader"
@@ -134,7 +134,7 @@ class MediafileDetail(BaseResource):
         old_mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
         self._abort_if_no_access(old_mediafile, collection="mediafiles")
         content = request.get_json()
-        content["date_updated"] = str(datetime.now())
+        content["date_updated"] = datetime.now(timezone.utc).isoformat()
         content["version"] = old_mediafile.get("version", 0) + 1
         content["last_editor"] = user_context.email or "default_uploader"
         mediafile = self.storage.patch_item_from_collection(

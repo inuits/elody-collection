@@ -2,7 +2,7 @@ import mappers
 import os
 
 from app import multitenancy_enabled, policy_factory, rabbit
-from datetime import datetime
+from datetime import datetime, timezone
 from elody.exceptions import NonUniqueException
 from elody.util import (
     get_raw_id,
@@ -95,7 +95,7 @@ class Entity(BaseResource):
             content["tenants"] = [tenant["tenant_id"]]
         entity = self._decorate_entity(content)
         entity["user"] = user_id
-        entity["date_created"] = str(datetime.now())
+        entity["date_created"] = datetime.now(timezone.utc).isoformat()
         entity["version"] = 1
         if not linked_data_request:
             self._abort_if_not_valid_json("Entity", entity, entity_schema)
@@ -150,7 +150,7 @@ class EntityDetail(BaseResource):
         self._abort_if_no_access(entity)
         content = request.get_json()
         self._abort_if_not_valid_json("Entity", content, entity_schema)
-        content["date_updated"] = str(datetime.now())
+        content["date_updated"] = datetime.now(timezone.utc).isoformat()
         content["version"] = entity.get("version", 0) + 1
         content["last_editor"] = (
             policy_factory.get_user_context().email or "default_uploader"
@@ -171,7 +171,7 @@ class EntityDetail(BaseResource):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         self._abort_if_no_access(entity)
         content = request.get_json()
-        content["date_updated"] = str(datetime.now())
+        content["date_updated"] = datetime.now(timezone.utc).isoformat()
         content["version"] = entity.get("version", 0) + 1
         content["last_editor"] = (
             policy_factory.get_user_context().email or "default_uploader"
@@ -289,7 +289,7 @@ class EntityMediafilesCreate(BaseResource):
             "thumbnail_file_location"
         ] = f'/iiif/3/{content["filename"]}/full/,150/0/default.jpg'
         content["user"] = policy_factory.get_user_context().email or "default_uploader"
-        content["date_created"] = str(datetime.now())
+        content["date_created"] = datetime.now(timezone.utc).isoformat()
         content["version"] = 1
         mediafile = self.storage.save_item_to_collection("mediafiles", content)
         upload_location = f'{self.storage_api_url}/upload/{content["filename"]}?id={get_raw_id(mediafile)}'

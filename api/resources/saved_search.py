@@ -1,5 +1,5 @@
 from app import policy_factory
-from datetime import datetime
+from datetime import datetime, timezone
 from elody.exceptions import NonUniqueException
 from elody.util import get_raw_id
 from flask import request
@@ -41,7 +41,7 @@ class SavedSearch(BaseResource):
         content = request.get_json()
         self._abort_if_not_valid_json("Saved search", content, saved_search_schema)
         content["user"] = policy_factory.get_user_context().email or "default_uploader"
-        content["date_created"] = str(datetime.now())
+        content["date_created"] = datetime.now(timezone.utc).isoformat()
         content["version"] = 1
         try:
             saved_search = self.storage.save_item_to_collection("abstracts", content)
@@ -65,7 +65,7 @@ class SavedSearchDetail(BaseResource):
         self._abort_if_not_valid_type(saved_search, "saved_search")
         content = request.get_json()
         self._abort_if_not_valid_json("Saved search", content, saved_search_schema)
-        content["date_updated"] = str(datetime.now())
+        content["date_updated"] = datetime.now(timezone.utc).isoformat()
         content["version"] = saved_search.get("version", 0) + 1
         try:
             saved_search = self.storage.update_item_from_collection(
@@ -81,7 +81,7 @@ class SavedSearchDetail(BaseResource):
         self._abort_if_no_access(saved_search, collection="abstracts")
         self._abort_if_not_valid_type(saved_search, "saved_search")
         content = request.get_json()
-        content["date_updated"] = str(datetime.now())
+        content["date_updated"] = datetime.now(timezone.utc).isoformat()
         content["version"] = saved_search.get("version", 0) + 1
         try:
             saved_search = self.storage.patch_item_from_collection(
