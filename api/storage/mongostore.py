@@ -3,7 +3,8 @@ import os
 import pymongo.errors
 import uuid
 
-from datetime import datetime
+from bson.codec_options import CodecOptions
+from datetime import datetime, timezone
 from elody.exceptions import NonUniqueException
 from elody.util import mediafile_is_public, signal_entity_changed
 from pymongo import MongoClient
@@ -22,7 +23,9 @@ class MongoStorageManager(GenericStorageManager):
         self.mongo_username = os.getenv("MONGODB_USERNAME")
         self.mongo_password = os.getenv("MONGODB_PASSWORD")
         self.client = MongoClient(self.__create_mongo_connection_string())
-        self.db = self.client[self.mongo_db_name]
+        self.db = self.client[self.mongo_db_name].with_options(
+            CodecOptions(tz_aware=True, tzinfo=timezone.utc)
+        )
         self.db.entities.create_index("identifiers", unique=True)
         self.db.entities.create_index("object_id", unique=True, sparse=True)
 
