@@ -22,10 +22,6 @@ class MongoFilters(MongoStorageManager):
         if len(count) == 0:
             return items
         items["count"] = count[0]["count"]
-        pipeline += [
-            {"$skip": skip},
-            {"$limit": limit},
-        ]
         if order_by:
             pipeline += [
                 {
@@ -36,6 +32,10 @@ class MongoFilters(MongoStorageManager):
                     }
                 },
             ]
+        pipeline += [
+            {"$skip": skip},
+            {"$limit": limit},
+        ]
         documents = self.db[collection].aggregate(pipeline)
         for document in documents:
             items["results"].append(self._prepare_mongo_document(document, True))
