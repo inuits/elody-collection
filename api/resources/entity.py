@@ -211,7 +211,9 @@ class EntityMediafiles(BaseResource):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         self._abort_if_no_access(entity)
         mediafiles = dict()
-        mediafiles["count"] = self.storage.get_collection_item_mediafiles_count(id)
+        mediafiles["count"] = self.storage.get_collection_item_mediafiles_count(
+            entity["_id"]
+        )
         mediafiles_list = self.storage.get_collection_item_mediafiles(
             "entities", get_raw_id(entity), skip, limit
         )

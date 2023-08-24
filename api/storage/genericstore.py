@@ -34,7 +34,7 @@ class GenericStorageManager:
     def drop_all_collections(self):
         pass
 
-    def get_collection_item_mediafiles(self, collection, id):
+    def get_collection_item_mediafiles(self, collection, id, skip=0, limit=0):
         pass
 
     def get_collection_item_relations(

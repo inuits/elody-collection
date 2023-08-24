@@ -294,10 +294,14 @@ class ArangoStorageManager(GenericStorageManager):
         for collection in [*self.collections, *self.edges]:
             self.db.collection(collection).truncate()
 
-    def get_collection_item_mediafiles(self, collection, id):
+    def get_collection_item_mediafiles(self, collection, id, skip=0, limit=0):
         entity = self.get_item_from_collection_by_id(collection, id)
         mediafiles = list()
-        edges = list(self.db.collection("hasMediafile").find({"_from": entity["_id"]}))
+        edges = list(
+            self.db.collection("hasMediafile").find(
+                {"_from": entity["_id"]}, skip=skip, limit=limit
+            )
+        )
         edges.sort(key=lambda x: x["order"] if "order" in x else len(edges) + 1)
         for edge in edges:
             mediafile = self.db.document(edge["_to"])
@@ -307,6 +311,16 @@ class ArangoStorageManager(GenericStorageManager):
                 mediafile["is_primary_thumbnail"] = edge["is_primary_thumbnail"]
             mediafiles.append(mediafile)
         return mediafiles
+
+    def get_collection_item_mediafiles_count(self, id):
+        query = """
+            FOR hm IN hasMediafile
+                FILTER hm._from == @id
+                COLLECT WITH COUNT INTO length
+                RETURN length
+        """
+        bind_vars = {"id": id}
+        return list(self.db.aql.execute(query, bind_vars=bind_vars))[0]
 
     def get_collection_item_relations(
         self, collection, id, include_sub_relations=False, exclude=None
