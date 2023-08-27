@@ -26,8 +26,8 @@ class BaseResource(Resource):
             404, message=f"Item with id {id} doesn't exist in collection {collection}"
         )
 
-    def _abort_if_no_access(self, item, collection="entities"):
-        if not self._has_access_to_item(item, collection):
+    def _abort_if_no_access(self, item, user, collection="entities"):
+        if not self._has_access_to_item(item, user, collection):
             abort(403, message="Access denied")
 
     def _abort_if_not_valid_json(self, type, json, schema):
@@ -63,10 +63,13 @@ class BaseResource(Resource):
             )
         return {"data": rdf_data}
 
-    def _create_mediafile_for_entity(self, user_id, entity, filename):
+    def _create_mediafile_for_entity(
+        self,
+        entity,
+        filename,
+    ):
         content = {
             "filename": filename,
-            "user": user_id,
             "date_created": datetime.now(timezone.utc).isoformat(),
             "version": 1,
             "thumbnail_file_location": f"/iiif/3/{filename}/full/,150/0/default.jpg",
@@ -119,34 +122,149 @@ class BaseResource(Resource):
         }
         return default_entity | entity
 
-    def _get_tenant(self, create_tenant=True):
-        if not (tenant_id := policy_factory.get_user_context().tenant):
+    def _get_tenant(self, create_tenant=True, tenant_requested=None):
+        tenants = policy_factory.get_user_context().tenant
+        if not tenants:
             return None
-        if tenant := self.storage.get_item_from_collection_by_id("entities", tenant_id):
-            return tenant
         if not auto_create_tenants or not create_tenant:
-            return None
-        return self.storage.save_item_to_collection(
-            "entities",
-            {"tenant_id": tenant_id, "identifiers": [tenant_id], "type": "tenant"},
-        )
+            tenants_ids = []
+            if not tenant_requested:
+                for tenant in tenants:
+                    tenants_ids.append(
+                        self.storage.get_item_from_collection_by_id("entities", tenant)[
+                            "_id"
+                        ]
+                    )
+            elif tenant_requested in tenants:
+                tenants_ids.append(
+                    self.storage.get_item_from_collection_by_id(
+                        "entities", tenant_requested
+                    )["_id"]
+                )
+            else:
+                abort(403, message="Requested tenant is not one of yours tenants.")
+            return tenants_ids
+        if not tenant_requested:
+            tenant_return = []
+            for tenant in tenants:
+                if tenant_item := self.storage.get_item_from_collection_by_id(
+                    "entities", tenant
+                ):
+                    tenant_dict = self.create_relation_dict(
+                        tenant_item["_id"], tenant_item["tenant"], "tenant", "hasTenant"
+                    )
+                    tenant_return.append(tenant_dict)
+                elif auto_create_tenants:
+                    tenant_save = self.storage.save_item_to_collection(
+                        "entities",
+                        {"tenant": tenant, "identifiers": [tenant], "type": "tenant"},
+                    )
+                    tenant_dict = self.create_relation_dict(
+                        tenant_save["_id"], tenant_save["tenant"], "tenant", "hasTenant"
+                    )
+                    tenant_return.append(tenant_dict)
+                else:
+                    abort(
+                        403,
+                        message="Tenant is not stored. Creat the tenant entity first to add a relation to this tenant.",
+                    )
+            return tenant_return
+        elif tenant_requested in tenants:
+            if tenant_item := self.storage.get_item_from_collection_by_id(
+                "entities", tenant_requested
+            ):
+                tenant_dict = self.create_relation_dict(
+                    tenant_item["_id"], tenant_item["tenant"], "tenant", "hasTenant"
+                )
+                return [tenant_dict]
+            elif auto_create_tenants:
+                tenant_save = self.storage.save_item_to_collection(
+                    "entities",
+                    {
+                        "tenant": tenant_requested,
+                        "identifiers": [tenant_requested],
+                        "type": "tenant",
+                    },
+                )
+                tenant_dict = self.create_relation_dict(
+                    tenant_save["_id"], tenant_save["tenant"], "tenant", "hasTenant"
+                )
+                return [tenant_dict]
+            else:
+                abort(
+                    403,
+                    message="Tenant is not stored. Creat the tenant entity first to add a relation to this tenant.",
+                )
+        else:
+            abort(403, message="Requested tenant is not one of yours tenants.")
 
-    def _has_access_to_item(self, item, collection="entities"):
-        if (
-            scopes := policy_factory.get_user_context().scopes
-        ) and "has-full-control" in scopes:
+    def _get_user(self, create_user=True):
+        token = policy_factory.get_user_context().auth_objects.get("token")
+        token_user_name = token.get("preferred_username")
+        token_first_name = token.get("given_name")
+        token_last_name = token.get("family_name")
+        token_email = token.get("email")
+        token_tenants = token.get("institutions", [])
+        token_roles = policy_factory.get_user_context().roles
+        token_scopes = policy_factory.get_user_context().scopes
+        token_list = [
+            token_user_name,
+            token_first_name,
+            token_last_name,
+            token_tenants,
+            token_roles,
+            token_scopes,
+        ]
+        if user := self.storage.get_item_from_collection_by_id("entities", token_email):
+            if not all(x in user.values() for x in token_list):
+                self.storage.update_user(
+                    user["_id"],
+                    token_user_name,
+                    token_first_name,
+                    token_last_name,
+                    token_tenants,
+                    token_roles,
+                    token_scopes,
+                )
+                user = self.storage.get_item_from_collection_by_id(
+                    "entities", token_email
+                )
+        elif create_user:
+            user = self.storage.save_item_to_collection(
+                "entities",
+                {
+                    "email": token_email,
+                    "username": token_user_name,
+                    "first_name": token_first_name,
+                    "last_name": token_last_name,
+                    "tenants": token_tenants,
+                    "roles": token_roles,
+                    "identifiers": [token_email],
+                    "type": "user",
+                    "scopes": token_scopes,
+                },
+            )
+            if multitenancy_enabled:
+                tenants = self._get_tenant()
+                for tenant in tenants:
+                    self.storage.add_relations_to_collection_item(
+                        "entities", user["_id"], [tenant]
+                    )
+        else:
+            abort(403, message="User does not exist.")
+        return user
+
+    def _has_access_to_item(self, item, user, collection="entities"):
+        if self.is_admin(user):
             return True
-        if (
-            (email := policy_factory.get_user_context().email)
-            and "user" in item
-            and item["user"] == email
+        if (email := user["email"]) and any(
+            relation["value"] == email for relation in item["relations"]
         ):
             return True
         if (
             multitenancy_enabled
-            and (tenant := self._get_tenant(create_tenant=False))
-            and "tenants" in item
-            and tenant["tenant_id"] in item["tenants"]
+            and (tenants_ids := self._get_tenant(create_tenant=False))
+            and any(tenant["key"] in tenants_ids for tenant in item["relations"])
         ):
             return True
         return False
@@ -226,3 +344,55 @@ class BaseResource(Resource):
             "abstracts", content, only_return_id=True, create_sortable_metadata=False
         )
         return ticket_id
+    
+    def check_entity_relations_tenant(self, content):
+        if not (tenants := self._get_tenant()):
+            abort(400, message="Tenant not found")
+        for item in content:
+            if item["type"] == "tenant":
+                if not any(item["key"] == tenant["key"] for tenant in tenants):
+                    abort(
+                        403,
+                        message="Tenant in relations is not one of yours tenants.",
+                    )
+
+    def create_relation_dict(self, key, value, label, type):
+        relation_dict = {
+            "key": key,
+            "value": value,
+            "label": label,
+            "type": type,
+        }
+        return relation_dict
+
+    def is_admin(self, user):
+        if "has-full-control" in user["scopes"]:
+            return True
+        if os.getenv("SUPER_ADMIN_ROLE") in user["roles"]:
+            return True
+        return False
+
+    def tenat_user_relation_policy_check(self, content, user):
+        if not self.is_admin(user):
+            if multitenancy_enabled:
+                if not (tenants := self._get_tenant()):
+                    abort(400, message="Tenant not found")
+                for item in content:
+                    if item["type"] == "tenant":
+                        if not any(item["key"] == tenant["key"] for tenant in tenants):
+                            abort(
+                                403,
+                                message="Tenant in relations is not one of yours tenants.",
+                            )
+                    if item["type"] == "user":
+                        abort(
+                            403,
+                            message="Non admin user can not modify users in the relations.",
+                        )
+            else:
+                for item in content:
+                    if item["type"] == "user":
+                        abort(
+                            403,
+                            message="Non admin user can not modify users in the relations.",
+                        )

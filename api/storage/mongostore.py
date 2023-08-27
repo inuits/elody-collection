@@ -82,8 +82,9 @@ class MongoStorageManager(GenericStorageManager):
 
     def __get_filter_fields(self, fields):
         filter_fields = {}
+        if fields is None:
+            return {}
         for name, value in fields.items():
-            # FIXME how does Mongo handle not existing fields?
             if value is None:
                 filter_fields[name] = "null"
             else:
@@ -109,6 +110,55 @@ class MongoStorageManager(GenericStorageManager):
         for document in documents:
             items["results"].append(self._prepare_mongo_document(document, True))
         return items
+
+    def __map_entity_relation(self, relation):
+        return {
+            "authored": "authoredBy",
+            "authoredBy": "authored",
+            "belongsTo": "hasMediafile",
+            "components": "parent",
+            "contains": "isIn",
+            "hasMediafile": "belongsTo",
+            "isIn": "contains",
+            "parent": "components",
+            "isTenantOf": "hasUser",  # TODO
+            "hasUser": "isTenantOf",
+            "hasTenant": "belongsTo",
+        }.get(relation)
+
+    def __map_relation_to_collection(self, relation):
+        return {
+            "authored": "entities",
+            "authoredBy": "entities",
+            "belongsTo": "entities",
+            "components": "entities",
+            "contains": "entities",
+            "hasMediafile": "mediafiles",
+            "isIn": "entities",
+            "parent": "entities",
+            "isTenantOf": "entities",  # TODO
+            "hasUser": "entities",
+            "hasTenant": "entities",
+        }.get(relation, "entities")
+
+    def _prepare_mongo_document(
+        self, document, reversed, id=None, create_sortable_metadata=True
+    ):
+        if id:
+            document["_id"] = id
+            if "identifiers" not in document:
+                document["identifiers"] = [id]
+            elif id not in document["identifiers"]:
+                document["identifiers"].insert(0, id)
+        if "data" in document:
+            document["data"] = self.__replace_dictionary_keys(
+                document["data"], reversed
+            )
+        if "metadata" not in document:
+            return document
+        if not reversed and create_sortable_metadata:
+            document["sort"] = self.__create_sortable_metadata(document["metadata"])
+        return document
 
     def __replace_dictionary_keys(self, data, reversed):
         if type(data) is dict:
@@ -291,13 +341,23 @@ class MongoStorageManager(GenericStorageManager):
         filters=None,
         order_by=None,
         ascending=True,
+        tenants_ids=None,
+        user_id=None,
     ):
-        if "ids" in filters:
+        if "ids" in filters:  # TODO tenants???
             return self.__get_items_from_collection_by_ids(
                 "entities", filters["ids"], order_by, ascending
             )
         return self.get_items_from_collection(
-            "entities", skip, limit, filters, None, order_by, ascending
+            "entities",
+            skip=skip,
+            limit=limit,
+            fields=None,
+            filters=filters,
+            sort=order_by,
+            asc=ascending,
+            tenants_ids=tenants_ids,
+            user_id=user_id,
         )
 
     def get_history_for_item(self, collection, id, timestamp=None, all_entries=None):
@@ -370,17 +430,38 @@ class MongoStorageManager(GenericStorageManager):
         filters=None,
         sort=None,
         asc=True,
+        tenants_ids=None,
+        user_id=None,
     ):
         items = dict()
-        if fields:
+        if tenants_ids:
+            query = {
+                "$and": [
+                    self.__get_filter_fields(filters),
+                    self.__get_filter_fields(fields),
+                    {"$or": [{"relations.key": id} for id in tenants_ids]},
+                ]
+            }
             documents = self.db[collection].find(
-                self.__get_filter_fields(fields),
+                query,
                 skip=skip,
                 limit=limit,
             )
-            count = self.db[collection].count_documents(
-                self.__get_filter_fields(fields)
+            count = self.db[collection].count_documents(query)
+        elif user_id or fields or filters:
+            query = {
+                "$and": [
+                    self.__get_filter_fields(filters),
+                    self.__get_filter_fields(fields),
+                    {"relations.value": user_id} if user_id else {},
+                ]
+            }
+            documents = self.db[collection].find(
+                query,
+                skip=skip,
+                limit=limit,
             )
+            count = self.db[collection].count_documents(query)
         else:
             documents = self.db[collection].find(skip=skip, limit=limit)
             count = self.db[collection].count_documents({})
@@ -565,3 +646,18 @@ class MongoStorageManager(GenericStorageManager):
 
     def get_collection_item_mediafiles_count(self, id):
         return self.db["mediafiles"].count_documents({"relations.key": id})
+
+    def update_user(self, id, username, first_name, last_name, tenants, roles, scopes):
+        self.db["entities"].update_one(
+            {"_id": id},
+            {
+                "$set": {
+                    "username": username,
+                    "first_name": first_name,
+                    "last_name": last_name,
+                    "tenants": tenants,
+                    "roles": roles,
+                    "scopes": scopes,
+                },
+            },
+        )
