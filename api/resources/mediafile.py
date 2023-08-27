@@ -33,10 +33,7 @@ class Mediafile(BaseResource):
                 )
             ):
                 abort(400, message="Tenant not found")
-        elif (
-            request.args.get("only_own", 1, int)
-            and not self.is_admin(user)
-        ):
+        elif request.args.get("only_own", 1, int) and not self.is_admin(user):
             user_id = user["email"]
         if ids := request.args.get("ids"):
             filters["ids"] = ids.split(",")

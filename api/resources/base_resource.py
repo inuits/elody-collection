@@ -344,7 +344,7 @@ class BaseResource(Resource):
             "abstracts", content, only_return_id=True, create_sortable_metadata=False
         )
         return ticket_id
-    
+
     def check_entity_relations_tenant(self, content):
         if not (tenants := self._get_tenant()):
             abort(400, message="Tenant not found")

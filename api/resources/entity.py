@@ -308,12 +308,10 @@ class EntityMediafiles(BaseResource):
                     "mediafiles", get_raw_id(mediafile)
                 )
                 self._abort_if_no_access(mediafile, user, collection="mediafiles")
-            mediafile = self.storage.save_item_to_collection(
-                "mediafiles", mediafile
-            )
+            mediafile = self.storage.save_item_to_collection("mediafiles", mediafile)
             user_relation = self.create_relation_dict(
                 user["_id"], user["email"], "user", "hasUser"
-                )
+            )
             self.storage.add_relations_to_collection_item(
                 "mediafiles", mediafile["_id"], [user_relation]
             )
