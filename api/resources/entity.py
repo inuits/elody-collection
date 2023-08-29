@@ -52,7 +52,7 @@ class Entity(BaseResource):
             ):
                 abort(400, message="Tenant not found")
         elif request.args.get("only_own", 1, int) and not self.is_admin(user):
-            user_id = user["email"]
+            user_id = user.get("email", "default_uploader")
 
         entities = self.storage.get_entities(
             skip,
@@ -131,7 +131,10 @@ class Entity(BaseResource):
         except NonUniqueException as ex:
             return str(ex), 409
         user_relation = self.create_relation_dict(
-            key=user["_id"], value=user["email"], label="user", type="hasUser"
+            key=user["_id"],
+            value=user.get("email", "default_uploader"),
+            label="user",
+            type="hasUser",
         )
         self.storage.add_relations_to_collection_item(
             "entities", entity["_id"], [user_relation]
@@ -153,7 +156,7 @@ class Entity(BaseResource):
                             "mediafiles", mediafile["_id"], [tenant]
                         )
                 if accept_header == "text/uri-list":
-                    user_id = user["email"] or "default_uploader"
+                    user_id = user.get("email", "default_uploader")
                     ticket_id = self._create_ticket(mediafile_filename, user_id)
                     response += f"{self.storage_api_url}/upload-with-ticket/{mediafile_filename}?id={get_raw_id(mediafile)}&ticket_id={ticket_id}\n"
         signal_entity_changed(rabbit, entity)
@@ -195,7 +198,7 @@ class EntityDetail(BaseResource):
         self._abort_if_not_valid_json("Entity", content, entity_schema)
         content["date_updated"] = datetime.now(timezone.utc).isoformat()
         content["version"] = entity.get("version", 0) + 1
-        content["last_editor"] = user["email"] or "default_uploader"
+        content["last_editor"] = user("email", "default_uploader")
         content["date_created"] = entity.get("date_created", content["date_updated"])
         try:
             entity = self.storage.update_item_from_collection(
@@ -214,7 +217,7 @@ class EntityDetail(BaseResource):
         content = request.get_json()
         content["date_updated"] = datetime.now(timezone.utc).isoformat()
         content["version"] = entity.get("version", 0) + 1
-        content["last_editor"] = user["email"] or "default_uploader"
+        content["last_editor"] = user.get("email", "default_uploader")
         try:
             entity = self.storage.patch_item_from_collection(
                 "entities", get_raw_id(entity), content
@@ -310,7 +313,7 @@ class EntityMediafiles(BaseResource):
                 self._abort_if_no_access(mediafile, user, collection="mediafiles")
             mediafile = self.storage.save_item_to_collection("mediafiles", mediafile)
             user_relation = self.create_relation_dict(
-                user["_id"], user["email"], "user", "hasUser"
+                user["_id"], user.get("email", "default_uploader"), "user", "hasUser"
             )
             self.storage.add_relations_to_collection_item(
                 "mediafiles", mediafile["_id"], [user_relation]
