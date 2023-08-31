@@ -1,5 +1,4 @@
 import mappers
-import os
 
 from app import multitenancy_enabled, policy_factory, rabbit
 from datetime import datetime, timezone
@@ -35,6 +34,11 @@ class Entity(BaseResource):
             filters["type"] = item_type
         if ids := request.args.get("ids"):
             filters["ids"] = ids.split(",")
+        access_restricting_filters = (
+            policy_factory.get_user_context().access_restrictions.filters
+        )
+        if isinstance(access_restricting_filters, dict):
+            filters = {**filters, **access_restricting_filters}
         tenants_ids = None
         user_id = None
         if multitenancy_enabled:

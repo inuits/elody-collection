@@ -439,7 +439,6 @@ class MongoStorageManager(GenericStorageManager):
                 "$and": [
                     self.__get_filter_fields(filters),
                     self.__get_filter_fields(fields),
-                    {"$or": [{"relations.key": id} for id in tenants_ids]},
                 ]
             }
             documents = self.db[collection].find(

@@ -123,7 +123,7 @@ class BaseResource(Resource):
         return default_entity | entity
 
     def _get_tenant(self, create_tenant=True, tenant_requested=None):
-        tenants = policy_factory.get_user_context().tenant
+        tenants = policy_factory.get_user_context().tenant_names
         if not tenants:
             return None
         if not auto_create_tenants or not create_tenant:
@@ -157,7 +157,12 @@ class BaseResource(Resource):
                 elif auto_create_tenants:
                     tenant_save = self.storage.save_item_to_collection(
                         "entities",
-                        {"tenant": tenant, "identifiers": [tenant], "type": "tenant"},
+                        {
+                            "data": {},
+                            "tenant": tenant,
+                            "identifiers": [tenant],
+                            "type": "tenant",
+                        },
                     )
                     tenant_dict = self.create_relation_dict(
                         tenant_save["_id"], tenant_save["tenant"], "tenant", "hasTenant"
@@ -181,6 +186,7 @@ class BaseResource(Resource):
                 tenant_save = self.storage.save_item_to_collection(
                     "entities",
                     {
+                        "data": {},
                         "tenant": tenant_requested,
                         "identifiers": [tenant_requested],
                         "type": "tenant",
@@ -204,7 +210,7 @@ class BaseResource(Resource):
         token_first_name = token.get("given_name")
         token_last_name = token.get("family_name")
         token_email = token.get("email")
-        token_tenants = token.get("institutions", [])
+        token_tenants = token.get("tenants", [])
         token_roles = policy_factory.get_user_context().roles
         token_scopes = policy_factory.get_user_context().scopes
         token_list = [
@@ -255,6 +261,7 @@ class BaseResource(Resource):
         return user
 
     def _has_access_to_item(self, item, user, collection="entities"):
+        return True  # TO BE DISCUSSED
         if self.is_admin(user):
             return True
         if (email := user["email"]) and any(

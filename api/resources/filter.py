@@ -19,7 +19,12 @@ class FilterEntities(BaseFilterResource):
     @policy_factory.authenticate()
     def post(self):
         accept_header = request.headers.get("Accept")
-        query = request.get_json()
+        query: list = request.get_json()
+        access_restricting_filters = (
+            policy_factory.get_user_context().access_restrictions.filters
+        )
+        if access_restricting_filters:
+            query.extend(access_restricting_filters)
         fields = [
             *request.args.getlist("field"),
             *request.args.getlist("field[]"),
