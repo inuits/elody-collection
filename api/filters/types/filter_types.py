@@ -26,8 +26,6 @@ def get_filter(input_type: str):
         return SelectionFilterType()
     if input_type == "boolean":
         return BooleanFilterType()
-    if input_type == "relation":
-        return RelationFilterType()
     if input_type == "type":
         return TypeFilterType()
 
@@ -111,17 +109,6 @@ class BooleanFilterType(BaseFilterType):
 
     def generate_query(self, filter_criteria: dict):
         return self.filter_type_engine.generate_query_for_boolean_filter_type(
-            self.matchers, filter_criteria
-        )
-
-
-class RelationFilterType(BaseFilterType):
-    def __init__(self):
-        super().__init__()
-        self.matchers.update(FilterMatcherMapping.mapping["relation"])
-
-    def generate_query(self, filter_criteria: dict):
-        return self.filter_type_engine.generate_query_for_relation_filter_type(
             self.matchers, filter_criteria
         )
 

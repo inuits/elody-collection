@@ -12,7 +12,7 @@ class BaseFilterTypeQueryGenerator(ABC):
             matchers,
             filter_criteria["key"],
             filter_criteria["value"],
-            "metadata",
+            filter_criteria.get("parent_key", ""),
             match_exact=filter_criteria.get("match_exact"),
         )
 
@@ -36,7 +36,7 @@ class BaseFilterTypeQueryGenerator(ABC):
             matchers,
             filter_criteria["key"],
             filter_criteria["value"],
-            "metadata",
+            filter_criteria.get("parent_key", ""),
             match_exact=True,
             is_datetime_value=True,
         )
@@ -49,7 +49,7 @@ class BaseFilterTypeQueryGenerator(ABC):
             matchers,
             filter_criteria["key"],
             filter_criteria["value"],
-            "metadata",
+            filter_criteria.get("parent_key", ""),
             match_exact=True,
         )
 
@@ -61,7 +61,7 @@ class BaseFilterTypeQueryGenerator(ABC):
             matchers,
             filter_criteria["key"],
             filter_criteria["value"],
-            "metadata",
+            filter_criteria.get("parent_key", ""),
             match_exact=True,
         )
 
@@ -73,19 +73,7 @@ class BaseFilterTypeQueryGenerator(ABC):
             matchers,
             filter_criteria["key"],
             filter_criteria["value"],
-            "metadata",
-            match_exact=True,
-        )
-
-    @abstractmethod
-    def generate_query_for_relation_filter_type(
-        self, matchers: dict[str, Type[BaseMatcher]], filter_criteria: dict
-    ):
-        return self._apply_matchers(
-            matchers,
-            filter_criteria["key"],
-            filter_criteria["value"],
-            "",
+            filter_criteria.get("parent_key", ""),
             match_exact=True,
         )
 
@@ -95,7 +83,7 @@ class BaseFilterTypeQueryGenerator(ABC):
     ):
         return self._apply_matchers(
             matchers,
-            filter_criteria["key"],
+            "type",
             filter_criteria["value"],
             "",
             match_exact=True,

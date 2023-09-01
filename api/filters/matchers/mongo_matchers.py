@@ -23,32 +23,32 @@ class MongoMatchers(BaseMatchers):
         if is_datetime_value:
             value = self.__get_datetime_query_value(value, range_match=True)
 
-        return self.__determine_range_relations_match(key, {"$gt": value}, parent_key)
+        return self.__exact_contains_range_match(key, {"$gt": value}, parent_key)
 
     def max(self, key, value, parent_key, is_datetime_value):
         if is_datetime_value:
             value = self.__get_datetime_query_value(value, range_match=True)
 
-        return self.__determine_range_relations_match(key, {"$lt": value}, parent_key)
+        return self.__exact_contains_range_match(key, {"$lt": value}, parent_key)
 
     def min_included(self, key, value, parent_key, is_datetime_value):
         if is_datetime_value:
             value = self.__get_datetime_query_value(value, range_match=True)
 
-        return self.__determine_range_relations_match(key, {"$gte": value}, parent_key)
+        return self.__exact_contains_range_match(key, {"$gte": value}, parent_key)
 
     def max_included(self, key, value, parent_key, is_datetime_value):
         if is_datetime_value:
             value = self.__get_datetime_query_value(value, range_match=True)
 
-        return self.__determine_range_relations_match(key, {"$lte": value}, parent_key)
+        return self.__exact_contains_range_match(key, {"$lte": value}, parent_key)
 
     def in_between(self, key, min, max, parent_key, is_datetime_value):
         if is_datetime_value:
             min = self.__get_datetime_query_value(min, range_match=True)
             max = self.__get_datetime_query_value(max, range_match=True)
 
-        return self.__determine_range_relations_match(
+        return self.__exact_contains_range_match(
             key, {"$gte": min, "$lte": max}, parent_key
         )
 
@@ -80,31 +80,6 @@ class MongoMatchers(BaseMatchers):
             }
 
         return {"$match": {key: value}}
-
-    def __determine_range_relations_match(
-        self, key: str | list[str], value: dict, parent_key: str
-    ):
-        if isinstance(key, str):
-            return self.__exact_contains_range_match(key, value, parent_key)
-        return self.__relations_match(key, value)
-
-    def __relations_match(self, keys: list[str], value: dict):
-        relation_match = {"$match": {"relations.type": {"$in": keys}}}
-        number_of_relations_calculator = {
-            "$addFields": {
-                "numberOfRelations": {
-                    "$size": {
-                        "$filter": {
-                            "input": "$relations",
-                            "as": "el",
-                            "cond": {"$in": ["$$el.type", keys]},
-                        }
-                    }
-                }
-            }
-        }
-        min_max_match = {"$match": {"numberOfRelations": value}}
-        return [relation_match, number_of_relations_calculator, min_max_match]
 
     def __any_none_match(
         self, key: str, parent_key: str, operator_to_match_none_values: str

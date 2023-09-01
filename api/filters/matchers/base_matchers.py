@@ -25,7 +25,7 @@ class BaseMatchers(ABC):
     @abstractmethod
     def min(
         self,
-        key: str | list[str],
+        key: str,
         value: str | int,
         parent_key: str,
         is_datetime_value: bool = False,
@@ -35,7 +35,7 @@ class BaseMatchers(ABC):
     @abstractmethod
     def max(
         self,
-        key: str | list[str],
+        key: str,
         value: str | int,
         parent_key: str,
         is_datetime_value: bool = False,
@@ -45,7 +45,7 @@ class BaseMatchers(ABC):
     @abstractmethod
     def min_included(
         self,
-        key: str | list[str],
+        key: str,
         value: str | int,
         parent_key: str,
         is_datetime_value: bool = False,
@@ -55,7 +55,7 @@ class BaseMatchers(ABC):
     @abstractmethod
     def max_included(
         self,
-        key: str | list[str],
+        key: str,
         value: str | int,
         parent_key: str,
         is_datetime_value: bool = False,

@@ -24,7 +24,7 @@ class MongoFilterTypeQueryGenerator(BaseFilterTypeQueryGenerator):
                 matchers,
                 filter_criteria["key"],
                 filter_criteria["value"],
-                "metadata",
+                filter_criteria.get("parent_key", ""),
                 match_exact=filter_criteria.get("match_exact"),
             )
         )
@@ -49,12 +49,6 @@ class MongoFilterTypeQueryGenerator(BaseFilterTypeQueryGenerator):
 
     def generate_query_for_boolean_filter_type(self, matchers, filter_criteria):
         filter = super().generate_query_for_boolean_filter_type(
-            matchers, filter_criteria
-        )
-        return self.__parse_query(filter)
-
-    def generate_query_for_relation_filter_type(self, matchers, filter_criteria):
-        filter = super().generate_query_for_relation_filter_type(
             matchers, filter_criteria
         )
         return self.__parse_query(filter)
