@@ -276,36 +276,46 @@ class BaseResource(Resource):
             return True
         return False
 
-    def _inject_api_urls_into_entities(self, entities):
+    def _inject_api_urls_into_entities(self, entities, user):
+        user_id = user.get("email", "default_uploader")
         for entity in entities:
-            if "primary_mediafile_location" in entity:
-                entity[
-                    "primary_mediafile_location"
-                ] = f'{self.storage_api_url_ext}{entity["primary_mediafile_location"]}'
+            for mediafile_type in [
+                "primary_mediafile_location",
+                "primary_thumbnail_location",
+                "primary_transcode_location",
+            ]:
+                if mediafile_type in entity:
+                    mediafile_filename = entity[mediafile_type]
+                    mediafile_filename = mediafile_filename.replace(
+                        "/download/", "/download-with-ticket/"
+                    )
+                    ticket_id = self._create_ticket(mediafile_filename, user_id)
+                    entity[
+                        mediafile_type
+                    ] = f"{self.storage_api_url_ext}{mediafile_filename}?ticket_id={ticket_id}"
             if "primary_thumbnail_location" in entity:
                 entity[
                     "primary_thumbnail_location"
                 ] = f'{self.image_api_url_ext}{entity["primary_thumbnail_location"]}'
-            if "primary_transcode_location" in entity:
-                entity[
-                    "primary_transcode_location"
-                ] = f'{self.storage_api_url_ext}{entity["primary_transcode_location"]}'
         return entities
 
-    def _inject_api_urls_into_mediafiles(self, mediafiles):
+    def _inject_api_urls_into_mediafiles(self, mediafiles, user):
+        user_id = user.get("email", "default_uploader")
         for mediafile in mediafiles:
-            if "original_file_location" in mediafile:
-                mediafile[
-                    "original_file_location"
-                ] = f'{self.storage_api_url_ext}{mediafile["original_file_location"]}'
+            for mediafile_type in ["original_file_location", "transcode_file_location"]:
+                if mediafile_type in mediafile:
+                    mediafile_filename = mediafile[mediafile_type]
+                    mediafile_filename = mediafile_filename.replace(
+                        "/download/", "/download-with-ticket/"
+                    )
+                    ticket_id = self._create_ticket(mediafile_filename, user_id)
+                    mediafile[
+                        mediafile_type
+                    ] = f"{self.storage_api_url_ext}{mediafile_filename}?ticket_id={ticket_id}"
             if "thumbnail_file_location" in mediafile:
                 mediafile[
                     "thumbnail_file_location"
                 ] = f'{self.image_api_url_ext}{mediafile["thumbnail_file_location"]}'
-            if "transcode_file_location" in mediafile:
-                mediafile[
-                    "transcode_file_location"
-                ] = f'{self.storage_api_url_ext}{mediafile["transcode_file_location"]}'
         return mediafiles
 
     def _is_rdf_post_call(self, content_type):

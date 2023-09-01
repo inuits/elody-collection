@@ -79,7 +79,9 @@ class Entity(BaseResource):
             entities[
                 "previous"
             ] = f"/entities?{type_filter}skip={max(0, skip - limit)}&limit={limit}&skip_relations={skip_relations}"
-        entities["results"] = self._inject_api_urls_into_entities(entities["results"])
+        entities["results"] = self._inject_api_urls_into_entities(
+            entities["results"], user
+        )
         return self._create_response_according_accept_header(
             mappers.map_data_according_to_accept_header(
                 entities,
@@ -185,7 +187,7 @@ class EntityDetail(BaseResource):
         ]
         return self._create_response_according_accept_header(
             mappers.map_data_according_to_accept_header(
-                self._inject_api_urls_into_entities([entity])[0],
+                self._inject_api_urls_into_entities([entity], user)[0],
                 accept_header,
                 "entity",
                 fields,
@@ -280,7 +282,7 @@ class EntityMediafiles(BaseResource):
             mediafiles[
                 "previous"
             ] = f"/entities/{id}/mediafiles?skip={max(0, skip - limit)}&limit={limit}"
-        self._inject_api_urls_into_mediafiles(mediafiles["results"])
+        self._inject_api_urls_into_mediafiles(mediafiles["results"], user)
 
         @after_this_request
         def add_header(response):

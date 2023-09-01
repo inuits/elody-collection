@@ -12,6 +12,7 @@ class BaseFilterResource(BaseResource):
     def _execute_advanced_search_with_query(
         self, query, collection="entities", order_by=None, asc=True
     ):
+        user = self._get_user()
         skip = request.args.get("skip", 0, int)
         limit = request.args.get("limit", 20, int)
 
@@ -31,7 +32,7 @@ class BaseFilterResource(BaseResource):
             items[
                 "previous"
             ] = f"/{collection}/filter?skip={max(0, skip - limit)}&limit={limit}"
-        items["results"] = self._inject_api_urls_into_entities(items["results"])
+        items["results"] = self._inject_api_urls_into_entities(items["results"], user)
         return items
 
     def _execute_advanced_search_with_saved_search(

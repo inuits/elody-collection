@@ -54,7 +54,7 @@ class Mediafile(BaseResource):
                 "previous"
             ] = f"/mediafiles?skip={max(0, skip - limit)}&limit={limit}"
         mediafiles["results"] = self._inject_api_urls_into_mediafiles(
-            mediafiles["results"]
+            mediafiles["results"], user
         )
         return mediafiles
 
@@ -112,7 +112,7 @@ class MediafileAssets(BaseResource):
             entity = self._set_entity_mediafile_and_thumbnail(entity)
             entity = self._add_relations_to_metadata(entity)
             entities.append(entity)
-        return self._inject_api_urls_into_entities(entities)
+        return self._inject_api_urls_into_entities(entities, user)
 
 
 class MediafileCopyright(BaseResource):
@@ -138,7 +138,7 @@ class MediafileDetail(BaseResource):
         self._abort_if_no_access(mediafile, user, collection="mediafiles")
         if request.args.get("raw", 0, int):
             return mediafile
-        return self._inject_api_urls_into_mediafiles([mediafile])[0]
+        return self._inject_api_urls_into_mediafiles([mediafile], user)[0]
 
     @policy_factory.authenticate()
     def put(self, id):
