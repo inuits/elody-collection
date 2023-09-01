@@ -24,7 +24,8 @@ class FilterEntities(BaseFilterResource):
             policy_factory.get_user_context().access_restrictions.filters
         )
         if access_restricting_filters:
-            query.extend(access_restricting_filters)
+            for filter in access_restricting_filters:
+                query.insert(0, filter)
         fields = [
             *request.args.getlist("field"),
             *request.args.getlist("field[]"),
