@@ -204,7 +204,7 @@ class EntityDetail(BaseResource):
         self._abort_if_not_valid_json("Entity", content, entity_schema)
         content["date_updated"] = datetime.now(timezone.utc).isoformat()
         content["version"] = entity.get("version", 0) + 1
-        content["last_editor"] = user("email", "default_uploader")
+        content["last_editor"] = user.get("email", "default_uploader")
         content["date_created"] = entity.get("date_created", content["date_updated"])
         try:
             entity = self.storage.update_item_from_collection(

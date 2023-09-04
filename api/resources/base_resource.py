@@ -209,7 +209,7 @@ class BaseResource(Resource):
         token_user_name = token.get("preferred_username")
         token_first_name = token.get("given_name")
         token_last_name = token.get("family_name")
-        token_email = token.get("email")
+        token_email = token.get("email", "default_uploader")
         token_tenants = token.get("tenants", [])
         token_roles = policy_factory.get_user_context().roles
         token_scopes = policy_factory.get_user_context().scopes
