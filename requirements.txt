@@ -34,14 +34,14 @@ PyJWT==2.8.0
 pymongo==4.5.0
 pyparsing==3.1.1
 python-arango==7.6.2
-pytz==2023.3
+pytz==2023.3.post1
 rabbitmq-pika-flask==1.2.33
 rdflib==7.0.0
 referencing==0.30.2
 requests==2.31.0
 requests-toolbelt==1.0.0
 retry==0.9.2
-rpds-py==0.10.0
+rpds-py==0.10.2
 sentry-sdk[flask]==0.10.2
 six==1.16.0
 urllib3==1.26.16
