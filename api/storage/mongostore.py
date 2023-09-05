@@ -111,55 +111,6 @@ class MongoStorageManager(GenericStorageManager):
             items["results"].append(self._prepare_mongo_document(document, True))
         return items
 
-    def __map_entity_relation(self, relation):
-        return {
-            "authored": "authoredBy",
-            "authoredBy": "authored",
-            "belongsTo": "hasMediafile",
-            "components": "parent",
-            "contains": "isIn",
-            "hasMediafile": "belongsTo",
-            "isIn": "contains",
-            "parent": "components",
-            "isTenantOf": "hasUser",  # TODO
-            "hasUser": "isTenantOf",
-            "hasTenant": "belongsTo",
-        }.get(relation)
-
-    def __map_relation_to_collection(self, relation):
-        return {
-            "authored": "entities",
-            "authoredBy": "entities",
-            "belongsTo": "entities",
-            "components": "entities",
-            "contains": "entities",
-            "hasMediafile": "mediafiles",
-            "isIn": "entities",
-            "parent": "entities",
-            "isTenantOf": "entities",  # TODO
-            "hasUser": "entities",
-            "hasTenant": "entities",
-        }.get(relation, "entities")
-
-    def _prepare_mongo_document(
-        self, document, reversed, id=None, create_sortable_metadata=True
-    ):
-        if id:
-            document["_id"] = id
-            if "identifiers" not in document:
-                document["identifiers"] = [id]
-            elif id not in document["identifiers"]:
-                document["identifiers"].insert(0, id)
-        if "data" in document:
-            document["data"] = self.__replace_dictionary_keys(
-                document["data"], reversed
-            )
-        if "metadata" not in document:
-            return document
-        if not reversed and create_sortable_metadata:
-            document["sort"] = self.__create_sortable_metadata(document["metadata"])
-        return document
-
     def __replace_dictionary_keys(self, data, reversed):
         if type(data) is dict:
             new_dict = dict()
@@ -214,6 +165,8 @@ class MongoStorageManager(GenericStorageManager):
             "hasMediafile": "belongsTo",
             "isIn": "contains",
             "parent": "components",
+            "hasUser": "isTenantOf",
+            "hasTenant": "belongsTo",
         }.get(relation)
 
     def _map_relation_to_collection(self, relation):
@@ -226,6 +179,8 @@ class MongoStorageManager(GenericStorageManager):
             "hasMediafile": "mediafiles",
             "isIn": "entities",
             "parent": "entities",
+            "hasUser": "entities",
+            "hasTenant": "entities",
         }.get(relation, "entities")
 
     def _prepare_mongo_document(
