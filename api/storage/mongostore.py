@@ -601,22 +601,22 @@ class MongoStorageManager(GenericStorageManager):
             else self.get_item_from_collection_by_id(collection, item_id)
         )
 
-    def set_primary_field_collection_item(
-        self, collection, entity_id, mediafile_id, field
-    ):
-        for id, destination_id in [
-            (entity_id, mediafile_id),
-            (mediafile_id, entity_id),
+    def set_primary_field_collection_item(self, collection, id, mediafile_id, field):
+        for src_id, dst_id in [
+            (id, mediafile_id),
+            (mediafile_id, id),
         ]:
-            if id == mediafile_id:
+            if src_id == mediafile_id:
                 collection = "mediafiles"
-            relations = self.get_collection_item_relations(collection, id)
+            relations = self.get_collection_item_relations(collection, src_id)
             for relation in relations:
-                if relation["key"] == destination_id:
+                if relation["key"] == dst_id:
                     relation[field] = True
                 elif field in relation and relation[field]:
                     relation[field] = False
-            self.patch_item_from_collection(collection, id, {"relations": relations})
+            self.patch_item_from_collection(
+                collection, src_id, {"relations": relations}
+            )
 
     def update_collection_item_relations(self, collection, id, content, parent=True):
         relations = self.get_collection_item_sub_item(collection, id, "relations")

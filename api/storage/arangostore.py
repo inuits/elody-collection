@@ -56,7 +56,7 @@ class ArangoStorageManager(GenericStorageManager):
             password=os.getenv("ARANGO_DB_PASSWORD"),
         )
         self.db = None
-        self.key_cache = {}
+        self.id_cache = {}
         self.__create_database_if_not_exists()
 
     def __create_database_if_not_exists(self):
@@ -115,21 +115,29 @@ class ArangoStorageManager(GenericStorageManager):
             return None
         return result if len(result) > 1 else result[0]
 
-    def __get_key_for_collection_item(self, collection, identifier):
+    def __get_id_for_collection_item(self, collection, identifier):
+        if item_id := self.id_cache.get(identifier):
+            return item_id
         if self.db.collection(collection).has(identifier):
-            return identifier
-        if key := self.key_cache.get(identifier):
-            return key
-        if key := self.__get_collection_item_sub_item_aql(
-            collection, identifier, "_key"
+            if identifier.startswith(f"{collection}/"):
+                self.id_cache[identifier] = identifier
+                self.id_cache[identifier.removeprefix(f"{collection}/")] = identifier
+                return identifier
+            else:
+                new_identifier = f"{collection}/{identifier}"
+                self.id_cache[identifier] = new_identifier
+                self.id_cache[new_identifier] = new_identifier
+                return new_identifier
+        if item_id := self.__get_collection_item_sub_item_aql(
+            collection, identifier, "_id"
         ):
-            self.key_cache[identifier] = key
-            return key
+            self.id_cache[identifier] = item_id
+            return item_id
         return None
 
-    def __get_primary_items(self, entity):
+    def __get_primary_items(self, item_id):
         result = {"primary_mediafile": "", "primary_thumbnail": ""}
-        for edge in self.db.collection("hasMediafile").find({"_from": entity["_id"]}):
+        for edge in self.db.collection("hasMediafile").find({"_from": item_id}):
             if edge["is_primary"]:
                 result["primary_mediafile"] = edge["_to"]
             if edge["is_primary_thumbnail"]:
@@ -149,12 +157,10 @@ class ArangoStorageManager(GenericStorageManager):
         }.get(type, ["components"])
         return [x for x in relations if not exclude or x not in exclude]
 
-    def __invalidate_key_cache_for_item(self, item):
-        for id in item["identifiers"]:
-            if id in self.key_cache:
-                del self.key_cache[id]
-        if "object_id" in item and item["object_id"] in self.key_cache:
-            del self.key_cache[item["object_id"]]
+    def __invalidate_id_cache_for_item(self, item_id):
+        self.id_cache = {
+            key: value for key, value in self.id_cache.items() if value != item_id
+        }
 
     def __map_entity_relation(self, relation):
         return {
@@ -172,23 +178,23 @@ class ArangoStorageManager(GenericStorageManager):
             "stories": "frames",
         }.get(relation)
 
-    def __remove_edges(self, entity, relation, edge_collection):
+    def __remove_edges(self, item_id, relation, edge_collection):
         for edge in self.db.aql.execute(
-            f'FOR i IN {edge_collection} FILTER i._from == \'{entity["_id"]}\' OR i._to == \'{entity["_id"]}\' RETURN i'
+            f"FOR i IN {edge_collection} FILTER i._from == '{item_id}' OR i._to == '{item_id}' RETURN i"
         ):
             if edge["_from"] == relation["key"] or edge["_to"] == relation["key"]:
                 self.db.delete_document(edge)
 
-    def __remove_relations(self, entity, relations, parent=True):
+    def __remove_relations(self, item_id, relations, parent=True):
         for relation in relations:
-            self.__remove_edges(entity, relation, relation["type"])
+            self.__remove_edges(item_id, relation, relation["type"])
             if parent:
                 self.__remove_edges(
-                    entity, relation, self.__map_entity_relation(relation["type"])
+                    item_id, relation, self.__map_entity_relation(relation["type"])
                 )
 
-    def __set_new_primary(self, entity, mediafile=False, thumbnail=False):
-        for edge in self.db.collection("hasMediafile").find({"_from": entity["_id"]}):
+    def __set_new_primary(self, item_id, mediafile=False, thumbnail=False):
+        for edge in self.db.collection("hasMediafile").find({"_from": item_id}):
             potential_mediafile = self.db.document(edge["_to"])
             if mediafile_is_public(potential_mediafile):
                 if mediafile:
@@ -201,19 +207,16 @@ class ArangoStorageManager(GenericStorageManager):
     def add_mediafile_to_collection_item(
         self, collection, id, mediafile_id, mediafile_public
     ):
-        entity = self.get_item_from_collection_by_id(collection, id)
-        if not entity:
+        if not (item_id := self.__get_id_for_collection_item(collection, id)):
             return None
         data = {
-            "_from": entity["_id"],
+            "_from": item_id,
             "_to": mediafile_id,
             "is_primary": mediafile_public,
             "is_primary_thumbnail": mediafile_public,
         }
         if mediafile_public:
-            for edge in self.db.collection("hasMediafile").find(
-                {"_from": entity["_id"]}
-            ):
+            for edge in self.db.collection("hasMediafile").find({"_from": item_id}):
                 if "is_primary" in edge and edge["is_primary"]:
                     data["is_primary"] = False
                 if "is_primary_thumbnail" in edge and edge["is_primary_thumbnail"]:
@@ -226,24 +229,25 @@ class ArangoStorageManager(GenericStorageManager):
     def add_relations_to_collection_item(
         self, collection, id, relations, parent=True, dst_collection=None
     ):
-        entity = self.get_item_from_collection_by_id(collection, id)
-        if not entity:
+        if not (item_id := self.__get_id_for_collection_item(collection, id)):
             return None
         for relation in relations:
             data = {}
             for key in [x for x in relation.keys() if x[0] != "_"]:
                 data[key] = relation[key]
-            data["_from"] = entity["_id"]
+            data["_from"] = item_id
             data["_to"] = relation["key"]
             self.db.graph(self.default_graph_name).edge_collection(
                 relation["type"]
             ).insert(data)
             if not parent:
                 continue
-            data = {"_from": relation["key"], "_to": entity["_id"]}
+            data = {"_from": relation["key"], "_to": item_id}
             if relation.get("label") == "GecureerdeCollectie.bestaatUit":
                 data["label"] = "Collectie.naam"
-                data["value"] = entity["data"]["MensgemaaktObject.titel"]["@value"]
+                data["value"] = self.db.document(item_id)["data"][
+                    "MensgemaaktObject.titel"
+                ]["@value"]
             self.db.graph(self.default_graph_name).edge_collection(
                 self.__map_entity_relation(relation["type"])
             ).insert(data)
@@ -269,8 +273,8 @@ class ArangoStorageManager(GenericStorageManager):
         return self.db.conn.ping()
 
     def delete_collection_item_relations(self, collection, id, content, parent=True):
-        entity = self.get_item_from_collection_by_id(collection, id)
-        self.__remove_relations(entity, content, parent)
+        item_id = self.__get_id_for_collection_item(collection, id)
+        self.__remove_relations(item_id, content, parent)
 
     def delete_collection_item_sub_item_key(self, collection, id, sub_item, key):
         aql = """
@@ -288,10 +292,10 @@ class ArangoStorageManager(GenericStorageManager):
         self.db.aql.execute(aql, bind_vars=bind)
 
     def delete_item_from_collection(self, collection, id):
-        item = self.get_item_from_collection_by_id(collection, id)
-        self.__invalidate_key_cache_for_item(item)
+        item_id = self.__get_id_for_collection_item(collection, id)
+        self.__invalidate_id_cache_for_item(item_id)
         self.db.graph(self.default_graph_name).vertex_collection(collection).delete(
-            item
+            item_id
         )
 
     def drop_all_collections(self):
@@ -299,11 +303,11 @@ class ArangoStorageManager(GenericStorageManager):
             self.db.collection(collection).truncate()
 
     def get_collection_item_mediafiles(self, collection, id, skip=0, limit=0):
-        entity = self.get_item_from_collection_by_id(collection, id)
+        item_id = self.__get_id_for_collection_item(collection, id)
         mediafiles = list()
         edges = list(
             self.db.collection("hasMediafile").find(
-                {"_from": entity["_id"]}, skip=skip, limit=limit
+                {"_from": item_id}, skip=skip, limit=limit
             )
         )
         edges.sort(key=lambda x: x["order"] if "order" in x else len(edges) + 1)
@@ -466,8 +470,8 @@ class ArangoStorageManager(GenericStorageManager):
         return history if all_entries else history[0]
 
     def get_item_from_collection_by_id(self, collection, id):
-        if key := self.__get_key_for_collection_item(collection, id):
-            return self.db.collection(collection).get(key)
+        if item_id := self.__get_id_for_collection_item(collection, id):
+            return self.db.document(item_id)
         return None
 
     def get_items_from_collection(
@@ -555,15 +559,15 @@ class ArangoStorageManager(GenericStorageManager):
     def handle_mediafile_deleted(self, parents):
         for item in parents:
             if item["primary_mediafile"] or item["primary_thumbnail"]:
-                entity = self.db.document(item["entity_id"])
                 self.__set_new_primary(
-                    entity, item["primary_mediafile"], item["primary_thumbnail"]
+                    item["entity_id"],
+                    item["primary_mediafile"],
+                    item["primary_thumbnail"],
                 )
 
     def handle_mediafile_status_change(self, mediafile):
         for edge in self.db.collection("hasMediafile").find({"_to": mediafile["_id"]}):
-            entity = self.db.document(edge["_from"])
-            primary_items = self.__get_primary_items(entity)
+            primary_items = self.__get_primary_items(edge["_from"])
             if mediafile_is_public(mediafile):
                 if not primary_items["primary_mediafile"]:
                     edge["is_primary"] = True
@@ -583,7 +587,9 @@ class ArangoStorageManager(GenericStorageManager):
                     edge["is_primary_thumbnail"] = False
                     self.db.update_document(edge)
                     self.__set_new_primary(
-                        entity, change_primary_mediafile, change_primary_thumbnail
+                        edge["_from"],
+                        change_primary_mediafile,
+                        change_primary_thumbnail,
                     )
 
     def patch_collection_item_relations(self, collection, id, content, parent=True):
@@ -595,7 +601,7 @@ class ArangoStorageManager(GenericStorageManager):
     ):
         try:
             item = self.db.collection(collection).update(
-                {"_key": self.__get_key_for_collection_item(collection, id)} | content,
+                {"_id": self.__get_id_for_collection_item(collection, id)} | content,
                 return_new=True,
                 check_rev=False,
             )["new"]
@@ -603,7 +609,7 @@ class ArangoStorageManager(GenericStorageManager):
             if ex.error_code == 1210:
                 raise NonUniqueException(ex.error_message)
             raise ex
-        signal_child_relation_changed(app.rabbit, collection, id)
+        signal_child_relation_changed(app.rabbit, collection, item["_id"])
         return item
 
     def reindex_mediafile_parents(self, mediafile=None, parents=None):
@@ -636,12 +642,10 @@ class ArangoStorageManager(GenericStorageManager):
                 raise NonUniqueException(ex.error_message)
             raise ex
 
-    def set_primary_field_collection_item(
-        self, collection, entity_id, mediafile_id, field
-    ):
-        entity = self.get_item_from_collection_by_id(collection, entity_id)
-        for edge in self.db.collection("hasMediafile").find({"_from": entity["_id"]}):
-            new_primary_id = f"mediafiles/{mediafile_id}"
+    def set_primary_field_collection_item(self, collection, id, mediafile_id, field):
+        item_id = self.__get_id_for_collection_item(collection, id)
+        new_primary_id = f"mediafiles/{mediafile_id}"
+        for edge in self.db.collection("hasMediafile").find({"_from": item_id}):
             if edge["_to"] != new_primary_id and field in edge and edge[field]:
                 edge[field] = False
                 self.db.update_document(edge)
@@ -650,10 +654,10 @@ class ArangoStorageManager(GenericStorageManager):
                 self.db.update_document(edge)
 
     def update_collection_item_relations(self, collection, id, content, parent=True):
-        entity = self.get_item_from_collection_by_id(collection, id)
+        item_id = self.__get_id_for_collection_item(collection, id)
         for relation in self.entity_relations:
             for edge in self.db.aql.execute(
-                f'FOR i IN {relation} FILTER i._from == \'{entity["_id"]}\' OR i._to == \'{entity["_id"]}\' RETURN i'
+                f"FOR i IN {relation} FILTER i._from == '{item_id}' OR i._to == '{item_id}' RETURN i"
             ):
                 self.db.delete_document(edge)
         return self.add_relations_to_collection_item(collection, id, content, parent)
@@ -663,7 +667,7 @@ class ArangoStorageManager(GenericStorageManager):
     ):
         try:
             item = self.db.collection(collection).replace(
-                {"_key": self.__get_key_for_collection_item(collection, id)} | content,
+                {"_id": self.__get_id_for_collection_item(collection, id)} | content,
                 return_new=True,
                 check_rev=False,
             )["new"]
@@ -671,7 +675,7 @@ class ArangoStorageManager(GenericStorageManager):
             if ex.error_code == 1210:
                 raise NonUniqueException(ex.error_message)
             raise ex
-        signal_child_relation_changed(app.rabbit, collection, id)
+        signal_child_relation_changed(app.rabbit, collection, item["_id"])
         return item
 
     def update_parent_relation_values(self, collection, parent_id):

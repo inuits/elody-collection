@@ -125,9 +125,7 @@ class GenericStorageManager:
     ):
         pass
 
-    def set_primary_field_collection_item(
-        self, collection, entity_id, mediafile_id, field
-    ):
+    def set_primary_field_collection_item(self, collection, id, mediafile_id, field):
         pass
 
     def update_collection_item_relations(self, collection, id, content, parent=True):
