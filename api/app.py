@@ -150,12 +150,12 @@ api.add_resource(MediafileDetail, "/mediafiles/<string:id>")
 api.add_resource(SavedSearch, "/saved_searches")
 api.add_resource(SavedSearchDetail, "/saved_searches/<string:id>")
 
-api.add_resource(UserPermissions, "/user/permissions")
+api.add_resource(AsyncAPISpec, "/spec/dams-collection-api-events.html")
+api.add_resource(OpenAPISpec, "/spec/dams-collection-api.json")
 
 api.add_resource(TicketDetail, "/ticket/<string:id>")
 
-api.add_resource(AsyncAPISpec, "/spec/dams-collection-api-events.html")
-api.add_resource(OpenAPISpec, "/spec/dams-collection-api.json")
+api.add_resource(UserPermissions, "/user/permissions")
 
 # Initialize RabbitMQ Queues
 load_queues(logger)
