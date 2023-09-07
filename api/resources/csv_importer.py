@@ -1,9 +1,10 @@
-from flask import request
-from flask_restful import abort
 from app import policy_factory, rabbit
-from resources.base_resource import BaseResource
 from elody.exceptions import NonUniqueException
 from elody.util import mediafile_is_public, signal_entity_changed
+from flask import request
+from flask_restful import abort
+from inuits_policy_based_auth import RequestContext
+from resources.base_resource import BaseResource
 from validator import mediafile_schema
 
 
@@ -24,7 +25,7 @@ class AddEntities(BaseResource):
         asset;0;1;2;1.123;2.345;1000;2000\n
     """
 
-    @policy_factory.authenticate()
+    @policy_factory.authenticate(RequestContext(request))
     def post(self):
         entities = []
         responses = []
@@ -76,7 +77,7 @@ class PatchEntitiesMetadata(BaseResource):
         ZYX;0;1;2;1.123;2.345;1000;2000\n
     """
 
-    @policy_factory.authenticate()
+    @policy_factory.authenticate(RequestContext(request))
     def post(self):
         entities = []
         responses = []
@@ -124,7 +125,7 @@ class PutEntitiesMetadata(BaseResource):
         ZYX;0;1;2;1.123;2.345;1000;2000\n
     """
 
-    @policy_factory.authenticate()
+    @policy_factory.authenticate(RequestContext(request))
     def post(self):
         entities = []
         responses = []
@@ -170,7 +171,7 @@ class AddEntitiesWithMediafiles(BaseResource):
         asset,Asset2,A2,MediaFile3,mfTitle3,321,MediaFile4,mfTitle4,654\n
     """
 
-    @policy_factory.authenticate()
+    @policy_factory.authenticate(RequestContext(request))
     def post(self):
         entities = []
         responses = []

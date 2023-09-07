@@ -121,14 +121,14 @@ class Entity(BaseResource):
             response, accept_header, 201
         )
 
-    @policy_factory.authenticate()
+    @policy_factory.authenticate(RequestContext(request))
     def patch(self):
         if request.content_type == "text/csv":
             return PatchEntitiesMetadata().post()
         else:
             return "Wrong content type", 400
 
-    @policy_factory.authenticate()
+    @policy_factory.authenticate(RequestContext(request))
     def put(self):
         if request.content_type == "text/csv":
             return PutEntitiesMetadata().post()
