@@ -11,14 +11,14 @@ cryptography==41.0.3
 decorator==5.1.1
 deprecation==2.1.0
 dnspython==2.4.2
-elody[loader]==0.0.18
+elody[loader]==0.0.19
 Flask==2.3.3
 Flask-RESTful==0.3.10
 flask-swagger-ui==4.11.1
 gunicorn==21.2.0
 idna==3.4
 importlib-metadata==6.8.0
-inuits-policy-based-auth==7.0.0
+inuits-policy-based-auth==7.0.1
 isodate==0.6.1
 itsdangerous==2.1.2
 Jinja2==3.1.2
