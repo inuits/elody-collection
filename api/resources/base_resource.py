@@ -1,4 +1,8 @@
+import csv
 import json
+import re
+
+from benedict import benedict
 import mappers
 import os
 
@@ -8,7 +12,7 @@ from elody.util import get_raw_id, signal_entity_changed
 from flask import Response
 from flask_restful import Resource, abort
 from storage.storagemanager import StorageManager
-from validator import validate_json
+from validator import validate_json, entity_schema
 
 
 class BaseResource(Resource):
@@ -413,3 +417,60 @@ class BaseResource(Resource):
                             403,
                             message="Non admin user can not modify users in the relations.",
                         )
+
+    def _parse_items_from_csv(self, request, initial_data_type):
+        items = []
+        if not (request_data := request.get_data(as_text=True)):
+            abort(400, message="Missing data")
+        if not request_data.startswith(initial_data_type):
+            abort(400, message=f"Missing {initial_data_type}.")
+
+        try:
+            separator = csv.Sniffer().sniff(request_data).delimiter
+        except csv.Error:
+            abort(
+                400,
+                message="Problem with a number of columns for entities in CSV.",
+            )
+        #  if there is no separator in csv (e.g. contains only 1 col) - sniffer returns nonsens:
+        if re.search("[a-zA-Z0-9_\"']", separator):
+            separator = ","
+
+        request_dict = csv.DictReader(request_data.splitlines(), delimiter=separator)
+        for item in [row for row in request_dict]:
+            bdict = benedict()
+            for key, value in item.items():
+                if key == initial_data_type and not value:
+                    abort(400, message=f"{initial_data_type} is not filled")
+                if key != initial_data_type and value:
+                    try:
+                        value = int(value)
+                    except ValueError:
+                        try:
+                            value = float(value)
+                        except ValueError:
+                            pass
+                    bdict[key] = value
+            try:
+                items.append(
+                    {f"{initial_data_type}": item[initial_data_type], "bdict": bdict}
+                )
+            except KeyError:
+                abort(
+                    400,
+                    message="Problem with a number of columns or with a separator - check your CSV file.",
+                )
+
+        return items
+
+    def _check_entity_type(self, entity, user):
+        self._abort_if_not_valid_json("Entity", entity, entity_schema)
+        if (
+            entity["type"] == "tenant" or entity["type"] == "user"
+        ) and not self.is_admin(user):
+            abort(403, message="Non admin user can not create users or tenants")
+        if not entity["type"] == "tenant" or not entity["type"] == "user":
+            entity["date_created"] = datetime.now(timezone.utc).isoformat()
+            entity["version"] = 1
+
+        return entity

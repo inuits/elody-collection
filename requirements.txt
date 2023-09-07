@@ -34,6 +34,7 @@ PyJWT==2.8.0
 pymongo==4.5.0
 pyparsing==3.1.1
 python-arango==7.6.2
+python-benedict==0.32.0
 pytz==2023.3.post1
 rabbitmq-pika-flask==1.2.33
 rdflib==7.0.0
