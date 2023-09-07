@@ -3,12 +3,13 @@ import elody.util as util
 from app import policy_factory, rabbit
 from datetime import datetime, timezone
 from flask import request
+from inuits_policy_based_auth import RequestContext
 from resources.base_resource import BaseResource
 from validator import mediafile_schema
 
 
 class Mediafile(BaseResource):
-    @policy_factory.authenticate()
+    @policy_factory.authenticate(RequestContext(request))
     def get(self):
         skip = request.args.get("skip", 0, int)
         limit = request.args.get("limit", 20, int)
@@ -35,7 +36,7 @@ class Mediafile(BaseResource):
         )
         return mediafiles
 
-    @policy_factory.authenticate()
+    @policy_factory.authenticate(RequestContext(request))
     def post(self):
         content = request.get_json()
         self._abort_if_not_valid_json("Mediafile", content, mediafile_schema)
@@ -54,7 +55,7 @@ class Mediafile(BaseResource):
 
 
 class MediafileAssets(BaseResource):
-    @policy_factory.authenticate()
+    @policy_factory.authenticate(RequestContext(request))
     def get(self, id):
         mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
         self._abort_if_no_access(mediafile, collection="mediafiles")
@@ -72,7 +73,7 @@ class MediafileAssets(BaseResource):
 
 
 class MediafileCopyright(BaseResource):
-    @policy_factory.authenticate()
+    @policy_factory.authenticate(RequestContext(request))
     def get(self, id):
         mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
         if self._has_access_to_item(mediafile, collection="mediafiles"):
@@ -86,7 +87,7 @@ class MediafileCopyright(BaseResource):
 
 
 class MediafileDetail(BaseResource):
-    @policy_factory.authenticate()
+    @policy_factory.authenticate(RequestContext(request))
     def get(self, id):
         mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
         self._abort_if_no_access(mediafile, collection="mediafiles")
@@ -94,7 +95,7 @@ class MediafileDetail(BaseResource):
             return mediafile
         return self._inject_api_urls_into_mediafiles([mediafile])[0]
 
-    @policy_factory.authenticate()
+    @policy_factory.authenticate(RequestContext(request))
     def put(self, id):
         old_mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
         self._abort_if_no_access(old_mediafile, collection="mediafiles")
@@ -111,7 +112,7 @@ class MediafileDetail(BaseResource):
         util.signal_mediafile_changed(rabbit, old_mediafile, mediafile)
         return mediafile, 201
 
-    @policy_factory.authenticate()
+    @policy_factory.authenticate(RequestContext(request))
     def patch(self, id):
         old_mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
         self._abort_if_no_access(old_mediafile, collection="mediafiles")
@@ -127,7 +128,7 @@ class MediafileDetail(BaseResource):
         util.signal_mediafile_changed(rabbit, old_mediafile, mediafile)
         return mediafile, 201
 
-    @policy_factory.authenticate()
+    @policy_factory.authenticate(RequestContext(request))
     def delete(self, id):
         mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
         self._abort_if_no_access(mediafile, collection="mediafiles")

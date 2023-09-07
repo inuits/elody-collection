@@ -1,10 +1,12 @@
 from app import policy_factory
 from datetime import datetime, timezone
+from flask import request
+from inuits_policy_based_auth import RequestContext
 from resources.base_resource import BaseResource
 
 
 class TicketDetail(BaseResource):
-    @policy_factory.authenticate()
+    @policy_factory.authenticate(RequestContext(request))
     def get(self, id):
         ticket = self._abort_if_item_doesnt_exist("abstracts", id) or {}
         self._abort_if_no_access(ticket, collection="abstracts")

@@ -11,6 +11,7 @@ from elody.util import (
 )
 from flask import after_this_request, request
 from flask_restful import abort
+from inuits_policy_based_auth import RequestContext
 from resources.base_resource import BaseResource
 from validator import entity_schema, mediafile_schema
 from resources.csv_importer import (
@@ -22,7 +23,7 @@ from resources.csv_importer import (
 
 
 class Entity(BaseResource):
-    @policy_factory.authenticate()
+    @policy_factory.authenticate(RequestContext(request))
     def get(self):
         accept_header = request.headers.get("Accept")
         skip = request.args.get("skip", 0, int)
@@ -73,7 +74,7 @@ class Entity(BaseResource):
             accept_header,
         )
 
-    @policy_factory.authenticate()
+    @policy_factory.authenticate(RequestContext(request))
     def post(self):
         content_type = request.content_type
         if content_type == "text/csv":
@@ -142,7 +143,7 @@ class Entity(BaseResource):
 
 
 class EntityDetail(BaseResource):
-    @policy_factory.authenticate()
+    @policy_factory.authenticate(RequestContext(request))
     def get(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         self._abort_if_no_access(entity)
@@ -164,7 +165,7 @@ class EntityDetail(BaseResource):
             accept_header,
         )
 
-    @policy_factory.authenticate()
+    @policy_factory.authenticate(RequestContext(request))
     def put(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         self._abort_if_no_access(entity)
@@ -185,7 +186,7 @@ class EntityDetail(BaseResource):
         signal_entity_changed(rabbit, entity)
         return entity, 201
 
-    @policy_factory.authenticate()
+    @policy_factory.authenticate(RequestContext(request))
     def patch(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         self._abort_if_no_access(entity)
@@ -204,7 +205,7 @@ class EntityDetail(BaseResource):
         signal_entity_changed(rabbit, entity)
         return entity, 201
 
-    @policy_factory.authenticate()
+    @policy_factory.authenticate(RequestContext(request))
     def delete(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         self._abort_if_no_access(entity)
@@ -223,7 +224,7 @@ class EntityDetail(BaseResource):
 
 
 class EntityMediafiles(BaseResource):
-    @policy_factory.authenticate()
+    @policy_factory.authenticate(RequestContext(request))
     def get(self, id):
         skip = request.args.get("skip", 0, int)
         limit = request.args.get("limit", 20, int)
@@ -260,7 +261,7 @@ class EntityMediafiles(BaseResource):
 
         return mediafiles
 
-    @policy_factory.authenticate()
+    @policy_factory.authenticate(RequestContext(request))
     def post(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         self._abort_if_no_access(entity)
@@ -296,7 +297,7 @@ class EntityMediafiles(BaseResource):
 
 
 class EntityMediafilesCreate(BaseResource):  # TODO add user
-    @policy_factory.authenticate()
+    @policy_factory.authenticate(RequestContext(request))
     def post(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         self._abort_if_no_access(entity)
@@ -328,7 +329,7 @@ class EntityMediafilesCreate(BaseResource):  # TODO add user
 
 
 class EntityMetadata(BaseResource):
-    @policy_factory.authenticate()
+    @policy_factory.authenticate(RequestContext(request))
     def get(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         self._abort_if_no_access(entity)
@@ -347,7 +348,7 @@ class EntityMetadata(BaseResource):
             accept_header,
         )
 
-    @policy_factory.authenticate()
+    @policy_factory.authenticate(RequestContext(request))
     def post(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         self._abort_if_no_access(entity)
@@ -358,7 +359,7 @@ class EntityMetadata(BaseResource):
         signal_entity_changed(rabbit, entity)
         return metadata, 201
 
-    @policy_factory.authenticate()
+    @policy_factory.authenticate(RequestContext(request))
     def put(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         self._abort_if_no_access(entity)
@@ -369,7 +370,7 @@ class EntityMetadata(BaseResource):
         signal_entity_changed(rabbit, entity)
         return metadata, 201
 
-    @policy_factory.authenticate()
+    @policy_factory.authenticate(RequestContext(request))
     def patch(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         self._abort_if_no_access(entity)
@@ -384,7 +385,7 @@ class EntityMetadata(BaseResource):
 
 
 class EntityMetadataKey(BaseResource):
-    @policy_factory.authenticate()
+    @policy_factory.authenticate(RequestContext(request))
     def get(self, id, key):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         self._abort_if_no_access(entity)
@@ -392,7 +393,7 @@ class EntityMetadataKey(BaseResource):
             "entities", get_raw_id(entity), "metadata", key
         )
 
-    @policy_factory.authenticate()
+    @policy_factory.authenticate(RequestContext(request))
     def delete(self, id, key):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         self._abort_if_no_access(entity)
@@ -404,7 +405,7 @@ class EntityMetadataKey(BaseResource):
 
 
 class EntityRelations(BaseResource):
-    @policy_factory.authenticate()
+    @policy_factory.authenticate(RequestContext(request))
     def get(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         self._abort_if_no_access(entity)
@@ -418,7 +419,7 @@ class EntityRelations(BaseResource):
             "entities", get_raw_id(entity)
         )
 
-    @policy_factory.authenticate()
+    @policy_factory.authenticate(RequestContext(request))
     def post(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         self._abort_if_no_access(entity)
@@ -429,7 +430,7 @@ class EntityRelations(BaseResource):
         signal_entity_changed(rabbit, entity)
         return relations, 201
 
-    @policy_factory.authenticate()
+    @policy_factory.authenticate(RequestContext(request))
     def put(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         self._abort_if_no_access(entity)
@@ -440,7 +441,7 @@ class EntityRelations(BaseResource):
         signal_entity_changed(rabbit, entity)
         return relations, 201
 
-    @policy_factory.authenticate()
+    @policy_factory.authenticate(RequestContext(request))
     def patch(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         self._abort_if_no_access(entity)
@@ -451,7 +452,7 @@ class EntityRelations(BaseResource):
         signal_entity_changed(rabbit, entity)
         return relations, 201
 
-    @policy_factory.authenticate()
+    @policy_factory.authenticate(RequestContext(request))
     def delete(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         self._abort_if_no_access(entity)
@@ -464,7 +465,7 @@ class EntityRelations(BaseResource):
 
 
 class EntityRelationsAll(BaseResource):
-    @policy_factory.authenticate()
+    @policy_factory.authenticate(RequestContext(request))
     def get(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         self._abort_if_no_access(entity)
@@ -480,7 +481,7 @@ class EntityRelationsAll(BaseResource):
 
 
 class EntitySetPrimaryMediafile(BaseResource):
-    @policy_factory.authenticate()
+    @policy_factory.authenticate(RequestContext(request))
     def put(self, id, mediafile_id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         self._abort_if_no_access(entity)
@@ -496,7 +497,7 @@ class EntitySetPrimaryMediafile(BaseResource):
 
 
 class EntitySetPrimaryThumbnail(BaseResource):
-    @policy_factory.authenticate()
+    @policy_factory.authenticate(RequestContext(request))
     def put(self, id, mediafile_id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         self._abort_if_no_access(entity)

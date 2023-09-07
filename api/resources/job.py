@@ -1,10 +1,11 @@
 from app import policy_factory
 from flask import request
+from inuits_policy_based_auth import RequestContext
 from resources.base_resource import BaseResource
 
 
 class Job(BaseResource):
-    @policy_factory.authenticate()
+    @policy_factory.authenticate(RequestContext(request))
     def get(self):
         skip = request.args.get("skip", 0, int)
         limit = request.args.get("limit", 20, int)
@@ -37,7 +38,7 @@ class Job(BaseResource):
 
 
 class JobDetail(BaseResource):
-    @policy_factory.authenticate()
+    @policy_factory.authenticate(RequestContext(request))
     def get(self, id):
         job = self._abort_if_item_doesnt_exist("jobs", id)
         if job.get("parent_job_id"):

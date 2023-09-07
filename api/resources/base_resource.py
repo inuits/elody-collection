@@ -12,7 +12,7 @@ from elody.util import get_raw_id, signal_entity_changed
 from flask import Response
 from flask_restful import Resource, abort
 from storage.storagemanager import StorageManager
-from validator import validate_json, entity_schema
+from validator import validate_json
 
 
 class BaseResource(Resource):
