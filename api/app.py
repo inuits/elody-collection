@@ -103,7 +103,6 @@ from resources.saved_search import (
     SavedSearch,
     SavedSearchDetail,
 )
-from resources.user import UserPermissions
 from resources.ticket import TicketDetail
 from resources.spec import AsyncAPISpec, OpenAPISpec
 
@@ -151,8 +150,6 @@ api.add_resource(AsyncAPISpec, "/spec/dams-collection-api-events.html")
 api.add_resource(OpenAPISpec, "/spec/dams-collection-api.json")
 
 api.add_resource(TicketDetail, "/ticket/<string:id>")
-
-api.add_resource(UserPermissions, "/user/permissions")
 
 # Initialize RabbitMQ Queues
 load_queues(logger)
