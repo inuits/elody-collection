@@ -165,8 +165,6 @@ class MongoStorageManager(GenericStorageManager):
             "hasMediafile": "belongsTo",
             "isIn": "contains",
             "parent": "components",
-            "hasUser": "isTenantOf",
-            "hasTenant": "belongsTo",
         }.get(relation)
 
     def _map_relation_to_collection(self, relation):
@@ -179,8 +177,6 @@ class MongoStorageManager(GenericStorageManager):
             "hasMediafile": "mediafiles",
             "isIn": "entities",
             "parent": "entities",
-            "hasUser": "entities",
-            "hasTenant": "entities",
         }.get(relation, "entities")
 
     def _prepare_mongo_document(
@@ -296,10 +292,8 @@ class MongoStorageManager(GenericStorageManager):
         filters=None,
         order_by=None,
         ascending=True,
-        tenants_ids=None,
-        user_id=None,
     ):
-        if "ids" in filters:  # TODO tenants???
+        if "ids" in filters:
             return self.__get_items_from_collection_by_ids(
                 "entities", filters["ids"], order_by, ascending
             )
@@ -311,8 +305,6 @@ class MongoStorageManager(GenericStorageManager):
             filters=filters,
             sort=order_by,
             asc=ascending,
-            tenants_ids=tenants_ids,
-            user_id=user_id,
         )
 
     def get_history_for_item(self, collection, id, timestamp=None, all_entries=None):
@@ -385,29 +377,13 @@ class MongoStorageManager(GenericStorageManager):
         filters=None,
         sort=None,
         asc=True,
-        tenants_ids=None,
-        user_id=None,
     ):
         items = dict()
-        if tenants_ids:
+        if fields or filters:
             query = {
                 "$and": [
                     self.__get_filter_fields(filters),
                     self.__get_filter_fields(fields),
-                ]
-            }
-            documents = self.db[collection].find(
-                query,
-                skip=skip,
-                limit=limit,
-            )
-            count = self.db[collection].count_documents(query)
-        elif user_id or fields or filters:
-            query = {
-                "$and": [
-                    self.__get_filter_fields(filters),
-                    self.__get_filter_fields(fields),
-                    {"relations.value": user_id} if user_id else {},
                 ]
             }
             documents = self.db[collection].find(
@@ -467,7 +443,7 @@ class MongoStorageManager(GenericStorageManager):
         return distinct_values
 
     def get_sort_field(self, field):
-        if field not in ["_id", "date_created", "object_id", "type", "user", "version"]:
+        if field not in ["_id", "date_created", "object_id", "type", "version"]:
             return f"sort.{field}.value"
         return field
 
@@ -600,18 +576,3 @@ class MongoStorageManager(GenericStorageManager):
 
     def get_collection_item_mediafiles_count(self, id):
         return self.db["mediafiles"].count_documents({"relations.key": id})
-
-    def update_user(self, id, username, first_name, last_name, tenants, roles, scopes):
-        self.db["entities"].update_one(
-            {"_id": id},
-            {
-                "$set": {
-                    "username": username,
-                    "first_name": first_name,
-                    "last_name": last_name,
-                    "tenants": tenants,
-                    "roles": roles,
-                    "scopes": scopes,
-                },
-            },
-        )

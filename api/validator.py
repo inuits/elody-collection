@@ -84,10 +84,6 @@ entity_schema = {
             },
             "additionalProperties": True,
         },
-        "user": {
-            "type": "string",
-            "default": "",
-        },
     },
     "additionalProperties": True,
 }

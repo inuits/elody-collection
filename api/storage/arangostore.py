@@ -38,9 +38,7 @@ class ArangoStorageManager(GenericStorageManager):
             "contains",
             "frames",
             "hasTestimony",
-            "hasUser",
             "isIn",
-            "isTenantOf",
             "isTestimonyFor",
             "parent",
             "stories",
@@ -170,9 +168,7 @@ class ArangoStorageManager(GenericStorageManager):
             "contains": "isIn",
             "frames": "stories",
             "hasTestimony": "isTestimonyFor",
-            "hasUser": "isTenantOf",
             "isIn": "contains",
-            "isTenantOf": "hasUser",
             "isTestimonyFor": "hasTestimony",
             "parent": "components",
             "stories": "frames",
@@ -417,8 +413,6 @@ class ArangoStorageManager(GenericStorageManager):
             FOR c IN entities
                 {"FILTER c._key IN @ids" if "ids" in filters else ""}
                 {f'FILTER c.type == "{filters["type"]}"' if "type" in filters else ""}
-                {f'FILTER c.user == "{filters["user"]}"' if "user" in filters else ""}
-                {f'FILTER c.tenants != null AND "{filters["tenants"]}" IN c.tenants' if "tenants" in filters else ""}
         """
         if skip_relations == 1:
             aql2 = "LET all_metadata = {'metadata': c.metadata}"
@@ -506,7 +500,6 @@ class ArangoStorageManager(GenericStorageManager):
             FOR c IN @@collection
                 {"FILTER c._key IN @ids" if "ids" in filters else ""}
                 {"FILTER c.user == @user_or_public OR NOT c.private" if "user_or_public" in filters else ""}
-                {f'FILTER c.tenants != null AND "{filters["tenants"]}" IN c.tenants' if "tenants" in filters else ""}
                 {extra_query}
                 {title_filter}
                 {f'SORT c.{sort} {"ASC" if asc else "DESC"}' if sort else ""}

@@ -47,9 +47,6 @@ rabbit.init_app(app, "basic", json.loads, json.dumps)
 
 app.register_blueprint(swaggerui_blueprint)
 
-multitenancy_enabled = os.getenv("ENABLE_MULTITENANCY", False) in ["True", "true", True]
-auto_create_tenants = os.getenv("AUTO_CREATE_TENANTS", False) in ["True", "true", True]
-
 
 def database_available():
     return True, StorageManager().get_db_engine().check_health()

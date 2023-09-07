@@ -1,6 +1,6 @@
 from flask import request
 from flask_restful import abort
-from app import multitenancy_enabled, policy_factory, rabbit
+from app import policy_factory, rabbit
 from resources.base_resource import BaseResource
 from elody.exceptions import NonUniqueException
 from elody.util import mediafile_is_public, signal_entity_changed
@@ -14,14 +14,14 @@ class AddEntities(BaseResource):
     First column in CSV has to be "entity_type".\n
     Second and next columns are for metadata.\n
     For metadata it is possible to create a dictionary(key/value)
-    using dot.syntax, or create a list(array) by list-index [n]. 
+    using dot.syntax, or create a list(array) by list-index [n].
     Dict and list could be combine.\n
     https://github.com/fabiocaccamo/python-benedict for more info.\n
     Use ; or , as a separator.\n
     CSV exapmple:\n
         entity_type;is_printable;dict.one;dict.two;list[0];list[1];comb.dict.list[0];comb.dict.list[1]\n
         asset;yes;One;Two;1;2;Comb1;Comb2\n
-        asset;0;1;2;1.123;2.345;1000;2000\n    
+        asset;0;1;2;1.123;2.345;1000;2000\n
     """
 
     @policy_factory.authenticate()
@@ -29,24 +29,13 @@ class AddEntities(BaseResource):
         entities = []
         responses = []
         initial_data_type = "entity_type"
-        user = self._get_user()
-        if multitenancy_enabled:
-            if not (
-                tenants := self._get_tenant(
-                    tenant_requested=request.args.get("tenant", None)
-                )
-            ):
-                abort(400, message="Tenant not found")
 
         items = self._parse_items_from_csv(request, initial_data_type)
         for item in items:
             metadata = []
             for key, value in item["bdict"].items():
                 metadata.append({"key": key, "value": value})
-            entity = self._check_entity_type(
-                {"type": item["entity_type"], "metadata": metadata}, user
-            )
-            entities.append(entity)
+            entities.append({"type": item["entity_type"], "metadata": metadata})
 
         for entity in entities:
             try:
@@ -57,27 +46,15 @@ class AddEntities(BaseResource):
                     "status": "Created",
                 }
                 responses.append(response)
-                user_relation = self.create_relation_dict(
-                    key=user["_id"],
-                    value=user.get("email", "default_uploader"),
-                    label="user",
-                    type="hasUser",
-                )
-                self.storage.add_relations_to_collection_item(
-                    "entities", entity_saved["_id"], [user_relation]
-                )
-                if multitenancy_enabled:
-                    for tenant in tenants:
-                        self.storage.add_relations_to_collection_item(
-                            "entities", entity_saved["_id"], [tenant]
-                        )
                 signal_entity_changed(rabbit, entity_saved)
             except NonUniqueException as ex:
-                response = {
-                    "type": entity["type"],
-                    "status": "Not created",
-                    "exception": str(ex),
-                }
+                responses.append(
+                    {
+                        "type": entity["type"],
+                        "status": "Not created",
+                        "exception": str(ex),
+                    }
+                )
 
         return responses
 
@@ -89,14 +66,14 @@ class PatchEntitiesMetadata(BaseResource):
     First column in CSV has to be "id".\n
     Second and next columns are for metadata.\n
     For metadata it is possible to create a dictionary(key/value)
-    using dot.syntax, or create a list(array) by list-index [n]. 
+    using dot.syntax, or create a list(array) by list-index [n].
     Dict and list could be combine.\n
     https://github.com/fabiocaccamo/python-benedict for more info.\n
     Use ; or , as a separator.\n
     CSV exapmple:\n
         id;is_printable;dict.one;dict.two;list[0];list[1];comb.dict.list[0];comb.dict.list[1]\n
         XYZ;yes;One;Two;1;2;Comb1;Comb2\n
-        ZYX;0;1;2;1.123;2.345;1000;2000\n    
+        ZYX;0;1;2;1.123;2.345;1000;2000\n
     """
 
     @policy_factory.authenticate()
@@ -104,7 +81,6 @@ class PatchEntitiesMetadata(BaseResource):
         entities = []
         responses = []
         initial_data_type = "id"
-        user = self._get_user()
 
         items = self._parse_items_from_csv(request, initial_data_type)
         for item in items:
@@ -112,7 +88,7 @@ class PatchEntitiesMetadata(BaseResource):
             for key, value in item["bdict"].items():
                 metadata.append({"key": key, "value": value})
             entity = self._abort_if_item_doesnt_exist("entities", item["id"])
-            self._abort_if_no_access(entity, user)
+            self._abort_if_no_access(entity)
             entities.append(
                 {"_id": entity["_id"], "metadata": metadata, "data": entity}
             )
@@ -138,14 +114,14 @@ class PutEntitiesMetadata(BaseResource):
     First column in CSV has to be "id".\n
     Second and next columns are for metadata.\n
     For metadata it is possible to create a dictionary(key/value)
-    using dot.syntax, or create a list(array) by list-index [n]. 
+    using dot.syntax, or create a list(array) by list-index [n].
     Dict and list could be combine.\n
     https://github.com/fabiocaccamo/python-benedict for more info.\n
     Use ; or , as a separator.\n
     CSV exapmple:\n
         id;is_printable;dict.one;dict.two;list[0];list[1];comb.dict.list[0];comb.dict.list[1]\n
         XYZ;yes;One;Two;1;2;Comb1;Comb2\n
-        ZYX;0;1;2;1.123;2.345;1000;2000\n 
+        ZYX;0;1;2;1.123;2.345;1000;2000\n
     """
 
     @policy_factory.authenticate()
@@ -153,7 +129,6 @@ class PutEntitiesMetadata(BaseResource):
         entities = []
         responses = []
         initial_data_type = "id"
-        user = self._get_user()
 
         items = self._parse_items_from_csv(request, initial_data_type)
         for item in items:
@@ -161,7 +136,7 @@ class PutEntitiesMetadata(BaseResource):
             for key, value in item["bdict"].items():
                 metadata.append({"key": key, "value": value})
             entity = self._abort_if_item_doesnt_exist("entities", item["id"])
-            self._abort_if_no_access(entity, user)
+            self._abort_if_no_access(entity)
             entities.append(
                 {"_id": entity["_id"], "metadata": metadata, "data": entity}
             )
@@ -185,7 +160,7 @@ class AddEntitiesWithMediafiles(BaseResource):
     Metadata of the first mediafile as: mediafile[0].metadata[0].first, mediafile[0].metadata[1].second\n
     Next mediafile as: mediafile[1].filename and its metadata as: mediafile[1].metadata[0].first,mediafile[1].metadata[1].second\n
     For metadata it is possible to create a dictionary(key/value)
-    using dot.syntax, or create a list(array) by list-index [n]. 
+    using dot.syntax, or create a list(array) by list-index [n].
     Dict and list could be combine.\n
     https://github.com/fabiocaccamo/python-benedict for more info.\n
     Use ; or , as a separator.\n
@@ -200,14 +175,6 @@ class AddEntitiesWithMediafiles(BaseResource):
         entities = []
         responses = []
         initial_data_type = "entity_type"
-        user = self._get_user()
-        if multitenancy_enabled:
-            if not (
-                tenants := self._get_tenant(
-                    tenant_requested=request.args.get("tenant", None)
-                )
-            ):
-                abort(400, message="Tenant not found")
 
         items = self._parse_items_from_csv(request, initial_data_type)
         for item in items:
@@ -248,20 +215,6 @@ class AddEntitiesWithMediafiles(BaseResource):
                     "status": "Created",
                 }
                 responses.append(response)
-                user_relation = self.create_relation_dict(
-                    key=user["_id"],
-                    value=user.get("email", "default_uploader"),
-                    label="user",
-                    type="hasUser",
-                )
-                self.storage.add_relations_to_collection_item(
-                    "entities", entity_saved["_id"], [user_relation]
-                )
-                if multitenancy_enabled:
-                    for tenant in tenants:
-                        self.storage.add_relations_to_collection_item(
-                            "entities", entity_saved["_id"], [tenant]
-                        )
                 signal_entity_changed(rabbit, entity_saved)
                 for mediafile in entity["mediafiles"]:
                     self._abort_if_not_valid_json(
@@ -282,25 +235,13 @@ class AddEntitiesWithMediafiles(BaseResource):
                         mediafile_saved["_id"],
                         mediafile_is_public(mediafile_saved),
                     )
-                    user_relation = self.create_relation_dict(
-                        user["_id"],
-                        user.get("email", "default_uploader"),
-                        "user",
-                        "hasUser",
-                    )
-                    self.storage.add_relations_to_collection_item(
-                        "mediafiles", mediafile_saved["_id"], [user_relation]
-                    )
-                    if multitenancy_enabled:
-                        for tenant in tenants:
-                            self.storage.add_relations_to_collection_item(
-                                "mediafiles", mediafile_saved["_id"], [tenant]
-                            )
             except NonUniqueException as ex:
-                response = {
-                    "type": entity["content"]["type"],
-                    "status": "Not created",
-                    "exception": str(ex),
-                }
+                responses.append(
+                    {
+                        "type": entity["content"]["type"],
+                        "status": "Not created",
+                        "exception": str(ex),
+                    }
+                )
 
         return responses
