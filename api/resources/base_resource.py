@@ -271,13 +271,22 @@ class BaseResource(Resource):
 
         return items
 
+    @staticmethod
     @app.before_request
-    def create_tenant(self):
+    def create_tenant():
         if tenant_defining_types:
             return
         if not (tenant_id := request.headers.get("X-tenant-id")):
             return
-        tenant = self.storage.get_item_from_collection_by_id("entities", tenant_id)
+        tenant = (
+            StorageManager()
+            .get_db_engine()
+            .get_item_from_collection_by_id("entities", tenant_id)
+        )
         if tenant:
             return
-        self._create_tenant(tenant_id)
+
+        tenant = {"_id": tenant_id, "type": "tenant", "identifiers": [tenant_id]}
+        return (
+            StorageManager().get_db_engine().save_item_to_collection("entities", tenant)
+        )
