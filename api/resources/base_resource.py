@@ -74,7 +74,7 @@ class BaseResource(Resource):
     ):
         content = {
             "filename": filename,
-            "date_created": datetime.now(timezone.utc).isoformat(),
+            "date_created": datetime.now(timezone.utc),
             "version": 1,
             "thumbnail_file_location": f"/iiif/3/{filename}/full/,150/0/default.jpg",
             "original_file_location": f"/download/{filename}",

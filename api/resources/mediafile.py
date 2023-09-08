@@ -40,7 +40,7 @@ class Mediafile(BaseResource):
     def post(self):
         content = request.get_json()
         self._abort_if_not_valid_json("Mediafile", content, mediafile_schema)
-        content["date_created"] = datetime.now(timezone.utc).isoformat()
+        content["date_created"] = datetime.now(timezone.utc)
         content["version"] = 1
         mediafile = self.storage.save_item_to_collection("mediafiles", content)
         accept_header = request.headers.get("Accept")
@@ -101,7 +101,7 @@ class MediafileDetail(BaseResource):
         self._abort_if_no_access(old_mediafile, collection="mediafiles")
         content = request.get_json()
         self._abort_if_not_valid_json("Mediafile", content, mediafile_schema)
-        content["date_updated"] = datetime.now(timezone.utc).isoformat()
+        content["date_updated"] = datetime.now(timezone.utc)
         content["version"] = old_mediafile.get("version", 0) + 1
         content["last_editor"] = (
             policy_factory.get_user_context().email or "default_uploader"
@@ -117,7 +117,7 @@ class MediafileDetail(BaseResource):
         old_mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
         self._abort_if_no_access(old_mediafile, collection="mediafiles")
         content = request.get_json()
-        content["date_updated"] = datetime.now(timezone.utc).isoformat()
+        content["date_updated"] = datetime.now(timezone.utc)
         content["version"] = old_mediafile.get("version", 0) + 1
         content["last_editor"] = (
             policy_factory.get_user_context().email or "default_uploader"

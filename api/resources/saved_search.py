@@ -42,7 +42,7 @@ class SavedSearch(BaseResource):
         content = request.get_json()
         self._abort_if_not_valid_json("Saved search", content, saved_search_schema)
         content["user"] = policy_factory.get_user_context().email or "default_uploader"
-        content["date_created"] = datetime.now(timezone.utc).isoformat()
+        content["date_created"] = datetime.now(timezone.utc)
         content["version"] = 1
         try:
             saved_search = self.storage.save_item_to_collection("abstracts", content)
@@ -66,7 +66,7 @@ class SavedSearchDetail(BaseResource):
         self._abort_if_not_valid_type(saved_search, "saved_search")
         content = request.get_json()
         self._abort_if_not_valid_json("Saved search", content, saved_search_schema)
-        content["date_updated"] = datetime.now(timezone.utc).isoformat()
+        content["date_updated"] = datetime.now(timezone.utc)
         content["version"] = saved_search.get("version", 0) + 1
         try:
             saved_search = self.storage.update_item_from_collection(
@@ -82,7 +82,7 @@ class SavedSearchDetail(BaseResource):
         self._abort_if_no_access(saved_search, collection="abstracts")
         self._abort_if_not_valid_type(saved_search, "saved_search")
         content = request.get_json()
-        content["date_updated"] = datetime.now(timezone.utc).isoformat()
+        content["date_updated"] = datetime.now(timezone.utc)
         content["version"] = saved_search.get("version", 0) + 1
         try:
             saved_search = self.storage.patch_item_from_collection(

@@ -95,7 +95,7 @@ class Entity(BaseResource):
             content = request.get_json()
         accept_header = request.headers.get("Accept")
         entity = self._decorate_entity(content)
-        entity["date_created"] = datetime.now(timezone.utc).isoformat()
+        entity["date_created"] = datetime.now(timezone.utc)
         entity["version"] = 1
         if not linked_data_request:
             self._abort_if_not_valid_json("Entity", entity, entity_schema)
@@ -171,7 +171,7 @@ class EntityDetail(BaseResource):
         self._abort_if_no_access(entity)
         content = request.get_json()
         self._abort_if_not_valid_json("Entity", content, entity_schema)
-        content["date_updated"] = datetime.now(timezone.utc).isoformat()
+        content["date_updated"] = datetime.now(timezone.utc)
         content["version"] = entity.get("version", 0) + 1
         content["last_editor"] = (
             policy_factory.get_user_context().email or "default_uploader"
@@ -191,7 +191,7 @@ class EntityDetail(BaseResource):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         self._abort_if_no_access(entity)
         content = request.get_json()
-        content["date_updated"] = datetime.now(timezone.utc).isoformat()
+        content["date_updated"] = datetime.now(timezone.utc)
         content["version"] = entity.get("version", 0) + 1
         content["last_editor"] = (
             policy_factory.get_user_context().email or "default_uploader"
@@ -308,7 +308,7 @@ class EntityMediafilesCreate(BaseResource):  # TODO add user
             "thumbnail_file_location"
         ] = f'/iiif/3/{content["filename"]}/full/,150/0/default.jpg'
         content["user"] = policy_factory.get_user_context().email or "default_uploader"
-        content["date_created"] = datetime.now(timezone.utc).isoformat()
+        content["date_created"] = datetime.now(timezone.utc)
         content["version"] = 1
         mediafile = self.storage.save_item_to_collection("mediafiles", content)
         upload_location = f'{self.storage_api_url}/upload/{content["filename"]}?id={get_raw_id(mediafile)}'
