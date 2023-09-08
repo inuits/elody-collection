@@ -162,8 +162,12 @@ class MongoStorageManager(GenericStorageManager):
             "belongsTo": "hasMediafile",
             "components": "parent",
             "contains": "isIn",
+            "definedBy": "defines",
+            "defines": "definedBy",
             "hasMediafile": "belongsTo",
+            "hasTenant": "isTenantFor",
             "isIn": "contains",
+            "isTenantFor": "hasTenant",
             "parent": "components",
         }.get(relation)
 

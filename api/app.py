@@ -35,6 +35,11 @@ app.config["RESTFUL_JSON"] = {"cls": CustomJSONEncoder}
 api = Api(app)
 app.secret_key = os.getenv("SECRET_KEY", secrets.token_hex(16))
 
+tenant_defining_types = os.getenv("TENANT_DEFINING_TYPES")
+tenant_defining_types = (
+    tenant_defining_types.split(",") if tenant_defining_types else []
+)
+
 logging.basicConfig(
     format="%(asctime)s %(process)d,%(threadName)s %(filename)s:%(lineno)d [%(levelname)s] %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
