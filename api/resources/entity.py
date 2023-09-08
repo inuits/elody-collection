@@ -121,7 +121,8 @@ class Entity(BaseResource):
             self._link_tenant_to_defining_entity(tenant["_id"], entity["_id"])
         elif entity["type"] != "tenant":
             self._link_entity_to_tenant(
-                entity["_id"], policy_factory.get_user_context().x_tenant
+                entity["_id"],
+                policy_factory.get_user_context().x_tenant.id.removeprefix("tenant:"),
             )
         signal_entity_changed(rabbit, entity)
         return self._create_response_according_accept_header(
