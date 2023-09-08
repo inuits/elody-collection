@@ -10,6 +10,7 @@ from arango import (
 )
 from elody.exceptions import NonUniqueException
 from elody.util import (
+    custom_json_dumps,
     mediafile_is_public,
     signal_child_relation_changed,
     signal_edge_changed,
@@ -47,7 +48,9 @@ class ArangoStorageManager(GenericStorageManager):
             "visited",
         ]
         self.edges = [*self.entity_relations, "hasMediafile"]
-        self.client = ArangoClient(hosts=os.getenv("ARANGO_DB_HOST"))
+        self.client = ArangoClient(
+            hosts=os.getenv("ARANGO_DB_HOST"), serializer=custom_json_dumps
+        )
         self.sys_db = self.client.db(
             "_system",
             username=os.getenv("ARANGO_DB_USERNAME"),
