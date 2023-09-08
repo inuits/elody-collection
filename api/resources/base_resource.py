@@ -1,15 +1,14 @@
 import csv
 import json
-import re
-
-from benedict import benedict
 import mappers
 import os
+import re
 
-from app import policy_factory, rabbit
+from app import app, policy_factory, rabbit, tenant_defining_types
+from benedict import benedict
 from datetime import datetime, timezone, timedelta
 from elody.util import get_raw_id, signal_entity_changed
-from flask import Response
+from flask import Response, request
 from flask_restful import Resource, abort
 from storage.storagemanager import StorageManager
 from validator import validate_json
@@ -119,6 +118,20 @@ class BaseResource(Resource):
                 )
             case _:
                 return response_data, status_code
+
+    def _create_tenant(self, tenant_id):
+        tenant = {"_id": tenant_id, "type": "tenant", "identifiers": [tenant_id]}
+        return self.storage.save_item_to_collection("entities", tenant)
+
+    def _link_tenant_to_defining_entity(self, tenant_id, entity_id):
+        defining_relation = {"key": entity_id, "type": "definedBy"}
+        self.storage.add_relations_to_collection_item(
+            "entities", tenant_id, [defining_relation]
+        )
+
+    def _link_entity_to_tenant(self, entity_id, tenant_id):
+        relation = {"key": tenant_id, "type": "isIn"}
+        self.storage.add_relations_to_collection_item("entities", entity_id, [relation])
 
     def _decorate_entity(self, entity):
         default_entity = {
@@ -257,3 +270,14 @@ class BaseResource(Resource):
                 )
 
         return items
+
+    @app.before_request
+    def create_tenant(self):
+        if tenant_defining_types:
+            return
+        if not (tenant_id := request.headers.get("X-tenant-id")):
+            return
+        tenant = self.storage.get_item_from_collection_by_id("entities", tenant_id)
+        if tenant:
+            return
+        self._create_tenant(tenant_id)

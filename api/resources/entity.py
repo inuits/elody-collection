@@ -1,6 +1,6 @@
 import mappers
 
-from app import policy_factory, rabbit
+from app import policy_factory, rabbit, tenant_defining_types
 from datetime import datetime, timezone
 from elody.exceptions import NonUniqueException
 from elody.util import (
@@ -116,6 +116,13 @@ class Entity(BaseResource):
                 if accept_header == "text/uri-list":
                     ticket_id = self._create_ticket(mediafile_filename)
                     response += f"{self.storage_api_url}/upload-with-ticket/{mediafile_filename}?id={get_raw_id(mediafile)}&ticket_id={ticket_id}\n"
+        if tenant_defining_types and entity["type"] in tenant_defining_types:
+            tenant = self.create_tenant(entity)
+            self._link_tenant_to_defining_entity(tenant["_id"], entity["_id"])
+        elif entity["type"] != "tenant":
+            self._link_entity_to_tenant(
+                entity["_id"], policy_factory.get_user_context().x_tenant
+            )
         signal_entity_changed(rabbit, entity)
         return self._create_response_according_accept_header(
             response, accept_header, 201
