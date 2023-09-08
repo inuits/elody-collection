@@ -108,6 +108,7 @@ from resources.saved_search import (
     SavedSearch,
     SavedSearchDetail,
 )
+from resources.tenant import Tenant
 from resources.ticket import TicketDetail
 from resources.spec import AsyncAPISpec, OpenAPISpec
 
@@ -151,10 +152,12 @@ api.add_resource(MediafileDetail, "/mediafiles/<string:id>")
 api.add_resource(SavedSearch, "/saved_searches")
 api.add_resource(SavedSearchDetail, "/saved_searches/<string:id>")
 
-api.add_resource(AsyncAPISpec, "/spec/dams-collection-api-events.html")
-api.add_resource(OpenAPISpec, "/spec/dams-collection-api.json")
+api.add_resource(Tenant, "/tenant")
 
 api.add_resource(TicketDetail, "/ticket/<string:id>")
+
+api.add_resource(AsyncAPISpec, "/spec/dams-collection-api-events.html")
+api.add_resource(OpenAPISpec, "/spec/dams-collection-api.json")
 
 # Initialize RabbitMQ Queues
 load_queues(logger)
