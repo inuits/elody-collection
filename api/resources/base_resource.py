@@ -278,15 +278,9 @@ class BaseResource(Resource):
             return
         if not (tenant_id := request.headers.get("X-tenant-id")):
             return
-        tenant = (
-            StorageManager()
-            .get_db_engine()
-            .get_item_from_collection_by_id("entities", tenant_id)
-        )
-        if tenant:
+        storage = StorageManager().get_db_engine()
+        if storage.get_item_from_collection_by_id("entities", tenant_id):
             return
-
-        tenant = {"_id": tenant_id, "type": "tenant", "identifiers": [tenant_id]}
-        return (
-            StorageManager().get_db_engine().save_item_to_collection("entities", tenant)
+        return storage.save_item_to_collection(
+            "entities", {"_id": tenant_id, "type": "tenant", "identifiers": [tenant_id]}
         )
