@@ -119,7 +119,7 @@ class Entity(BaseResource):
         if tenant_defining_types and entity["type"] in tenant_defining_types:
             tenant = self._create_tenant(f'tenant:{entity["_id"]}')
             self._link_tenant_to_defining_entity(tenant["_id"], entity["_id"])
-        elif entity["type"] != "tenant":
+        elif entity["type"] not in ["role", "tenant", "user"]:
             self._link_entity_to_tenant(
                 entity["_id"],
                 policy_factory.get_user_context().x_tenant.id.removeprefix("tenant:"),
