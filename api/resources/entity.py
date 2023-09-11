@@ -116,14 +116,7 @@ class Entity(BaseResource):
                 if accept_header == "text/uri-list":
                     ticket_id = self._create_ticket(mediafile_filename)
                     response += f"{self.storage_api_url}/upload-with-ticket/{mediafile_filename}?id={get_raw_id(mediafile)}&ticket_id={ticket_id}\n"
-        if tenant_defining_types and entity["type"] in tenant_defining_types:
-            tenant = self._create_tenant(f'tenant:{entity["_id"]}')
-            self._link_tenant_to_defining_entity(tenant["_id"], entity["_id"])
-        elif entity["type"] not in ["role", "tenant", "user"]:
-            self._link_entity_to_tenant(
-                entity["_id"],
-                policy_factory.get_user_context().x_tenant.id.removeprefix("tenant:"),
-            )
+        self._create_tenant(entity)
         signal_entity_changed(rabbit, entity)
         return self._create_response_according_accept_header(
             response, accept_header, 201

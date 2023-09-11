@@ -22,6 +22,25 @@ class BaseResource(Resource):
         self.storage_api_url = os.getenv("STORAGE_API_URL")
         self.storage_api_url_ext = os.getenv("STORAGE_API_URL_EXT")
 
+    def __get_tenant_label(self, defining_entity):
+        if "metadata" in defining_entity:
+            for item in defining_entity["metadata"]:
+                if item["key"] == "name":
+                    return item["value"]
+        if "name" in defining_entity:
+            return defining_entity["name"]["value"]
+        return None
+
+    def __link_entity_to_tenant(self, entity_id, tenant_id):
+        relation = {"key": tenant_id, "type": "isIn"}
+        self.storage.add_relations_to_collection_item("entities", entity_id, [relation])
+
+    def __link_tenant_to_defining_entity(self, tenant_id, entity_id):
+        defining_relation = {"key": entity_id, "type": "definedBy"}
+        self.storage.add_relations_to_collection_item(
+            "entities", tenant_id, [defining_relation]
+        )
+
     def _abort_if_item_doesnt_exist(self, collection, id):
         if item := self.storage.get_item_from_collection_by_id(collection, id):
             return item
@@ -119,19 +138,26 @@ class BaseResource(Resource):
             case _:
                 return response_data, status_code
 
-    def _create_tenant(self, tenant_id):
-        tenant = {"_id": tenant_id, "type": "tenant", "identifiers": [tenant_id]}
-        return self.storage.save_item_to_collection("entities", tenant)
-
-    def _link_tenant_to_defining_entity(self, tenant_id, entity_id):
-        defining_relation = {"key": entity_id, "type": "definedBy"}
-        self.storage.add_relations_to_collection_item(
-            "entities", tenant_id, [defining_relation]
-        )
-
-    def _link_entity_to_tenant(self, entity_id, tenant_id):
-        relation = {"key": tenant_id, "type": "isIn"}
-        self.storage.add_relations_to_collection_item("entities", entity_id, [relation])
+    def _create_tenant(self, entity):
+        if tenant_defining_types and entity["type"] in tenant_defining_types:
+            tenant_id = f'tenant:{entity.get("_id", entity.get("id"))}'
+            if not (tenant_label := self.__get_tenant_label(entity)):
+                tenant_label = entity.get("_id", entity.get("id"))
+            tenant = self.storage.save_item_to_collection(
+                "entities",
+                {
+                    "_id": tenant_id,
+                    "type": "tenant",
+                    "identifiers": [tenant_id],
+                    "metadata": [{"key": "label", "value": tenant_label}],
+                },
+            )
+            self.__link_tenant_to_defining_entity(tenant["_id"], entity["_id"])
+        elif entity["type"] not in ["role", "tenant", "user"]:
+            self.__link_entity_to_tenant(
+                entity["_id"],
+                policy_factory.get_user_context().x_tenant.id.removeprefix("tenant:"),
+            )
 
     def _decorate_entity(self, entity):
         default_entity = {
