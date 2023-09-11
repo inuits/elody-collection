@@ -22,15 +22,6 @@ class BaseResource(Resource):
         self.storage_api_url = os.getenv("STORAGE_API_URL")
         self.storage_api_url_ext = os.getenv("STORAGE_API_URL_EXT")
 
-    def __get_tenant_label(self, defining_entity):
-        if "metadata" in defining_entity:
-            for item in defining_entity["metadata"]:
-                if item["key"] == "name":
-                    return item["value"]
-        if "name" in defining_entity:
-            return defining_entity["name"]["value"]
-        return None
-
     def __link_entity_to_tenant(self, entity_id, tenant_id):
         relation = {"key": tenant_id, "type": "isIn"}
         self.storage.add_relations_to_collection_item("entities", entity_id, [relation])
@@ -141,7 +132,7 @@ class BaseResource(Resource):
     def _create_tenant(self, entity):
         if tenant_defining_types and entity["type"] in tenant_defining_types:
             tenant_id = f'tenant:{entity.get("_id", entity.get("id"))}'
-            if not (tenant_label := self.__get_tenant_label(entity)):
+            if not (tenant_label := self._get_tenant_label(entity)):
                 tenant_label = entity.get("_id", entity.get("id"))
             tenant = self.storage.save_item_to_collection(
                 "entities",
@@ -159,11 +150,29 @@ class BaseResource(Resource):
                 policy_factory.get_user_context().x_tenant.id.removeprefix("tenant:"),
             )
 
+    def _create_ticket(self, filename: str) -> str:
+        content = {
+            "location": filename,
+            "exp": (datetime.now(tz=timezone.utc) + timedelta(minutes=1)).timestamp(),
+            "user": policy_factory.get_user_context().email or "default_uploader",
+            "type": "ticket",
+        }
+        return self.storage.save_item_to_collection(
+            "abstracts", content, only_return_id=True, create_sortable_metadata=False
+        )
+
     def _decorate_entity(self, entity):
         default_entity = {
             "type": "asset",
         }
         return default_entity | entity
+
+    def _get_tenant_label(self, defining_entity):
+        if "metadata" in defining_entity:
+            for item in defining_entity["metadata"]:
+                if item["key"] == "name":
+                    return item["value"]
+        return None
 
     def _has_access_to_item(self, item, collection="entities"):
         return True
@@ -216,42 +225,6 @@ class BaseResource(Resource):
             "text/turtle",
         ]
 
-    def _set_entity_mediafile_and_thumbnail(self, entity):
-        mediafiles = self.storage.get_collection_item_mediafiles(
-            "entities", get_raw_id(entity)
-        )
-        for mediafile in mediafiles:
-            if mediafile.get("is_primary", False):
-                entity["primary_mediafile"] = mediafile["filename"]
-                entity["primary_mediafile_location"] = mediafile[
-                    "original_file_location"
-                ]
-                if "transcode_file_location" in mediafile:
-                    entity["primary_transcode"] = mediafile["transcode_filename"]
-                    entity["primary_transcode_location"] = mediafile[
-                        "transcode_file_location"
-                    ]
-                if "img_width" in mediafile and "img_height" in mediafile:
-                    entity["primary_width"] = mediafile["img_width"]
-                    entity["primary_height"] = mediafile["img_height"]
-            if mediafile.get("is_primary_thumbnail", False):
-                entity["primary_thumbnail_location"] = mediafile[
-                    "thumbnail_file_location"
-                ]
-        return entity
-
-    def _create_ticket(self, filename: str) -> str:
-        content = {
-            "location": filename,
-            "exp": (datetime.now(tz=timezone.utc) + timedelta(minutes=1)).timestamp(),
-            "user": policy_factory.get_user_context().email or "default_uploader",
-            "type": "ticket",
-        }
-        ticket_id = self.storage.save_item_to_collection(
-            "abstracts", content, only_return_id=True, create_sortable_metadata=False
-        )
-        return ticket_id
-
     def _parse_items_from_csv(self, request, initial_data_type):
         items = []
         if not (request_data := request.get_data(as_text=True)):
@@ -266,7 +239,7 @@ class BaseResource(Resource):
                 400,
                 message="Problem with a number of columns for entities in CSV.",
             )
-        #  if there is no separator in csv (e.g. contains only 1 col) - sniffer returns nonsens:
+        #  if there is no separator in csv (e.g. contains only 1 col) - sniffer returns nonsense:
         if re.search("[a-zA-Z0-9_\"']", separator):
             separator = ","
 
@@ -296,6 +269,30 @@ class BaseResource(Resource):
                 )
 
         return items
+
+    def _set_entity_mediafile_and_thumbnail(self, entity):
+        mediafiles = self.storage.get_collection_item_mediafiles(
+            "entities", get_raw_id(entity)
+        )
+        for mediafile in mediafiles:
+            if mediafile.get("is_primary", False):
+                entity["primary_mediafile"] = mediafile["filename"]
+                entity["primary_mediafile_location"] = mediafile[
+                    "original_file_location"
+                ]
+                if "transcode_file_location" in mediafile:
+                    entity["primary_transcode"] = mediafile["transcode_filename"]
+                    entity["primary_transcode_location"] = mediafile[
+                        "transcode_file_location"
+                    ]
+                if "img_width" in mediafile and "img_height" in mediafile:
+                    entity["primary_width"] = mediafile["img_width"]
+                    entity["primary_height"] = mediafile["img_height"]
+            if mediafile.get("is_primary_thumbnail", False):
+                entity["primary_thumbnail_location"] = mediafile[
+                    "thumbnail_file_location"
+                ]
+        return entity
 
     @staticmethod
     @app.before_request
