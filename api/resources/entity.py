@@ -220,6 +220,7 @@ class EntityDetail(BaseResource):
                     "mediafiles", get_raw_id(mediafile)
                 )
         self.storage.delete_item_from_collection("entities", get_raw_id(entity))
+        self._delete_tenant(entity)
         signal_entity_deleted(rabbit, entity)
         return "", 204
 

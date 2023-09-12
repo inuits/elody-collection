@@ -167,6 +167,12 @@ class BaseResource(Resource):
         }
         return default_entity | entity
 
+    def _delete_tenant(self, entity):
+        if tenant_defining_types and entity["type"] in tenant_defining_types:
+            self.storage.delete_item_from_collection(
+                "entities", f'tenant:{entity["_id"]}'
+            )
+
     def _get_tenant_label(self, defining_entity):
         if "metadata" in defining_entity:
             for item in defining_entity["metadata"]:
