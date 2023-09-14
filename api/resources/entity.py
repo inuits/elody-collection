@@ -24,7 +24,7 @@ from resources.csv_importer import (
 
 class Entity(BaseResource):
     @policy_factory.authenticate(RequestContext(request))
-    def get(self):
+    def get(self, filters=None):
         accept_header = request.headers.get("Accept")
         skip = request.args.get("skip", 0, int)
         limit = request.args.get("limit", 20, int)
@@ -35,7 +35,7 @@ class Entity(BaseResource):
         order_by = request.args.get("order_by", None)
         ascending = request.args.get("asc", 1, int)
         skip_relations = request.args.get("skip_relations", 0, int)
-        filters = {}
+        filters = filters if filters else {}
         if item_type := request.args.get("type"):
             filters["type"] = item_type
         if ids := request.args.get("ids"):
