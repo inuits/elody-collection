@@ -1,6 +1,6 @@
 import mappers
 
-from app import policy_factory, rabbit, tenant_defining_types
+from app import policy_factory, rabbit
 from datetime import datetime, timezone
 from elody.exceptions import NonUniqueException
 from elody.util import (
@@ -298,7 +298,7 @@ class EntityMediafiles(BaseResource):
         )
 
 
-class EntityMediafilesCreate(BaseResource):  # TODO add user
+class EntityMediafilesCreate(BaseResource):
     @policy_factory.authenticate(RequestContext(request))
     def post(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)

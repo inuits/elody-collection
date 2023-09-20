@@ -1,7 +1,11 @@
-import elody.util as util
-
 from app import policy_factory, rabbit
 from datetime import datetime, timezone
+from elody.util import (
+    get_raw_id,
+    mediafile_is_public,
+    signal_mediafile_changed,
+    signal_mediafile_deleted,
+)
 from flask import request
 from inuits_policy_based_auth import RequestContext
 from resources.base_resource import BaseResource
@@ -46,7 +50,7 @@ class Mediafile(BaseResource):
         accept_header = request.headers.get("Accept")
         if accept_header == "text/uri-list":
             ticket_id = self._create_ticket(mediafile["filename"])
-            response = f"{self.storage_api_url}/upload-with-ticket/{mediafile['filename'].strip()}?id={util.get_raw_id(mediafile)}&ticket_id={ticket_id}"
+            response = f"{self.storage_api_url}/upload-with-ticket/{mediafile['filename'].strip()}?id={get_raw_id(mediafile)}&ticket_id={ticket_id}"
         else:
             response = mediafile
         return self._create_response_according_accept_header(
@@ -78,7 +82,7 @@ class MediafileCopyright(BaseResource):
         mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
         if self._has_access_to_item(mediafile, collection="mediafiles"):
             return "full", 200
-        if not util.mediafile_is_public(mediafile):
+        if not mediafile_is_public(mediafile):
             return "none", 200
         for item in [x for x in mediafile["metadata"] if x["key"] == "rights"]:
             if "in copyright" in item["value"].lower():
@@ -107,9 +111,9 @@ class MediafileDetail(BaseResource):
             policy_factory.get_user_context().email or "default_uploader"
         )
         mediafile = self.storage.update_item_from_collection(
-            "mediafiles", util.get_raw_id(old_mediafile), content
+            "mediafiles", get_raw_id(old_mediafile), content
         )
-        util.signal_mediafile_changed(rabbit, old_mediafile, mediafile)
+        signal_mediafile_changed(rabbit, old_mediafile, mediafile)
         return mediafile, 201
 
     @policy_factory.authenticate(RequestContext(request))
@@ -123,9 +127,9 @@ class MediafileDetail(BaseResource):
             policy_factory.get_user_context().email or "default_uploader"
         )
         mediafile = self.storage.patch_item_from_collection(
-            "mediafiles", util.get_raw_id(old_mediafile), content
+            "mediafiles", get_raw_id(old_mediafile), content
         )
-        util.signal_mediafile_changed(rabbit, old_mediafile, mediafile)
+        signal_mediafile_changed(rabbit, old_mediafile, mediafile)
         return mediafile, 201
 
     @policy_factory.authenticate(RequestContext(request))
@@ -133,8 +137,6 @@ class MediafileDetail(BaseResource):
         mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
         self._abort_if_no_access(mediafile, collection="mediafiles")
         linked_entities = self.storage.get_mediafile_linked_entities(mediafile)
-        self.storage.delete_item_from_collection(
-            "mediafiles", util.get_raw_id(mediafile)
-        )
-        util.signal_mediafile_deleted(rabbit, mediafile, linked_entities)
+        self.storage.delete_item_from_collection("mediafiles", get_raw_id(mediafile))
+        signal_mediafile_deleted(rabbit, mediafile, linked_entities)
         return "", 204

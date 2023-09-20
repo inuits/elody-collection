@@ -1,7 +1,7 @@
 import app
-import elody.util as util
 
 from datetime import datetime, timezone
+from elody.util import get_item_metadata_value, mediafile_is_public
 from storage.storagemanager import StorageManager
 
 
@@ -83,15 +83,15 @@ def handle_mediafile_status_change(routing_key, body, message_id):
     if __is_malformed_message(data, ["mediafile", "old_mediafile"]):
         return
     storage = StorageManager().get_db_engine()
-    old_publication_status = util.get_item_metadata_value(
+    old_publication_status = get_item_metadata_value(
         data["old_mediafile"], "publication_status"
     )
-    new_publication_status = util.get_item_metadata_value(
+    new_publication_status = get_item_metadata_value(
         data["mediafile"], "publication_status"
     )
     if old_publication_status == new_publication_status:
         return
-    if util.mediafile_is_public(data["mediafile"]):
+    if mediafile_is_public(data["mediafile"]):
         return
     storage.handle_mediafile_status_change(data["mediafile"])
     storage.reindex_mediafile_parents(data["mediafile"])
