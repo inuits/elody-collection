@@ -109,7 +109,7 @@ from resources.saved_search import (
     SavedSearchDetail,
 )
 from resources.tenant import Tenant
-from resources.ticket import TicketDetail
+from resources.ticket import Ticket, TicketDetail
 from resources.spec import AsyncAPISpec, OpenAPISpec
 
 api.add_resource(Config, "/config")
@@ -154,6 +154,7 @@ api.add_resource(SavedSearchDetail, "/saved_searches/<string:id>")
 
 api.add_resource(Tenant, "/tenant")
 
+api.add_resource(Ticket, "/ticket")
 api.add_resource(TicketDetail, "/ticket/<string:id>")
 
 api.add_resource(AsyncAPISpec, "/spec/dams-collection-api-events.html")
