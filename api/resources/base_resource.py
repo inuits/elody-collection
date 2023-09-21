@@ -150,15 +150,16 @@ class BaseResource(Resource):
                 policy_factory.get_user_context().x_tenant.id.removeprefix("tenant:"),
             )
 
-    def _create_ticket(self, filename: str) -> str:
-        content = {
-            "location": filename,
+    def _create_ticket(self, filename):
+        ticket = {
+            "bucket": self._get_upload_bucket(),
             "exp": (datetime.now(tz=timezone.utc) + timedelta(minutes=1)).timestamp(),
-            "user": policy_factory.get_user_context().email or "default_uploader",
+            "location": self._get_upload_location(filename),
             "type": "ticket",
+            "user": policy_factory.get_user_context().email or "default_uploader",
         }
         return self.storage.save_item_to_collection(
-            "abstracts", content, only_return_id=True, create_sortable_metadata=False
+            "abstracts", ticket, only_return_id=True, create_sortable_metadata=False
         )
 
     def _decorate_entity(self, entity):
@@ -179,6 +180,12 @@ class BaseResource(Resource):
                 if item["key"] == "name":
                     return item["value"]
         return None
+
+    def _get_upload_bucket(self):
+        return ""
+
+    def _get_upload_location(self, filename):
+        return filename
 
     def _has_access_to_item(self, item, collection="entities"):
         return True
