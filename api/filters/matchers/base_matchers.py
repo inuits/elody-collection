@@ -4,6 +4,12 @@ from abc import ABC, abstractmethod
 class BaseMatchers(ABC):
     datetime_pattern = r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$"
 
+    @staticmethod
+    def get_document_key_value(parent_key: str) -> tuple[str, str]:
+        document_key = "type" if parent_key == "relations" else "key"
+        document_value = "key" if parent_key == "relations" else "value"
+        return document_key, document_value
+
     @abstractmethod
     def id(self, key: str, values: list[str], parent_key: str) -> dict | str:
         pass

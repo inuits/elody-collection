@@ -60,13 +60,24 @@ class MongoMatchers(BaseMatchers):
 
     def __exact_contains_range_match(self, key: str, value, parent_key: str = ""):
         if parent_key:
+            document_key, document_value = BaseMatchers.get_document_key_value(
+                parent_key
+            )
+            if isinstance(value, str) or (
+                isinstance(value, dict) and value.get("$regex")
+            ):
+                document_value = "value"
+
             return {
                 "$match": {
                     "$or": [
                         {
                             parent_key: {
                                 "$type": "array",
-                                "$elemMatch": {"key": key, "value": value},
+                                "$elemMatch": {
+                                    document_key: key,
+                                    document_value: value,
+                                },
                             }
                         },
                         {
@@ -87,14 +98,14 @@ class MongoMatchers(BaseMatchers):
         value = {operator_to_match_none_values: [None, ""]}
 
         if parent_key:
+            document_key, document_value = BaseMatchers.get_document_key_value(
+                parent_key
+            )
             or_conditions = [
                 {
                     parent_key: {
                         "$type": "array",
-                        "$elemMatch": {
-                            "key": key,
-                            "value": value,
-                        },
+                        "$elemMatch": {document_key: key, document_value: value},
                     }
                 },
                 {

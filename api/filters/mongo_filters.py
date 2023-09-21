@@ -1,5 +1,7 @@
 import pymongo
 
+from filters.filter_option import FilterOption
+from filters.matchers.base_matchers import BaseMatchers
 from filters.types.filter_types import get_filter
 from storage.mongostore import MongoStorageManager
 
@@ -46,14 +48,22 @@ class MongoFilters(MongoStorageManager):
             and value["provide_value_options_for_key"] == True
             for value in filter_request_body
         ):
-            for i in range(len(items["results"])):
-                if isinstance(items["results"][i]["options"][0], list):
-                    items["results"][i]["options"] = [
-                        item
-                        for sublist in items["results"][i]["options"]
-                        for item in sublist
-                    ]
-            items["results"][0]["options"] = items["results"][0]["options"][:limit]
+            parent_key = filter_request_body[-1]["parent_key"]
+            _, document_value = BaseMatchers.get_document_key_value(parent_key)
+            options = set()
+
+            queried_items = [
+                option
+                for options in items["results"][0]["options"]
+                for option in options
+            ]
+            for item in queried_items:
+                if isinstance(item["value"], list):
+                    for value in item["value"]:
+                        options.add(FilterOption(value, value))
+                else:
+                    options.add(FilterOption(item["value"], item[document_value]))
+            items["results"] = [option.to_dict() for option in options]
 
         return items
 
@@ -82,30 +92,31 @@ class MongoFilters(MongoStorageManager):
 
             if filter_criteria.get("provide_value_options_for_key"):
                 key = filter_criteria["key"]
+                parent_key = filter_criteria["parent_key"]
+                document_key, _ = BaseMatchers.get_document_key_value(parent_key)
+
                 pipeline.extend(
                     [
                         {
                             "$project": {
                                 "_id": 0,
                                 key: {
-                                    "$arrayElemAt": [
-                                        {
-                                            "$map": {
-                                                "input": {
-                                                    "$filter": {
-                                                        "input": "$metadata",
-                                                        "as": "item",
-                                                        "cond": {
-                                                            "$eq": ["$$item.key", key]
-                                                        },
-                                                    }
+                                    "$map": {
+                                        "input": {
+                                            "$filter": {
+                                                "input": f"${parent_key}",
+                                                "as": "item",
+                                                "cond": {
+                                                    "$eq": [
+                                                        f"$$item.{document_key}",
+                                                        key,
+                                                    ]
                                                 },
-                                                "as": "filteredItem",
-                                                "in": "$$filteredItem.value",
                                             }
                                         },
-                                        0,
-                                    ]
+                                        "as": "filteredItem",
+                                        "in": "$$filteredItem",
+                                    }
                                 },
                             }
                         },
