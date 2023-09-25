@@ -33,7 +33,7 @@ pycparser==2.21
 PyJWT==2.8.0
 pymongo==4.5.0
 pyparsing==3.1.1
-python-arango==7.6.2
+python-arango==7.7.0
 python-benedict==0.32.1
 python-fsutil==0.10.0
 python-slugify==8.0.1
