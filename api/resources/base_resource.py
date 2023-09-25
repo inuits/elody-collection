@@ -309,7 +309,7 @@ class BaseResource(Resource):
 
     @staticmethod
     @app.before_request
-    def create_tenant():
+    def create_tenant(auto_generate_id=False):
         if tenant_defining_types:
             return
         if not (tenant_id := request.headers.get("X-tenant-id")):
@@ -317,6 +317,7 @@ class BaseResource(Resource):
         storage = StorageManager().get_db_engine()
         if storage.get_item_from_collection_by_id("entities", tenant_id):
             return
-        return storage.save_item_to_collection(
-            "entities", {"_id": tenant_id, "type": "tenant", "identifiers": [tenant_id]}
-        )
+        tenant = {"type": "tenant", "identifiers": [tenant_id]}
+        if auto_generate_id:
+            tenant["_id"] = tenant_id
+        return storage.save_item_to_collection("entities", tenant)
