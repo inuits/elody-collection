@@ -14,12 +14,6 @@ from flask_restful import abort
 from inuits_policy_based_auth import RequestContext
 from resources.base_resource import BaseResource
 from validator import entity_schema, mediafile_schema
-from resources.csv_importer import (
-    PatchEntitiesMetadata,
-    PutEntitiesMetadata,
-    AddEntitiesWithMediafiles,
-    AddEntities,
-)
 
 
 class Entity(BaseResource):
@@ -77,8 +71,6 @@ class Entity(BaseResource):
     @policy_factory.authenticate(RequestContext(request))
     def post(self):
         content_type = request.content_type
-        if content_type == "text/csv":
-            return self._import_entities_from_csv(request)
         linked_data_request = self._is_rdf_post_call(content_type)
         create_mediafile = request.args.get(
             "create_mediafile", 0, int
@@ -121,26 +113,6 @@ class Entity(BaseResource):
         return self._create_response_according_accept_header(
             response, accept_header, 201
         )
-
-    @policy_factory.authenticate(RequestContext(request))
-    def patch(self):
-        if request.content_type == "text/csv":
-            return PatchEntitiesMetadata().post()
-        else:
-            return "Wrong content type", 400
-
-    @policy_factory.authenticate(RequestContext(request))
-    def put(self):
-        if request.content_type == "text/csv":
-            return PutEntitiesMetadata().post()
-        else:
-            return "Wrong content type", 400
-
-    def _import_entities_from_csv(self, request):
-        if "mediafile[0].filename" in request.get_data(as_text=True):
-            return AddEntitiesWithMediafiles().post()
-        else:
-            return AddEntities().post()
 
 
 class EntityDetail(BaseResource):

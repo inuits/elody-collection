@@ -1,4 +1,3 @@
-import csv
 import json
 import mappers
 import os
@@ -237,51 +236,6 @@ class BaseResource(Resource):
             "application/rdf+xml",
             "text/turtle",
         ]
-
-    def _parse_items_from_csv(self, request, initial_data_type):
-        items = []
-        if not (request_data := request.get_data(as_text=True)):
-            abort(400, message="Missing data")
-        if not request_data.startswith(initial_data_type):
-            abort(400, message=f"Missing {initial_data_type}.")
-
-        try:
-            separator = csv.Sniffer().sniff(request_data).delimiter
-        except csv.Error:
-            abort(
-                400,
-                message="Problem with a number of columns for entities in CSV.",
-            )
-        #  if there is no separator in csv (e.g. contains only 1 col) - sniffer returns nonsense:
-        if re.search("[a-zA-Z0-9_\"']", separator):
-            separator = ","
-
-        request_dict = csv.DictReader(request_data.splitlines(), delimiter=separator)
-        for item in [row for row in request_dict]:
-            bdict = benedict()
-            for key, value in item.items():
-                if key == initial_data_type and not value:
-                    abort(400, message=f"{initial_data_type} is not filled")
-                if key != initial_data_type and value:
-                    try:
-                        value = int(value)
-                    except ValueError:
-                        try:
-                            value = float(value)
-                        except ValueError:
-                            pass
-                    bdict[key] = value
-            try:
-                items.append(
-                    {f"{initial_data_type}": item[initial_data_type], "bdict": bdict}
-                )
-            except KeyError:
-                abort(
-                    400,
-                    message="Problem with a number of columns or with a separator - check your CSV file.",
-                )
-
-        return items
 
     def _set_entity_mediafile_and_thumbnail(self, entity):
         mediafiles = self.storage.get_collection_item_mediafiles(
