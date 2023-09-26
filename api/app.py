@@ -5,7 +5,7 @@ import secrets
 
 from amqp.amqpmanager import AmqpManager
 from elody.loader import load_apps, load_policies, load_queues
-from elody.util import CustomJSONEncoder
+from elody.util import CustomJSONEncoder, custom_json_dumps
 from flask import Flask
 from flask_restful import Api
 from flask_swagger_ui import get_swaggerui_blueprint
@@ -48,7 +48,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 rabbit = AmqpManager().get_amqp_manager()
-rabbit.init_app(app, "basic", json.loads, json.dumps)
+rabbit.init_app(app, "basic", json.loads, custom_json_dumps)
 
 app.register_blueprint(swaggerui_blueprint)
 
