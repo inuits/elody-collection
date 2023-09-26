@@ -4,7 +4,6 @@ import os
 import re
 
 from app import app, policy_factory, rabbit, tenant_defining_types
-from benedict import benedict
 from datetime import datetime, timezone, timedelta
 from elody.util import get_raw_id, signal_entity_changed
 from flask import Response, request
