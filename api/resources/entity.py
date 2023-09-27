@@ -261,7 +261,8 @@ class EntityMediafiles(BaseResource):
                 mediafile_is_public(mediafile),
             )
             if accept_header == "text/uri-list":
-                response += f'{self.storage_api_url}/upload/{mediafile["filename"]}?id={get_raw_id(mediafile)}\n'
+                ticket_id = self._create_ticket(mediafile["filename"])
+                response += f"{self.storage_api_url}/upload-with-ticket/{mediafile['filename']}?id={get_raw_id(mediafile)}&ticket_id={ticket_id}\n"
             else:
                 response.append(mediafile)
         signal_entity_changed(rabbit, entity)
