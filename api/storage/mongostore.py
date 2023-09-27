@@ -200,22 +200,27 @@ class MongoStorageManager(GenericStorageManager):
     ):
         primary_mediafile = mediafile_public
         primary_thumbnail = mediafile_public
-        relation = {
-            "key": mediafile_id,
-            "label": "hasMediafile",
-            "type": "hasMediafile",
-            "is_primary": primary_mediafile,
-            "is_primary_thumbnail": primary_thumbnail,
-        }
         if mediafile_public:
             relations = self.get_collection_item_relations(collection, id)
             for relation in relations:
                 if relation.get("is_primary", False):
-                    relation["is_primary"] = False
+                    primary_mediafile = False
                 if relation.get("is_primary_thumbnail", False):
-                    relation["is_primary_thumbnail"] = False
+                    primary_thumbnail = False
         self.add_relations_to_collection_item(
-            collection, id, [relation], True, "mediafiles"
+            collection,
+            id,
+            [
+                {
+                    "key": mediafile_id,
+                    "label": "hasMediafile",
+                    "type": "hasMediafile",
+                    "is_primary": primary_mediafile,
+                    "is_primary_thumbnail": primary_thumbnail,
+                }
+            ],
+            True,
+            "mediafiles",
         )
         return self.db["mediafiles"].find_one(self.__get_id_query(mediafile_id))
 
