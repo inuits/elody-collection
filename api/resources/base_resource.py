@@ -197,13 +197,11 @@ class BaseResource(Resource):
             ]:
                 if mediafile_type in entity:
                     mediafile_filename = entity[mediafile_type]
-                    mediafile_filename = mediafile_filename.replace(
-                        "/download/", "/download-with-ticket/"
-                    )
+                    mediafile_filename = mediafile_filename.split("/download/")[-1]
                     ticket_id = self._create_ticket(mediafile_filename)
                     entity[
                         mediafile_type
-                    ] = f"{self.storage_api_url_ext}{mediafile_filename}?ticket_id={ticket_id}"
+                    ] = f"{self.storage_api_url_ext}/download-with-ticket/{mediafile_filename}?ticket_id={ticket_id}"
             if "primary_thumbnail_location" in entity:
                 entity[
                     "primary_thumbnail_location"
@@ -215,13 +213,11 @@ class BaseResource(Resource):
             for mediafile_type in ["original_file_location", "transcode_file_location"]:
                 if mediafile_type in mediafile:
                     mediafile_filename = mediafile[mediafile_type]
-                    mediafile_filename = mediafile_filename.replace(
-                        "/download/", "/download-with-ticket/"
-                    )
+                    mediafile_filename = mediafile_filename.split("/download/")[-1]
                     ticket_id = self._create_ticket(mediafile_filename)
                     mediafile[
                         mediafile_type
-                    ] = f"{self.storage_api_url_ext}{mediafile_filename}?ticket_id={ticket_id}"
+                    ] = f"{self.storage_api_url_ext}/download-with-ticket/{mediafile_filename}?ticket_id={ticket_id}"
             if "thumbnail_file_location" in mediafile:
                 mediafile[
                     "thumbnail_file_location"
