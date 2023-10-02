@@ -1,7 +1,6 @@
 import json
 import mappers
 import os
-import re
 
 from app import app, policy_factory, rabbit, tenant_defining_types
 from datetime import datetime, timezone, timedelta
@@ -67,7 +66,7 @@ class BaseResource(Resource):
         try:
             data = mappers.map_data_to_ldjson(content, content_type)
             rdf_data = json.loads(data)
-        except Exception as ex:
+        except Exception:
             abort(
                 400,
                 message="The request failed during mapping the data to ldjson. Check if the given RDF format is valid.",
