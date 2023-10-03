@@ -179,9 +179,11 @@ class BaseResource(Resource):
         return None
 
     def _get_upload_bucket(self):
-        return ""
+        return os.getenv("MINIO_BUCKET")
 
     def _get_upload_location(self, filename):
+        if tenant_id := policy_factory.get_user_context().x_tenant.id:
+            return f"{tenant_id}/{filename}"
         return filename
 
     def _has_access_to_item(self, item, collection="entities"):
