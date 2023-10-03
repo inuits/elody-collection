@@ -21,6 +21,11 @@ class Mediafile(BaseResource):
         filters = {}
         if ids := request.args.get("ids"):
             filters["ids"] = ids.split(",")
+        access_restricting_filters = (
+            policy_factory.get_user_context().access_restrictions.filters
+        )
+        if isinstance(access_restricting_filters, dict):
+            filters = {**filters, **access_restricting_filters}
         mediafiles = self.storage.get_items_from_collection(
             "mediafiles",
             skip=skip,

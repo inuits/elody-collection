@@ -75,6 +75,12 @@ class FilterMediafiles(BaseFilterResource):
     @policy_factory.authenticate(RequestContext(request))
     def post(self):
         query = request.get_json()
+        access_restricting_filters = (
+            policy_factory.get_user_context().access_restrictions.filters
+        )
+        if access_restricting_filters:
+            for filter in access_restricting_filters:
+                query.insert(0, filter)
         return self._execute_advanced_search_with_query(query, "mediafiles")
 
 
