@@ -4,6 +4,7 @@ import os
 
 from app import app, policy_factory, rabbit, tenant_defining_types
 from datetime import datetime, timezone, timedelta
+from elody.csv import CSVSingleObject
 from elody.util import get_raw_id, signal_entity_changed
 from flask import Response, request
 from flask_restful import Resource, abort
@@ -170,6 +171,18 @@ class BaseResource(Resource):
             self.storage.delete_item_from_collection(
                 "entities", f'tenant:{entity["_id"]}'
             )
+
+    def _get_content_according_content_type(self, request, object_type="entity"):
+        content_type = request.content_type
+        match content_type:
+            case "application/json":
+                return request.get_json()
+            case "text/csv":
+                csv = request.get_data(as_text=True)
+                parsed_csv = CSVSingleObject(csv)
+                return parsed_csv.get_type(object_type)
+            case _:
+                return request.get_json()
 
     def _get_tenant_label(self, defining_entity):
         if "metadata" in defining_entity:

@@ -163,7 +163,7 @@ class EntityDetail(BaseResource):
     def patch(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         self._abort_if_no_access(entity)
-        content = request.get_json()
+        content = self._get_content_according_content_type(request)
         content["date_updated"] = datetime.now(timezone.utc)
         content["version"] = entity.get("version", 0) + 1
         content["last_editor"] = (
