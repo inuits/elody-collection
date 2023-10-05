@@ -179,7 +179,9 @@ class BaseResource(Resource):
                 return request.get_json()
             case "text/csv":
                 csv = request.get_data(as_text=True)
-                parsed_csv = CSVSingleObject(csv)
+                parsed_csv = CSVSingleObject(csv, object_type)
+                if object_type in ["metadata", "relations"]:
+                    return getattr(parsed_csv, object_type)
                 return parsed_csv.get_type(object_type)
             case _:
                 return request.get_json()

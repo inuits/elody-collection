@@ -47,7 +47,7 @@ class Mediafile(BaseResource):
 
     @policy_factory.authenticate(RequestContext(request))
     def post(self):
-        content = request.get_json()
+        content = self._get_content_according_content_type(request, "mediafile")
         self._abort_if_not_valid_json("Mediafile", content, mediafile_schema)
         content["date_created"] = datetime.now(timezone.utc)
         content["version"] = 1
@@ -108,7 +108,7 @@ class MediafileDetail(BaseResource):
     def put(self, id):
         old_mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
         self._abort_if_no_access(old_mediafile, collection="mediafiles")
-        content = request.get_json()
+        content = self._get_content_according_content_type(request, "mediafile")
         self._abort_if_not_valid_json("Mediafile", content, mediafile_schema)
         content["date_updated"] = datetime.now(timezone.utc)
         content["version"] = old_mediafile.get("version", 0) + 1
@@ -125,7 +125,7 @@ class MediafileDetail(BaseResource):
     def patch(self, id):
         old_mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
         self._abort_if_no_access(old_mediafile, collection="mediafiles")
-        content = request.get_json()
+        content = self._get_content_according_content_type(request, "mediafile")
         content["date_updated"] = datetime.now(timezone.utc)
         content["version"] = old_mediafile.get("version", 0) + 1
         content["last_editor"] = (

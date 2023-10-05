@@ -84,7 +84,7 @@ class Entity(BaseResource):
         if linked_data_request:
             content = self._create_linked_data(request, content_type)
         else:
-            content = request.get_json()
+            content = self._get_content_according_content_type(request)
         accept_header = request.headers.get("Accept")
         entity = self._decorate_entity(content)
         entity["date_created"] = datetime.now(timezone.utc)
@@ -142,7 +142,7 @@ class EntityDetail(BaseResource):
     def put(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         self._abort_if_no_access(entity)
-        content = request.get_json()
+        content = self._get_content_according_content_type(request)
         self._abort_if_not_valid_json("Entity", content, entity_schema)
         content["date_updated"] = datetime.now(timezone.utc)
         content["version"] = entity.get("version", 0) + 1
@@ -239,7 +239,7 @@ class EntityMediafiles(BaseResource):
     def post(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         self._abort_if_no_access(entity)
-        content = request.get_json()
+        content = self._get_content_according_content_type(request, "mediafile")
         mediafiles = content if isinstance(content, list) else [content]
         accept_header = request.headers.get("Accept")
         if accept_header == "text/uri-list":
@@ -327,7 +327,7 @@ class EntityMetadata(BaseResource):
     def post(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         self._abort_if_no_access(entity)
-        content = request.get_json()
+        content = self._get_content_according_content_type(request, "metadata")
         metadata = self.storage.add_sub_item_to_collection_item(
             "entities", get_raw_id(entity), "metadata", content
         )
@@ -338,7 +338,7 @@ class EntityMetadata(BaseResource):
     def put(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         self._abort_if_no_access(entity)
-        content = request.get_json()
+        content = self._get_content_according_content_type(request, "metadata")
         metadata = self.storage.update_collection_item_sub_item(
             "entities", get_raw_id(entity), "metadata", content
         )
@@ -349,7 +349,7 @@ class EntityMetadata(BaseResource):
     def patch(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         self._abort_if_no_access(entity)
-        content = request.get_json()
+        content = self._get_content_according_content_type(request, "metadata")
         metadata = self.storage.patch_collection_item_metadata(
             "entities", get_raw_id(entity), content
         )
@@ -398,7 +398,7 @@ class EntityRelations(BaseResource):
     def post(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         self._abort_if_no_access(entity)
-        content = request.get_json()
+        content = self._get_content_according_content_type(request, "relations")
         relations = self.storage.add_relations_to_collection_item(
             "entities", get_raw_id(entity), content
         )
@@ -409,7 +409,7 @@ class EntityRelations(BaseResource):
     def put(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         self._abort_if_no_access(entity)
-        content = request.get_json()
+        content = self._get_content_according_content_type(request, "relations")
         relations = self.storage.update_collection_item_relations(
             "entities", get_raw_id(entity), content
         )
@@ -420,7 +420,7 @@ class EntityRelations(BaseResource):
     def patch(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         self._abort_if_no_access(entity)
-        content = request.get_json()
+        content = self._get_content_according_content_type(request, "relations")
         relations = self.storage.patch_collection_item_relations(
             "entities", get_raw_id(entity), content
         )
@@ -431,7 +431,7 @@ class EntityRelations(BaseResource):
     def delete(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
         self._abort_if_no_access(entity)
-        content = request.get_json()
+        content = self._get_content_according_content_type(request, "relations")
         self.storage.delete_collection_item_relations(
             "entities", get_raw_id(entity), content
         )
