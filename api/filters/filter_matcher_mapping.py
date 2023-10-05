@@ -46,6 +46,7 @@ class FilterMatcherMapping(ABC):
             "any": AnyMatcher,
             "none": NoneMatcher,
             "exact": ExactMatcher,
+            "contains": ContainsMatcher,
         },
         "boolean": {
             "exact": ExactMatcher,

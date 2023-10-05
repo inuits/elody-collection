@@ -61,7 +61,8 @@ class MinMatcher(BaseMatcher):
 
     def match(self, key, value, parent_key, **kwargs):
         if (
-            isinstance(value, dict)
+            isinstance(key, str)
+            and isinstance(value, dict)
             and value.get("min")
             and not value.get("max")
             and not value.get("included")
@@ -77,7 +78,8 @@ class MaxMatcher(BaseMatcher):
 
     def match(self, key, value, parent_key, **kwargs):
         if (
-            isinstance(value, dict)
+            isinstance(key, str)
+            and isinstance(value, dict)
             and not value.get("min")
             and value.get("max")
             and not value.get("included")
@@ -93,7 +95,8 @@ class MinIncludedMatcher(BaseMatcher):
 
     def match(self, key, value, parent_key, **kwargs):
         if (
-            isinstance(value, dict)
+            isinstance(key, str)
+            and isinstance(value, dict)
             and value.get("min")
             and not value.get("max")
             and value.get("included")
@@ -109,7 +112,8 @@ class MaxIncludedMatcher(BaseMatcher):
 
     def match(self, key, value, parent_key, **kwargs):
         if (
-            isinstance(value, dict)
+            isinstance(key, str)
+            and isinstance(value, dict)
             and not value.get("min")
             and value.get("max")
             and value.get("included")

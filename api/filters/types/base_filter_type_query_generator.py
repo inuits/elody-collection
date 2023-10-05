@@ -62,7 +62,7 @@ class BaseFilterTypeQueryGenerator(ABC):
             filter_criteria["key"],
             filter_criteria["value"],
             filter_criteria.get("parent_key", ""),
-            match_exact=True,
+            match_exact=filter_criteria.get("match_exact"),
         )
 
     @abstractmethod
