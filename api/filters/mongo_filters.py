@@ -19,7 +19,11 @@ class MongoFilters(MongoStorageManager):
         items = {"count": 0, "results": list()}
         pipeline = self.__generate_aggregation_pipeline(filter_request_body, collection)
         pipeline_count = pipeline + [{"$count": "count"}]
-        count = list(self.db[collection].aggregate(pipeline_count))
+        count = list(
+            self.db[collection].aggregate(
+                pipeline_count, allowDiskUse=self.allow_disk_use
+            )
+        )
 
         if len(count) == 0:
             return items
@@ -38,7 +42,9 @@ class MongoFilters(MongoStorageManager):
             {"$skip": skip},
             {"$limit": limit},
         ]
-        documents = self.db[collection].aggregate(pipeline)
+        documents = self.db[collection].aggregate(
+            pipeline, allowDiskUse=self.allow_disk_use
+        )
         for document in documents:
             items["results"].append(self._prepare_mongo_document(document, True))
         items["limit"] = limit

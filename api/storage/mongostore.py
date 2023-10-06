@@ -21,6 +21,11 @@ class MongoStorageManager(GenericStorageManager):
         self.mongo_replica_set = os.getenv("MONGODB_REPLICA_SET")
         self.mongo_username = os.getenv("MONGODB_USERNAME")
         self.mongo_password = os.getenv("MONGODB_PASSWORD")
+        self.allow_disk_use = os.getenv("MONGODB_ALLOW_DISK_USE", False) in [
+            "True",
+            "true",
+            True,
+        ]
         self.client = MongoClient(self.__create_mongo_connection_string())
         self.db = self.client[self.mongo_db_name].with_options(
             CodecOptions(tz_aware=True, tzinfo=timezone.utc)
@@ -361,7 +366,8 @@ class MongoStorageManager(GenericStorageManager):
                     },
                     {"$sort": {"difference": 1}},
                     {"$limit": 1},
-                ]
+                ],
+                allowDiskUse=self.allow_disk_use,
             )
             result = list(results)[0]
             del result["difference"]
@@ -443,7 +449,8 @@ class MongoStorageManager(GenericStorageManager):
                         "distinctValues": {"$addToSet": "$metadata.value"},
                     }
                 },
-            ]
+            ],
+            allowDiskUse=self.allow_disk_use,
         )
         for result in aggregation:
             for distinct_value in result["distinctValues"]:
