@@ -152,10 +152,10 @@ api.add_resource(MediafileDetail, "/mediafiles/<string:id>")
 api.add_resource(SavedSearch, "/saved_searches")
 api.add_resource(SavedSearchDetail, "/saved_searches/<string:id>")
 
-api.add_resource(Tenant, "/tenant")
+api.add_resource(Tenant, "/tenants")
 
-api.add_resource(Ticket, "/ticket")
-api.add_resource(TicketDetail, "/ticket/<string:id>")
+api.add_resource(Ticket, "/tickets")
+api.add_resource(TicketDetail, "/tickets/<string:id>")
 
 api.add_resource(AsyncAPISpec, "/spec/dams-collection-api-events.html")
 api.add_resource(OpenAPISpec, "/spec/dams-collection-api.json")
