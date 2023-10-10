@@ -278,10 +278,11 @@ class BaseResource(Resource):
         self.storage.save_item_to_collection(
             "entities",
             {
-                "identifiers": [user_context.email, user_context.id],
+                "_id": user_context.id,
+                "identifiers": [user_context.id, user_context.email],
                 "metadata": [
-                    {"key": "email", "value": user_context.email},
                     {"key": "keycloak_id", "value": user_context.id},
+                    {"key": "email", "value": user_context.email},
                 ],
                 "relations": [],
                 "type": "user",
@@ -291,7 +292,7 @@ class BaseResource(Resource):
         if assign_roles_from_idp_to_super_tenant:
             self.storage.add_relations_to_collection_item(
                 "entities",
-                user_context.email,
+                user_context.id,
                 [
                     {
                         "key": "tenant:super",
@@ -301,9 +302,7 @@ class BaseResource(Resource):
                 ],
             )
 
-        return self.storage.get_item_from_collection_by_id(
-            "entities", user_context.email
-        )
+        return self.storage.get_item_from_collection_by_id("entities", user_context.id)
 
     @staticmethod
     @app.before_request
