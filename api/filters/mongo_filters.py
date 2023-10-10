@@ -64,11 +64,11 @@ class MongoFilters(MongoStorageManager):
                 for option in options
             ]
             for item in queried_items:
-                if isinstance(item["value"], list):
-                    for value in item["value"]:
+                if isinstance(item.get("value"), list):
+                    for value in item.get("value", list()):
                         options.add(FilterOption(value, value))
-                else:
-                    options.add(FilterOption(item["value"], item[document_value]))
+                elif "value" in item:
+                    options.add(FilterOption(item.get("value"), item[document_value]))
             items["results"] = [option.to_dict() for option in options]
 
         return items
