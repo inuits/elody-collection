@@ -272,10 +272,9 @@ class BaseResource(Resource):
                 ]
         return entity
 
-    def create_user_from_idp(self, assign_roles_from_idp_to_super_tenant: bool) -> dict:
+    def _create_user_from_idp(self, assign_roles_from_idp_to_super_tenant):
         user_context = policy_factory.get_user_context()
-
-        self.storage.save_item_to_collection(
+        user = self.storage.save_item_to_collection(
             "entities",
             {
                 "_id": user_context.id,
@@ -288,9 +287,8 @@ class BaseResource(Resource):
                 "type": "user",
             },
         )
-
         if assign_roles_from_idp_to_super_tenant:
-            self.storage.add_relations_to_collection_item(
+            relations = self.storage.add_relations_to_collection_item(
                 "entities",
                 user_context.id,
                 [
@@ -301,8 +299,8 @@ class BaseResource(Resource):
                     }
                 ],
             )
-
-        return self.storage.get_item_from_collection_by_id("entities", user_context.id)
+            user["relations"] = relations
+        return user
 
     @staticmethod
     @app.before_request
