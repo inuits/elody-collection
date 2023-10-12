@@ -75,6 +75,7 @@ policy_factory = PolicyFactory()
 load_apps(app, logger)
 load_policies(policy_factory, logger)
 
+from resources.batch import Batch
 from resources.config import Config
 from resources.entity import (
     Entity,
@@ -112,6 +113,7 @@ from resources.tenant import Tenant
 from resources.ticket import Ticket, TicketDetail
 from resources.spec import AsyncAPISpec, OpenAPISpec
 
+api.add_resource(Batch, "/batch")
 api.add_resource(Config, "/config")
 api.add_resource(Entity, "/entities")
 api.add_resource(EntityDetail, "/entities/<string:id>")
