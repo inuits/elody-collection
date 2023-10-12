@@ -280,7 +280,7 @@ class BaseResource(Resource):
                 "_id": user_context.id,
                 "identifiers": [user_context.id, user_context.email],
                 "metadata": [
-                    {"key": "keycloak_id", "value": user_context.id},
+                    {"key": "idp_user_id", "value": user_context.id},
                     {"key": "email", "value": user_context.email},
                 ],
                 "relations": [],
