@@ -274,11 +274,13 @@ class BaseResource(Resource):
 
     def _create_user_from_idp(self, assign_roles_from_idp=True, roles_per_tenant=None):
         user_context = policy_factory.get_user_context()
+        identifiers = [user_context.id]
+        if user_context.email != user_context.id:
+            identifiers.append(user_context.email)
         user = self.storage.save_item_to_collection(
             "entities",
             {
-                "_id": user_context.id,
-                "identifiers": [user_context.id, user_context.email],
+                "identifiers": identifiers,
                 "metadata": [
                     {"key": "idp_user_id", "value": user_context.id},
                     {"key": "email", "value": user_context.email},
