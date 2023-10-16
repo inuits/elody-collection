@@ -19,6 +19,10 @@
   ],
   "tags": [
     {
+      "name": "batch",
+      "description": "Batch operations in DAMS"
+    },
+    {
       "name": "config",
       "description": "Config for DAMS"
     },
@@ -36,6 +40,53 @@
     }
   ],
   "paths": {
+    "/batch": {
+      "post": {
+        "tags": [
+          "batch"
+        ],
+        "summary": "Create entities and mediafiles based on a CSV file",
+        "operationId": "batch",
+        "requestBody": {
+          "description": "Entities and mediafiles to be added",
+          "required": true,
+          "content": {
+            "text/csv": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/entity_and_mediafiles"
+                  }
+                }
+              },
+              "text/uri-list": {
+                "schema": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "415": {
+            "description": "Wrong content type"
+          }
+        }
+      }
+    },
     "/config": {
       "get": {
         "tags": [
@@ -2410,6 +2461,29 @@
           "type": {
             "type": "string",
             "description": "entity value"
+          }
+        }
+      },
+      "entity_and_mediafiles": {
+        "type": "object",
+        "description": "A collection of both entities and mediafiles",
+        "required": [
+          "entities"
+        ],
+        "properties": {
+          "entities": {
+            "type": "array",
+            "description": "entities",
+            "items": {
+              "$ref": "#/components/schemas/entity"
+            }
+          },
+          "mediafiles": {
+            "type": "array",
+            "description": "mediafiles",
+            "items": {
+              "$ref": "#/components/schemas/mediafile"
+            }
           }
         }
       },
