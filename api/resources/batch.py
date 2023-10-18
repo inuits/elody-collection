@@ -49,7 +49,11 @@ class Batch(BaseResource):
                 if accept_header != "text/uri-list":
                     output.setdefault("entities", list())
                 entity_matching_id = entity.pop("matching_id")
+                relations = entity.pop("relations")
                 entity = self.storage.save_item_to_collection("entities", entity)
+                self.storage.add_relations_to_collection_item(
+                    "entities", get_raw_id(entity), relations
+                )
                 if entity_matching_id:
                     mediafiles = self.__add_matching_mediafiles_to_entity(
                         entity_matching_id, entity, parsed_csv.objects.get("mediafiles")
