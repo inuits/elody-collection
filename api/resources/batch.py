@@ -67,7 +67,7 @@ class Batch(BaseResource):
                 if accept_header != "text/uri-list":
                     output.get("entities", list()).append(
                         self.storage.get_item_from_collection_by_id(
-                            "entities", entity.get("_id")
+                            "entities", get_raw_id(entity)
                         )
                     )
             return self._create_response_according_accept_header(
