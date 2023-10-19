@@ -1,5 +1,6 @@
 from app import policy_factory, rabbit
 from elody.csv import CSVMultiObject
+from elody.exceptions import ColumnNotFoundException
 from elody.util import (
     get_raw_id,
     mediafile_is_public,
@@ -40,11 +41,16 @@ class Batch(BaseResource):
             if accept_header == "text/uri-list":
                 output = ""
             csv = request.get_data(as_text=True)
-            parsed_csv = CSVMultiObject(
-                csv,
-                {"entities": "same_entity", "mediafiles": "filename"},
-                {"mediafiles": ["filename", "publication_status"]},
-            )
+            try:
+                parsed_csv = CSVMultiObject(
+                    csv,
+                    {"entities": "same_entity", "mediafiles": "filename"},
+                    {"mediafiles": ["filename", "publication_status"]},
+                )
+            except ColumnNotFoundException:
+                abort(
+                    422, message="One or more required columns headers aren't defined"
+                )
             for entity in parsed_csv.objects.get("entities"):
                 if accept_header != "text/uri-list":
                     output.setdefault("entities", list())
