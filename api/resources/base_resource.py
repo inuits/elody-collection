@@ -48,7 +48,8 @@ class BaseResource(Resource):
         return new, updated, deleted, untouched
 
     def __link_entity_to_tenant(self, entity_id, tenant_id):
-        relation = {"key": tenant_id, "type": "isIn"}
+        tenant = self.storage.get_item_from_collection_by_id("entities", tenant_id)
+        relation = {"key": tenant["_id"], "type": "isIn"}
         self.storage.add_relations_to_collection_item("entities", entity_id, [relation])
 
     def __link_tenant_to_defining_entity(self, tenant_id, entity_id):
@@ -359,5 +360,5 @@ class BaseResource(Resource):
         if storage.get_item_from_collection_by_id("entities", tenant_id):
             return
         return storage.save_item_to_collection(
-            "entities", {"_id": tenant_id, "type": "tenant", "identifiers": [tenant_id]}
+            "entities", {"type": "tenant", "identifiers": [tenant_id]}
         )
