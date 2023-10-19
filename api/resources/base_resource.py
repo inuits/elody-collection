@@ -347,7 +347,11 @@ class BaseResource(Resource):
     def create_tenant():
         if tenant_defining_types:
             return
-        if not (tenant_id := request.headers.get("X-tenant-id")):
+        if not (
+            tenant_id := request.headers.get(
+                os.getenv("TENANT_DEFINING_HEADER", "X-tenant-id")
+            )
+        ):
             return
         if not os.getenv("AUTO_CREATE_TENANTS"):
             return
