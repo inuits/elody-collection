@@ -349,6 +349,8 @@ class BaseResource(Resource):
             return
         if not (tenant_id := request.headers.get("X-tenant-id")):
             return
+        if not os.getenv("AUTO_CREATE_TENANTS"):
+            return
         storage = StorageManager().get_db_engine()
         if storage.get_item_from_collection_by_id("entities", tenant_id):
             return
