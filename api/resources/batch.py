@@ -18,7 +18,7 @@ class Batch(BaseResource):
         for mediafile in mediafiles:
             if mediafile.get("matching_id") == entity_matching_id:
                 mediafile = mediafile.copy()
-                mediafile.pop("matching_id")
+                mediafile.pop("matching_id", None)
                 mediafile = self.storage.save_item_to_collection(
                     "mediafiles", mediafile
                 )
@@ -48,8 +48,8 @@ class Batch(BaseResource):
             for entity in parsed_csv.objects.get("entities"):
                 if accept_header != "text/uri-list":
                     output.setdefault("entities", list())
-                entity_matching_id = entity.pop("matching_id")
-                relations = entity.pop("relations")
+                entity_matching_id = entity.pop("matching_id", None)
+                relations = entity.pop("relations", list())
                 entity = self.storage.save_item_to_collection("entities", entity)
                 self.storage.add_relations_to_collection_item(
                     "entities", get_raw_id(entity), relations
