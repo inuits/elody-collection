@@ -20,6 +20,33 @@ class BaseResource(Resource):
         self.storage_api_url = os.getenv("STORAGE_API_URL")
         self.storage_api_url_ext = os.getenv("STORAGE_API_URL_EXT")
 
+    def __group_user_relations_by_idp_role_status(
+        self, user_relations, roles_per_tenant
+    ):
+        new, updated, deleted, untouched = [], [], [], []
+        for relation in user_relations:
+            if relation["type"] == "hasTenant":
+                key = relation["key"]
+                if key in roles_per_tenant.keys():
+                    if roles_per_tenant[key] != relation["roles"]:
+                        updated.append(
+                            {
+                                "key": key,
+                                "roles": roles_per_tenant[key],
+                                "type": "hasTenant",
+                            }
+                        )
+                    else:
+                        untouched.append(relation)
+                    roles_per_tenant.pop(key)
+                else:
+                    deleted.append(relation)
+            else:
+                untouched.append(relation)
+        for key, roles in roles_per_tenant.items():
+            new.append({"key": key, "roles": roles, "type": "hasTenant"})
+        return new, updated, deleted, untouched
+
     def __link_entity_to_tenant(self, entity_id, tenant_id):
         relation = {"key": tenant_id, "type": "isIn"}
         self.storage.add_relations_to_collection_item("entities", entity_id, [relation])
@@ -160,6 +187,29 @@ class BaseResource(Resource):
             "abstracts", ticket, only_return_id=True, create_sortable_metadata=False
         )
 
+    def _create_user_from_idp(self, assign_roles_from_idp=True, roles_per_tenant=None):
+        user_context = policy_factory.get_user_context()
+        identifiers = [user_context.id]
+        if user_context.email != user_context.id:
+            identifiers.append(user_context.email)
+        user = self.storage.save_item_to_collection(
+            "entities",
+            {
+                "identifiers": identifiers,
+                "metadata": [
+                    {"key": "idp_user_id", "value": user_context.id},
+                    {"key": "email", "value": user_context.email},
+                ],
+                "relations": [],
+                "type": "user",
+            },
+        )
+        if assign_roles_from_idp:
+            self._sync_roles_from_idp(
+                user, roles_per_tenant or {"tenant:super": user_context.x_tenant.roles}
+            )
+        return user
+
     def _decorate_entity(self, entity):
         default_entity = {
             "type": "asset",
@@ -272,29 +322,6 @@ class BaseResource(Resource):
                 ]
         return entity
 
-    def _create_user_from_idp(self, assign_roles_from_idp=True, roles_per_tenant=None):
-        user_context = policy_factory.get_user_context()
-        identifiers = [user_context.id]
-        if user_context.email != user_context.id:
-            identifiers.append(user_context.email)
-        user = self.storage.save_item_to_collection(
-            "entities",
-            {
-                "identifiers": identifiers,
-                "metadata": [
-                    {"key": "idp_user_id", "value": user_context.id},
-                    {"key": "email", "value": user_context.email},
-                ],
-                "relations": [],
-                "type": "user",
-            },
-        )
-        if assign_roles_from_idp:
-            self._sync_roles_from_idp(
-                user, roles_per_tenant or {"tenant:super": user_context.x_tenant.roles}
-            )
-        return user
-
     def _sync_roles_from_idp(self, user, roles_per_tenant):
         (
             new,
@@ -314,33 +341,6 @@ class BaseResource(Resource):
             self.storage.delete_collection_item_relations("entities", id, deleted)
         user["relations"] = [*new, *updated, *untouched]
         return user
-
-    def __group_user_relations_by_idp_role_status(
-        self, user_relations, roles_per_tenant
-    ):
-        new, updated, deleted, untouched = [], [], [], []
-        for relation in user_relations:
-            if relation["type"] == "hasTenant":
-                key = relation["key"]
-                if key in roles_per_tenant.keys():
-                    if roles_per_tenant[key] != relation["roles"]:
-                        updated.append(
-                            {
-                                "key": key,
-                                "roles": roles_per_tenant[key],
-                                "type": "hasTenant",
-                            }
-                        )
-                    else:
-                        untouched.append(relation)
-                    roles_per_tenant.pop(key)
-                else:
-                    deleted.append(relation)
-            else:
-                untouched.append(relation)
-        for key, roles in roles_per_tenant.items():
-            new.append({"key": key, "roles": roles, "type": "hasTenant"})
-        return new, updated, deleted, untouched
 
     @staticmethod
     @app.before_request
