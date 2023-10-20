@@ -173,7 +173,7 @@ class BaseResource(Resource):
         elif entity["type"] not in ["role", "tenant", "user"]:
             self.__link_entity_to_tenant(
                 entity["_id"],
-                policy_factory.get_user_context().x_tenant.id.removeprefix("tenant:"),
+                policy_factory.get_user_context().x_tenant.id,
             )
 
     def _create_ticket(self, filename):
