@@ -354,11 +354,13 @@ class BaseResource(Resource):
             )
         ):
             return
-        if not os.getenv("AUTO_CREATE_TENANTS"):
-            return
         storage = StorageManager().get_db_engine()
-        if storage.get_item_from_collection_by_id("entities", tenant_id):
+        tenant = storage.get_item_from_collection_by_id("entities", tenant_id)
+        if not tenant and os.getenv("AUTO_CREATE_TENANTS"):
+            tenant = storage.save_item_to_collection(
+                "entities", {"type": "tenant", "identifiers": [tenant_id]}
+            )
+        elif not tenant:
             return
-        return storage.save_item_to_collection(
-            "entities", {"type": "tenant", "identifiers": [tenant_id]}
-        )
+        policy_factory.get_user_context().x_tenant.id = tenant["_id"]
+        policy_factory.get_user_context().x_tenant.raw = tenant
