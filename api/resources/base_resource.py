@@ -6,7 +6,7 @@ from app import app, policy_factory, rabbit, tenant_defining_types
 from datetime import datetime, timezone, timedelta
 from elody.csv import CSVSingleObject
 from elody.util import get_raw_id, signal_entity_changed
-from flask import Response, request
+from flask import Response
 from flask_restful import Resource, abort
 from storage.storagemanager import StorageManager
 from validator import validate_json
@@ -342,25 +342,3 @@ class BaseResource(Resource):
             self.storage.delete_collection_item_relations("entities", id, deleted)
         user["relations"] = [*new, *updated, *untouched]
         return user
-
-    @staticmethod
-    @app.before_request
-    def create_tenant():
-        if tenant_defining_types:
-            return
-        if not (
-            tenant_id := request.headers.get(
-                os.getenv("TENANT_DEFINING_HEADER", "X-tenant-id")
-            )
-        ):
-            return
-        storage = StorageManager().get_db_engine()
-        tenant = storage.get_item_from_collection_by_id("entities", tenant_id)
-        if not tenant and os.getenv("AUTO_CREATE_TENANTS"):
-            tenant = storage.save_item_to_collection(
-                "entities", {"type": "tenant", "identifiers": [tenant_id]}
-            )
-        elif not tenant:
-            return
-        policy_factory.get_user_context().x_tenant.id = tenant["_id"]
-        policy_factory.get_user_context().x_tenant.raw = tenant
