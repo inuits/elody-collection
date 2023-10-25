@@ -67,14 +67,11 @@ class MediafileAssets(BaseResource):
     @policy_factory.authenticate(RequestContext(request))
     def get(self, id):
         mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
-        self._abort_if_no_access(mediafile, collection="mediafiles")
         entities = []
         for item in self.storage.get_mediafile_linked_entities(mediafile):
             entity = self.storage.get_item_from_collection_by_id(
                 "entities", item["entity_id"].removeprefix("entities/")
             )
-            if not self._has_access_to_item(entity):
-                continue
             entity = self._set_entity_mediafile_and_thumbnail(entity)
             entity = self._add_relations_to_metadata(entity)
             entities.append(entity)
@@ -85,8 +82,6 @@ class MediafileCopyright(BaseResource):
     @policy_factory.authenticate(RequestContext(request))
     def get(self, id):
         mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
-        if self._has_access_to_item(mediafile, collection="mediafiles"):
-            return "full", 200
         if not mediafile_is_public(mediafile):
             return "none", 200
         for item in [x for x in mediafile["metadata"] if x["key"] == "rights"]:
@@ -99,7 +94,6 @@ class MediafileDetail(BaseResource):
     @policy_factory.authenticate(RequestContext(request))
     def get(self, id):
         mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
-        self._abort_if_no_access(mediafile, collection="mediafiles")
         if request.args.get("raw", 0, int):
             return mediafile
         return self._inject_api_urls_into_mediafiles([mediafile])[0]
@@ -107,7 +101,6 @@ class MediafileDetail(BaseResource):
     @policy_factory.authenticate(RequestContext(request))
     def put(self, id):
         old_mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
-        self._abort_if_no_access(old_mediafile, collection="mediafiles")
         content = self._get_content_according_content_type(request, "mediafile")
         self._abort_if_not_valid_json("Mediafile", content, mediafile_schema)
         content["date_updated"] = datetime.now(timezone.utc)
@@ -124,7 +117,6 @@ class MediafileDetail(BaseResource):
     @policy_factory.authenticate(RequestContext(request))
     def patch(self, id):
         old_mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
-        self._abort_if_no_access(old_mediafile, collection="mediafiles")
         content = self._get_content_according_content_type(request, "mediafile")
         content["date_updated"] = datetime.now(timezone.utc)
         content["version"] = old_mediafile.get("version", 0) + 1
@@ -140,7 +132,6 @@ class MediafileDetail(BaseResource):
     @policy_factory.authenticate(RequestContext(request))
     def delete(self, id):
         mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
-        self._abort_if_no_access(mediafile, collection="mediafiles")
         linked_entities = self.storage.get_mediafile_linked_entities(mediafile)
         self.storage.delete_item_from_collection("mediafiles", get_raw_id(mediafile))
         signal_mediafile_deleted(rabbit, mediafile, linked_entities)

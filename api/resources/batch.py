@@ -1,4 +1,4 @@
-from app import policy_factory, rabbit
+from app import policy_factory
 from elody.csv import CSVMultiObject
 from elody.exceptions import ColumnNotFoundException
 from elody.util import (

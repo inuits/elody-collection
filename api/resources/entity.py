@@ -119,7 +119,6 @@ class EntityDetail(BaseResource):
     @policy_factory.authenticate(RequestContext(request))
     def get(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
-        self._abort_if_no_access(entity)
         entity = self._set_entity_mediafile_and_thumbnail(entity)
         if not request.args.get("skip_relations", 0, int):
             entity = self._add_relations_to_metadata(entity)
@@ -141,7 +140,6 @@ class EntityDetail(BaseResource):
     @policy_factory.authenticate(RequestContext(request))
     def put(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
-        self._abort_if_no_access(entity)
         content = self._get_content_according_content_type(request)
         self._abort_if_not_valid_json("Entity", content, entity_schema)
         content["date_updated"] = datetime.now(timezone.utc)
@@ -162,7 +160,6 @@ class EntityDetail(BaseResource):
     @policy_factory.authenticate(RequestContext(request))
     def patch(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
-        self._abort_if_no_access(entity)
         content = self._get_content_according_content_type(request)
         content["date_updated"] = datetime.now(timezone.utc)
         content["version"] = entity.get("version", 0) + 1
@@ -181,13 +178,11 @@ class EntityDetail(BaseResource):
     @policy_factory.authenticate(RequestContext(request))
     def delete(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
-        self._abort_if_no_access(entity)
         if request.args.get("delete_mediafiles", 0, int):
             mediafiles = self.storage.get_collection_item_mediafiles(
                 "entities", get_raw_id(entity)
             )
             for mediafile in mediafiles:
-                self._abort_if_no_access(mediafile, collection="mediafiles")
                 self.storage.delete_item_from_collection(
                     "mediafiles", get_raw_id(mediafile)
                 )
@@ -203,19 +198,13 @@ class EntityMediafiles(BaseResource):
         skip = request.args.get("skip", 0, int)
         limit = request.args.get("limit", 20, int)
         entity = self._abort_if_item_doesnt_exist("entities", id)
-        self._abort_if_no_access(entity)
         mediafiles = dict()
         mediafiles["count"] = self.storage.get_collection_item_mediafiles_count(
             entity["_id"]
         )
-        mediafiles_list = self.storage.get_collection_item_mediafiles(
+        mediafiles["results"] = self.storage.get_collection_item_mediafiles(
             "entities", get_raw_id(entity), skip, limit
         )
-        mediafiles["results"] = [
-            mediafile
-            for mediafile in mediafiles_list
-            if self._has_access_to_item(mediafile, collection="mediafiles")
-        ]
         mediafiles["limit"] = limit
         mediafiles["skip"] = skip
         if skip + limit < mediafiles["count"]:
@@ -238,7 +227,6 @@ class EntityMediafiles(BaseResource):
     @policy_factory.authenticate(RequestContext(request))
     def post(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
-        self._abort_if_no_access(entity)
         content = self._get_content_according_content_type(request, "mediafile")
         mediafiles = content if isinstance(content, list) else [content]
         accept_header = request.headers.get("Accept")
@@ -252,7 +240,6 @@ class EntityMediafiles(BaseResource):
                 mediafile = self._abort_if_item_doesnt_exist(
                     "mediafiles", get_raw_id(mediafile)
                 )
-                self._abort_if_no_access(mediafile, collection="mediafiles")
             mediafile = self.storage.save_item_to_collection("mediafiles", mediafile)
             mediafile = self.storage.add_mediafile_to_collection_item(
                 "entities",
@@ -275,7 +262,6 @@ class EntityMediafilesCreate(BaseResource):
     @policy_factory.authenticate(RequestContext(request))
     def post(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
-        self._abort_if_no_access(entity)
         content = request.get_json()
         self._abort_if_not_valid_json("Mediafile", content, mediafile_schema)
         content["original_file_location"] = f'/download/{content["filename"]}'
@@ -307,7 +293,6 @@ class EntityMetadata(BaseResource):
     @policy_factory.authenticate(RequestContext(request))
     def get(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
-        self._abort_if_no_access(entity)
         metadata = self.storage.get_collection_item_sub_item(
             "entities", get_raw_id(entity), "metadata"
         )
@@ -326,7 +311,6 @@ class EntityMetadata(BaseResource):
     @policy_factory.authenticate(RequestContext(request))
     def post(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
-        self._abort_if_no_access(entity)
         content = self._get_content_according_content_type(request, "metadata")
         metadata = self.storage.add_sub_item_to_collection_item(
             "entities", get_raw_id(entity), "metadata", content
@@ -337,7 +321,6 @@ class EntityMetadata(BaseResource):
     @policy_factory.authenticate(RequestContext(request))
     def put(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
-        self._abort_if_no_access(entity)
         content = self._get_content_according_content_type(request, "metadata")
         metadata = self.storage.update_collection_item_sub_item(
             "entities", get_raw_id(entity), "metadata", content
@@ -348,7 +331,6 @@ class EntityMetadata(BaseResource):
     @policy_factory.authenticate(RequestContext(request))
     def patch(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
-        self._abort_if_no_access(entity)
         content = self._get_content_according_content_type(request, "metadata")
         metadata = self.storage.patch_collection_item_metadata(
             "entities", get_raw_id(entity), content
@@ -363,7 +345,6 @@ class EntityMetadataKey(BaseResource):
     @policy_factory.authenticate(RequestContext(request))
     def get(self, id, key):
         entity = self._abort_if_item_doesnt_exist("entities", id)
-        self._abort_if_no_access(entity)
         return self.storage.get_collection_item_sub_item_key(
             "entities", get_raw_id(entity), "metadata", key
         )
@@ -371,7 +352,6 @@ class EntityMetadataKey(BaseResource):
     @policy_factory.authenticate(RequestContext(request))
     def delete(self, id, key):
         entity = self._abort_if_item_doesnt_exist("entities", id)
-        self._abort_if_no_access(entity)
         self.storage.delete_collection_item_sub_item_key(
             "entities", get_raw_id(entity), "metadata", key
         )
@@ -383,7 +363,6 @@ class EntityRelations(BaseResource):
     @policy_factory.authenticate(RequestContext(request))
     def get(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
-        self._abort_if_no_access(entity)
 
         @after_this_request
         def add_header(response):
@@ -397,7 +376,6 @@ class EntityRelations(BaseResource):
     @policy_factory.authenticate(RequestContext(request))
     def post(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
-        self._abort_if_no_access(entity)
         content = self._get_content_according_content_type(request, "relations")
         relations = self.storage.add_relations_to_collection_item(
             "entities", get_raw_id(entity), content
@@ -408,7 +386,6 @@ class EntityRelations(BaseResource):
     @policy_factory.authenticate(RequestContext(request))
     def put(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
-        self._abort_if_no_access(entity)
         content = self._get_content_according_content_type(request, "relations")
         relations = self.storage.update_collection_item_relations(
             "entities", get_raw_id(entity), content
@@ -419,7 +396,6 @@ class EntityRelations(BaseResource):
     @policy_factory.authenticate(RequestContext(request))
     def patch(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
-        self._abort_if_no_access(entity)
         content = self._get_content_according_content_type(request, "relations")
         relations = self.storage.patch_collection_item_relations(
             "entities", get_raw_id(entity), content
@@ -430,7 +406,6 @@ class EntityRelations(BaseResource):
     @policy_factory.authenticate(RequestContext(request))
     def delete(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
-        self._abort_if_no_access(entity)
         content = self._get_content_according_content_type(request, "relations")
         self.storage.delete_collection_item_relations(
             "entities", get_raw_id(entity), content
@@ -443,7 +418,6 @@ class EntityRelationsAll(BaseResource):
     @policy_factory.authenticate(RequestContext(request))
     def get(self, id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
-        self._abort_if_no_access(entity)
 
         @after_this_request
         def add_header(response):
@@ -459,9 +433,7 @@ class EntitySetPrimaryMediafile(BaseResource):
     @policy_factory.authenticate(RequestContext(request))
     def put(self, id, mediafile_id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
-        self._abort_if_no_access(entity)
         mediafile = self._abort_if_item_doesnt_exist("mediafiles", mediafile_id)
-        self._abort_if_no_access(mediafile, collection="mediafiles")
         if not mediafile_is_public(mediafile):
             abort(400, message=f"Mediafile with id {mediafile_id} is not public")
         self.storage.set_primary_field_collection_item(
@@ -475,9 +447,7 @@ class EntitySetPrimaryThumbnail(BaseResource):
     @policy_factory.authenticate(RequestContext(request))
     def put(self, id, mediafile_id):
         entity = self._abort_if_item_doesnt_exist("entities", id)
-        self._abort_if_no_access(entity)
         mediafile = self._abort_if_item_doesnt_exist("mediafiles", mediafile_id)
-        self._abort_if_no_access(mediafile, collection="mediafiles")
         if not mediafile_is_public(mediafile):
             abort(400, message=f"Mediafile with id {mediafile_id} is not public")
         self.storage.set_primary_field_collection_item(

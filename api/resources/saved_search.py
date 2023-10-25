@@ -55,14 +55,12 @@ class SavedSearchDetail(BaseResource):
     @policy_factory.authenticate(RequestContext(request))
     def get(self, id):
         saved_search = self._abort_if_item_doesnt_exist("abstracts", id)
-        self._abort_if_no_access(saved_search, collection="abstracts")
         self._abort_if_not_valid_type(saved_search, "saved_search")
         return saved_search
 
     @policy_factory.authenticate(RequestContext(request))
     def put(self, id):
         saved_search = self._abort_if_item_doesnt_exist("abstracts", id)
-        self._abort_if_no_access(saved_search, collection="abstracts")
         self._abort_if_not_valid_type(saved_search, "saved_search")
         content = request.get_json()
         self._abort_if_not_valid_json("Saved search", content, saved_search_schema)
@@ -79,7 +77,6 @@ class SavedSearchDetail(BaseResource):
     @policy_factory.authenticate(RequestContext(request))
     def patch(self, id):
         saved_search = self._abort_if_item_doesnt_exist("abstracts", id)
-        self._abort_if_no_access(saved_search, collection="abstracts")
         self._abort_if_not_valid_type(saved_search, "saved_search")
         content = request.get_json()
         content["date_updated"] = datetime.now(timezone.utc)
@@ -95,7 +92,6 @@ class SavedSearchDetail(BaseResource):
     @policy_factory.authenticate(RequestContext(request))
     def delete(self, id):
         saved_search = self._abort_if_item_doesnt_exist("abstracts", id)
-        self._abort_if_no_access(saved_search, collection="abstracts")
         self._abort_if_not_valid_type(saved_search, "saved_search")
         self.storage.delete_item_from_collection("abstracts", get_raw_id(saved_search))
         return "", 204

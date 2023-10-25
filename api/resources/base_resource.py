@@ -2,7 +2,7 @@ import json
 import mappers
 import os
 
-from app import app, policy_factory, rabbit, tenant_defining_types
+from app import policy_factory, rabbit, tenant_defining_types
 from datetime import datetime, timezone, timedelta
 from elody.csv import CSVSingleObject
 from elody.util import get_raw_id, signal_entity_changed
@@ -64,10 +64,6 @@ class BaseResource(Resource):
         abort(
             404, message=f"Item with id {id} doesn't exist in collection {collection}"
         )
-
-    def _abort_if_no_access(self, item, collection="entities"):
-        if not self._has_access_to_item(item, collection):
-            abort(403, message="Access denied")
 
     def _abort_if_not_valid_json(self, type, json, schema):
         if validation_error := validate_json(json, schema):
@@ -251,9 +247,6 @@ class BaseResource(Resource):
         if tenant_id := policy_factory.get_user_context().x_tenant.id:
             return f"{tenant_id}/{filename}"
         return filename
-
-    def _has_access_to_item(self, item, collection="entities"):
-        return True
 
     def _inject_api_urls_into_entities(self, entities):
         for entity in entities:
