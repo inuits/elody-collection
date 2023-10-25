@@ -172,7 +172,7 @@ class BaseResource(Resource):
                 policy_factory.get_user_context().x_tenant.id,
             )
 
-    def _create_ticket(self, filename):
+    def _create_ticket(self, filename, mediafile_id=None):
         ticket = {
             "bucket": self._get_upload_bucket(),
             "exp": (datetime.now(tz=timezone.utc) + timedelta(minutes=1)).timestamp(),
@@ -180,6 +180,8 @@ class BaseResource(Resource):
             "type": "ticket",
             "user": policy_factory.get_user_context().email or "default_uploader",
         }
+        if mediafile_id:
+            ticket["mediafile_id"] = mediafile_id
         return self.storage.save_item_to_collection(
             "abstracts", ticket, only_return_id=True, create_sortable_metadata=False
         )
