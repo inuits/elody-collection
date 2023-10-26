@@ -167,10 +167,8 @@ class BaseResource(Resource):
             )
             self.__link_tenant_to_defining_entity(tenant["_id"], entity["_id"])
         elif entity["type"] not in ["role", "tenant", "user"]:
-            self.__link_entity_to_tenant(
-                entity["_id"],
-                policy_factory.get_user_context().x_tenant.id,
-            )
+            if tenant_id := policy_factory.get_user_context().x_tenant.id:
+                self.__link_entity_to_tenant(entity["_id"], tenant_id)
 
     def _create_ticket(self, filename, mediafile_id=None):
         ticket = {
