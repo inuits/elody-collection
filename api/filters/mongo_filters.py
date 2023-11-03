@@ -17,7 +17,9 @@ class MongoFilters(MongoStorageManager):
         asc=True,
     ):
         items = {"count": 0, "results": list()}
-        pipeline = self.__generate_aggregation_pipeline(filter_request_body, collection)
+        pipeline, last_filter = self.__generate_aggregation_pipeline(
+            filter_request_body, collection
+        )
         pipeline_count = pipeline + [{"$count": "count"}]
         count = list(
             self.db[collection].aggregate(
@@ -49,28 +51,9 @@ class MongoFilters(MongoStorageManager):
             items["results"].append(self._prepare_mongo_document(document, True))
         items["limit"] = limit
 
-        if any(
-            "provide_value_options_for_key" in value
-            and value["provide_value_options_for_key"] == True
-            for value in filter_request_body
-        ):
-            parent_key = filter_request_body[-1]["parent_key"]
-            _, document_value = BaseMatchers.get_document_key_value(parent_key)
-            options = set()
-
-            queried_items = [
-                option
-                for options in items["results"][0]["options"]
-                for option in options
-            ]
-            for item in queried_items:
-                if isinstance(item.get("value"), list):
-                    for value in item.get("value", list()):
-                        options.add(FilterOption(value, value))
-                elif "value" in item:
-                    options.add(FilterOption(item.get("value"), item[document_value]))
-            items["results"] = [option.to_dict() for option in options]
-
+        self.__provide_value_options_for_key_if_necessary(
+            collection, last_filter, items
+        )
         return items
 
     def __generate_aggregation_pipeline(
@@ -88,6 +71,7 @@ class MongoFilters(MongoStorageManager):
             }
         )
 
+        filter_criteria = {}
         for filter_criteria in filter_request_body:
             filter = get_filter(filter_criteria["type"])
             item_types = filter_criteria.get("item_types", [])
@@ -133,4 +117,69 @@ class MongoFilters(MongoStorageManager):
                 break
 
         pipeline.append({"$project": {"relationDocuments": 0, "numberOfRelations": 0}})
-        return pipeline
+        return pipeline, filter_criteria
+
+    def __provide_value_options_for_key_if_necessary(self, collection, filter, items):
+        if not filter.get("provide_value_options_for_key", False):
+            return
+        parent_key = filter["parent_key"]
+        _, document_value = BaseMatchers.get_document_key_value(parent_key)
+        options = set()
+        queried_items = [
+            option for options in items["results"][0]["options"] for option in options
+        ]
+        for item in queried_items:
+            if isinstance(item.get("value"), list):
+                for value in item.get("value", list()):
+                    options.add(FilterOption(value, value))
+            elif "value" in item:
+                label = item.get("value")
+                if parent_key == "relations":
+                    label = self.__get_filter_option_label(
+                        collection,
+                        item[document_value],
+                        filter.get("metadata_key_as_label"),
+                    )
+                options.add(FilterOption(label, item[document_value]))
+        items["results"] = [option.to_dict() for option in options]
+
+    def __get_filter_option_label(self, collection, identifier, metadata_key_as_label):
+        if not metadata_key_as_label:
+            raise Exception(
+                "Please provide 'metadata_key_as_label,' a metadata key whose value will be used as label for filter options."
+            )
+        return list(
+            self.db[collection].aggregate(
+                [
+                    {"$match": {"identifiers": {"$in": [identifier]}}},
+                    {
+                        "$project": {
+                            "_id": 0,
+                            "label": {
+                                "$arrayElemAt": [
+                                    {
+                                        "$map": {
+                                            "input": {
+                                                "$filter": {
+                                                    "input": "$metadata",
+                                                    "as": "item",
+                                                    "cond": {
+                                                        "$eq": [
+                                                            "$$item.key",
+                                                            metadata_key_as_label,
+                                                        ]
+                                                    },
+                                                }
+                                            },
+                                            "as": "filteredItem",
+                                            "in": "$$filteredItem.value",
+                                        }
+                                    },
+                                    0,
+                                ]
+                            },
+                        }
+                    },
+                ]
+            )
+        )[0]["label"]
