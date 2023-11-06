@@ -139,6 +139,8 @@ class EntityDetail(BaseResource):
 
     @policy_factory.authenticate(RequestContext(request))
     def put(self, id):
+        if request.args.get("soft", 0, int):
+            return 200
         entity = self._abort_if_item_doesnt_exist("entities", id)
         content = self._get_content_according_content_type(request)
         self._abort_if_not_valid_json("Entity", content, entity_schema)
@@ -159,6 +161,8 @@ class EntityDetail(BaseResource):
 
     @policy_factory.authenticate(RequestContext(request))
     def patch(self, id):
+        if request.args.get("soft", 0, int):
+            return (200, "good")
         entity = self._abort_if_item_doesnt_exist("entities", id)
         content = self._get_content_according_content_type(request)
         content["date_updated"] = datetime.now(timezone.utc)
@@ -177,6 +181,8 @@ class EntityDetail(BaseResource):
 
     @policy_factory.authenticate(RequestContext(request))
     def delete(self, id):
+        if request.args.get("soft", 0, int):
+            return 200
         entity = self._abort_if_item_doesnt_exist("entities", id)
         if request.args.get("delete_mediafiles", 0, int):
             mediafiles = self.storage.get_collection_item_mediafiles(
@@ -320,6 +326,8 @@ class EntityMetadata(BaseResource):
 
     @policy_factory.authenticate(RequestContext(request))
     def put(self, id):
+        if request.args.get("soft", 0, int):
+            return 200
         entity = self._abort_if_item_doesnt_exist("entities", id)
         content = self._get_content_according_content_type(request, "metadata")
         metadata = self.storage.update_collection_item_sub_item(
@@ -330,6 +338,8 @@ class EntityMetadata(BaseResource):
 
     @policy_factory.authenticate(RequestContext(request))
     def patch(self, id):
+        if request.args.get("soft", 0, int):
+            return (200, "good")
         entity = self._abort_if_item_doesnt_exist("entities", id)
         content = self._get_content_according_content_type(request, "metadata")
         metadata = self.storage.patch_collection_item_metadata(
@@ -385,6 +395,8 @@ class EntityRelations(BaseResource):
 
     @policy_factory.authenticate(RequestContext(request))
     def put(self, id):
+        if request.args.get("soft", 0, int):
+            return 200
         entity = self._abort_if_item_doesnt_exist("entities", id)
         content = self._get_content_according_content_type(request, "relations")
         relations = self.storage.update_collection_item_relations(
@@ -395,6 +407,8 @@ class EntityRelations(BaseResource):
 
     @policy_factory.authenticate(RequestContext(request))
     def patch(self, id):
+        if request.args.get("soft", 0, int):
+            return (200, "good")
         entity = self._abort_if_item_doesnt_exist("entities", id)
         content = self._get_content_according_content_type(request, "relations")
         relations = self.storage.patch_collection_item_relations(

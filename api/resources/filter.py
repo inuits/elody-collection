@@ -21,6 +21,8 @@ class FilterEntities(BaseFilterResource):
     def post(self):
         accept_header = request.headers.get("Accept")
         query: list = request.get_json()
+        if request.args.get("soft", 0, int):
+            return 200
         access_restricting_filters = (
             policy_factory.get_user_context().access_restrictions.filters
         )
