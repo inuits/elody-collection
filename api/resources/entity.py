@@ -70,6 +70,8 @@ class Entity(BaseResource):
 
     @policy_factory.authenticate(RequestContext(request))
     def post(self):
+        if request.args.get("soft", 0, int):
+            return (200, "200")
         content_type = request.content_type
         linked_data_request = self._is_rdf_post_call(content_type)
         create_mediafile = request.args.get(
@@ -361,6 +363,8 @@ class EntityMetadataKey(BaseResource):
 
     @policy_factory.authenticate(RequestContext(request))
     def delete(self, id, key):
+        if request.args.get("soft", 0, int):
+            return 200
         entity = self._abort_if_item_doesnt_exist("entities", id)
         self.storage.delete_collection_item_sub_item_key(
             "entities", get_raw_id(entity), "metadata", key
