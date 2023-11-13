@@ -7,6 +7,7 @@ from elody.util import (
     signal_mediafile_deleted,
 )
 from flask import request
+from flask_restful import abort
 from inuits_policy_based_auth import RequestContext
 from resources.base_resource import BaseResource
 from validator import mediafile_schema
@@ -136,3 +137,20 @@ class MediafileDetail(BaseResource):
         self.storage.delete_item_from_collection("mediafiles", get_raw_id(mediafile))
         signal_mediafile_deleted(rabbit, mediafile, linked_entities)
         return "", 204
+
+
+class MediafileMetadata(BaseResource):
+    @policy_factory.authenticate(RequestContext(request))
+    def patch(self, id):
+        if request.args.get("soft", 0, int):
+            return (200, "good")
+        old_mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
+        content = self._get_content_according_content_type(request, "metadata")
+        metadata = self.storage.patch_collection_item_metadata(
+            "mediafiles", get_raw_id(old_mediafile), content
+        )
+        if not metadata:
+            abort(400, message=f"Mediafile with id {id} has no metadata")
+        new_mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
+        signal_mediafile_changed(rabbit, old_mediafile, new_mediafile)
+        return metadata, 201
