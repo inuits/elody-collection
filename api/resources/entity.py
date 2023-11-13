@@ -2,7 +2,7 @@ import mappers
 
 from app import policy_factory, rabbit
 from datetime import datetime, timezone
-from elody.exceptions import NonUniqueException
+from elody.exceptions import InvalidObjectException, NonUniqueException
 from elody.util import (
     get_raw_id,
     mediafile_is_public,
@@ -86,7 +86,10 @@ class Entity(BaseResource):
         if linked_data_request:
             content = self._create_linked_data(request, content_type)
         else:
-            content = self._get_content_according_content_type(request)
+            try:
+                content = self._get_content_according_content_type(request)
+            except InvalidObjectException as ex:
+                return str(ex), 400
         accept_header = request.headers.get("Accept")
         entity = self._decorate_entity(content)
         entity["date_created"] = datetime.now(timezone.utc)
