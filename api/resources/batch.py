@@ -80,7 +80,8 @@ class Batch(BaseResource):
                             "entities", get_raw_id(entity)
                         )
                     )
-            output["errors"] = parsed_csv.get_errors()
+            if accept_header != "text/uri-list":
+                output["errors"] = parsed_csv.get_errors()
             return self._create_response_according_accept_header(
                 output, accept_header, 201
             )
