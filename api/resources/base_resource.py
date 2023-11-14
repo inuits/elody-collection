@@ -185,25 +185,26 @@ class BaseResource(Resource):
         )
 
     def _create_user_from_idp(self, assign_roles_from_idp=True, roles_per_tenant=None):
+        identifiers = set()
         user_context = policy_factory.get_user_context()
-        identifiers = [user_context.id]
-        if user_context.email != user_context.id:
-            identifiers.append(user_context.email)
-        user = self.storage.save_item_to_collection(
-            "entities",
-            {
-                "identifiers": identifiers,
-                "metadata": [
-                    {"key": "idp_user_id", "value": user_context.id},
-                    {"key": "email", "value": user_context.email},
-                ],
-                "relations": [],
-                "type": "user",
-            },
-        )
+        if user_context.id:
+            identifiers.add(user_context.id)
+        identifiers.add(user_context.email)
+        user = {
+            "identifiers": list(identifiers),
+            "metadata": [{"key": "email", "value": user_context.email}],
+            "relations": [],
+            "type": "user",
+        }
+        if user_context.id:
+            user["metadata"].append({"key": "idp_user_id", "value": user_context.id})
+        user = self.storage.save_item_to_collection("entities", user)
         if assign_roles_from_idp:
             self._sync_roles_from_idp(
-                user, roles_per_tenant or {"tenant:super": user_context.x_tenant.roles}
+                user,
+                roles_per_tenant
+                if roles_per_tenant
+                else {"tenant:super": user_context.x_tenant.roles},
             )
         return user
 
