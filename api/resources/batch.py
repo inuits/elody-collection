@@ -1,10 +1,7 @@
 from app import policy_factory
 from elody.csv import CSVMultiObject
 from elody.exceptions import ColumnNotFoundException
-from elody.util import (
-    get_raw_id,
-    mediafile_is_public,
-)
+from elody.util import get_raw_id
 from flask import request
 from flask_restful import abort
 from inuits_policy_based_auth import RequestContext
