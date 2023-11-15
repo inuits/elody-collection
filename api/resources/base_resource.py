@@ -5,7 +5,7 @@ import os
 from app import policy_factory, rabbit, tenant_defining_types
 from datetime import datetime, timezone, timedelta
 from elody.csv import CSVSingleObject
-from elody.util import get_raw_id, signal_entity_changed
+from elody.util import get_raw_id, mediafile_is_public, signal_entity_changed
 from flask import Response
 from flask_restful import Resource, abort
 from storage.storagemanager import StorageManager
@@ -115,7 +115,7 @@ class BaseResource(Resource):
             "entities",
             get_raw_id(entity),
             mediafile["_id"],
-            False,
+            mediafile_is_public(mediafile),
         )
         signal_entity_changed(rabbit, entity)
         return mediafile

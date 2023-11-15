@@ -20,14 +20,9 @@ class Batch(BaseResource):
             if mediafile.get("matching_id") == entity_matching_id:
                 mediafile = mediafile.copy()
                 mediafile.pop("matching_id", None)
-                mediafile = self.storage.save_item_to_collection(
-                    "mediafiles", mediafile
-                )
-                mediafile = self.storage.add_mediafile_to_collection_item(
-                    "entities",
-                    get_raw_id(entity),
-                    mediafile["_id"],
-                    mediafile_is_public(mediafile),
+                mediafile = self._create_mediafile_for_entity(
+                    entity,
+                    mediafile.get("filename"),
                 )
                 output.append(mediafile)
         return output
