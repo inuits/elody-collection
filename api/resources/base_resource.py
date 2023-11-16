@@ -102,6 +102,7 @@ class BaseResource(Resource):
         self,
         entity,
         filename,
+        metadata=None
     ):
         content = {
             "filename": filename,
@@ -110,6 +111,8 @@ class BaseResource(Resource):
             "thumbnail_file_location": f"/iiif/3/{filename}/full/,150/0/default.jpg",
             "original_file_location": f"/download/{filename}",
         }
+        if metadata:
+            content["metadata"] = metadata
         mediafile = self.storage.save_item_to_collection("mediafiles", content)
         self.storage.add_mediafile_to_collection_item(
             "entities",

@@ -20,6 +20,7 @@ class Batch(BaseResource):
                 mediafile = self._create_mediafile_for_entity(
                     entity,
                     mediafile.get("filename"),
+                    mediafile.get("metadata"),
                 )
                 output.append(mediafile)
         return output
@@ -37,7 +38,8 @@ class Batch(BaseResource):
                 parsed_csv = CSVMultiObject(
                     csv,
                     {"entities": "same_entity", "mediafiles": "filename"},
-                    {"mediafiles": ["filename", "publication_status"]},
+                    {"mediafiles": ["copyright_color", "filename", "publication_status"]},
+                    {"mediafiles": {"copyright_color": "red"}},
                 )
             except ColumnNotFoundException:
                 abort(
