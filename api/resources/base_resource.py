@@ -178,7 +178,7 @@ class BaseResource(Resource):
             "bucket": self._get_upload_bucket(),
             "exp": (
                 datetime.now(tz=timezone.utc)
-                + timedelta(seconds=os.getenv("TICKET_LIFESPAN", 180))
+                + timedelta(seconds=os.getenv("TICKET_LIFESPAN", 3600))
             ).timestamp(),
             "location": self._get_upload_location(filename),
             "type": "ticket",
