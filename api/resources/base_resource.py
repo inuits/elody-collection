@@ -176,7 +176,10 @@ class BaseResource(Resource):
     def _create_ticket(self, filename, mediafile_id=None):
         ticket = {
             "bucket": self._get_upload_bucket(),
-            "exp": (datetime.now(tz=timezone.utc) + timedelta(minutes=1)).timestamp(),
+            "exp": (
+                datetime.now(tz=timezone.utc)
+                + timedelta(seconds=os.getenv("TICKET_LIFESPAN", 180))
+            ).timestamp(),
             "location": self._get_upload_location(filename),
             "type": "ticket",
             "user": policy_factory.get_user_context().email or "default_uploader",
