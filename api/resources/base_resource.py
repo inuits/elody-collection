@@ -47,11 +47,6 @@ class BaseResource(Resource):
             new.append({"key": key, "roles": roles, "type": "hasTenant"})
         return new, updated, deleted, untouched
 
-    def __link_entity_to_tenant(self, entity_id, tenant_id):
-        tenant = self.storage.get_item_from_collection_by_id("entities", tenant_id)
-        relation = {"key": tenant["_id"], "type": "isIn"}
-        self.storage.add_relations_to_collection_item("entities", entity_id, [relation])
-
     def __link_tenant_to_defining_entity(self, tenant_id, entity_id):
         defining_relation = {"key": entity_id, "type": "definedBy"}
         self.storage.add_relations_to_collection_item(
@@ -171,7 +166,7 @@ class BaseResource(Resource):
             self.__link_tenant_to_defining_entity(tenant["_id"], entity["_id"])
         elif entity["type"] not in ["role", "tenant", "user"]:
             if tenant_id := policy_factory.get_user_context().x_tenant.id:
-                self.__link_entity_to_tenant(entity["_id"], tenant_id)
+                self._link_entity_to_tenant(entity["_id"], tenant_id)
 
     def _create_ticket(self, filename, mediafile_id=None):
         ticket = {
@@ -295,6 +290,11 @@ class BaseResource(Resource):
             "application/rdf+xml",
             "text/turtle",
         ]
+
+    def _link_entity_to_tenant(self, entity_id, tenant_id):
+        tenant = self.storage.get_item_from_collection_by_id("entities", tenant_id)
+        relation = {"key": tenant["_id"], "type": "isIn"}
+        self.storage.add_relations_to_collection_item("entities", entity_id, [relation])
 
     def _set_entity_mediafile_and_thumbnail(self, entity):
         mediafiles = self.storage.get_collection_item_mediafiles(
