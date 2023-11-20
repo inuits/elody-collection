@@ -103,7 +103,7 @@ class BaseResource(Resource):
             "filename": filename,
             "date_created": datetime.now(timezone.utc),
             "version": 1,
-            "thumbnail_file_location": f"/iiif/3/{filename}/square/100,/0/default.jpg",
+            "thumbnail_file_location": f"/iiif/3/{filename}/full/,150/0/default.jpg",
             "original_file_location": f"/download/{filename}",
         }
         if metadata:
