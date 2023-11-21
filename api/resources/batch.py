@@ -38,7 +38,13 @@ class Batch(BaseResource):
                 parsed_csv = CSVMultiObject(
                     csv,
                     {"entities": "same_entity", "mediafiles": "filename"},
-                    {"mediafiles": ["copyright_color", "filename", "publication_status"]},
+                    {
+                        "mediafiles": [
+                            "copyright_color",
+                            "filename",
+                            "publication_status",
+                        ]
+                    },
                     {"mediafiles": {"copyright_color": "red"}},
                 )
             except ColumnNotFoundException:

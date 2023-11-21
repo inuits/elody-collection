@@ -93,12 +93,7 @@ class BaseResource(Resource):
             )
         return {"data": rdf_data}
 
-    def _create_mediafile_for_entity(
-        self,
-        entity,
-        filename,
-        metadata=None
-    ):
+    def _create_mediafile_for_entity(self, entity, filename, metadata=None):
         content = {
             "filename": filename,
             "date_created": datetime.now(timezone.utc),
