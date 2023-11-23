@@ -108,10 +108,12 @@ class GenericStorageManager:
     def handle_mediafile_status_change(self, mediafile):
         pass
 
-    def patch_collection_item_metadata(self, collection, id, content):
+    def patch_collection_item_metadata(self, collection, id, content, ignore_empty_metadata=False):
         metadata = self.get_collection_item_sub_item(collection, id, "metadata")
-        if not metadata:
+        if not metadata and not ignore_empty_metadata:
             return None
+        if ignore_empty_metadata:
+            metadata = list()
         for item in content:
             if existing := next((x for x in metadata if x["key"] == item["key"]), None):
                 metadata.remove(existing)
