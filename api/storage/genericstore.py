@@ -108,7 +108,9 @@ class GenericStorageManager:
     def handle_mediafile_status_change(self, mediafile):
         pass
 
-    def patch_collection_item_metadata(self, collection, id, content, ignore_empty_metadata=False):
+    def patch_collection_item_metadata(
+        self, collection, id, content, ignore_empty_metadata=False
+    ):
         metadata = self.get_collection_item_sub_item(collection, id, "metadata")
         if not metadata and not ignore_empty_metadata:
             return None
