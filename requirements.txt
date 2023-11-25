@@ -16,7 +16,7 @@ Flask==3.0.0
 Flask-RESTful==0.3.10
 flask-swagger-ui==4.11.1
 gunicorn==21.2.0
-idna==3.4
+idna==3.6
 importlib-metadata==6.8.0
 inuits-policy-based-auth==9.5.0
 isodate==0.6.1
