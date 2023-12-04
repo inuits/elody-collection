@@ -143,7 +143,7 @@ class MediafileMetadata(BaseResource):
     @policy_factory.authenticate(RequestContext(request))
     def patch(self, id):
         if request.args.get("soft", 0, int):
-            return (200, "good")
+            return "good", 200
         old_mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
         content = self._get_content_according_content_type(request, "metadata")
         metadata = self.storage.patch_collection_item_metadata(
