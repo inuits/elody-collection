@@ -25,7 +25,7 @@ class Batch(BaseResource):
                 output.append(mediafile)
         return output
 
-    def __get_parsed_csv(self, csv):
+    def _get_parsed_csv(self, csv):
         try:
             parsed_csv = CSVMultiObject(
                 csv,
@@ -73,7 +73,7 @@ class Batch(BaseResource):
         if content_type == "text/csv":
             output = dict()
             accept_header = request.headers.get("Accept")
-            parsed_csv = self.__get_parsed_csv(request.get_data(as_text=True))
+            parsed_csv = self._get_parsed_csv(request.get_data(as_text=True))
             entities_and_mediafiles = self._get_entities_and_mediafiles_from_csv(
                 parsed_csv
             )
