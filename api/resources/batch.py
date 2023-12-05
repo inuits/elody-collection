@@ -25,63 +25,66 @@ class Batch(BaseResource):
                 output.append(mediafile)
         return output
 
+    def __get_parsed_csv(self, csv):
+        try:
+            parsed_csv = CSVMultiObject(
+                csv,
+                {"entities": "same_entity", "mediafiles": "filename"},
+                {
+                    "mediafiles": [
+                        "copyright_color",
+                        "filename",
+                        "publication_status",
+                    ]
+                },
+                {"mediafiles": {"copyright_color": "red"}},
+            )
+            return parsed_csv
+        except ColumnNotFoundException:
+            abort(422, message="One or more required columns headers aren't defined")
+
+    def _get_entities_and_mediafiles_from_csv(self, parsed_csv):
+        entities_and_mediafiles = dict()
+        for entity in parsed_csv.objects.get("entities"):
+            entities_and_mediafiles.setdefault("entities", list())
+            entity_matching_id = entity.pop("matching_id", None)
+            relations = entity.pop("relations", list())
+            entity = self.storage.save_item_to_collection("entities", entity)
+            self.storage.add_relations_to_collection_item(
+                "entities", get_raw_id(entity), relations
+            )
+            if entity_matching_id:
+                mediafiles = self.__add_matching_mediafiles_to_entity(
+                    entity_matching_id, entity, parsed_csv.objects.get("mediafiles")
+                )
+                if mediafiles:
+                    entities_and_mediafiles.setdefault("mediafiles", list())
+                    entities_and_mediafiles.get("mediafiles", list()).extend(mediafiles)
+            entities_and_mediafiles.get("entities", list()).append(
+                self.storage.get_item_from_collection_by_id(
+                    "entities", get_raw_id(entity)
+                )
+            )
+        return entities_and_mediafiles
+
     @policy_factory.authenticate(RequestContext(request))
     def post(self):
         content_type = request.content_type
         if content_type == "text/csv":
             output = dict()
             accept_header = request.headers.get("Accept")
-            if accept_header == "text/uri-list":
-                output = ""
-            csv = request.get_data(as_text=True)
-            try:
-                parsed_csv = CSVMultiObject(
-                    csv,
-                    {"entities": "same_entity", "mediafiles": "filename"},
-                    {
-                        "mediafiles": [
-                            "copyright_color",
-                            "filename",
-                            "publication_status",
-                        ]
-                    },
-                    {"mediafiles": {"copyright_color": "red"}},
-                )
-            except ColumnNotFoundException:
-                abort(
-                    422, message="One or more required columns headers aren't defined"
-                )
-            for entity in parsed_csv.objects.get("entities"):
-                if accept_header != "text/uri-list":
-                    output.setdefault("entities", list())
-                entity_matching_id = entity.pop("matching_id", None)
-                relations = entity.pop("relations", list())
-                entity = self.storage.save_item_to_collection("entities", entity)
-                self.storage.add_relations_to_collection_item(
-                    "entities", get_raw_id(entity), relations
-                )
-                if entity_matching_id:
-                    mediafiles = self.__add_matching_mediafiles_to_entity(
-                        entity_matching_id, entity, parsed_csv.objects.get("mediafiles")
-                    )
-                    if mediafiles:
-                        if accept_header != "text/uri-list":
-                            output.setdefault("mediafiles", list())
-                            output.get("mediafiles", list()).extend(mediafiles)
-                        else:
-                            for mediafile in mediafiles:
-                                ticket_id = self._create_ticket(
-                                    mediafile.get("filename")
-                                )
-                                output += f"{self.storage_api_url}/upload-with-ticket/{mediafile.get('filename')}?id={get_raw_id(mediafile)}&ticket_id={ticket_id}\n"
-                if accept_header != "text/uri-list":
-                    output.get("entities", list()).append(
-                        self.storage.get_item_from_collection_by_id(
-                            "entities", get_raw_id(entity)
-                        )
-                    )
+            parsed_csv = self.__get_parsed_csv(request.get_data(as_text=True))
+            entities_and_mediafiles = self._get_entities_and_mediafiles_from_csv(
+                parsed_csv
+            )
             if accept_header != "text/uri-list":
+                output = entities_and_mediafiles
                 output["errors"] = parsed_csv.get_errors()
+            else:
+                output = ""
+                for mediafile in entities_and_mediafiles.get("mediafiles", list()):
+                    ticket_id = self._create_ticket(mediafile.get("filename"))
+                    output += f"{self.storage_api_url}/upload-with-ticket/{mediafile.get('filename')}?id={get_raw_id(mediafile)}&ticket_id={ticket_id}\n"
             return self._create_response_according_accept_header(
                 output, accept_header, 201
             )
