@@ -5,7 +5,12 @@ import os
 from app import policy_factory, rabbit, tenant_defining_types
 from datetime import datetime, timezone, timedelta
 from elody.csv import CSVSingleObject
-from elody.util import get_raw_id, mediafile_is_public, signal_entity_changed
+from elody.util import (
+    get_item_metadata_value,
+    get_raw_id,
+    mediafile_is_public,
+    signal_entity_changed,
+)
 from flask import Response
 from flask_restful import Resource, abort
 from storage.storagemanager import StorageManager
@@ -227,12 +232,8 @@ class BaseResource(Resource):
             case _:
                 return request.get_json()
 
-    def _get_tenant_label(self, defining_entity):
-        if "metadata" in defining_entity:
-            for item in defining_entity["metadata"]:
-                if item["key"] == "name":
-                    return item["value"]
-        return None
+    def _get_tenant_label(self, item):
+        return get_item_metadata_value(item, "name")
 
     def _get_upload_bucket(self):
         return os.getenv("MINIO_BUCKET")
@@ -334,3 +335,13 @@ class BaseResource(Resource):
             self.storage.delete_collection_item_relations("entities", id, deleted)
         user["relations"] = [*new, *updated, *untouched]
         return user
+
+    def _update_tenant(self, entity, new_data):
+        if not tenant_defining_types or entity["type"] not in tenant_defining_types:
+            return
+        if self._get_tenant_label(entity) == self._get_tenant_label(new_data):
+            return
+        metadata = [{"key": "label", "value": self._get_tenant_label(new_data)}]
+        self.storage.patch_collection_item_metadata(
+            "entities", f"tenant:{get_raw_id(entity)}", metadata
+        )

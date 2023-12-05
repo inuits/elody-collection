@@ -156,13 +156,14 @@ class EntityDetail(BaseResource):
         )
         content["date_created"] = entity.get("date_created", content["date_updated"])
         try:
-            entity = self.storage.update_item_from_collection(
+            updated_entity = self.storage.update_item_from_collection(
                 "entities", get_raw_id(entity), content
             )
         except NonUniqueException as ex:
             return str(ex), 409
-        signal_entity_changed(rabbit, entity)
-        return entity, 201
+        self._update_tenant(entity, updated_entity)
+        signal_entity_changed(rabbit, updated_entity)
+        return updated_entity, 201
 
     @policy_factory.authenticate(RequestContext(request))
     def patch(self, id):
@@ -176,13 +177,14 @@ class EntityDetail(BaseResource):
             policy_factory.get_user_context().email or "default_uploader"
         )
         try:
-            entity = self.storage.patch_item_from_collection(
+            updated_entity = self.storage.patch_item_from_collection(
                 "entities", get_raw_id(entity), content
             )
         except NonUniqueException as ex:
             return str(ex), 409
-        signal_entity_changed(rabbit, entity)
-        return entity, 201
+        self._update_tenant(entity, updated_entity)
+        signal_entity_changed(rabbit, updated_entity)
+        return updated_entity, 201
 
     @policy_factory.authenticate(RequestContext(request))
     def delete(self, id):
@@ -338,6 +340,7 @@ class EntityMetadata(BaseResource):
         metadata = self.storage.update_collection_item_sub_item(
             "entities", get_raw_id(entity), "metadata", content
         )
+        self._update_tenant(entity, {"metadata": metadata})
         signal_entity_changed(rabbit, entity)
         return metadata, 201
 
@@ -352,6 +355,7 @@ class EntityMetadata(BaseResource):
         )
         if not metadata:
             abort(400, message=f"Entity with id {id} has no metadata")
+        self._update_tenant(entity, {"metadata": metadata})
         signal_entity_changed(rabbit, entity)
         return metadata, 201
 
