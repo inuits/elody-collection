@@ -27,7 +27,7 @@ class Batch(BaseResource):
 
     def _get_parsed_csv(self, csv):
         try:
-            parsed_csv = CSVMultiObject(
+            return CSVMultiObject(
                 csv,
                 {"entities": "same_entity", "mediafiles": "filename"},
                 {
@@ -39,7 +39,6 @@ class Batch(BaseResource):
                 },
                 {"mediafiles": {"copyright_color": "red"}},
             )
-            return parsed_csv
         except ColumnNotFoundException:
             abort(422, message="One or more required columns headers aren't defined")
 
