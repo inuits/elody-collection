@@ -166,7 +166,10 @@ class BaseResource(Resource):
             self.__link_tenant_to_defining_entity(tenant["_id"], entity["_id"])
         elif entity["type"] not in ["role", "tenant", "user"]:
             if tenant_id := policy_factory.get_user_context().x_tenant.id:
-                self._link_entity_to_tenant(entity["_id"], tenant_id)
+                try:
+                    self._link_entity_to_tenant(entity["_id"], tenant_id)
+                except Exception as ex:
+                    abort(400, message=str(ex))
 
     def _create_ticket(self, filename, mediafile_id=None):
         ticket = {
