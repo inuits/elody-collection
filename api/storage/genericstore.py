@@ -114,7 +114,7 @@ class GenericStorageManager:
         metadata = self.get_collection_item_sub_item(collection, id, "metadata")
         if not metadata and not ignore_empty_metadata:
             return None
-        if ignore_empty_metadata:
+        if not metadata and ignore_empty_metadata:
             metadata = list()
         for item in content:
             if existing := next((x for x in metadata if x["key"] == item["key"]), None):
