@@ -191,6 +191,7 @@ from resources.saved_search import (
 )
 from resources.tenant import Tenant
 from resources.ticket import Ticket, TicketDetail
+from resources.unique import Unique
 from resources.spec import AsyncAPISpec, OpenAPISpec
 
 api.add_resource(Batch, route_mapper.get(Batch.__name__, "/batch"))
@@ -312,6 +313,8 @@ api.add_resource(
     MediafileParent,
     route_mapper.get(MediafileParent.__name__, "/mediafiles/<string:id>/parent"),
 )
+
+api.add_resource(Unique, "/unique/<string:collection>/<string:unique_id>")
 
 api.add_resource(SavedSearch, route_mapper.get(SavedSearch.__name__, "/saved_searches"))
 api.add_resource(

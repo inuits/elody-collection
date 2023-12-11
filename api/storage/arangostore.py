@@ -762,3 +762,13 @@ class ArangoStorageManager(GenericStorageManager):
 
     def get_existing_collections(self):
         return self.collections
+
+    def check_if_file_already_exists(self, collection, identifier):
+        aql = """
+            FOR doc IN @@collection
+            FILTER @identifier IN doc.identifiers
+            RETURN doc
+        """
+        bind = {"@collection": collection, "identifier": identifier}
+        result = self.db.aql.execute(aql, bind_vars=bind)
+        return bool(result)
