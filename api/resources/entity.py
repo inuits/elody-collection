@@ -135,8 +135,9 @@ class Entity(GenericObject):
                     mediafile_filename,
                 )
                 if accept_header == "text/uri-list":
-                    ticket_id = self._create_ticket(mediafile_filename)
-                    response += f"{self.storage_api_url}/upload-with-ticket/{mediafile_filename}?id={get_raw_id(mediafile)}&ticket_id={ticket_id}\n"
+                    content = {"mediafile_id": mediafile.get("_id", None)}
+                    ticket_id = self._create_ticket(mediafile_filename, content=content)
+                    response += f"{self.storage_api_url}/upload/{ticket_id}\n"
         self._create_tenant(entity)
         signal_entity_changed(rabbit, entity)
         return self._create_response_according_accept_header(
@@ -264,8 +265,11 @@ class EntityMediafiles(GenericObjectDetail):
                 mediafile_is_public(mediafile),
             )
             if accept_header == "text/uri-list":
-                ticket_id = self._create_ticket(mediafile["filename"])
-                response += f"{self.storage_api_url}/upload-with-ticket/{mediafile['filename']}?id={get_raw_id(mediafile)}&ticket_id={ticket_id}\n"
+                content = {
+                    "mediafile_id": get_raw_id(mediafile),
+                }
+                ticket_id = self._create_ticket(mediafile["filename"], content=content)
+                response += f"{self.storage_api_url}/upload/{ticket_id}\n"
             else:
                 response.append(mediafile)
         signal_mediafiles_added_for_entity(rabbit, entity, mediafiles)
