@@ -12,6 +12,10 @@ from elody.util import (
     mediafile_is_public,
     signal_entity_changed,
 )
+from flask import Response
+from flask_restful import Resource, abort
+from storage.storagemanager import StorageManager
+import uuid
 from elody.validator import validate_json
 from elody.schemas import (
     entity_schema,
@@ -228,19 +232,23 @@ class BaseResource(Resource):
                 except Exception as ex:
                     abort(400, message=str(ex))
 
-    def _create_ticket(self, filename, mediafile_id=None):
+    def _create_ticket(self, filename=None, content=None):
+        if content is None:
+            content = {}
+        location = content.get("location", str(uuid.uuid4()))
+        object_identifier = content.get("original_filename", filename)
         ticket = {
             "bucket": self._get_upload_bucket(),
             "exp": (
                 datetime.now(tz=timezone.utc)
                 + timedelta(seconds=int(os.getenv("TICKET_LIFESPAN", 3600)))
             ).timestamp(),
-            "location": self._get_upload_location(filename),
+            "location": location,
+            "object_identifier": object_identifier,
             "type": "ticket",
             "user": policy_factory.get_user_context().email or "default_uploader",
         }
-        if mediafile_id:
-            ticket["mediafile_id"] = mediafile_id
+        ticket.update(content)
         return self.storage.save_item_to_collection(
             "abstracts", ticket, only_return_id=True, create_sortable_metadata=False
         )
@@ -362,10 +370,10 @@ class BaseResource(Resource):
     def _get_upload_bucket(self):
         return os.getenv("MINIO_BUCKET")
 
-    def _get_upload_location(self, filename):
+    def _get_upload_location(self, file_uuid):
         if tenant_id := policy_factory.get_user_context().x_tenant.id:
-            return f"{tenant_id}/{filename}"
-        return filename
+            return f"{tenant_id}/{file_uuid}"
+        return file_uuid
 
     def _inject_api_urls_into_entities(self, entities):
         for entity in entities:
@@ -373,13 +381,19 @@ class BaseResource(Resource):
                 "primary_mediafile_location",
                 "primary_transcode_location",
             ]:
-                if mediafile_type in entity and entity[mediafile_type] is not None:
-                    mediafile_filename = entity[mediafile_type]
-                    mediafile_filename = mediafile_filename.split("/download/")[-1]
-                    ticket_id = self._create_ticket(mediafile_filename)
-                    entity[mediafile_type] = (
-                        f"{self.storage_api_url_ext}/download-with-ticket/{mediafile_filename}?ticket_id={ticket_id}"
-                    )
+                if mediafile_type in entity:
+                    url = entity[mediafile_type]
+                    old_ticket_id = url.split("/download/")[-1]
+                    old_ticket_content = self._abort_if_item_doesnt_exist("abstracts", old_ticket_id) or {}
+                    content = {
+                        "mediafile_id": old_ticket_content.get("mediafile_id", None),
+                        "location": old_ticket_content.get("location"),
+                        "object_identifier": old_ticket_content.get("object_identifier")
+                    }
+                    ticket_id = self._create_ticket(content=content)
+                    entity[
+                        mediafile_type
+                    ] = f"{self.storage_api_url_ext}/download/{ticket_id}"
             if "primary_thumbnail_location" in entity:
                 entity["primary_thumbnail_location"] = (
                     f'{self.image_api_url_ext}{entity["primary_thumbnail_location"]}'
@@ -392,10 +406,15 @@ class BaseResource(Resource):
                 if mediafile_type in mediafile:
                     mediafile_filename = mediafile[mediafile_type]
                     mediafile_filename = mediafile_filename.split("/download/")[-1]
-                    ticket_id = self._create_ticket(mediafile_filename)
-                    mediafile[mediafile_type] = (
-                        f"{self.storage_api_url_ext}/download-with-ticket/{mediafile_filename}?ticket_id={ticket_id}"
-                    )
+                    content = {
+                        "mediafile_id": get_raw_id(mediafile),
+                        "location": self._get_upload_location(mediafile.get("filename")),
+                        "object_identifier": mediafile.get("original_filename")
+                    }
+                    ticket_id = self._create_ticket(mediafile_filename, content=content)
+                    mediafile[
+                        mediafile_type
+                    ] = f"{self.storage_api_url_ext}/download/{ticket_id}"
             if "thumbnail_file_location" in mediafile:
                 mediafile["thumbnail_file_location"] = (
                     f'{self.image_api_url_ext}{mediafile["thumbnail_file_location"]}'
