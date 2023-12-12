@@ -61,10 +61,10 @@ class Entity(GenericObject):
                 f"/entities?{type_filter}skip={skip + limit}&limit={limit}&skip_relations={skip_relations}"
             )
         if skip > 0:
-            entities["previous"] = (
-                f"/entities?{type_filter}skip={max(0, skip - limit)}&limit={limit}&skip_relations={skip_relations}"
-            )
-        entities["results"] = self._inject_api_urls_into_entities(entities["results"])
+            entities[
+                "previous"
+            ] = f"/entities?{type_filter}skip={max(0, skip - limit)}&limit={limit}&skip_relations={skip_relations}"
+        entities["results"] = self._set_entities_mediafile_and_thumbnail(entities["results"])
         return self._create_response_according_accept_header(
             mappers.map_data_according_to_accept_header(
                 policy_factory.get_user_context().access_restrictions.post_request_hook(
@@ -149,7 +149,7 @@ class EntityDetail(GenericObjectDetail):
     @policy_factory.authenticate(RequestContext(request))
     def get(self, id, spec="elody"):
         entity = super().get("entities", id)
-        entity = self._set_entity_mediafile_and_thumbnail(entity)
+        entity = self._set_entities_mediafile_and_thumbnail([entity])[0]
         if not request.args.get("skip_relations", 0, int):
             entity = self._add_relations_to_metadata(entity)
         accept_header = request.headers.get("Accept")
@@ -159,7 +159,7 @@ class EntityDetail(GenericObjectDetail):
         ]
         return self._create_response_according_accept_header(
             mappers.map_data_according_to_accept_header(
-                self._inject_api_urls_into_entities([entity])[0],
+                entity,
                 accept_header,
                 "entity",
                 fields,

@@ -70,10 +70,10 @@ class MediafileAssets(GenericObjectDetail):
             entity = self.storage.get_item_from_collection_by_id(
                 "entities", item["entity_id"].removeprefix("entities/")
             )
-            entity = self._set_entity_mediafile_and_thumbnail(entity)
+            entity = self._set_entities_mediafile_and_thumbnail([entity])[0]
             entity = self._add_relations_to_metadata(entity)
             entities.append(entity)
-        return self._inject_api_urls_into_entities(entities)
+        return entities
 
 
 class MediafileCopyright(GenericObjectDetail):

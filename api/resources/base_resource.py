@@ -375,31 +375,6 @@ class BaseResource(Resource):
             return f"{tenant_id}/{file_uuid}"
         return file_uuid
 
-    def _inject_api_urls_into_entities(self, entities):
-        for entity in entities:
-            for mediafile_type in [
-                "primary_mediafile_location",
-                "primary_transcode_location",
-            ]:
-                if mediafile_type in entity:
-                    url = entity[mediafile_type]
-                    old_ticket_id = url.split("/download/")[-1]
-                    old_ticket_content = self._abort_if_item_doesnt_exist("abstracts", old_ticket_id) or {}
-                    content = {
-                        "mediafile_id": old_ticket_content.get("mediafile_id", None),
-                        "location": old_ticket_content.get("location"),
-                        "object_identifier": old_ticket_content.get("object_identifier")
-                    }
-                    ticket_id = self._create_ticket(content=content)
-                    entity[
-                        mediafile_type
-                    ] = f"{self.storage_api_url_ext}/download/{ticket_id}"
-            if "primary_thumbnail_location" in entity:
-                entity["primary_thumbnail_location"] = (
-                    f'{self.image_api_url_ext}{entity["primary_thumbnail_location"]}'
-                )
-        return entities
-
     def _inject_api_urls_into_mediafiles(self, mediafiles):
         for mediafile in mediafiles:
             for mediafile_type in ["original_file_location", "transcode_file_location"]:
@@ -434,29 +409,35 @@ class BaseResource(Resource):
         relation = {"key": tenant["_id"], "type": "isIn"}
         self.storage.add_relations_to_collection_item("entities", entity_id, [relation])
 
-    def _set_entity_mediafile_and_thumbnail(self, entity):
-        mediafiles = self.storage.get_collection_item_mediafiles(
-            "entities", get_raw_id(entity)
-        )
-        for mediafile in mediafiles:
-            if mediafile.get("is_primary", False):
-                entity["primary_mediafile"] = mediafile["filename"]
-                entity["primary_mediafile_location"] = mediafile[
-                    "original_file_location"
-                ]
-                if "transcode_file_location" in mediafile:
-                    entity["primary_transcode"] = mediafile["transcode_filename"]
-                    entity["primary_transcode_location"] = mediafile[
-                        "transcountde_file_location"
+    def _set_entities_mediafile_and_thumbnail(self, entities):
+        for entity in entities:
+            mediafiles = self.storage.get_collection_item_mediafiles(
+                "entities", get_raw_id(entity)
+            )
+            for mediafile in mediafiles:
+                if mediafile.get("is_primary", False):
+                    content = {
+                        "mediafile_id": get_raw_id(mediafile),
+                        "location": mediafile.get("filename"),
+                        "object_identifier": mediafile.get("original_filename")
+                    }
+                    ticket_id = self._create_ticket(content=content)
+                    url = f"{self.storage_api_url_ext}/download/{ticket_id}"
+                    entity["primary_mediafile"] = mediafile["filename"]
+                    entity["primary_mediafile_location"] = url
+                    if "transcode_file_location" in mediafile:
+                        entity["primary_transcode"] = mediafile["transcode_filename"]
+                        entity["primary_transcode_location"] = mediafile[
+                            "transcode_file_location"
+                        ]
+                    if "img_width" in mediafile and "img_height" in mediafile:
+                        entity["primary_width"] = mediafile["img_width"]
+                        entity["primary_height"] = mediafile["img_height"]
+                if mediafile.get("is_primary_thumbnail", False):
+                    entity["primary_thumbnail_location"] = mediafile[
+                        "thumbnail_file_location"
                     ]
-                if "img_width" in mediafile and "img_height" in mediafile:
-                    entity["primary_width"] = mediafile["img_width"]
-                    entity["primary_height"] = mediafile["img_height"]
-            if mediafile.get("is_primary_thumbnail", False):
-                entity["primary_thumbnail_location"] = mediafile[
-                    "thumbnail_file_location"
-                ]
-        return entity
+        return entities
 
     def _sync_roles_from_idp(self, user, roles_per_tenant):
         (
