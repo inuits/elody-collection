@@ -370,12 +370,6 @@ class MongoStorageManager(GenericStorageManager):
         self.db.command("ping")
         return True
 
-    def check_if_file_already_exists(self, collection, identifier):
-        query = {"identifiers": identifier}
-        result = self.db[collection].find_one(query)
-
-        return result is not None
-
     def delete_collection_item_relations(self, collection, id, relations, parent=True):
         for relation in relations:
             impacted_ids = [id, relation["key"]]
