@@ -284,11 +284,7 @@ class EntityMediafilesCreate(GenericObjectDetail):
     def post(self, id):
         entity = super().get("entities", id)
         content = request.get_json()
-        self._abort_if_not_valid_json("mediafile", content)
-        content["original_file_location"] = f'/download/{content["filename"]}'
-        content["thumbnail_file_location"] = (
-            f'/iiif/3/{content["filename"]}/full/,150/0/default.jpg'
-        )
+        self._abort_if_not_valid_json("Mediafile", content)
         content["user"] = policy_factory.get_user_context().email or "default_uploader"
         now = datetime.now(timezone.utc)
         content["date_created"] = now

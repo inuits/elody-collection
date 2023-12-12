@@ -162,8 +162,6 @@ class BaseResource(Resource):
             "filename": filename,
             "date_created": datetime.now(timezone.utc),
             "version": 1,
-            "thumbnail_file_location": f"/iiif/3/{filename}/full/,150/0/default.jpg",
-            "original_file_location": f"/download/{filename}",
         }
         if metadata:
             content["metadata"] = metadata
@@ -377,23 +375,14 @@ class BaseResource(Resource):
 
     def _inject_api_urls_into_mediafiles(self, mediafiles):
         for mediafile in mediafiles:
-            for mediafile_type in ["original_file_location", "transcode_file_location"]:
-                if mediafile_type in mediafile:
-                    mediafile_filename = mediafile[mediafile_type]
-                    mediafile_filename = mediafile_filename.split("/download/")[-1]
-                    content = {
-                        "mediafile_id": get_raw_id(mediafile),
-                        "location": self._get_upload_location(mediafile.get("filename")),
-                        "object_identifier": mediafile.get("original_filename")
-                    }
-                    ticket_id = self._create_ticket(mediafile_filename, content=content)
-                    mediafile[
-                        mediafile_type
-                    ] = f"{self.storage_api_url_ext}/download/{ticket_id}"
-            if "thumbnail_file_location" in mediafile:
-                mediafile["thumbnail_file_location"] = (
-                    f'{self.image_api_url_ext}{mediafile["thumbnail_file_location"]}'
-                )
+            content = {
+                "mediafile_id": get_raw_id(mediafile),
+                "location": self._get_upload_location(mediafile.get("filename")),
+                "object_identifier": mediafile.get("original_filename")
+            }
+            ticket_id = self._create_ticket(content=content)
+            mediafile["original_file_location"] =  f"{self.storage_api_url_ext}/download/{ticket_id}"
+            mediafile["thumbnail_file_location"] = f'{self.image_api_url_ext}/iiif/3/{mediafile.get("filename")}/full/,150/0/default.jpg'
         return mediafiles
 
     def _is_rdf_post_call(self, content_type):
