@@ -38,7 +38,7 @@ class ExactMatcher(BaseMatcher):
     def match(self, key, value, parent_key="", **kwargs):
         if (
             isinstance(key, str)
-            and isinstance(value, (str, int, bool, list))
+            and isinstance(value, (str, int, float, bool, list))
             and kwargs.get("match_exact", False)
         ):
             return self.matcher_engine.exact(

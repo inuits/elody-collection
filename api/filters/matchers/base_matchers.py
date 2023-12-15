@@ -18,7 +18,7 @@ class BaseMatchers(ABC):
     def exact(
         self,
         key: str,
-        value: str | int | bool | list[str],
+        value: str | int | float | bool | list[str],
         parent_key: str = "",
         is_datetime_value: bool = False,
     ) -> dict | str:
