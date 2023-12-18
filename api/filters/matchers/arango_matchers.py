@@ -1,5 +1,6 @@
 from filters.matchers.base_matchers import BaseMatchers
 
+
 class ArangoMatchers(BaseMatchers):
     DATE_FORMAT = "%yyyy-%mm-%ddT%hh:%ii"
 
@@ -69,7 +70,6 @@ class ArangoMatchers(BaseMatchers):
         equality_operator: str,
         is_datetime_value=False,
     ):
-
         if parent_key:
             return self.__value_match_with_parent_key_of_type_array(
                 key, [value], parent_key, equality_operator, is_datetime_value
@@ -151,7 +151,7 @@ class ArangoMatchers(BaseMatchers):
         is_datetime_value=False,
     ):
         prefix, suffix = self.__get_prefix_and_suffix(comparison_operators[0])
-            
+
         if is_datetime_value:
             value_match = f"""
                 DATE_FORMAT(
@@ -170,7 +170,6 @@ class ArangoMatchers(BaseMatchers):
             value_match = (
                 f'item.value {comparison_operators[0]} "{prefix}{values[0]}{suffix}"'
             )
-            
 
         for i in range(0, len(values)):
             if not isinstance(values[i], str) or values[i] == "null":
@@ -190,5 +189,5 @@ class ArangoMatchers(BaseMatchers):
                     value_match += f' {logical_operator} item.value {comparison_operators[next_i]} "{prefix}{values[next_i]}{suffix}"'
             except IndexError:
                 break
-        
+
         return value_match

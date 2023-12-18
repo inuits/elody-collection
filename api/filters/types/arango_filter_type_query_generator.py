@@ -1,5 +1,6 @@
 from filters.types.base_filter_type_query_generator import BaseFilterTypeQueryGenerator
 
+
 class ArangoFilterTypeQueryGenerator(BaseFilterTypeQueryGenerator):
     def generate_query_for_id_filter_type(self, matchers, filter_criteria):
         filter = super().generate_query_for_id_filter_type(matchers, filter_criteria)
@@ -63,8 +64,7 @@ class ArangoFilterTypeQueryGenerator(BaseFilterTypeQueryGenerator):
             return filter
 
         return ""
-        
+
     def generate_query_for_type_filter_type(self, matchers, filter_criteria):
         filter = super().generate_query_for_type_filter_type(matchers, filter_criteria)
         return self.__parse_query(filter)
-
