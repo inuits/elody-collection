@@ -230,11 +230,11 @@ class BaseResource(Resource):
                 except Exception as ex:
                     abort(400, message=str(ex))
 
-    def _create_ticket(self, filename=None, content=None):
+    def _create_ticket(self, identifier=None, content=None):
         if content is None:
             content = {}
         location = content.get("location", str(uuid.uuid4()))
-        object_identifier = content.get("original_filename", filename)
+        object_identifier = content.get("original_filename", identifier)
         ticket = {
             "bucket": self._get_upload_bucket(),
             "exp": (
