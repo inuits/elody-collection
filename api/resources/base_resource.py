@@ -2,6 +2,7 @@ import app
 import json
 import mappers
 import os
+import uuid
 
 from app import policy_factory, rabbit, tenant_defining_types
 from datetime import datetime, timezone, timedelta
@@ -15,7 +16,6 @@ from elody.util import (
 from flask import Response
 from flask_restful import Resource, abort
 from storage.storagemanager import StorageManager
-import uuid
 from elody.validator import validate_json
 from elody.schemas import (
     entity_schema,
