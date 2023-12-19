@@ -16,7 +16,6 @@ from elody.util import (
 from flask import Response
 from flask_restful import Resource, abort
 from storage.storagemanager import StorageManager
-import uuid
 from elody.validator import validate_json
 from elody.schemas import (
     entity_schema,
@@ -160,7 +159,7 @@ class BaseResource(Resource):
         self, entity, filename, metadata=None, dry_run=False
     ):
         content = {
-            "filename": filename,
+            "identifier": filename,
             "date_created": datetime.now(timezone.utc),
             "version": 1,
         }
@@ -231,11 +230,11 @@ class BaseResource(Resource):
                 except Exception as ex:
                     abort(400, message=str(ex))
 
-    def _create_ticket(self, filename=None, content=None):
+    def _create_ticket(self, identifier=None, content=None):
         if content is None:
             content = {}
         location = content.get("location", str(uuid.uuid4()))
-        object_identifier = content.get("original_filename", filename)
+        object_identifier = content.get("original_filename", identifier)
         ticket = {
             "bucket": self._get_upload_bucket(),
             "exp": (
@@ -378,12 +377,12 @@ class BaseResource(Resource):
         for mediafile in mediafiles:
             content = {
                 "mediafile_id": get_raw_id(mediafile),
-                "location": self._get_upload_location(mediafile.get("filename")),
-                "object_identifier": mediafile.get("original_filename")
+                "location": self._get_upload_location(mediafile.get("identifier")),
+                "object_identifier": mediafile.get("original_identifier")
             }
             ticket_id = self._create_ticket(content=content)
             mediafile["original_file_location"] =  f"{self.storage_api_url_ext}/download/{ticket_id}"
-            mediafile["thumbnail_file_location"] = f'{self.image_api_url_ext}/iiif/3/{mediafile.get("filename")}/full/,150/0/default.jpg'
+            mediafile["thumbnail_file_location"] = f'{self.image_api_url_ext}/iiif/3/{mediafile.get("identifier")}/full/,150/0/default.jpg'
         return mediafiles
 
     def _is_rdf_post_call(self, content_type):
@@ -408,12 +407,12 @@ class BaseResource(Resource):
                 if mediafile.get("is_primary", False):
                     content = {
                         "mediafile_id": get_raw_id(mediafile),
-                        "location": mediafile.get("filename"),
-                        "object_identifier": mediafile.get("original_filename")
+                        "location": mediafile.get("identifier"),
+                        "object_identifier": mediafile.get("original_identifier")
                     }
                     ticket_id = self._create_ticket(content=content)
                     url = f"{self.storage_api_url_ext}/download/{ticket_id}"
-                    entity["primary_mediafile"] = mediafile["filename"]
+                    entity["primary_mediafile"] = mediafile["identifier"]
                     entity["primary_mediafile_location"] = url
                     if "transcode_file_location" in mediafile:
                         entity["primary_transcode"] = mediafile["transcode_filename"]

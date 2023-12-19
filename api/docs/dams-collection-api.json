@@ -2613,7 +2613,7 @@
               "$ref": "#/components/schemas/metadata"
             }
           },
-          "original_filename": {
+          "original_identifier": {
             "type": "string",
             "description": "mediafile original filename"
           }
