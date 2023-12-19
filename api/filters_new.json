@@ -46,7 +46,7 @@
       "type": "selection"
     },
     {
-      "key": "filename",
+      "key": "identifier",
       "label": "Filename",
       "type": "text"
     },
@@ -173,7 +173,7 @@
       "type": "selection"
     },
     {
-      "key": "filename",
+      "key": "identifier",
       "label": "Filename",
       "type": "text"
     },

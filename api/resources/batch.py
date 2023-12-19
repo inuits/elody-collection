@@ -19,7 +19,7 @@ class Batch(BaseResource):
                 mediafile.pop("matching_id", None)
                 mediafile = self._create_mediafile_for_entity(
                     entity,
-                    mediafile.get("filename"),
+                    mediafile.get("identifier"),
                     mediafile.get("metadata"),
                     dry_run,
                 )
@@ -95,7 +95,7 @@ class Batch(BaseResource):
                     content = {
                         "mediafile_id": get_raw_id(mediafile),
                     }
-                    ticket_id = self._create_ticket(mediafile.get("filename"), content=content)
+                    ticket_id = self._create_ticket(mediafile.get("identifier"), content=content)
                     output += f"{self.storage_api_url}/upload/{ticket_id}\n"
             return self._create_response_according_accept_header(
                 output, accept_header, 201

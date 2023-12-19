@@ -2583,10 +2583,10 @@
         "type": "object",
         "description": "Mediafile object",
         "required": [
-          "filename"
+          "identifier"
         ],
         "properties": {
-          "filename": {
+          "identifier": {
             "type": "string",
             "description": "mediafile filename"
           },

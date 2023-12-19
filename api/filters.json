@@ -21,7 +21,7 @@
       "type": "tekst"
     },
     {
-      "key": "filename",
+      "key": "identifier",
       "label": "Filename",
       "type": "tekst"
     }

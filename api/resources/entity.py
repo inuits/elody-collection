@@ -268,7 +268,7 @@ class EntityMediafiles(GenericObjectDetail):
                 content = {
                     "mediafile_id": get_raw_id(mediafile),
                 }
-                ticket_id = self._create_ticket(mediafile["filename"], content=content)
+                ticket_id = self._create_ticket(mediafile["identifier"], content=content)
                 response += f"{self.storage_api_url}/upload/{ticket_id}\n"
             else:
                 response.append(mediafile)

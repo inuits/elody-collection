@@ -16,6 +16,7 @@ from elody.util import (
 from flask import Response
 from flask_restful import Resource, abort
 from storage.storagemanager import StorageManager
+import uuid
 from elody.validator import validate_json
 from elody.schemas import (
     entity_schema,
@@ -230,11 +231,11 @@ class BaseResource(Resource):
                 except Exception as ex:
                     abort(400, message=str(ex))
 
-    def _create_ticket(self, identifier=None, content=None):
+    def _create_ticket(self, filename=None, content=None):
         if content is None:
             content = {}
         location = content.get("location", str(uuid.uuid4()))
-        object_identifier = content.get("original_filename", identifier)
+        object_identifier = content.get("original_filename", filename)
         ticket = {
             "bucket": self._get_upload_bucket(),
             "exp": (
