@@ -223,3 +223,6 @@ class MemoryStorageManager(GenericStorageManager):
             self.collections[collection][gen_id] = content
             return self.collections[collection][gen_id]
         return None
+
+    def get_existing_collections(self):
+        return list(self.collections.keys())

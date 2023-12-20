@@ -1,10 +1,13 @@
 from app import policy_factory
 from flask import request
 from inuits_policy_based_auth import RequestContext
-from resources.base_resource import BaseResource
+from resources.generic_object import (
+    GenericObject,
+    GenericObjectDetail,
+)
 
 
-class Job(BaseResource):
+class Job(GenericObject):
     @policy_factory.authenticate(RequestContext(request))
     def get(self):
         skip = request.args.get("skip", 0, int)
@@ -37,10 +40,10 @@ class Job(BaseResource):
         return jobs
 
 
-class JobDetail(BaseResource):
+class JobDetail(GenericObjectDetail):
     @policy_factory.authenticate(RequestContext(request))
     def get(self, id):
-        job = self._abort_if_item_doesnt_exist("jobs", id)
+        job = super().get("jobs", id)
         if job.get("parent_job_id"):
             return job
         fields = {"parent_job_id": job["identifiers"][0]}

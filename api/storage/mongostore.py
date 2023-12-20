@@ -588,3 +588,6 @@ class MongoStorageManager(GenericStorageManager):
 
     def get_collection_item_mediafiles_count(self, id):
         return self.db["mediafiles"].count_documents({"relations.key": id})
+
+    def get_existing_collections(self):
+        return self.db.list_collection_names()

@@ -3,10 +3,13 @@ from datetime import datetime, timezone
 from flask import request
 from flask_restful import abort
 from inuits_policy_based_auth import RequestContext
-from resources.base_resource import BaseResource
+from resources.generic_object import (
+    GenericObject,
+    GenericObjectDetail,
+)
 
 
-class Ticket(BaseResource):
+class Ticket(GenericObject):
     @policy_factory.authenticate(RequestContext(request))
     def post(self):
         content = request.get_json()
@@ -16,10 +19,10 @@ class Ticket(BaseResource):
         return ticket_id, 201
 
 
-class TicketDetail(BaseResource):
+class TicketDetail(GenericObjectDetail):
     @policy_factory.authenticate(RequestContext(request))
     def get(self, id):
-        ticket = self._abort_if_item_doesnt_exist("abstracts", id) or {}
+        ticket = super().get("abstracts", id) or {}
         is_expired = datetime.now(tz=timezone.utc).timestamp() >= float(ticket["exp"])
         ticket["is_expired"] = is_expired
         return ticket

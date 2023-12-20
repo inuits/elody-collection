@@ -3,10 +3,12 @@ import mappers
 from app import policy_factory
 from flask import request
 from inuits_policy_based_auth import RequestContext
-from resources.base_resource import BaseResource
+from resources.generic_object import (
+    GenericObject,
+)
 
 
-class Tenant(BaseResource):
+class Tenant(GenericObject):
     @policy_factory.authenticate(RequestContext(request))
     def get(self):
         accept_header = request.headers.get("Accept")

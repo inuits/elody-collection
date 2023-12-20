@@ -14,10 +14,24 @@ from elody.util import (
 from flask import Response
 from flask_restful import Resource, abort
 from storage.storagemanager import StorageManager
-from validator import validate_json
+from validator import (
+    entity_schema,
+    key_value_store_schema,
+    mediafile_schema,
+    saved_search_schema,
+    validate_json,
+)
 
 
 class BaseResource(Resource):
+    known_collections = []
+    schemas_by_type = {
+        "entity": entity_schema,
+        "key_value_store": key_value_store_schema,
+        "mediafile": mediafile_schema,
+        "saved_search": saved_search_schema,
+    }
+
     def __init__(self):
         self.storage = StorageManager().get_db_engine()
         self.collection_api_url = os.getenv("COLLECTION_API_URL")
@@ -65,14 +79,14 @@ class BaseResource(Resource):
             404, message=f"Item with id {id} doesn't exist in collection {collection}"
         )
 
-    def _abort_if_not_valid_json(self, type, json, schema):
-        if validation_error := validate_json(json, schema):
+    def _abort_if_not_valid_json(self, type, json):
+        if validation_error := validate_json(json, self.schemas_by_type.get(type)):
             abort(
                 400, message=f"{type} doesn't have a valid format. {validation_error}"
             )
 
     def _abort_if_not_valid_type(self, item, type):
-        if type and item["type"] != type:
+        if type and "type" in item and item["type"] != type:
             abort(400, message=f"Item has the wrong type")
 
     def _add_relations_to_metadata(self, entity, collection="entities", sort_by=None):
@@ -85,6 +99,14 @@ class BaseResource(Resource):
             relations = sorted(relations, key=lambda x: x[sort_by])
         entity["metadata"] = [*entity.get("metadata", []), *relations]
         return entity
+
+    def _check_if_collection_name_exists(self, collection):
+        if collection in self.known_collections:
+            return
+        
+        if collection not in self.storage.get_existing_collections():
+            abort(400, message=f"Collection {collection} does not exist.")
+        self.known_collections.append(collection)
 
     def _create_linked_data(self, request, content_type):
         content = request.get_data(as_text=True)

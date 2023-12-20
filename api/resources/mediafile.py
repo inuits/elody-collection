@@ -1,7 +1,5 @@
 from app import policy_factory, rabbit
-from datetime import datetime, timezone
 from elody.util import (
-    get_raw_id,
     mediafile_is_public,
     signal_mediafile_changed,
     signal_mediafile_deleted,
@@ -9,16 +7,18 @@ from elody.util import (
 from flask import request
 from flask_restful import abort
 from inuits_policy_based_auth import RequestContext
-from resources.base_resource import BaseResource
-from validator import mediafile_schema
+from resources.generic_object import (
+    GenericObject,
+    GenericObjectDetail,
+    GenericObjectMetadata,
+)
 
 
-class Mediafile(BaseResource):
+class Mediafile(GenericObject):
     @policy_factory.authenticate(RequestContext(request))
     def get(self):
         skip = request.args.get("skip", 0, int)
         limit = request.args.get("limit", 20, int)
-        fields = {}
         filters = {}
         if ids := request.args.get("ids"):
             filters["ids"] = ids.split(",")
@@ -27,20 +27,7 @@ class Mediafile(BaseResource):
         )
         if isinstance(access_restricting_filters, dict):
             filters = {**filters, **access_restricting_filters}
-        mediafiles = self.storage.get_items_from_collection(
-            "mediafiles",
-            skip=skip,
-            limit=limit,
-            fields=fields,
-            filters=filters,
-        )
-        mediafiles["limit"] = limit
-        if skip + limit < mediafiles["count"]:
-            mediafiles["next"] = f"/mediafiles?skip={skip + limit}&limit={limit}"
-        if skip:
-            mediafiles[
-                "previous"
-            ] = f"/mediafiles?skip={max(0, skip - limit)}&limit={limit}"
+        mediafiles = super().get("mediafiles", skip=skip, limit=limit, filters=filters)
         mediafiles["results"] = self._inject_api_urls_into_mediafiles(
             mediafiles["results"]
         )
@@ -48,26 +35,14 @@ class Mediafile(BaseResource):
 
     @policy_factory.authenticate(RequestContext(request))
     def post(self):
-        content = self._get_content_according_content_type(request, "mediafile")
-        self._abort_if_not_valid_json("Mediafile", content, mediafile_schema)
-        content["date_created"] = datetime.now(timezone.utc)
-        content["version"] = 1
-        mediafile = self.storage.save_item_to_collection("mediafiles", content)
         accept_header = request.headers.get("Accept")
-        if accept_header == "text/uri-list":
-            ticket_id = self._create_ticket(mediafile["filename"])
-            response = f"{self.storage_api_url}/upload-with-ticket/{mediafile['filename'].strip()}?id={get_raw_id(mediafile)}&ticket_id={ticket_id}"
-        else:
-            response = mediafile
-        return self._create_response_according_accept_header(
-            response, accept_header, 201
-        )
+        return super().post("mediafiles", type="mediafile", accept_header=accept_header)
 
 
-class MediafileAssets(BaseResource):
+class MediafileAssets(GenericObject):
     @policy_factory.authenticate(RequestContext(request))
     def get(self, id):
-        mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
+        mediafile = super().get("mediafiles", id)
         entities = []
         for item in self.storage.get_mediafile_linked_entities(mediafile):
             entity = self.storage.get_item_from_collection_by_id(
@@ -79,10 +54,10 @@ class MediafileAssets(BaseResource):
         return self._inject_api_urls_into_entities(entities)
 
 
-class MediafileCopyright(BaseResource):
+class MediafileCopyright(GenericObject):
     @policy_factory.authenticate(RequestContext(request))
     def get(self, id):
-        mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
+        mediafile = super().get("mediafiles", id)
         if not mediafile_is_public(mediafile):
             return "none", 200
         for item in [x for x in mediafile["metadata"] if x["key"] == "rights"]:
@@ -91,66 +66,53 @@ class MediafileCopyright(BaseResource):
         return "full", 200
 
 
-class MediafileDetail(BaseResource):
+class MediafileDetail(GenericObjectDetail):
     @policy_factory.authenticate(RequestContext(request))
     def get(self, id):
-        mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
+        mediafile = super().get("mediafiles", id)
         if request.args.get("raw", 0, int):
             return mediafile
         return self._inject_api_urls_into_mediafiles([mediafile])[0]
 
     @policy_factory.authenticate(RequestContext(request))
     def put(self, id):
-        old_mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
-        content = self._get_content_according_content_type(request, "mediafile")
-        self._abort_if_not_valid_json("Mediafile", content, mediafile_schema)
-        content["date_updated"] = datetime.now(timezone.utc)
-        content["version"] = old_mediafile.get("version", 0) + 1
-        content["last_editor"] = (
-            policy_factory.get_user_context().email or "default_uploader"
-        )
-        mediafile = self.storage.update_item_from_collection(
-            "mediafiles", get_raw_id(old_mediafile), content
+        old_mediafile = super().get("mediafiles", id)
+        mediafile = super().put(
+            "mediafiles",
+            id,
+            item=old_mediafile,
+            type="mediafile",
         )
         signal_mediafile_changed(rabbit, old_mediafile, mediafile)
         return mediafile, 201
 
     @policy_factory.authenticate(RequestContext(request))
     def patch(self, id):
-        old_mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
-        content = self._get_content_according_content_type(request, "mediafile")
-        content["date_updated"] = datetime.now(timezone.utc)
-        content["version"] = old_mediafile.get("version", 0) + 1
-        content["last_editor"] = (
-            policy_factory.get_user_context().email or "default_uploader"
-        )
-        mediafile = self.storage.patch_item_from_collection(
-            "mediafiles", get_raw_id(old_mediafile), content
-        )
+        old_mediafile = super().get("mediafiles", id)
+        mediafile = super().patch("mediafiles", id, item=old_mediafile)
         signal_mediafile_changed(rabbit, old_mediafile, mediafile)
         return mediafile, 201
 
     @policy_factory.authenticate(RequestContext(request))
     def delete(self, id):
-        mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
+        mediafile = super().get("mediafiles", id)
         linked_entities = self.storage.get_mediafile_linked_entities(mediafile)
-        self.storage.delete_item_from_collection("mediafiles", get_raw_id(mediafile))
+        response = super().delete("mediafiles", id, item=mediafile)
         signal_mediafile_deleted(rabbit, mediafile, linked_entities)
-        return "", 204
+        return response
 
 
-class MediafileMetadata(BaseResource):
+class MediafileMetadata(GenericObjectDetail, GenericObjectMetadata):
     @policy_factory.authenticate(RequestContext(request))
     def patch(self, id):
         if request.args.get("soft", 0, int):
             return "good", 200
-        old_mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
-        content = self._get_content_according_content_type(request, "metadata")
-        metadata = self.storage.patch_collection_item_metadata(
-            "mediafiles", get_raw_id(old_mediafile), content
+        old_mediafile = super(GenericObjectDetail, self).get("mediafiles", id)
+        metadata = super(GenericObjectMetadata, self).patch(
+            "mediafiles",
+            id,
+            item=old_mediafile,
         )
-        if not metadata:
-            abort(400, message=f"Mediafile with id {id} has no metadata")
         new_mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
         signal_mediafile_changed(rabbit, old_mediafile, new_mediafile)
         return metadata, 201

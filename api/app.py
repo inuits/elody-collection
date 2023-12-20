@@ -75,6 +75,13 @@ policy_factory = PolicyFactory()
 load_apps(app, logger)
 load_policies(policy_factory, logger)
 
+from resources.generic_object import (
+    GenericObject,
+    GenericObjectDetail,
+    GenericObjectMetadata,
+    GenericObjectMetadataKey,
+    GenericObjectRelations
+)
 from resources.batch import Batch
 from resources.config import Config
 from resources.entity import (
@@ -163,6 +170,12 @@ api.add_resource(TicketDetail, "/tickets/<string:id>")
 
 api.add_resource(AsyncAPISpec, "/spec/dams-collection-api-events.html")
 api.add_resource(OpenAPISpec, "/spec/dams-collection-api.json")
+
+api.add_resource(GenericObject, "/<string:collection>")
+api.add_resource(GenericObjectDetail, "/<string:collection>/<string:id>")
+api.add_resource(GenericObjectMetadata, "/<string:collection>/<string:id>/metadata")
+api.add_resource(GenericObjectMetadataKey, "/<string:collection>/<string:id>/metadata/<string:key>")
+api.add_resource(GenericObjectRelations, "/<string:collection>/<string:id>/relations")
 
 # Initialize RabbitMQ Queues
 load_queues(logger)

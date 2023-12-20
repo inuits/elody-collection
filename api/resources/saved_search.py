@@ -1,14 +1,13 @@
 from app import policy_factory
-from datetime import datetime, timezone
-from elody.exceptions import NonUniqueException
-from elody.util import get_raw_id
 from flask import request
 from inuits_policy_based_auth import RequestContext
-from resources.base_resource import BaseResource
-from validator import saved_search_schema
+from resources.generic_object import (
+    GenericObject,
+    GenericObjectDetail,
+)
 
 
-class SavedSearch(BaseResource):
+class SavedSearch(GenericObject):
     @policy_factory.authenticate(RequestContext(request))
     def get(self):
         skip = request.args.get("skip", 0, int)
@@ -23,75 +22,46 @@ class SavedSearch(BaseResource):
             filters["ids"] = ids.split(",")
         if title := request.args.get("title"):
             filters["title"] = title
-        saved_searches = self.storage.get_items_from_collection(
-            "abstracts", skip, limit, fields, filters
+        return super().get(
+            "abstracts", skip=skip, limit=limit, fields=fields, filters=filters
         )
-        saved_searches["limit"] = limit
-        if skip + limit < saved_searches["count"]:
-            saved_searches[
-                "next"
-            ] = f"/saved_searches?skip={skip + limit}&limit={limit}"
-        if skip > 0:
-            saved_searches[
-                "previous"
-            ] = f"/saved_searches?skip={max(0, skip - limit)}&limit={limit}"
-        return saved_searches
 
     @policy_factory.authenticate(RequestContext(request))
     def post(self):
         content = request.get_json()
-        self._abort_if_not_valid_json("Saved search", content, saved_search_schema)
-        content["user"] = policy_factory.get_user_context().email or "default_uploader"
-        content["date_created"] = datetime.now(timezone.utc)
-        content["version"] = 1
-        try:
-            saved_search = self.storage.save_item_to_collection("abstracts", content)
-        except NonUniqueException as ex:
-            return str(ex), 409
-        return saved_search, 201
+        user = policy_factory.get_user_context().email or "default_uploader"
+        return super().post(
+            "abstracts", content=content, type="saved_search", user=user
+        )
 
 
-class SavedSearchDetail(BaseResource):
+class SavedSearchDetail(GenericObjectDetail):
     @policy_factory.authenticate(RequestContext(request))
     def get(self, id):
-        saved_search = self._abort_if_item_doesnt_exist("abstracts", id)
+        saved_search = super().get("abstracts", id)
         self._abort_if_not_valid_type(saved_search, "saved_search")
         return saved_search
 
     @policy_factory.authenticate(RequestContext(request))
     def put(self, id):
-        saved_search = self._abort_if_item_doesnt_exist("abstracts", id)
-        self._abort_if_not_valid_type(saved_search, "saved_search")
         content = request.get_json()
-        self._abort_if_not_valid_json("Saved search", content, saved_search_schema)
-        content["date_updated"] = datetime.now(timezone.utc)
-        content["version"] = saved_search.get("version", 0) + 1
-        try:
-            saved_search = self.storage.update_item_from_collection(
-                "abstracts", get_raw_id(saved_search), content
-            )
-        except NonUniqueException as ex:
-            return str(ex), 409
-        return saved_search, 201
+        return super().put(
+            "abstracts",
+            id,
+            type="saved_search",
+            content=content,
+        )
 
     @policy_factory.authenticate(RequestContext(request))
     def patch(self, id):
-        saved_search = self._abort_if_item_doesnt_exist("abstracts", id)
-        self._abort_if_not_valid_type(saved_search, "saved_search")
         content = request.get_json()
-        content["date_updated"] = datetime.now(timezone.utc)
-        content["version"] = saved_search.get("version", 0) + 1
-        try:
-            saved_search = self.storage.patch_item_from_collection(
-                "abstracts", get_raw_id(saved_search), content
-            )
-        except NonUniqueException as ex:
-            return str(ex), 409
-        return saved_search, 201
+        return super().patch(
+            "abstracts",
+            id,
+            type="saved_search",
+            content=content,
+        )
 
     @policy_factory.authenticate(RequestContext(request))
     def delete(self, id):
-        saved_search = self._abort_if_item_doesnt_exist("abstracts", id)
-        self._abort_if_not_valid_type(saved_search, "saved_search")
-        self.storage.delete_item_from_collection("abstracts", get_raw_id(saved_search))
-        return "", 204
+        return super().delete("abstracts", id)

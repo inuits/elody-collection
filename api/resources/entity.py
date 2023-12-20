@@ -12,11 +12,16 @@ from elody.util import (
 from flask import after_this_request, request
 from flask_restful import abort
 from inuits_policy_based_auth import RequestContext
-from resources.base_resource import BaseResource
-from validator import entity_schema, mediafile_schema
+from resources.generic_object import (
+    GenericObject,
+    GenericObjectDetail,
+    GenericObjectMetadata,
+    GenericObjectMetadataKey,
+    GenericObjectRelations,
+)
 
 
-class Entity(BaseResource):
+class Entity(GenericObject):
     @policy_factory.authenticate(RequestContext(request))
     def get(self, filters=None):
         accept_header = request.headers.get("Accept")
@@ -95,7 +100,7 @@ class Entity(BaseResource):
         entity["date_created"] = datetime.now(timezone.utc)
         entity["version"] = 1
         if not linked_data_request:
-            self._abort_if_not_valid_json("Entity", entity, entity_schema)
+            self._abort_if_not_valid_json("Entity", entity)
         try:
             entity = self.storage.save_item_to_collection("entities", entity)
             if accept_header == "text/uri-list":
@@ -120,10 +125,10 @@ class Entity(BaseResource):
         )
 
 
-class EntityDetail(BaseResource):
+class EntityDetail(GenericObjectDetail):
     @policy_factory.authenticate(RequestContext(request))
     def get(self, id):
-        entity = self._abort_if_item_doesnt_exist("entities", id)
+        entity = super().get("entities", id)
         entity = self._set_entity_mediafile_and_thumbnail(entity)
         if not request.args.get("skip_relations", 0, int):
             entity = self._add_relations_to_metadata(entity)
@@ -147,20 +152,7 @@ class EntityDetail(BaseResource):
         if request.args.get("soft", 0, int):
             return "good", 200
         entity = self._abort_if_item_doesnt_exist("entities", id)
-        content = self._get_content_according_content_type(request)
-        self._abort_if_not_valid_json("Entity", content, entity_schema)
-        content["date_updated"] = datetime.now(timezone.utc)
-        content["version"] = entity.get("version", 0) + 1
-        content["last_editor"] = (
-            policy_factory.get_user_context().email or "default_uploader"
-        )
-        content["date_created"] = entity.get("date_created", content["date_updated"])
-        try:
-            updated_entity = self.storage.update_item_from_collection(
-                "entities", get_raw_id(entity), content
-            )
-        except NonUniqueException as ex:
-            return str(ex), 409
+        updated_entity = super().put("entities", id, item=entity, type="entity")
         self._update_tenant(entity, updated_entity)
         signal_entity_changed(rabbit, updated_entity)
         return updated_entity, 201
@@ -170,18 +162,7 @@ class EntityDetail(BaseResource):
         if request.args.get("soft", 0, int):
             return "good", 200
         entity = self._abort_if_item_doesnt_exist("entities", id)
-        content = self._get_content_according_content_type(request)
-        content["date_updated"] = datetime.now(timezone.utc)
-        content["version"] = entity.get("version", 0) + 1
-        content["last_editor"] = (
-            policy_factory.get_user_context().email or "default_uploader"
-        )
-        try:
-            updated_entity = self.storage.patch_item_from_collection(
-                "entities", get_raw_id(entity), content
-            )
-        except NonUniqueException as ex:
-            return str(ex), 409
+        updated_entity = super().patch("entities", id, item=entity)
         self._update_tenant(entity, updated_entity)
         signal_entity_changed(rabbit, updated_entity)
         return updated_entity, 201
@@ -190,7 +171,7 @@ class EntityDetail(BaseResource):
     def delete(self, id):
         if request.args.get("soft", 0, int):
             return "good", 200
-        entity = self._abort_if_item_doesnt_exist("entities", id)
+        entity = super().get("entities", id)
         if request.args.get("delete_mediafiles", 0, int):
             mediafiles = self.storage.get_collection_item_mediafiles(
                 "entities", get_raw_id(entity)
@@ -199,18 +180,18 @@ class EntityDetail(BaseResource):
                 self.storage.delete_item_from_collection(
                     "mediafiles", get_raw_id(mediafile)
                 )
-        self.storage.delete_item_from_collection("entities", get_raw_id(entity))
+        response = super().delete("entities", id)
         self._delete_tenant(entity)
         signal_entity_deleted(rabbit, entity)
-        return "", 204
+        return response
 
 
-class EntityMediafiles(BaseResource):
+class EntityMediafiles(GenericObjectDetail):
     @policy_factory.authenticate(RequestContext(request))
     def get(self, id):
         skip = request.args.get("skip", 0, int)
         limit = request.args.get("limit", 20, int)
-        entity = self._abort_if_item_doesnt_exist("entities", id)
+        entity = super().get("entities", id)
         mediafiles = dict()
         mediafiles["count"] = self.storage.get_collection_item_mediafiles_count(
             entity["_id"]
@@ -239,7 +220,7 @@ class EntityMediafiles(BaseResource):
 
     @policy_factory.authenticate(RequestContext(request))
     def post(self, id):
-        entity = self._abort_if_item_doesnt_exist("entities", id)
+        entity = super().get("entities", id)
         content = self._get_content_according_content_type(request, "mediafile")
         mediafiles = content if isinstance(content, list) else [content]
         accept_header = request.headers.get("Accept")
@@ -248,7 +229,7 @@ class EntityMediafiles(BaseResource):
         else:
             response = list()
         for mediafile in mediafiles:
-            self._abort_if_not_valid_json("Mediafile", mediafile, mediafile_schema)
+            self._abort_if_not_valid_json("Mediafile", mediafile)
             if any(x in mediafile for x in ["_id", "_key"]):
                 mediafile = self._abort_if_item_doesnt_exist(
                     "mediafiles", get_raw_id(mediafile)
@@ -271,12 +252,12 @@ class EntityMediafiles(BaseResource):
         )
 
 
-class EntityMediafilesCreate(BaseResource):
+class EntityMediafilesCreate(GenericObject):
     @policy_factory.authenticate(RequestContext(request))
     def post(self, id):
-        entity = self._abort_if_item_doesnt_exist("entities", id)
+        entity = super().get("entities", id)
         content = request.get_json()
-        self._abort_if_not_valid_json("Mediafile", content, mediafile_schema)
+        self._abort_if_not_valid_json("Mediafile", content)
         content["original_file_location"] = f'/download/{content["filename"]}'
         content[
             "thumbnail_file_location"
@@ -302,32 +283,22 @@ class EntityMediafilesCreate(BaseResource):
         return upload_location, 201
 
 
-class EntityMetadata(BaseResource):
+class EntityMetadata(GenericObjectDetail, GenericObjectMetadata):
     @policy_factory.authenticate(RequestContext(request))
     def get(self, id):
-        entity = self._abort_if_item_doesnt_exist("entities", id)
-        metadata = self.storage.get_collection_item_sub_item(
-            "entities", get_raw_id(entity), "metadata"
-        )
-        accept_header = request.headers.get("Accept")
+        entity = super(GenericObjectDetail, self).get("entities", id)
         fields = [
             *request.args.getlist("field"),
             *request.args.getlist("field[]"),
         ]
-        return self._create_response_according_accept_header(
-            mappers.map_data_according_to_accept_header(
-                metadata, accept_header, "metadata", fields
-            ),
-            accept_header,
+        return super(GenericObjectMetadata, self).get(
+            "entities", id, item=entity, fields=fields
         )
 
     @policy_factory.authenticate(RequestContext(request))
     def post(self, id):
-        entity = self._abort_if_item_doesnt_exist("entities", id)
-        content = self._get_content_according_content_type(request, "metadata")
-        metadata = self.storage.add_sub_item_to_collection_item(
-            "entities", get_raw_id(entity), "metadata", content
-        )
+        entity = super(GenericObjectDetail, self).get("entities", id)
+        metadata = super(GenericObjectMetadata, self).post("entities", item=entity)
         signal_entity_changed(rabbit, entity)
         return metadata, 201
 
@@ -335,11 +306,8 @@ class EntityMetadata(BaseResource):
     def put(self, id):
         if request.args.get("soft", 0, int):
             return "good", 200
-        entity = self._abort_if_item_doesnt_exist("entities", id)
-        content = self._get_content_according_content_type(request, "metadata")
-        metadata = self.storage.update_collection_item_sub_item(
-            "entities", get_raw_id(entity), "metadata", content
-        )
+        entity = super(GenericObjectDetail, self).get("entities", id)
+        metadata = super(GenericObjectMetadata, self).put("entities", item=entity)
         self._update_tenant(entity, {"metadata": metadata})
         signal_entity_changed(rabbit, entity)
         return metadata, 201
@@ -348,59 +316,41 @@ class EntityMetadata(BaseResource):
     def patch(self, id):
         if request.args.get("soft", 0, int):
             return "good", 200
-        entity = self._abort_if_item_doesnt_exist("entities", id)
-        content = self._get_content_according_content_type(request, "metadata")
-        metadata = self.storage.patch_collection_item_metadata(
-            "entities", get_raw_id(entity), content
-        )
-        if not metadata:
-            abort(400, message=f"Entity with id {id} has no metadata")
+        entity = super(GenericObjectDetail, self).get("entities", id)
+        metadata = super(GenericObjectMetadata, self).patch("entities", id, item=entity)
         self._update_tenant(entity, {"metadata": metadata})
         signal_entity_changed(rabbit, entity)
         return metadata, 201
 
 
-class EntityMetadataKey(BaseResource):
+class EntityMetadataKey(GenericObjectDetail, GenericObjectMetadata):
     @policy_factory.authenticate(RequestContext(request))
     def get(self, id, key):
-        entity = self._abort_if_item_doesnt_exist("entities", id)
-        return self.storage.get_collection_item_sub_item_key(
-            "entities", get_raw_id(entity), "metadata", key
-        )
+        entity = super(GenericObjectDetail, self).get("entities", id)
+        return super(GenericObjectMetadataKey, self).get("entities", key, item=entity)
 
     @policy_factory.authenticate(RequestContext(request))
     def delete(self, id, key):
         if request.args.get("soft", 0, int):
             return "good", 200
-        entity = self._abort_if_item_doesnt_exist("entities", id)
-        self.storage.delete_collection_item_sub_item_key(
-            "entities", get_raw_id(entity), "metadata", key
+        entity = super(GenericObjectDetail, self).get("entities", id)
+        response = super(GenericObjectMetadataKey, self).delete(
+            "entities", key, item=entity
         )
         signal_entity_changed(rabbit, entity)
-        return "", 204
+        return response
 
 
-class EntityRelations(BaseResource):
+class EntityRelations(GenericObjectDetail, GenericObjectRelations):
     @policy_factory.authenticate(RequestContext(request))
     def get(self, id):
-        entity = self._abort_if_item_doesnt_exist("entities", id)
-
-        @after_this_request
-        def add_header(response):
-            response.headers["Access-Control-Allow-Origin"] = "*"
-            return response
-
-        return self.storage.get_collection_item_relations(
-            "entities", get_raw_id(entity)
-        )
+        entity = super(GenericObjectDetail, self).get("entities", id)
+        return super(GenericObjectRelations, self).get("entities", item=entity)
 
     @policy_factory.authenticate(RequestContext(request))
     def post(self, id):
-        entity = self._abort_if_item_doesnt_exist("entities", id)
-        content = self._get_content_according_content_type(request, "relations")
-        relations = self.storage.add_relations_to_collection_item(
-            "entities", get_raw_id(entity), content
-        )
+        entity = super(GenericObjectDetail, self).get("entities", id)
+        relations = super(GenericObjectRelations, self).post("entities", item=entity)
         signal_entity_changed(rabbit, entity)
         return relations, 201
 
@@ -408,11 +358,8 @@ class EntityRelations(BaseResource):
     def put(self, id):
         if request.args.get("soft", 0, int):
             return "good", 200
-        entity = self._abort_if_item_doesnt_exist("entities", id)
-        content = self._get_content_according_content_type(request, "relations")
-        relations = self.storage.update_collection_item_relations(
-            "entities", get_raw_id(entity), content
-        )
+        entity = super(GenericObjectDetail, self).get("entities", id)
+        relations = super(GenericObjectRelations, self).put("entities", item=entity)
         signal_entity_changed(rabbit, entity)
         return relations, 201
 
@@ -420,29 +367,23 @@ class EntityRelations(BaseResource):
     def patch(self, id):
         if request.args.get("soft", 0, int):
             return "good", 200
-        entity = self._abort_if_item_doesnt_exist("entities", id)
-        content = self._get_content_according_content_type(request, "relations")
-        relations = self.storage.patch_collection_item_relations(
-            "entities", get_raw_id(entity), content
-        )
+        entity = super(GenericObjectDetail, self).get("entities", id)
+        relations = super(GenericObjectRelations, self).patch("entities", item=entity)
         signal_entity_changed(rabbit, entity)
         return relations, 201
 
     @policy_factory.authenticate(RequestContext(request))
     def delete(self, id):
-        entity = self._abort_if_item_doesnt_exist("entities", id)
-        content = self._get_content_according_content_type(request, "relations")
-        self.storage.delete_collection_item_relations(
-            "entities", get_raw_id(entity), content
-        )
+        entity = super(GenericObjectDetail, self).get("entities", id)
+        response = super(GenericObjectRelations, self).delete("entities", item=entity)
         signal_entity_changed(rabbit, entity)
-        return "", 204
+        return response
 
 
-class EntityRelationsAll(BaseResource):
+class EntityRelationsAll(GenericObjectDetail):
     @policy_factory.authenticate(RequestContext(request))
     def get(self, id):
-        entity = self._abort_if_item_doesnt_exist("entities", id)
+        entity = super().get("entities", id)
 
         @after_this_request
         def add_header(response):
@@ -454,10 +395,10 @@ class EntityRelationsAll(BaseResource):
         )
 
 
-class EntitySetPrimaryMediafile(BaseResource):
+class EntitySetPrimaryMediafile(GenericObjectDetail):
     @policy_factory.authenticate(RequestContext(request))
     def put(self, id, mediafile_id):
-        entity = self._abort_if_item_doesnt_exist("entities", id)
+        entity = super().get("entities", id)
         mediafile = self._abort_if_item_doesnt_exist("mediafiles", mediafile_id)
         if not mediafile_is_public(mediafile):
             abort(400, message=f"Mediafile with id {mediafile_id} is not public")
@@ -468,10 +409,10 @@ class EntitySetPrimaryMediafile(BaseResource):
         return "", 204
 
 
-class EntitySetPrimaryThumbnail(BaseResource):
+class EntitySetPrimaryThumbnail(GenericObjectDetail):
     @policy_factory.authenticate(RequestContext(request))
     def put(self, id, mediafile_id):
-        entity = self._abort_if_item_doesnt_exist("entities", id)
+        entity = super().get("entities", id)
         mediafile = self._abort_if_item_doesnt_exist("mediafiles", mediafile_id)
         if not mediafile_is_public(mediafile):
             abort(400, message=f"Mediafile with id {mediafile_id} is not public")

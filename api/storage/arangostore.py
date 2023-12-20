@@ -693,3 +693,6 @@ class ArangoStorageManager(GenericStorageManager):
                     changed_ids.add(entity["_key"])
         if len(changed_ids):
             signal_edge_changed(app.rabbit, changed_ids)
+
+    def get_existing_collections(self):
+        return self.collections
