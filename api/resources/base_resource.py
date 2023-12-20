@@ -424,18 +424,16 @@ class BaseResource(Resource):
                     url = f"{self.storage_api_url_ext}/download/{ticket_id}"
                     entity["primary_mediafile"] = mediafile["identifier"]
                     entity["primary_mediafile_location"] = url
-                    if "transcode_file_location" in mediafile:
-                        entity["primary_transcode"] = mediafile["transcode_filename"]
-                        entity["primary_transcode_location"] = mediafile[
-                            "transcode_file_location"
-                        ]
+                    if mediafile["identifier"].startswith("transcode"):
+                        entity["primary_transcode"] = mediafile["transcode_identifier"]
+                        entity["primary_transcode_location"] = url
                     if "img_width" in mediafile and "img_height" in mediafile:
                         entity["primary_width"] = mediafile["img_width"]
                         entity["primary_height"] = mediafile["img_height"]
                 if mediafile.get("is_primary_thumbnail", False):
-                    entity["primary_thumbnail_location"] = mediafile[
-                        "thumbnail_file_location"
-                    ]
+                    entity[
+                        "primary_thumbnail_location"
+                    ] = f'{self.image_api_url_ext}/iiif/3/{mediafile.get("identifier")}/full/,150/0/default.jpg'
         return entities
 
     def _sync_roles_from_idp(self, user, roles_per_tenant):
