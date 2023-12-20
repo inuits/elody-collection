@@ -100,7 +100,7 @@ class Entity(GenericObject):
         entity["date_created"] = datetime.now(timezone.utc)
         entity["version"] = 1
         if not linked_data_request:
-            self._abort_if_not_valid_json("Entity", entity)
+            self._abort_if_not_valid_json("entity", entity)
         try:
             entity = self.storage.save_item_to_collection("entities", entity)
             if accept_header == "text/uri-list":
@@ -229,7 +229,7 @@ class EntityMediafiles(GenericObjectDetail):
         else:
             response = list()
         for mediafile in mediafiles:
-            self._abort_if_not_valid_json("Mediafile", mediafile)
+            self._abort_if_not_valid_json("mediafile", mediafile)
             if any(x in mediafile for x in ["_id", "_key"]):
                 mediafile = self._abort_if_item_doesnt_exist(
                     "mediafiles", get_raw_id(mediafile)
@@ -257,7 +257,7 @@ class EntityMediafilesCreate(GenericObject):
     def post(self, id):
         entity = super().get("entities", id)
         content = request.get_json()
-        self._abort_if_not_valid_json("Mediafile", content)
+        self._abort_if_not_valid_json("mediafile", content)
         content["original_file_location"] = f'/download/{content["filename"]}'
         content[
             "thumbnail_file_location"
