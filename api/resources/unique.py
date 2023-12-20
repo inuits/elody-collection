@@ -9,3 +9,4 @@ class Unique(BaseResource):
         if self.storage.get_item_from_collection_by_id(collection, unique_id):
             return f"Item in {collection} with identifier {unique_id} already exists", 409
         return "", 200
+    
