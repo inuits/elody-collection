@@ -123,14 +123,14 @@ class MemoryStorageManager(GenericStorageManager):
             for mediafile in mediafiles:
                 if "is_primary" in mediafile and mediafile["is_primary"] is True:
                     entity["primary_mediafile_location"] = mediafile[
-                        "original_file_location"
+                        "original_object_location"
                     ]
                 if (
                     "is_primary_thumbnail" in mediafile
                     and mediafile["is_primary_thumbnail"] is True
                 ):
                     entity["primary_thumbnail_location"] = mediafile[
-                        "thumbnail_file_location"
+                        "thumbnail_object_location"
                     ]
         items["count"] = len(items["results"])
         items["results"] = items["results"][skip : skip + limit]
