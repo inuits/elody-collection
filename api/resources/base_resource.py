@@ -45,6 +45,8 @@ class BaseResource(Resource):
         self.storage_api_url = os.getenv("STORAGE_API_URL")
         self.storage_api_url_ext = os.getenv("STORAGE_API_URL_EXT")
 
+        self.thumbnail_mimetypes = ["image", "video", "application"]
+
     def __group_user_relations_by_idp_role_status(
         self, user_relations, roles_per_tenant
     ):
@@ -378,11 +380,19 @@ class BaseResource(Resource):
             content = {
                 "mediafile_id": get_raw_id(mediafile),
                 "location": self._get_upload_location(mediafile.get("identifier")),
-                "object_identifier": mediafile.get("original_identifier")
+                "object_identifier": mediafile.get("original_identifier"),
             }
             ticket_id = self._create_ticket(content=content)
-            mediafile["original_file_location"] =  f"{self.storage_api_url_ext}/download/{ticket_id}"
-            mediafile["thumbnail_file_location"] = f'{self.image_api_url_ext}/iiif/3/{mediafile.get("identifier")}/full/,150/0/default.jpg'
+            mediafile[
+                "original_object_location"
+            ] = f"{self.storage_api_url_ext}/download/{ticket_id}"
+            if "mimetype" in mediafile:
+                mimetype = mediafile.get("mimetype")
+                type = mimetype.split("/")[0]
+                if type in self.thumbnail_mimetypes:
+                    mediafile[
+                        "thumbnail_object_location"
+                    ] = f'{self.image_api_url_ext}/iiif/3/{mediafile.get("identifier")}/full/,150/0/default.jpg'
         return mediafiles
 
     def _is_rdf_post_call(self, content_type):
@@ -408,7 +418,7 @@ class BaseResource(Resource):
                     content = {
                         "mediafile_id": get_raw_id(mediafile),
                         "location": mediafile.get("identifier"),
-                        "object_identifier": mediafile.get("original_identifier")
+                        "object_identifier": mediafile.get("original_identifier"),
                     }
                     ticket_id = self._create_ticket(content=content)
                     url = f"{self.storage_api_url_ext}/download/{ticket_id}"
