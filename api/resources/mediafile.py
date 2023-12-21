@@ -107,8 +107,8 @@ class MediafileMetadata(GenericObjectDetail, GenericObjectMetadata):
     def patch(self, id):
         if request.args.get("soft", 0, int):
             return "good", 200
-        old_mediafile = super(GenericObjectDetail, self).get("mediafiles", id)
-        metadata = super(GenericObjectMetadata, self).patch(
+        old_mediafile = super().get("mediafiles", id)
+        metadata = super(GenericObjectDetail, self).patch(
             "mediafiles",
             id,
             item=old_mediafile,

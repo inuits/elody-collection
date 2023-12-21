@@ -283,22 +283,23 @@ class EntityMediafilesCreate(GenericObject):
         return upload_location, 201
 
 
+# super is called using MRO (method resolution order)
 class EntityMetadata(GenericObjectDetail, GenericObjectMetadata):
     @policy_factory.authenticate(RequestContext(request))
     def get(self, id):
-        entity = super(GenericObjectDetail, self).get("entities", id)
+        entity = super().get("entities", id)
         fields = [
             *request.args.getlist("field"),
             *request.args.getlist("field[]"),
         ]
-        return super(GenericObjectMetadata, self).get(
-            "entities", id, item=entity, fields=fields
+        return super(GenericObjectDetail, self).get(
+            "entities", item=entity, fields=fields
         )
 
     @policy_factory.authenticate(RequestContext(request))
     def post(self, id):
-        entity = super(GenericObjectDetail, self).get("entities", id)
-        metadata = super(GenericObjectMetadata, self).post("entities", item=entity)
+        entity = super().get("entities", id)
+        metadata = super(GenericObjectDetail, self).post("entities", item=entity)
         signal_entity_changed(rabbit, entity)
         return metadata, 201
 
@@ -306,8 +307,8 @@ class EntityMetadata(GenericObjectDetail, GenericObjectMetadata):
     def put(self, id):
         if request.args.get("soft", 0, int):
             return "good", 200
-        entity = super(GenericObjectDetail, self).get("entities", id)
-        metadata = super(GenericObjectMetadata, self).put("entities", item=entity)
+        entity = super().get("entities", id)
+        metadata = super(GenericObjectDetail, self).put("entities", item=entity)
         self._update_tenant(entity, {"metadata": metadata})
         signal_entity_changed(rabbit, entity)
         return metadata, 201
@@ -316,27 +317,25 @@ class EntityMetadata(GenericObjectDetail, GenericObjectMetadata):
     def patch(self, id):
         if request.args.get("soft", 0, int):
             return "good", 200
-        entity = super(GenericObjectDetail, self).get("entities", id)
-        metadata = super(GenericObjectMetadata, self).patch("entities", id, item=entity)
+        entity = super().get("entities", id)
+        metadata = super(GenericObjectDetail, self).patch("entities", id, item=entity)
         self._update_tenant(entity, {"metadata": metadata})
         signal_entity_changed(rabbit, entity)
         return metadata, 201
 
 
-class EntityMetadataKey(GenericObjectDetail, GenericObjectMetadata):
+class EntityMetadataKey(GenericObjectDetail, GenericObjectMetadataKey):
     @policy_factory.authenticate(RequestContext(request))
     def get(self, id, key):
-        entity = super(GenericObjectDetail, self).get("entities", id)
-        return super(GenericObjectMetadataKey, self).get("entities", key, item=entity)
+        entity = super().get("entities", id)
+        return super(GenericObjectDetail, self).get("entities", key, item=entity)
 
     @policy_factory.authenticate(RequestContext(request))
     def delete(self, id, key):
         if request.args.get("soft", 0, int):
             return "good", 200
-        entity = super(GenericObjectDetail, self).get("entities", id)
-        response = super(GenericObjectMetadataKey, self).delete(
-            "entities", key, item=entity
-        )
+        entity = super().get("entities", id)
+        response = super(GenericObjectDetail, self).delete("entities", key, item=entity)
         signal_entity_changed(rabbit, entity)
         return response
 
@@ -344,13 +343,13 @@ class EntityMetadataKey(GenericObjectDetail, GenericObjectMetadata):
 class EntityRelations(GenericObjectDetail, GenericObjectRelations):
     @policy_factory.authenticate(RequestContext(request))
     def get(self, id):
-        entity = super(GenericObjectDetail, self).get("entities", id)
-        return super(GenericObjectRelations, self).get("entities", item=entity)
+        entity = super().get("entities", id)
+        return super(GenericObjectDetail, self).get("entities", item=entity)
 
     @policy_factory.authenticate(RequestContext(request))
     def post(self, id):
-        entity = super(GenericObjectDetail, self).get("entities", id)
-        relations = super(GenericObjectRelations, self).post("entities", item=entity)
+        entity = super().get("entities", id)
+        relations = super(GenericObjectDetail, self).post("entities", item=entity)
         signal_entity_changed(rabbit, entity)
         return relations, 201
 
@@ -358,8 +357,8 @@ class EntityRelations(GenericObjectDetail, GenericObjectRelations):
     def put(self, id):
         if request.args.get("soft", 0, int):
             return "good", 200
-        entity = super(GenericObjectDetail, self).get("entities", id)
-        relations = super(GenericObjectRelations, self).put("entities", item=entity)
+        entity = super().get("entities", id)
+        relations = super(GenericObjectDetail, self).put("entities", item=entity)
         signal_entity_changed(rabbit, entity)
         return relations, 201
 
@@ -367,15 +366,15 @@ class EntityRelations(GenericObjectDetail, GenericObjectRelations):
     def patch(self, id):
         if request.args.get("soft", 0, int):
             return "good", 200
-        entity = super(GenericObjectDetail, self).get("entities", id)
-        relations = super(GenericObjectRelations, self).patch("entities", item=entity)
+        entity = super().get("entities", id)
+        relations = super(GenericObjectDetail, self).patch("entities", item=entity)
         signal_entity_changed(rabbit, entity)
         return relations, 201
 
     @policy_factory.authenticate(RequestContext(request))
     def delete(self, id):
-        entity = super(GenericObjectDetail, self).get("entities", id)
-        response = super(GenericObjectRelations, self).delete("entities", item=entity)
+        entity = super().get("entities", id)
+        response = super(GenericObjectDetail, self).delete("entities", item=entity)
         signal_entity_changed(rabbit, entity)
         return response
 
