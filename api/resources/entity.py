@@ -152,7 +152,7 @@ class EntityDetail(GenericObjectDetail):
         if request.args.get("soft", 0, int):
             return "good", 200
         entity = self._abort_if_item_doesnt_exist("entities", id)
-        updated_entity = super().put("entities", id, item=entity, type="entity")
+        updated_entity = super().put("entities", id, item=entity)[0]
         self._update_tenant(entity, updated_entity)
         signal_entity_changed(rabbit, updated_entity)
         return updated_entity, 201
@@ -162,7 +162,7 @@ class EntityDetail(GenericObjectDetail):
         if request.args.get("soft", 0, int):
             return "good", 200
         entity = self._abort_if_item_doesnt_exist("entities", id)
-        updated_entity = super().patch("entities", id, item=entity)
+        updated_entity = super().patch("entities", id, item=entity)[0]
         self._update_tenant(entity, updated_entity)
         signal_entity_changed(rabbit, updated_entity)
         return updated_entity, 201
@@ -308,7 +308,7 @@ class EntityMetadata(GenericObjectDetail, GenericObjectMetadata):
         if request.args.get("soft", 0, int):
             return "good", 200
         entity = super().get("entities", id)
-        metadata = super(GenericObjectDetail, self).put("entities", item=entity)
+        metadata = super(GenericObjectDetail, self).put("entities", item=entity)[0]
         self._update_tenant(entity, {"metadata": metadata})
         signal_entity_changed(rabbit, entity)
         return metadata, 201
@@ -318,7 +318,7 @@ class EntityMetadata(GenericObjectDetail, GenericObjectMetadata):
         if request.args.get("soft", 0, int):
             return "good", 200
         entity = super().get("entities", id)
-        metadata = super(GenericObjectDetail, self).patch("entities", id, item=entity)
+        metadata = super(GenericObjectDetail, self).patch("entities", id, item=entity)[0]
         self._update_tenant(entity, {"metadata": metadata})
         signal_entity_changed(rabbit, entity)
         return metadata, 201
@@ -358,7 +358,7 @@ class EntityRelations(GenericObjectDetail, GenericObjectRelations):
         if request.args.get("soft", 0, int):
             return "good", 200
         entity = super().get("entities", id)
-        relations = super(GenericObjectDetail, self).put("entities", item=entity)
+        relations = super(GenericObjectDetail, self).put("entities", item=entity)[0]
         signal_entity_changed(rabbit, entity)
         return relations, 201
 
@@ -367,7 +367,7 @@ class EntityRelations(GenericObjectDetail, GenericObjectRelations):
         if request.args.get("soft", 0, int):
             return "good", 200
         entity = super().get("entities", id)
-        relations = super(GenericObjectDetail, self).patch("entities", item=entity)
+        relations = super(GenericObjectDetail, self).patch("entities", item=entity)[0]
         signal_entity_changed(rabbit, entity)
         return relations, 201
 

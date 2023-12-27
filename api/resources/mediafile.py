@@ -82,14 +82,14 @@ class MediafileDetail(GenericObjectDetail):
             id,
             item=old_mediafile,
             type="mediafile",
-        )
+        )[0]
         signal_mediafile_changed(rabbit, old_mediafile, mediafile)
         return mediafile, 201
 
     @policy_factory.authenticate(RequestContext(request))
     def patch(self, id):
         old_mediafile = super().get("mediafiles", id)
-        mediafile = super().patch("mediafiles", id, item=old_mediafile)
+        mediafile = super().patch("mediafiles", id, item=old_mediafile)[0]
         signal_mediafile_changed(rabbit, old_mediafile, mediafile)
         return mediafile, 201
 
@@ -112,7 +112,7 @@ class MediafileMetadata(GenericObjectDetail, GenericObjectMetadata):
             "mediafiles",
             id,
             item=old_mediafile,
-        )
+        )[0]
         new_mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
         signal_mediafile_changed(rabbit, old_mediafile, new_mediafile)
         return metadata, 201
