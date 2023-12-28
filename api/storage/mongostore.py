@@ -212,6 +212,7 @@ class MongoStorageManager(GenericStorageManager):
                     primary_mediafile = False
                 if relation.get("is_primary_thumbnail", False):
                     primary_thumbnail = False
+        count = self.get_collection_item_mediafiles_count(id)
         self.add_relations_to_collection_item(
             collection,
             id,
@@ -222,6 +223,19 @@ class MongoStorageManager(GenericStorageManager):
                     "type": "hasMediafile",
                     "is_primary": primary_mediafile,
                     "is_primary_thumbnail": primary_thumbnail,
+                    "metadata": [
+                        {
+                            "key": "order",
+                            "value": str(count+1),
+                        }
+                    ],
+                    "sort": {
+                        "order": [
+                            {
+                                "value": str(count+1),
+                            }
+                        ]
+                    }
                 }
             ],
             True,
