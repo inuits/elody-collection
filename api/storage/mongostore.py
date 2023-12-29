@@ -510,6 +510,8 @@ class MongoStorageManager(GenericStorageManager):
             )
         relations = self.get_collection_item_sub_item(collection, id, "relations")
         relations = [*relations, *content] if relations else content
+        for relation in relations:
+            relation["sort"] = self.__create_sortable_metadata(relation["metadata"])
         self.update_collection_item_sub_item(collection, id, "relations", relations)
         self.__add_child_relations(id, content)
         return content
