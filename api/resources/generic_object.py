@@ -108,8 +108,8 @@ class GenericObject(BaseResource):
         except NonUniqueException as ex:
             return ex.args[0]["errmsg"], 409
         if accept_header == "text/uri-list":
-            ticket_id = self._create_ticket(collection_item["filename"])
-            response = f"{self.storage_api_url}/upload-with-ticket/{collection_item['filename'].strip()}?id={get_raw_id(collection_item)}&ticket_id={ticket_id}"
+            ticket_id = self._create_ticket(collection_item["identifier"])
+            response = f"{self.storage_api_url}/{ticket_id}"
         else:
             response = collection_item
         return self._create_response_according_accept_header(
