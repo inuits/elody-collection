@@ -226,13 +226,13 @@ class MongoStorageManager(GenericStorageManager):
                     "metadata": [
                         {
                             "key": "order",
-                            "value": str(count+1),
+                            "value": count+1,
                         }
                     ],
                     "sort": {
                         "order": [
                             {
-                                "value": str(count+1),
+                                "value": count+1,
                             }
                         ]
                     }
@@ -285,24 +285,19 @@ class MongoStorageManager(GenericStorageManager):
         self.db.jobs.drop()
         self.db.mediafiles.drop()
 
-    def get_collection_item_mediafiles(self, collection, id, skip=0, limit=0):
+    def get_collection_item_mediafiles(self, collection, id, skip=0, limit=0, asc=1, sort="order"):
         mediafiles = []
-        for mediafile in self.db["mediafiles"].find(
-            {"relations.key": id}, skip=skip, limit=limit
-        ):
-            mediafiles.append(mediafile)
-        mediafiles.sort(
-            key=lambda x, y=id, z=len(mediafiles): next(
-                (
-                    relation["order"]
-                    for relation in x.get("relations", [])
-                    if relation["type"] == "belongsTo"
-                    and "order" in relation
-                    and relation["key"] == y
-                ),
-                z,
-            )
+        documents = self.db["mediafiles"].find(
+            {"relations.key": id},
+            skip=skip,
+            limit=limit
         )
+        documents.sort(
+            self.get_sort_field(sort, True),
+            pymongo.ASCENDING if asc == 1 else pymongo.DESCENDING,
+        )
+        for document in documents:
+            mediafiles.append(self._prepare_mongo_document(document, True))
         return mediafiles
 
     def get_collection_item_relations(
@@ -471,9 +466,9 @@ class MongoStorageManager(GenericStorageManager):
                 distinct_values.append(distinct_value)
         return distinct_values
 
-    def get_sort_field(self, field):
+    def get_sort_field(self, field, relation_sort = False):
         if field not in ["_id", "date_created", "object_id", "type", "version"]:
-            return f"sort.{field}.value"
+            return f"{'relations.' if relation_sort else ''}sort.{field}.value"
         return field
 
     def handle_mediafile_deleted(self, parents):
@@ -511,7 +506,8 @@ class MongoStorageManager(GenericStorageManager):
         relations = self.get_collection_item_sub_item(collection, id, "relations")
         relations = [*relations, *content] if relations else content
         for relation in relations:
-            relation["sort"] = self.__create_sortable_metadata(relation["metadata"])
+            if relation.get("metadata") is not None:
+                relation["sort"] = self.__create_sortable_metadata([item for item in relation["metadata"] if item.get('key') == 'order'])
         self.update_collection_item_sub_item(collection, id, "relations", relations)
         self.__add_child_relations(id, content)
         return content

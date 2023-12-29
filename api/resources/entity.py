@@ -191,13 +191,14 @@ class EntityMediafiles(GenericObjectDetail):
     def get(self, id):
         skip = request.args.get("skip", 0, int)
         limit = request.args.get("limit", 20, int)
+        asc = request.args.get("asc", 1, int)
         entity = super().get("entities", id)
         mediafiles = dict()
         mediafiles["count"] = self.storage.get_collection_item_mediafiles_count(
             entity["_id"]
         )
         mediafiles["results"] = self.storage.get_collection_item_mediafiles(
-            "entities", get_raw_id(entity), skip, limit
+            "entities", get_raw_id(entity), skip, limit, asc
         )
         mediafiles["limit"] = limit
         mediafiles["skip"] = skip
