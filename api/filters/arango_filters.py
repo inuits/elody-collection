@@ -62,10 +62,10 @@ class ArangoFilters(ArangoStorageManager):
             counter += 1
 
         aql += f"""
-            FOR result IN {result_set}
+            FOR result IN {result_set if result_set else collection}
                 {f'SORT c.{order_by} {"ASC" if asc else "DESC"}' if order_by else ""}
                 LIMIT @skip, @limit
-                RETURN DOCUMENT(result)._key
+                RETURN { 'DOCUMENT(result)._key' if result_set else 'result._key' }
         """
-                
+
         return aql
