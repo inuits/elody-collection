@@ -14,14 +14,13 @@ from elody.util import (
 from flask import Response
 from flask_restful import Resource, abort
 from storage.storagemanager import StorageManager
-from validator import (
+from elody.validator import validate_json
+from elody.schemas import (
     entity_schema,
     key_value_store_schema,
     mediafile_schema,
     saved_search_schema,
-    validate_json,
 )
-
 
 class BaseResource(Resource):
     known_collections = []
