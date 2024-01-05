@@ -294,7 +294,7 @@ class MongoStorageManager(GenericStorageManager):
         )
         documents.sort(
             self.get_sort_field(sort, True),
-            pymongo.ASCENDING if asc == 1 else pymongo.DESCENDING,
+            pymongo.ASCENDING if asc else pymongo.DESCENDING,
         )
         for document in documents:
             mediafiles.append(self._prepare_mongo_document(document, True))

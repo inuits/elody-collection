@@ -300,7 +300,7 @@ class ArangoStorageManager(GenericStorageManager):
         for collection in [*self.collections, *self.edges]:
             self.db.collection(collection).truncate()
 
-    def get_collection_item_mediafiles(self, collection, id, skip=0, limit=0):
+    def get_collection_item_mediafiles(self, collection, id, skip=0, limit=0, asc=1, sort="order"):
         item_id = self.__get_id_for_collection_item(collection, id)
         mediafiles = list()
         edges = list(
