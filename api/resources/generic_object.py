@@ -110,12 +110,12 @@ class GenericObjectDetail(BaseResource):
             collection_item = self._abort_if_item_doesnt_exist(collection, id)
         else:
             collection_item = item
+        if content is None:
+            content = self._get_content_according_content_type(request, collection)
         if type is not None:
             self._abort_if_not_valid_type(collection_item, type)
             if type in self.schemas_by_type:
                 self._abort_if_not_valid_json(type, content)
-        if content is None:
-            content = self._get_content_according_content_type(request, collection)
         content["date_updated"] = date_updated
         content["version"] = collection_item.get("version", 0) + 1
         content["last_editor"] = (
@@ -145,12 +145,12 @@ class GenericObjectDetail(BaseResource):
             collection_item = self._abort_if_item_doesnt_exist(collection, id)
         else:
             collection_item = item
+        if content is None:
+            content = self._get_content_according_content_type(request, collection)
         if type is not None:
             self._abort_if_not_valid_type(collection_item, type)
             if type in self.schemas_by_type:
                 self._abort_if_not_valid_json(type, content)
-        if content is None:
-            content = self._get_content_according_content_type(request, collection)
         content["date_updated"] = date_updated
         if version:
             content["version"] = collection_item.get("version", 0) + 1
