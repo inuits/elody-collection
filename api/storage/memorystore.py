@@ -226,7 +226,7 @@ class MemoryStorageManager(GenericStorageManager):
             return self.collections[collection][gen_id]
         return None
 
-    def check_if_file_already_exists(self, collection, identifier):
+    def check_if_file_exists(self, collection, identifier):
         for mediafiles in self.collections[collection]:
             identifiers = mediafiles.get("identifiers", [])
             if identifier in identifiers:
