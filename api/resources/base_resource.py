@@ -44,7 +44,6 @@ class BaseResource(Resource):
         self.image_api_url_ext = os.getenv("IMAGE_API_URL_EXT")
         self.storage_api_url = os.getenv("STORAGE_API_URL")
         self.storage_api_url_ext = os.getenv("STORAGE_API_URL_EXT")
-
         self.thumbnail_mimetypes = ["image", "video", "application"]
 
     def __group_user_relations_by_idp_role_status(
