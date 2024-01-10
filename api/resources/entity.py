@@ -135,7 +135,7 @@ class Entity(GenericObject):
                     mediafile_filename,
                 )
                 if accept_header == "text/uri-list":
-                    content = {"mediafile_id": mediafile.get("_id", None)}
+                    content = {"mediafile_id": get_raw_id(mediafile)}
                     ticket_id = self._create_ticket(mediafile_filename, content=content)
                     response += f"{self.storage_api_url}/upload/{ticket_id}\n"
         self._create_tenant(entity)
