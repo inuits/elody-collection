@@ -44,6 +44,11 @@ class BaseFilterResource(BaseResource):
         )
 
     def validate_advanced_query_syntax(self, queries):
+        if not isinstance(queries, list):
+            abort(
+                400,
+                message="Filter not passed as an array",
+            )
         for query in queries:
             if query.get("type") == "MinMaxInput":
                 if "min" not in query["value"] and "max" not in query["value"]:
