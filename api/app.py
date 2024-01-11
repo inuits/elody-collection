@@ -80,7 +80,7 @@ from resources.generic_object import (
     GenericObjectDetail,
     GenericObjectMetadata,
     GenericObjectMetadataKey,
-    GenericObjectRelations
+    GenericObjectRelations,
 )
 from resources.batch import Batch
 from resources.config import Config
@@ -174,7 +174,9 @@ api.add_resource(OpenAPISpec, "/spec/dams-collection-api.json")
 api.add_resource(GenericObject, "/<string:collection>")
 api.add_resource(GenericObjectDetail, "/<string:collection>/<string:id>")
 api.add_resource(GenericObjectMetadata, "/<string:collection>/<string:id>/metadata")
-api.add_resource(GenericObjectMetadataKey, "/<string:collection>/<string:id>/metadata/<string:key>")
+api.add_resource(
+    GenericObjectMetadataKey, "/<string:collection>/<string:id>/metadata/<string:key>"
+)
 api.add_resource(GenericObjectRelations, "/<string:collection>/<string:id>/relations")
 
 # Initialize RabbitMQ Queues

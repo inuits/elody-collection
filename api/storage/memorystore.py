@@ -76,7 +76,9 @@ class MemoryStorageManager(GenericStorageManager):
     def drop_all_collections(self):
         [self.collections[collection].clear() for collection in self.collections]
 
-    def get_collection_item_mediafiles(self, collection, obj_id, skip=0, limit=0, asc=1, sort="order"):
+    def get_collection_item_mediafiles(
+        self, collection, obj_id, skip=0, limit=0, asc=1, sort="order"
+    ):
         if gen_id := self.__get_collection_item_gen_id_by_identifier(
             collection, obj_id
         ):

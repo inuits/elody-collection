@@ -1,5 +1,6 @@
 from filters.matchers.base_matchers import BaseMatchers
 
+
 class ArangoMatchers(BaseMatchers):
     DATE_FORMAT = "%yyyy-%mm-%ddT%hh:%ii"
 
@@ -164,11 +165,11 @@ class ArangoMatchers(BaseMatchers):
                 for index, value in enumerate(values[0]):
                     if index > 0:
                         value_match += " OR "
-                    value_match += f'LOWER(item.value) LIKE LOWER("{prefix}{value}{suffix}")'
+                    value_match += (
+                        f'LOWER(item.value) LIKE LOWER("{prefix}{value}{suffix}")'
+                    )
             else:
-                value_match = (
-                    f'LOWER(item.value) {comparison_operators[0]} LOWER("{prefix}{values[0]}{suffix}")'
-                )
+                value_match = f'LOWER(item.value) {comparison_operators[0]} LOWER("{prefix}{values[0]}{suffix}")'
 
         else:
             value_match = (

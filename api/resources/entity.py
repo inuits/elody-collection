@@ -319,7 +319,9 @@ class EntityMetadata(GenericObjectDetail, GenericObjectMetadata):
         if request.args.get("soft", 0, int):
             return "good", 200
         entity = super().get("entities", id)
-        metadata = super(GenericObjectDetail, self).patch("entities", id, item=entity)[0]
+        metadata = super(GenericObjectDetail, self).patch("entities", id, item=entity)[
+            0
+        ]
         self._update_tenant(entity, {"metadata": metadata})
         signal_entity_changed(rabbit, entity)
         return metadata, 201

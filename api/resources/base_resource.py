@@ -22,6 +22,7 @@ from elody.schemas import (
     saved_search_schema,
 )
 
+
 class BaseResource(Resource):
     known_collections = []
     schemas_by_type = {
@@ -102,7 +103,6 @@ class BaseResource(Resource):
     def _check_if_collection_name_exists(self, collection):
         if collection in self.known_collections:
             return
-        
         if collection not in self.storage.get_existing_collections():
             abort(400, message=f"Collection {collection} does not exist.")
         self.known_collections.append(collection)

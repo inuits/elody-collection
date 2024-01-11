@@ -1,6 +1,7 @@
 from filters.types.filter_types import get_filter
 from storage.arangostore import ArangoStorageManager
 
+
 class ArangoFilters(ArangoStorageManager):
     def filter(self, body, skip, limit, collection="entities", order_by=None, asc=True):
         if not self.db:

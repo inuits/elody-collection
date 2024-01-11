@@ -226,16 +226,16 @@ class MongoStorageManager(GenericStorageManager):
                     "metadata": [
                         {
                             "key": "order",
-                            "value": count+1,
+                            "value": count + 1,
                         }
                     ],
                     "sort": {
                         "order": [
                             {
-                                "value": count+1,
+                                "value": count + 1,
                             }
                         ]
-                    }
+                    },
                 }
             ],
             True,
@@ -285,12 +285,12 @@ class MongoStorageManager(GenericStorageManager):
         self.db.jobs.drop()
         self.db.mediafiles.drop()
 
-    def get_collection_item_mediafiles(self, collection, id, skip=0, limit=0, asc=1, sort="order"):
+    def get_collection_item_mediafiles(
+        self, collection, id, skip=0, limit=0, asc=1, sort="order"
+    ):
         mediafiles = []
         documents = self.db["mediafiles"].find(
-            {"relations.key": id},
-            skip=skip,
-            limit=limit
+            {"relations.key": id}, skip=skip, limit=limit
         )
         documents.sort(
             self.get_sort_field(sort, True),
@@ -466,7 +466,7 @@ class MongoStorageManager(GenericStorageManager):
                 distinct_values.append(distinct_value)
         return distinct_values
 
-    def get_sort_field(self, field, relation_sort = False):
+    def get_sort_field(self, field, relation_sort=False):
         if field not in ["_id", "date_created", "object_id", "type", "version"]:
             return f"{'relations.' if relation_sort else ''}sort.{field}.value"
         return field
@@ -507,7 +507,13 @@ class MongoStorageManager(GenericStorageManager):
         relations = [*relations, *content] if relations else content
         for relation in relations:
             if relation.get("metadata") is not None:
-                relation["sort"] = self.__create_sortable_metadata([item for item in relation["metadata"] if item.get('key') == 'order'])
+                relation["sort"] = self.__create_sortable_metadata(
+                    [
+                        item
+                        for item in relation["metadata"]
+                        if item.get("key") == "order"
+                    ]
+                )
         self.update_collection_item_sub_item(collection, id, "relations", relations)
         self.__add_child_relations(id, content)
         return content
