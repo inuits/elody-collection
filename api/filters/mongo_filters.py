@@ -72,13 +72,21 @@ class MongoFilters(MongoStorageManager):
         )
 
         filter_criteria = {}
+        matchers = []
+        operator = "$and"
         for filter_criteria in filter_request_body:
             filter = get_filter(filter_criteria["type"])
+            if "operator" in filter_criteria:
+                operator = f"${filter_criteria['operator']}"
             item_types = filter_criteria.get("item_types", [])
             if len(item_types) > 0:
                 pipeline.append({"$match": {"type": {"$in": item_types}}})
 
-            pipeline.extend(filter.generate_query(filter_criteria))  # type: ignore
+            for matcher in filter.generate_query(filter_criteria):
+                if "$match" in matcher:
+                    matchers.append(matcher.get("$match"))
+                else:
+                    matchers.append(matcher)
 
             if filter_criteria.get("provide_value_options_for_key"):
                 key = filter_criteria["key"]
@@ -116,6 +124,7 @@ class MongoFilters(MongoStorageManager):
                 )
                 break
 
+        pipeline.append({"$match": {operator: matchers}})
         pipeline.append({"$project": {"relationDocuments": 0, "numberOfRelations": 0}})
         return pipeline, filter_criteria
 
