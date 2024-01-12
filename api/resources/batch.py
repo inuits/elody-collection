@@ -44,8 +44,8 @@ class Batch(BaseResource):
 
     def _get_entities_and_mediafiles_from_csv(self, parsed_csv):
         entities_and_mediafiles = dict()
+        entities_and_mediafiles.setdefault("entities", list())
         for entity in parsed_csv.objects.get("entities"):
-            entities_and_mediafiles.setdefault("entities", list())
             entity_matching_id = entity.pop("matching_id", None)
             relations = entity.pop("relations", list())
             entity = self.storage.save_item_to_collection("entities", entity)
