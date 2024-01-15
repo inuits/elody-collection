@@ -292,9 +292,7 @@ class EntityMetadata(GenericObjectDetail, GenericObjectMetadata):
             *request.args.getlist("field"),
             *request.args.getlist("field[]"),
         ]
-        return super(GenericObjectDetail, self).get(
-            "entities", id, fields=fields
-        )
+        return super(GenericObjectDetail, self).get("entities", id, fields=fields)
 
     @policy_factory.authenticate(RequestContext(request))
     def post(self, id):
@@ -318,9 +316,7 @@ class EntityMetadata(GenericObjectDetail, GenericObjectMetadata):
         if request.args.get("soft", 0, int):
             return "good", 200
         entity = super().get("entities", id)
-        metadata = super(GenericObjectDetail, self).patch("entities", id)[
-            0
-        ]
+        metadata = super(GenericObjectDetail, self).patch("entities", id)[0]
         self._update_tenant(entity, {"metadata": metadata})
         signal_entity_changed(rabbit, entity)
         return metadata, 201
