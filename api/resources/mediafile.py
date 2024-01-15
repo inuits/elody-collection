@@ -111,7 +111,6 @@ class MediafileMetadata(GenericObjectDetail, GenericObjectMetadata):
         metadata = super(GenericObjectDetail, self).patch(
             "mediafiles",
             id,
-            item=old_mediafile,
         )[0]
         new_mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
         signal_mediafile_changed(rabbit, old_mediafile, new_mediafile)

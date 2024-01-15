@@ -92,8 +92,7 @@ class GenericObject(BaseResource):
 class GenericObjectDetail(BaseResource):
     @policy_factory.authenticate(RequestContext(request))
     def get(self, collection, id):
-        self._check_if_collection_name_exists(collection)
-        return self._abort_if_item_doesnt_exist(collection, id)
+        return self._check_if_collection_and_item_exists(collection, id)
 
     @policy_factory.authenticate(RequestContext(request))
     def put(
@@ -185,12 +184,11 @@ class GenericObjectDetail(BaseResource):
 
 class GenericObjectMetadata(BaseResource):
     @policy_factory.authenticate(RequestContext(request))
-    def get(self, collection, item, fields=None):
+    def get(self, collection, id, fields=None):
+        self._check_if_collection_and_item_exists(collection, id)
         if fields is None:
             fields = {}
-        metadata = self.storage.get_collection_item_sub_item(
-            collection, get_raw_id(item), "metadata"
-        )
+        metadata = self.storage.get_collection_item_sub_item(collection, id, "metadata")
         accept_header = request.headers.get("Accept")
         return self._create_response_according_accept_header(
             mappers.map_data_according_to_accept_header(
@@ -200,30 +198,31 @@ class GenericObjectMetadata(BaseResource):
         )
 
     @policy_factory.authenticate(RequestContext(request))
-    def post(self, collection, item, content=None):
+    def post(self, collection, id, content=None):
+        self._check_if_collection_and_item_exists(collection, id)
         if content is None:
             content = self._get_content_according_content_type(request, "metadata")
         metadata = self.storage.add_sub_item_to_collection_item(
-            collection, get_raw_id(item), "metadata", content
+            collection, id, "metadata", content
         )
         return metadata, 201
 
     @policy_factory.authenticate(RequestContext(request))
-    def put(self, collection, item, content=None):
+    def put(self, collection, id, content=None):
+        self._check_if_collection_and_item_exists(collection, id)
         if content is None:
             content = self._get_content_according_content_type(request, "metadata")
         metadata = self.storage.update_collection_item_sub_item(
-            collection, get_raw_id(item), "metadata", content
+            collection, id, "metadata", content
         )
         return metadata, 201
 
     @policy_factory.authenticate(RequestContext(request))
-    def patch(self, collection, id, item, content=None):
+    def patch(self, collection, id, content=None):
+        self._check_if_collection_and_item_exists(collection, id)
         if content is None:
             content = self._get_content_according_content_type(request, "metadata")
-        metadata = self.storage.patch_collection_item_metadata(
-            collection, get_raw_id(item), content
-        )
+        metadata = self.storage.patch_collection_item_metadata(collection, id, content)
         if not metadata:
             abort(400, message=f"Item with id {id} has no metadata")
         return metadata, 201
@@ -231,61 +230,66 @@ class GenericObjectMetadata(BaseResource):
 
 class GenericObjectMetadataKey(BaseResource):
     @policy_factory.authenticate(RequestContext(request))
-    def get(self, collection, key, item):
+    def get(self, collection, id, key):
+        self._check_if_collection_and_item_exists(collection, id)
         return self.storage.get_collection_item_sub_item_key(
-            collection, get_raw_id(item), "metadata", key
+            collection, id, "metadata", key
         )
 
     @policy_factory.authenticate(RequestContext(request))
-    def delete(self, collection, key, item):
+    def delete(self, collection, id, key):
+        self._check_if_collection_and_item_exists(collection, id)
         self.storage.delete_collection_item_sub_item_key(
-            collection, get_raw_id(item), "metadata", key
+            collection, id, "metadata", key
         )
         return "", 204
 
 
 class GenericObjectRelations(BaseResource):
     @policy_factory.authenticate(RequestContext(request))
-    def get(self, collection, item):
+    def get(self, collection, id):
+        self._check_if_collection_and_item_exists(collection, id)
         @after_this_request
         def add_header(response):
             response.headers["Access-Control-Allow-Origin"] = "*"
             return response
 
-        return self.storage.get_collection_item_relations(collection, get_raw_id(item))
+        return self.storage.get_collection_item_relations(collection, id)
 
     @policy_factory.authenticate(RequestContext(request))
-    def post(self, collection, item, content=None):
+    def post(self, collection, id, content=None):
+        self._check_if_collection_and_item_exists(collection, id)
         if content is None:
             content = self._get_content_according_content_type(request, "relations")
         relations = self.storage.add_relations_to_collection_item(
-            collection, get_raw_id(item), content
+            collection, id, content
         )
         return relations, 201
 
     @policy_factory.authenticate(RequestContext(request))
-    def put(self, collection, item, content=None):
+    def put(self, collection, id, content=None):
+        self._check_if_collection_and_item_exists(collection, id)
         if content is None:
             content = self._get_content_according_content_type(request, "relations")
         relations = self.storage.update_collection_item_relations(
-            collection, get_raw_id(item), content
+            collection, id, content
         )
         return relations, 201
 
     @policy_factory.authenticate(RequestContext(request))
-    def patch(self, collection, item, content=None):
+    def patch(self, collection, id, content=None):
+        self._check_if_collection_and_item_exists(collection, id)
         if content is None:
             content = self._get_content_according_content_type(request, "relations")
         relations = self.storage.patch_collection_item_relations(
-            collection, get_raw_id(item), content
+            collection, id, content
         )
         return relations, 201
 
     @policy_factory.authenticate(RequestContext(request))
-    def delete(self, collection, item, content=None):
+    def delete(self, collection, id, content=None):
+        self._check_if_collection_and_item_exists(collection, id)
         if content is None:
             content = self._get_content_according_content_type(request, "relations")
-        self.storage.delete_collection_item_relations(
-            collection, get_raw_id(item), content
-        )
+        self.storage.delete_collection_item_relations(collection, id, content)
         return "", 204
