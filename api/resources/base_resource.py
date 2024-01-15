@@ -106,6 +106,10 @@ class BaseResource(Resource):
         if collection not in self.storage.get_existing_collections():
             abort(400, message=f"Collection {collection} does not exist.")
         self.known_collections.append(collection)
+        
+    def _check_if_collection_and_item_exists(self, collection, id):
+        self._check_if_collection_name_exists(collection)
+        return self._abort_if_item_doesnt_exist(collection, id)
 
     def _create_linked_data(self, request, content_type):
         content = request.get_data(as_text=True)
