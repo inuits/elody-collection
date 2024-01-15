@@ -249,6 +249,7 @@ class GenericObjectRelations(BaseResource):
     @policy_factory.authenticate(RequestContext(request))
     def get(self, collection, id):
         self._check_if_collection_and_item_exists(collection, id)
+
         @after_this_request
         def add_header(response):
             response.headers["Access-Control-Allow-Origin"] = "*"
