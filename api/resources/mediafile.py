@@ -54,7 +54,7 @@ class MediafileAssets(GenericObject):
         return self._inject_api_urls_into_entities(entities)
 
 
-class MediafileCopyright(GenericObject):
+class MediafileCopyright(GenericObjectDetail):
     @policy_factory.authenticate(RequestContext(request))
     def get(self, id):
         mediafile = super().get("mediafiles", id)
