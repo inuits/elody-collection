@@ -199,12 +199,11 @@ class GenericObjectMetadata(BaseResource):
 
     @policy_factory.authenticate(RequestContext(request))
     def post(
-        self, collection, id, content=None, date_created=datetime.now(timezone.utc)
+        self, collection, id, content=None
     ):
         self._check_if_collection_and_item_exists(collection, id)
         if content is None:
             content = self._get_content_according_content_type(request, "metadata")
-        content["date_created"] = date_created
         metadata = self.storage.add_sub_item_to_collection_item(
             collection, id, "metadata", content
         )
@@ -217,7 +216,7 @@ class GenericObjectMetadata(BaseResource):
         self._check_if_collection_and_item_exists(collection, id)
         if content is None:
             content = self._get_content_according_content_type(request, "metadata")
-        content["date_updated"] = date_updated
+        self._update_date_updated(collection, id, date_updated)
         metadata = self.storage.update_collection_item_sub_item(
             collection, id, "metadata", content
         )
@@ -230,7 +229,7 @@ class GenericObjectMetadata(BaseResource):
         self._check_if_collection_and_item_exists(collection, id)
         if content is None:
             content = self._get_content_according_content_type(request, "metadata")
-        content["date_updated"] = date_updated
+        self._update_date_updated(collection, id, date_updated)
         metadata = self.storage.patch_collection_item_metadata(collection, id, content)
         if not metadata:
             abort(400, message=f"Item with id {id} has no metadata")
@@ -268,12 +267,11 @@ class GenericObjectRelations(BaseResource):
 
     @policy_factory.authenticate(RequestContext(request))
     def post(
-        self, collection, id, content=None, date_created=datetime.now(timezone.utc)
+        self, collection, id, content=None
     ):
         self._check_if_collection_and_item_exists(collection, id)
         if content is None:
             content = self._get_content_according_content_type(request, "relations")
-        content["date_created"] = date_created
         relations = self.storage.add_relations_to_collection_item(
             collection, id, content
         )
@@ -286,7 +284,7 @@ class GenericObjectRelations(BaseResource):
         self._check_if_collection_and_item_exists(collection, id)
         if content is None:
             content = self._get_content_according_content_type(request, "relations")
-        content["date_updated"] = date_updated
+        self._update_date_updated(collection, id, date_updated)
         relations = self.storage.update_collection_item_relations(
             collection, id, content
         )
@@ -299,7 +297,7 @@ class GenericObjectRelations(BaseResource):
         self._check_if_collection_and_item_exists(collection, id)
         if content is None:
             content = self._get_content_according_content_type(request, "relations")
-        content["date_updated"] = date_updated
+        self._update_date_updated(collection, id, date_updated)
         relations = self.storage.patch_collection_item_relations(
             collection, id, content
         )
