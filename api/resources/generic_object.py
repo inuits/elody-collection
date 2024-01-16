@@ -199,11 +199,12 @@ class GenericObjectMetadata(BaseResource):
 
     @policy_factory.authenticate(RequestContext(request))
     def post(
-        self, collection, id, content=None
+        self, collection, id, content=None, date_updated=datetime.now(timezone.utc)
     ):
         self._check_if_collection_and_item_exists(collection, id)
         if content is None:
             content = self._get_content_according_content_type(request, "metadata")
+        self._update_date_updated(collection, id, date_updated)
         metadata = self.storage.add_sub_item_to_collection_item(
             collection, id, "metadata", content
         )
@@ -267,11 +268,12 @@ class GenericObjectRelations(BaseResource):
 
     @policy_factory.authenticate(RequestContext(request))
     def post(
-        self, collection, id, content=None
+        self, collection, id, content=None, date_updated=datetime.now(timezone.utc)
     ):
         self._check_if_collection_and_item_exists(collection, id)
         if content is None:
             content = self._get_content_according_content_type(request, "relations")
+        self._update_date_updated(collection, id, date_updated)
         relations = self.storage.add_relations_to_collection_item(
             collection, id, content
         )
