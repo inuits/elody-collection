@@ -66,7 +66,6 @@ class GenericObject(BaseResource):
         user=None,
         accept_header=None,
     ):
-        self._check_if_collection_name_exists(collection)
         if content is None:
             content = self._get_content_according_content_type(request, collection)
         if type in self.schemas_by_type:
@@ -201,7 +200,7 @@ class GenericObjectMetadata(BaseResource):
     def post(
         self, collection, id, content=None, date_updated=datetime.now(timezone.utc)
     ):
-        self._check_if_collection_and_item_exists(collection, id)
+        self._abort_if_item_doesnt_exist(collection, id)
         if content is None:
             content = self._get_content_according_content_type(request, "metadata")
         self._update_date_updated(collection, id, date_updated)
@@ -270,7 +269,7 @@ class GenericObjectRelations(BaseResource):
     def post(
         self, collection, id, content=None, date_updated=datetime.now(timezone.utc)
     ):
-        self._check_if_collection_and_item_exists(collection, id)
+        self._abort_if_item_doesnt_exist(collection, id)
         if content is None:
             content = self._get_content_according_content_type(request, "relations")
         self._update_date_updated(collection, id, date_updated)
