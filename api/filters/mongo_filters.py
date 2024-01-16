@@ -124,7 +124,8 @@ class MongoFilters(MongoStorageManager):
                 )
                 break
 
-        pipeline.append({"$match": {operator: matchers}})
+        if matchers:
+            pipeline.append({"$match": {operator: matchers}})
         pipeline.append({"$project": {"relationDocuments": 0, "numberOfRelations": 0}})
         return pipeline, filter_criteria
 
