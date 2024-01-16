@@ -263,7 +263,7 @@ class GenericObjectRelations(BaseResource):
             response.headers["Access-Control-Allow-Origin"] = "*"
             return response
 
-        return self.storage.get_collection_item_relations(collection, id)
+        return self.storage.get_collection_item_relations(collection, id), 200
 
     @policy_factory.authenticate(RequestContext(request))
     def post(
