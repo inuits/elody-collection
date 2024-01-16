@@ -275,10 +275,9 @@ class BaseResource(Resource):
         for entity in entities:
             for mediafile_type in [
                 "primary_mediafile_location",
-                "primary_thumbnail_location",
                 "primary_transcode_location",
             ]:
-                if mediafile_type in entity:
+                if mediafile_type in entity and entity[mediafile_type] is not None:
                     mediafile_filename = entity[mediafile_type]
                     mediafile_filename = mediafile_filename.split("/download/")[-1]
                     ticket_id = self._create_ticket(mediafile_filename)
