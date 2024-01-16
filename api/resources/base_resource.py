@@ -373,3 +373,7 @@ class BaseResource(Resource):
         self.storage.patch_collection_item_metadata(
             "entities", f"tenant:{get_raw_id(entity)}", metadata
         )
+        
+    def _update_date_updated(self, collection, id, date_updated):
+        content_date_updated = {"date_updated": date_updated}
+        return self.storage.patch_item_from_collection(collection, id, content_date_updated)
