@@ -253,7 +253,7 @@ class EntityMediafiles(GenericObjectDetail):
         )
 
 
-class EntityMediafilesCreate(GenericObject):
+class EntityMediafilesCreate(GenericObjectDetail):
     @policy_factory.authenticate(RequestContext(request))
     def post(self, id):
         entity = super().get("entities", id)
