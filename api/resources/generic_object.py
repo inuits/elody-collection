@@ -40,17 +40,18 @@ class GenericObject(BaseResource):
             sort=sort,
             asc=asc,
         )
-        collection_data["pagination"] = {
-            "total_count": collection_data["count"],
+        count = collection_data["count"]
+        results = collection_data["results"]
+        collection_data = {
+            "total_count": count,
+            "results": results,
             "limit": limit,
             "skip": skip,
         }
-        if skip + limit < collection_data["count"]:
-            collection_data["pagination"][
-                "next"
-            ] = f"/{collection}?skip={skip + limit}&limit={limit}"
+        if skip + limit < count:
+            collection_data["next"] = f"/{collection}?skip={skip + limit}&limit={limit}"
         if skip >= limit:
-            collection_data["pagination"][
+            collection_data[
                 "previous"
             ] = f"/{collection}?skip={max(0, skip - limit)}&limit={limit}"
         return collection_data
