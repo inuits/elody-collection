@@ -8,6 +8,7 @@ from elody.util import (
     mediafile_is_public,
     signal_entity_changed,
     signal_entity_deleted,
+    signal_mediafiles_added_for_entity,
 )
 from flask import after_this_request, request
 from flask_restful import abort
@@ -247,6 +248,7 @@ class EntityMediafiles(GenericObjectDetail):
                 response += f"{self.storage_api_url}/upload-with-ticket/{mediafile['filename']}?id={get_raw_id(mediafile)}&ticket_id={ticket_id}\n"
             else:
                 response.append(mediafile)
+        signal_mediafiles_added_for_entity(rabbit, entity, mediafiles)
         signal_entity_changed(rabbit, entity)
         return self._create_response_according_accept_header(
             response, accept_header, 201

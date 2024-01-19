@@ -1,7 +1,7 @@
 import app
 
 from datetime import datetime, timezone
-from elody.util import get_item_metadata_value, mediafile_is_public
+from elody.util import get_item_metadata_value, mediafile_is_public, get_raw_id
 from storage.storagemanager import StorageManager
 
 
@@ -97,11 +97,121 @@ def handle_mediafile_status_change(routing_key, body, message_id):
     storage.reindex_mediafile_parents(data["mediafile"])
 
 
+@app.rabbit.queue("dams.mediafiles_added_for_entity")
+def handle_mediafiles_added_for_entity(routing_key, body, message_id):
+    data = body["data"]
+    mediafiles = data["mediafiles"]
+    entity_id = get_raw_id(data["entity"])
+    storage = StorageManager().get_db_engine()
+    for mediafile in mediafiles:
+        process_mediafile(storage, mediafile, entity_id)
+
+
+def process_mediafile(storage, mediafile, entity_id):
+    if entity_id:
+        entity = storage.get_item_from_collection_by_id("entities", entity_id)
+        entity_relations = entity.get("relations", [])
+
+        if txt_relation := has_ocr_operation(entity_relations, "txt"):
+            process_ocr([mediafile], txt_relation)
+        if alto_relation := has_ocr_operation(entity_relations, "alto"):
+            process_ocr([mediafile], alto_relation)
+        if pdf_relation := has_ocr_operation(entity_relations, "pdf"):
+            storage.delete_collection_item_relations(
+                "entities", entity_id, [pdf_relation]
+            )
+            storage.delete_item_from_collection("mediafiles", pdf_relation.get("key"))
+            process_ocr([mediafile], pdf_relation)
+
+
+def process_ocr(mediafiles_data, operation_relation):
+    body = create_ocr_body(mediafiles_data, operation_relation)
+    app.rabbit.send(body, routing_key="dams.ocr_request")
+
+
+def add_relation(storage, collection, body, item_id):
+    payload = [
+        {
+            "key": body.get("id_new_mediafile"),
+            "label": "hasMediafile",
+            "type": "belongsTo",
+            "is_ocr": True,
+            "operation": body.get("operation"),
+            "lang": body.get("lang"),
+        }
+    ]
+    storage.patch_collection_item_relations(collection, item_id, payload)
+
+
+def has_ocr_operation(relations, operation):
+    for relation in relations:
+        if (
+            relation.get("type") == "belongsTo"
+            and relation.get("is_ocr")
+            and relation.get("operation") == operation
+        ):
+            return relation
+    return ""
+
+
+def create_ocr_body(mediafiles_data, relation):
+    operation = relation.get("operation", "pdf")
+    lang = relation.get("lang", "eng")
+    return {
+        "operation": operation,
+        "lang": lang,
+        "mediafile_image_data": mediafiles_data,
+    }
+
+
 @app.rabbit.queue("dams.mediafile_deleted")
 def handle_mediafile_deleted(routing_key, body, message_id):
     data = body["data"]
+    deleted_mediafile = data["mediafile"]
     if __is_malformed_message(data, ["linked_entities", "mediafile"]):
         return
     storage = StorageManager().get_db_engine()
-    storage.handle_mediafile_deleted(data["linked_entities"])
-    storage.reindex_mediafile_parents(parents=data["linked_entities"])
+
+    ocr_keys = []
+    for relation in deleted_mediafile.get("relations", []):
+        if relation.get("is_ocr"):
+            id = relation.get("key")
+            ocr_keys.append(id)
+            storage.delete_item_from_collection("mediafiles", id)
+
+    for relation in deleted_mediafile.get("relations", []):
+        if relation.get("type") == "belongsTo" and "is_ocr" not in relation:
+            entity = storage.get_item_from_collection_by_id(
+                "entities", relation.get("key")
+            )
+            entity_relations = entity.get("relations", [])
+            if pdf_relation := has_ocr_operation(entity_relations, "pdf"):
+                storage.delete_collection_item_relations(
+                    "entities", get_raw_id(entity), [pdf_relation]
+                )
+                storage.delete_item_from_collection(
+                    "mediafiles", pdf_relation.get("key")
+                )
+                entity_mediafiles_ids = []
+                for relation in entity_relations:
+                    if (
+                        relation.get("type") == "hasMediafile"
+                        and relation.get("label") == "hasMediafile"
+                    ):
+                        entity_mediafiles_ids.append(relation.get("key"))
+                if len(entity_mediafiles_ids) > 0:
+                    mediafile_image_data = []
+                    for id in entity_mediafiles_ids:
+                        mediafile = storage.get_item_from_collection_by_id(
+                            "mediafiles", id
+                        )
+                        mediafile_image_data.append(mediafile)
+                    process_ocr(mediafile_image_data, pdf_relation)
+            for entity_relation in entity_relations:
+                if entity_relation.get("key") in ocr_keys:
+                    storage.delete_collection_item_relations(
+                        "entities", get_raw_id(entity), [entity_relation]
+                    )
+    if "entity_id" in data["linked_entities"]:
+        storage.handle_mediafile_deleted(data["linked_entities"])
+        storage.reindex_mediafile_parents(parents=data["linked_entities"])
