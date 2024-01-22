@@ -138,7 +138,7 @@ class MongoFilters(MongoStorageManager):
         _, document_value = BaseMatchers.get_document_key_value(parent_key)
         options = set()
         queried_items = [
-            option for options in items["results"][0]["options"] for option in options
+            option for options in items["results"] for option in options
         ]
         for item in queried_items:
             if isinstance(item.get("value"), list):
