@@ -124,9 +124,7 @@ class MongoFilters(MongoStorageManager):
                 )
                 break
 
-        if matchers and not filter_criteria.get(
-            "provide_value_options_for_key", False
-        ):
+        if matchers and not filter_criteria.get("provide_value_options_for_key", False):
             pipeline.append({"$match": {operator: matchers}})
         pipeline.append({"$project": {"relationDocuments": 0, "numberOfRelations": 0}})
         return pipeline, filter_criteria
@@ -138,7 +136,9 @@ class MongoFilters(MongoStorageManager):
         _, document_value = BaseMatchers.get_document_key_value(parent_key)
         options = set()
         queried_items = [
-            option for options in items["results"][0]["options"] for option in options
+            option
+            for options in items.get("results", [{"options": [[]]}])[0]["options"]
+            for option in options
         ]
         for item in queried_items:
             if isinstance(item.get("value"), list):
