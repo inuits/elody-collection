@@ -124,7 +124,7 @@ class MongoFilters(MongoStorageManager):
                 )
                 break
 
-        if matchers and not filter_request_body[0].get(
+        if matchers and not filter_criteria.get(
             "provide_value_options_for_key", False
         ):
             pipeline.append({"$match": {operator: matchers}})
