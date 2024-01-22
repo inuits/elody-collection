@@ -124,7 +124,9 @@ class MongoFilters(MongoStorageManager):
                 )
                 break
 
-        if matchers:
+        if matchers and not filter_request_body[0].get(
+            "provide_value_options_for_key", False
+        ):
             pipeline.append({"$match": {operator: matchers}})
         pipeline.append({"$project": {"relationDocuments": 0, "numberOfRelations": 0}})
         return pipeline, filter_criteria
