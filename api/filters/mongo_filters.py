@@ -134,12 +134,12 @@ class MongoFilters(MongoStorageManager):
             return
         parent_key = filter["parent_key"]
         _, document_value = BaseMatchers.get_document_key_value(parent_key)
-        options = set()
         queried_items = []
         for options in items.get("results", [{"options": [[]]}])[0]["options"]:
             if options:
                 for option in options:
                     queried_items.append(option)
+        options = set()
         for item in queried_items:
             if isinstance(item.get("value"), list):
                 for value in item.get("value", list()):
