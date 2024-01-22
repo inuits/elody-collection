@@ -123,7 +123,9 @@ class BaseResource(Resource):
             )
         return {"data": rdf_data}
 
-    def _create_mediafile_for_entity(self, entity, filename, metadata=None):
+    def _create_mediafile_for_entity(
+        self, entity, filename, metadata=None, dry_run=False
+    ):
         content = {
             "filename": filename,
             "date_created": datetime.now(timezone.utc),
@@ -133,6 +135,8 @@ class BaseResource(Resource):
         }
         if metadata:
             content["metadata"] = metadata
+        if dry_run:
+            return content
         mediafile = self.storage.save_item_to_collection("mediafiles", content)
         self.storage.add_mediafile_to_collection_item(
             "entities",

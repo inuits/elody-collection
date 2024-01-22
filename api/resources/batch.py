@@ -10,7 +10,7 @@ from resources.base_resource import BaseResource
 
 class Batch(BaseResource):
     def __add_matching_mediafiles_to_entity(
-        self, entity_matching_id, entity, mediafiles
+        self, entity_matching_id, entity, mediafiles, dry_run=False
     ):
         output = list()
         for mediafile in mediafiles:
@@ -21,6 +21,7 @@ class Batch(BaseResource):
                     entity,
                     mediafile.get("filename"),
                     mediafile.get("metadata"),
+                    dry_run,
                 )
                 output.append(mediafile)
         return output
@@ -42,43 +43,52 @@ class Batch(BaseResource):
         except ColumnNotFoundException:
             abort(422, message="One or more required columns headers aren't defined")
 
-    def _get_entities_and_mediafiles_from_csv(self, parsed_csv):
+    def _get_entities_and_mediafiles_from_csv(self, parsed_csv, dry_run=False):
         entities_and_mediafiles = dict()
         entities_and_mediafiles.setdefault("entities", list())
         for entity in parsed_csv.objects.get("entities"):
             entity_matching_id = entity.pop("matching_id", None)
-            relations = entity.pop("relations", list())
-            entity = self.storage.save_item_to_collection("entities", entity)
-            self.storage.add_relations_to_collection_item(
-                "entities", get_raw_id(entity), relations
-            )
+            if not dry_run:
+                relations = entity.pop("relations", list())
+                entity = self.storage.save_item_to_collection("entities", entity)
+                self.storage.add_relations_to_collection_item(
+                    "entities", get_raw_id(entity), relations
+                )
             if entity_matching_id:
                 mediafiles = self.__add_matching_mediafiles_to_entity(
-                    entity_matching_id, entity, parsed_csv.objects.get("mediafiles")
+                    entity_matching_id,
+                    entity,
+                    parsed_csv.objects.get("mediafiles"),
+                    dry_run,
                 )
                 if mediafiles:
                     entities_and_mediafiles.setdefault("mediafiles", list())
                     entities_and_mediafiles.get("mediafiles", list()).extend(mediafiles)
-            entities_and_mediafiles.get("entities", list()).append(
-                self.storage.get_item_from_collection_by_id(
-                    "entities", get_raw_id(entity)
+            if not dry_run:
+                entities_and_mediafiles.get("entities", list()).append(
+                    self.storage.get_item_from_collection_by_id(
+                        "entities", get_raw_id(entity)
+                    )
                 )
-            )
+            else:
+                entities_and_mediafiles.get("entities", list()).append(entity)
         return entities_and_mediafiles
 
     @policy_factory.authenticate(RequestContext(request))
     def post(self):
         content_type = request.content_type
+        dry_run = request.args.get("dry_run", 0, int)
         if content_type == "text/csv":
             output = dict()
             accept_header = request.headers.get("Accept")
             parsed_csv = self._get_parsed_csv(request.get_data(as_text=True))
             entities_and_mediafiles = self._get_entities_and_mediafiles_from_csv(
-                parsed_csv
+                parsed_csv, dry_run
             )
-            if accept_header != "text/uri-list":
+            if accept_header != "text/uri-list" or dry_run:
                 output = entities_and_mediafiles
                 output["errors"] = parsed_csv.get_errors()
+                return output, 201
             else:
                 output = ""
                 for mediafile in entities_and_mediafiles.get("mediafiles", list()):
