@@ -1,5 +1,6 @@
 import pymongo
 
+from app import logger
 from filters.filter_option import FilterOption
 from filters.matchers.base_matchers import BaseMatchers
 from filters.types.filter_types import get_filter
@@ -51,6 +52,9 @@ class MongoFilters(MongoStorageManager):
             items["results"].append(self._prepare_mongo_document(document, True))
         items["limit"] = limit
 
+        logger.info("******************")
+        logger.info(pipeline)
+        logger.info("******************")
         self.__provide_value_options_for_key_if_necessary(
             collection, last_filter, items
         )
@@ -135,6 +139,9 @@ class MongoFilters(MongoStorageManager):
         parent_key = filter["parent_key"]
         _, document_value = BaseMatchers.get_document_key_value(parent_key)
         options = set()
+        logger.info("******************")
+        logger.info(items)
+        logger.info("******************")
         queried_items = [
             option
             for options in items.get("results", [{"options": [[]]}])[0]["options"]
