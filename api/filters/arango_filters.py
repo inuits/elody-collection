@@ -1,7 +1,6 @@
 from filters.types.filter_types import get_filter
 from storage.arangostore import ArangoStorageManager
 
-
 class ArangoFilters(ArangoStorageManager):
     def filter(self, body, skip, limit, collection="entities", order_by=None, asc=True):
         if not self.db:
@@ -9,6 +8,7 @@ class ArangoFilters(ArangoStorageManager):
 
         aql = self.__generate_aql_query(body, collection, order_by, asc)
         bind = {"skip": skip, "limit": limit}
+        
         results = self.db.aql.execute(aql, bind_vars=bind, full_count=True)
         filters = {"ids": list(results)}  # type: ignore
 
@@ -37,36 +37,52 @@ class ArangoFilters(ArangoStorageManager):
         self, filter_request_body, collection="entities", order_by=None, asc=True
     ):
         aql = ""
-        result_set = ""
+        result_sets = []
         counter = 0
+        collection_or_result_set = collection
 
-        for filter_criteria in filter_request_body:
+        for index, filter_criteria in enumerate(filter_request_body):
+            
             filter = get_filter(filter_criteria["type"])
             generated_query = filter.generate_query(filter_criteria)
             if generated_query == "":
                 raise ValueError("No matcher was able to handle filter request.")
 
             item_types = filter_criteria.get("item_types", [])
+            result_set = f"results{counter}"
+
+            # Determine whether to use collection or result set in the AQL query
+            if filter_criteria.get("operator", "and") != "or" and index > 0:
+                collection_or_result_set = f"results{counter - 1}"
+            
             aql += f"""
-                LET results{counter} = (
-                    FOR doc IN {collection}
+                LET {result_set} = (
+                    FOR doc IN {collection_or_result_set}
                         {
                             f'FILTER doc.type IN {item_types}'
-                            if collection == "entities" and len(item_types) > 0
+                            if collection_or_result_set == "entities" and len(item_types) > 0
                             else ""
                         }
                         {generated_query}
-                        RETURN doc._id
+                        RETURN doc
                 )
             """
-            result_set = f"results{counter}"
+            result_sets.append(result_set)
             counter += 1
 
+        # Determine the final result set based on the operator
+        final_result = result_sets[-1]
+        
+        if filter_criteria.get("operator", "and") == "or":
+            # If operator is OR, use UNION_DISTINCT for multiple result sets
+            if len(result_sets) > 1:
+                final_result = f"UNION_DISTINCT({', '.join(result_sets)})"
+
         aql += f"""
-            FOR result IN {result_set if result_set else collection}
-                {f'SORT c.{order_by} {"ASC" if asc else "DESC"}' if order_by else ""}
+            FOR result IN {final_result}
+                {f'SORT result.{order_by} {"ASC" if asc else "DESC"}' if order_by else ""}
                 LIMIT @skip, @limit
-                RETURN { 'DOCUMENT(result)._key' if result_set else 'result._key' }
+                RETURN result._key
         """
 
         return aql
