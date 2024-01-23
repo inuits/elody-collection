@@ -1,14 +1,9 @@
 ---
-###############################################################################
-# PYTHON APPLICATION PIPELINE
-###############################################################################
-
 include:
   - project: 'inuits/gitlab-ci/pipeline-templates'
-    file: 'pip-pipeline.yml'
-    ref: 'v1.7.0'
+    ref: 'v2.2.0'
+    file: '/jobs/build-variant/pip.yml'
 
 variables:
-  CUSTOMER: 'inuits'
+  PROJECT: 'dams'
   APPLICATION: 'dams-collection'
-  SKIP_DEPLOY: 'true'
