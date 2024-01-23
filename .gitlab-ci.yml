@@ -7,5 +7,5 @@ include:
       - '/jobs/build-variant/pip.yml'
 
 variables:
-  PROJECT: 'dams'
+  CUSTOMER: 'inuits'
   APPLICATION: 'dams-collection'
