@@ -2,7 +2,9 @@
 include:
   - project: 'inuits/gitlab-ci/pipeline-templates'
     ref: 'v2.2.0'
-    file: '/jobs/build-variant/pip.yml'
+    file:
+      - 'pipelines/build-and-deliver.yml'
+      - '/jobs/build-variant/pip.yml'
 
 variables:
   PROJECT: 'dams'
