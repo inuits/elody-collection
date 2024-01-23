@@ -8,4 +8,5 @@ include:
 
 variables:
   CUSTOMER: 'inuits'
-  APPLICATION: 'dams-collection'
+  PROJECT: 'dams'
+  APPLICATION: 'collection'
