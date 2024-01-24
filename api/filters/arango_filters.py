@@ -1,6 +1,6 @@
 from filters.types.filter_types import get_filter
 from storage.arangostore import ArangoStorageManager
-
+import app
 class ArangoFilters(ArangoStorageManager):
     def filter(self, body, skip, limit, collection="entities", order_by=None, asc=True):
         if not self.db:
@@ -71,15 +71,17 @@ class ArangoFilters(ArangoStorageManager):
             counter += 1
 
         # Determine the final result set based on the operator
-        final_result = result_sets[-1]
+        final_result = []
+        if result_sets:
+            final_result = result_sets[-1]
         
-        if filter_criteria.get("operator", "and") == "or":
+        if filter_request_body and filter_criteria.get("operator", "and") == "or":
             # If operator is OR, use UNION_DISTINCT for multiple result sets
             if len(result_sets) > 1:
                 final_result = f"UNION_DISTINCT({', '.join(result_sets)})"
 
         aql += f"""
-            FOR result IN {final_result}
+            FOR result IN {final_result if final_result else collection}
                 {f'SORT result.{order_by} {"ASC" if asc else "DESC"}' if order_by else ""}
                 LIMIT @skip, @limit
                 RETURN result._key
