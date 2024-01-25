@@ -1,6 +1,6 @@
 from filters.types.filter_types import get_filter
 from storage.arangostore import ArangoStorageManager
-import app
+
 class ArangoFilters(ArangoStorageManager):
     def filter(self, body, skip, limit, collection="entities", order_by=None, asc=True):
         if not self.db:
@@ -9,10 +9,24 @@ class ArangoFilters(ArangoStorageManager):
         aql = self.__generate_aql_query(body, collection, order_by, asc)
         bind = {"skip": skip, "limit": limit}
         
-        results = self.db.aql.execute(aql, bind_vars=bind, full_count=True)
-        filters = {"ids": list(results)}  # type: ignore
+       # 1. list of ids
+        results = self.db.aql.execute(aql, bind_vars=bind, full_count=True) 
 
+        # 2. make ids object containing the list
+        ids_list = list(results)
+        
+        filters = {"ids": ids_list}  # type: ignore
+
+       # Create a mapping of IDs to their positions in the result set
+        id_position_map = {str(doc): index for index, doc in enumerate(ids_list)}
+
+
+        # 3. list of objects
         items = self.get_items_from_collection(collection, 0, limit, None, filters)
+
+        # Reorder the items based on the order of IDs obtained
+        items["results"] = sorted(items["results"], key=lambda x: id_position_map.get(x["_key"]))
+
         items["count"] = results.statistics()["fullCount"]  # type: ignore
         items["limit"] = limit
 
@@ -79,12 +93,17 @@ class ArangoFilters(ArangoStorageManager):
             # If operator is OR, use UNION_DISTINCT for multiple result sets
             if len(result_sets) > 1:
                 final_result = f"UNION_DISTINCT({', '.join(result_sets)})"
-
+                
         aql += f"""
             FOR result IN {final_result if final_result else collection}
-                {f'SORT result.{order_by} {"ASC" if asc else "DESC"}' if order_by else ""}
+                LET sortField = FIRST(
+                    FOR meta IN result.metadata 
+                    FILTER meta.key == "{order_by}"
+                    RETURN meta.value
+                )
+                {f'SORT sortField {"ASC" if asc else "DESC"}' if order_by else ""}
                 LIMIT @skip, @limit
                 RETURN result._key
         """
-
+        
         return aql
