@@ -74,6 +74,7 @@ class GenericObject(BaseResource):
         if user is not None:
             content["user"] = user
         content["date_created"] = date_created
+        content["date_updated"] = date_created
         content["version"] = version
         try:
             collection_item = self.storage.save_item_to_collection(collection, content)
