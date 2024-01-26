@@ -198,39 +198,33 @@ class GenericObjectMetadata(BaseResource):
         )
 
     @policy_factory.authenticate(RequestContext(request))
-    def post(
-        self, collection, id, content=None, date_updated=datetime.now(timezone.utc)
-    ):
+    def post(self, collection, id, content=None):
         self._abort_if_item_doesnt_exist(collection, id)
         if content is None:
             content = self._get_content_according_content_type(request, "metadata")
-        self._update_date_updated(collection, id, date_updated)
+        self._update_date_updated(collection, id)
         metadata = self.storage.add_sub_item_to_collection_item(
             collection, id, "metadata", content
         )
         return metadata, 201
 
     @policy_factory.authenticate(RequestContext(request))
-    def put(
-        self, collection, id, content=None, date_updated=datetime.now(timezone.utc)
-    ):
+    def put(self, collection, id, content=None):
         self._check_if_collection_and_item_exists(collection, id)
         if content is None:
             content = self._get_content_according_content_type(request, "metadata")
-        self._update_date_updated(collection, id, date_updated)
+        self._update_date_updated(collection, id)
         metadata = self.storage.update_collection_item_sub_item(
             collection, id, "metadata", content
         )
         return metadata, 201
 
     @policy_factory.authenticate(RequestContext(request))
-    def patch(
-        self, collection, id, content=None, date_updated=datetime.now(timezone.utc)
-    ):
+    def patch(self, collection, id, content=None):
         self._check_if_collection_and_item_exists(collection, id)
         if content is None:
             content = self._get_content_according_content_type(request, "metadata")
-        self._update_date_updated(collection, id, date_updated)
+        self._update_date_updated(collection, id)
         metadata = self.storage.patch_collection_item_metadata(collection, id, content)
         if not metadata:
             abort(400, message=f"Item with id {id} has no metadata")
@@ -267,39 +261,33 @@ class GenericObjectRelations(BaseResource):
         return self.storage.get_collection_item_relations(collection, id), 200
 
     @policy_factory.authenticate(RequestContext(request))
-    def post(
-        self, collection, id, content=None, date_updated=datetime.now(timezone.utc)
-    ):
+    def post(self, collection, id, content=None):
         self._abort_if_item_doesnt_exist(collection, id)
         if content is None:
             content = self._get_content_according_content_type(request, "relations")
-        self._update_date_updated(collection, id, date_updated)
+        self._update_date_updated(collection, id)
         relations = self.storage.add_relations_to_collection_item(
             collection, id, content
         )
         return relations, 201
 
     @policy_factory.authenticate(RequestContext(request))
-    def put(
-        self, collection, id, content=None, date_updated=datetime.now(timezone.utc)
-    ):
+    def put(self, collection, id, content=None):
         self._check_if_collection_and_item_exists(collection, id)
         if content is None:
             content = self._get_content_according_content_type(request, "relations")
-        self._update_date_updated(collection, id, date_updated)
+        self._update_date_updated(collection, id)
         relations = self.storage.update_collection_item_relations(
             collection, id, content
         )
         return relations, 201
 
     @policy_factory.authenticate(RequestContext(request))
-    def patch(
-        self, collection, id, content=None, date_updated=datetime.now(timezone.utc)
-    ):
+    def patch(self, collection, id, content=None):
         self._check_if_collection_and_item_exists(collection, id)
         if content is None:
             content = self._get_content_according_content_type(request, "relations")
-        self._update_date_updated(collection, id, date_updated)
+        self._update_date_updated(collection, id)
         relations = self.storage.patch_collection_item_relations(
             collection, id, content
         )
