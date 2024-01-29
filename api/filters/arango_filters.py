@@ -15,7 +15,7 @@ class ArangoFilters(ArangoStorageManager):
          LET results0 = (
                 FOR doc IN entities     
                 FILTER (IS_ARRAY(doc.type) AND "asset" IN doc.type)
-                    OR (doc.type == "asset")
+                    OR (doc.type == "gender")
                             RETURN doc
         )
         
