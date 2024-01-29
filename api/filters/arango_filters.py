@@ -12,9 +12,23 @@ class ArangoFilters(ArangoStorageManager):
         app.logger.error(f"~~~~~~~~~~~~~~~~~~~~~~~~~~~~ LOG 1 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~")  # Log 1
 
         aql = """
-        FOR entity IN entities
+         LET results0 = (
+                FOR doc IN entities     
+                FILTER (IS_ARRAY(doc.type) AND "asset" IN doc.type)
+                    OR (doc.type == "asset")
+                            RETURN doc
+        )
+        
+        FOR result IN results0
+            LET sortField = FIRST(
+                FOR meta IN result.metadata 
+                FILTER meta.key == "title"
+                RETURN meta.value
+            )
+            
+            SORT sortField DESC
             LIMIT @skip, @limit
-            RETURN entity._key
+            RETURN result._key
         """
                 
         bind = {"skip": skip, "limit": limit}
