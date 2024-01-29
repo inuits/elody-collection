@@ -8,11 +8,24 @@ class ArangoFilters(ArangoStorageManager):
             raise ValueError("DB is not initialized")
 
         aql = self.__generate_aql_query(body, collection, order_by, asc)
-        bind = {"skip": skip, "limit": limit}
         
         app.logger.error(f"~~~~~~~~~~~~~~~~~~~~~~~~~~~~ LOG 1 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~")  # Log 1
 
+        aql = """
+        FOR entity IN entities
+            LIMIT @skip, @limit
+            RETURN entity._key
+        """
+                
+        bind = {"skip": skip, "limit": limit}
+        
+        app.logger.error(f"~~~~~~~~~~~~~~~~~~~~~~~~~~~~ LOG HARDCODED ~~~~~~~~~~~~~~~~~~~~~~~~~~~~")  # Log 1
+        app.logger.error(f"{ aql }")
+
         results = self.db.aql.execute(aql, bind_vars=bind, full_count=True) 
+        
+        app.logger.error(f"~~~~~~~~~~~~~~~~~~~~~~~~~~~~ LOG HARDCODED RESULTS ~~~~~~~~~~~~~~~~~~~~~~~~~~~~")  # Log 1
+        app.logger.error(f"{ results }")
 
         ids_list = list(results)
         
