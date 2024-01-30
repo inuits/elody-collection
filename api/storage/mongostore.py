@@ -275,12 +275,13 @@ class MongoStorageManager(GenericStorageManager):
                     }
                 },
             )
-            self.delete_collection_item_sub_item_key(
-                self._map_relation_to_collection(relation["type"]),
-                relation["key"],
-                "relations",
-                id,
-            )
+            if parent:
+                self.delete_collection_item_sub_item_key(
+                    self._map_relation_to_collection(relation["type"]),
+                    relation["key"],
+                    "relations",
+                    id,
+                )
 
     def delete_item_from_collection(self, collection, id):
         self.__delete_impacted_relations(collection, id)
