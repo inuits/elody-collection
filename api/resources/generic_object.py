@@ -263,41 +263,41 @@ class GenericObjectRelations(BaseResource):
 
     @policy_factory.authenticate(RequestContext(request))
     def post(self, collection, id, content=None):
-        self._abort_if_item_doesnt_exist(collection, id)
+        entity = self._check_if_collection_and_item_exists(collection, id) or {}
         if content is None:
             content = self._get_content_according_content_type(request, "relations")
         self._update_date_updated(collection, id)
         relations = self.storage.add_relations_to_collection_item(
-            collection, id, content
+            collection, entity["_id"], content
         )
         return relations, 201
 
     @policy_factory.authenticate(RequestContext(request))
     def put(self, collection, id, content=None):
-        self._check_if_collection_and_item_exists(collection, id)
+        entity = self._check_if_collection_and_item_exists(collection, id) or {}
         if content is None:
             content = self._get_content_according_content_type(request, "relations")
         self._update_date_updated(collection, id)
         relations = self.storage.update_collection_item_relations(
-            collection, id, content
+            collection, entity["_id"], content
         )
         return relations, 201
 
     @policy_factory.authenticate(RequestContext(request))
     def patch(self, collection, id, content=None):
-        self._check_if_collection_and_item_exists(collection, id)
+        entity = self._check_if_collection_and_item_exists(collection, id) or {}
         if content is None:
             content = self._get_content_according_content_type(request, "relations")
         self._update_date_updated(collection, id)
         relations = self.storage.patch_collection_item_relations(
-            collection, id, content
+            collection, entity["_id"], content
         )
         return relations, 201
 
     @policy_factory.authenticate(RequestContext(request))
     def delete(self, collection, id, content=None):
-        self._check_if_collection_and_item_exists(collection, id)
+        entity = self._check_if_collection_and_item_exists(collection, id) or {}
         if content is None:
             content = self._get_content_according_content_type(request, "relations")
-        self.storage.delete_collection_item_relations(collection, id, content)
+        self.storage.delete_collection_item_relations(collection, entity["_id"], content)
         return "", 204
