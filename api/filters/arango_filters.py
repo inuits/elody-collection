@@ -11,25 +11,25 @@ class ArangoFilters(ArangoStorageManager):
         
         app.logger.error(f"~~~~~~~~~~~~~~~~~~~~~~~~~~~~ LOG 1 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~")  # Log 1
 
-        aql = """
-         LET results0 = (
-                FOR doc IN entities     
-                FILTER (IS_ARRAY(doc.type) AND "asset" IN doc.type)
-                    OR (doc.type == "asset")
-                            RETURN doc
-        )
+        # aql = """
+        #  LET results0 = (
+        #         FOR doc IN entities     
+        #         FILTER (IS_ARRAY(doc.type) AND "asset" IN doc.type)
+        #             OR (doc.type == "asset")
+        #                     RETURN doc
+        # )
         
-        FOR result IN results0
-            LET sortField = FIRST(
-                FOR meta IN result.metadata 
-                FILTER meta.key == "title"
-                RETURN meta.value
-            )
+        # FOR result IN results0
+        #     LET sortField = FIRST(
+        #         FOR meta IN result.metadata 
+        #         FILTER meta.key == "title"
+        #         RETURN meta.value
+        #     )
             
-            SORT sortField DESC
-            LIMIT @skip, @limit
-            RETURN result._key
-        """
+        #     SORT sortField DESC
+        #     LIMIT @skip, @limit
+        #     RETURN result._key
+        # """
                 
         bind = {"skip": skip, "limit": limit}
         
@@ -133,7 +133,7 @@ class ArangoFilters(ArangoStorageManager):
                 LET sortField = FIRST(
                     FOR meta IN result.metadata 
                     FILTER meta.key == "{order_by}"
-                    RETURN meta.value
+                    RETURN meta
                 )
                 {f'SORT sortField {"ASC" if asc else "DESC"}' if order_by else ""}
                 LIMIT @skip, @limit
