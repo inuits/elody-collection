@@ -130,6 +130,7 @@ class ArangoFilters(ArangoStorageManager):
 
         aql += f"""
             FOR result IN {final_result if final_result else collection}
+                FILTER HAS(result, 'metadata')
                 LET sortField = FIRST(
                     FOR meta IN result.metadata 
                     FILTER meta.key == "{order_by}"
@@ -139,6 +140,8 @@ class ArangoFilters(ArangoStorageManager):
                 LIMIT @skip, @limit
                 RETURN result._key
         """
+
+
         
         app.logger.error(f"~~~~~~~~~~~~~~~~~~~~~~~~~~~~ LOG 4 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~")  # Log 4
         app.logger.error(f"{aql}")
