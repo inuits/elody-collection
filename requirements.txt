@@ -47,6 +47,6 @@ retry==0.9.2
 rpds-py==0.17.1
 sentry-sdk[flask]==1.40.0
 six==1.16.0
-urllib3==2.1.0
+urllib3==2.2.0
 Werkzeug==3.0.1
 zipp==3.17.0
