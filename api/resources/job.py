@@ -30,13 +30,13 @@ class Job(GenericObject):
         job_filter = f"&type={job_type}" if job_type else ""
         status_filter = f"&status={status}" if status else ""
         if skip + limit < jobs["count"]:
-            jobs[
-                "next"
-            ] = f"/jobs?skip={skip + limit}&limit={limit}{job_filter}{status_filter}"
+            jobs["next"] = (
+                f"/jobs?skip={skip + limit}&limit={limit}{job_filter}{status_filter}"
+            )
         if skip > 0:
-            jobs[
-                "previous"
-            ] = f"/jobs?skip={max(0, skip - limit)}&limit={limit}{job_filter}{status_filter}"
+            jobs["previous"] = (
+                f"/jobs?skip={max(0, skip - limit)}&limit={limit}{job_filter}{status_filter}"
+            )
         return jobs
 
 

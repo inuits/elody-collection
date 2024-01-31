@@ -1,6 +1,7 @@
 from filters.types.filter_types import get_filter
 from storage.arangostore import ArangoStorageManager
 
+
 class ArangoFilters(ArangoStorageManager):
     def filter(self, body, skip, limit, collection="entities", order_by=None, asc=True):
         if not self.db:
@@ -9,18 +10,19 @@ class ArangoFilters(ArangoStorageManager):
         aql = self.__generate_aql_query(body, collection, order_by, asc)
         bind = {"skip": skip, "limit": limit}
 
-        results = self.db.aql.execute(aql, bind_vars=bind, full_count=True) 
-        
+        results = self.db.aql.execute(aql, bind_vars=bind, full_count=True)
+
         ids_list = list(results)
-        
+
         filters = {"ids": ids_list}  # type: ignore
 
         id_position_map = {str(doc): index for index, doc in enumerate(ids_list)}
 
         items = self.get_items_from_collection(collection, 0, limit, None, filters)
 
-
-        items["results"] = sorted(items["results"], key=lambda x: id_position_map.get(x["_key"]))
+        items["results"] = sorted(
+            items["results"], key=lambda x: id_position_map.get(x["_key"])
+        )
         items["count"] = results.statistics()["fullCount"]  # type: ignore
         items["limit"] = limit
 
@@ -49,7 +51,7 @@ class ArangoFilters(ArangoStorageManager):
         collection_or_result_set = collection
 
         for index, filter_criteria in enumerate(filter_request_body):
-            
+
             filter = get_filter(filter_criteria["type"])
             generated_query = filter.generate_query(filter_criteria)
             if generated_query == "":
@@ -60,7 +62,6 @@ class ArangoFilters(ArangoStorageManager):
 
             if filter_criteria.get("operator", "and") != "or" and index > 0:
                 collection_or_result_set = f"results{counter - 1}"
-            
 
             aql += f"""
                 LET {result_set} = (
@@ -80,11 +81,11 @@ class ArangoFilters(ArangoStorageManager):
         final_result = []
         if result_sets:
             final_result = result_sets[-1]
-        
+
         if filter_request_body and filter_criteria.get("operator", "and") == "or":
             if len(result_sets) > 1:
                 final_result = f"UNION_DISTINCT({', '.join(result_sets)})"
-                
+
         aql += f"""
             FOR result IN {final_result if final_result else collection}
                 FILTER HAS(result, 'metadata')
@@ -97,5 +98,5 @@ class ArangoFilters(ArangoStorageManager):
                 LIMIT @skip, @limit
                 RETURN result._key
         """
-        
+
         return aql

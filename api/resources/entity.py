@@ -56,13 +56,13 @@ class Entity(GenericObject):
         type_filter = f"type={item_type}&" if item_type else ""
         entities["limit"] = limit
         if skip + limit < entities["count"]:
-            entities[
-                "next"
-            ] = f"/entities?{type_filter}skip={skip + limit}&limit={limit}&skip_relations={skip_relations}"
+            entities["next"] = (
+                f"/entities?{type_filter}skip={skip + limit}&limit={limit}&skip_relations={skip_relations}"
+            )
         if skip > 0:
-            entities[
-                "previous"
-            ] = f"/entities?{type_filter}skip={max(0, skip - limit)}&limit={limit}&skip_relations={skip_relations}"
+            entities["previous"] = (
+                f"/entities?{type_filter}skip={max(0, skip - limit)}&limit={limit}&skip_relations={skip_relations}"
+            )
         entities["results"] = self._inject_api_urls_into_entities(entities["results"])
         return self._create_response_according_accept_header(
             mappers.map_data_according_to_accept_header(
@@ -206,13 +206,13 @@ class EntityMediafiles(GenericObjectDetail):
         mediafiles["limit"] = limit
         mediafiles["skip"] = skip
         if skip + limit < mediafiles["count"]:
-            mediafiles[
-                "next"
-            ] = f"/entities/{id}/mediafiles?skip={skip + limit}&limit={limit}"
+            mediafiles["next"] = (
+                f"/entities/{id}/mediafiles?skip={skip + limit}&limit={limit}"
+            )
         if skip > 0:
-            mediafiles[
-                "previous"
-            ] = f"/entities/{id}/mediafiles?skip={max(0, skip - limit)}&limit={limit}"
+            mediafiles["previous"] = (
+                f"/entities/{id}/mediafiles?skip={max(0, skip - limit)}&limit={limit}"
+            )
         self._inject_api_urls_into_mediafiles(mediafiles["results"])
 
         @after_this_request
@@ -264,9 +264,9 @@ class EntityMediafilesCreate(GenericObjectDetail):
         content = request.get_json()
         self._abort_if_not_valid_json("mediafile", content)
         content["original_file_location"] = f'/download/{content["filename"]}'
-        content[
-            "thumbnail_file_location"
-        ] = f'/iiif/3/{content["filename"]}/full/,150/0/default.jpg'
+        content["thumbnail_file_location"] = (
+            f'/iiif/3/{content["filename"]}/full/,150/0/default.jpg'
+        )
         content["user"] = policy_factory.get_user_context().email or "default_uploader"
         now = datetime.now(timezone.utc)
         content["date_created"] = now

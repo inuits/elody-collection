@@ -232,9 +232,11 @@ class BaseResource(Resource):
         if assign_roles_from_idp:
             self._sync_roles_from_idp(
                 user,
-                roles_per_tenant
-                if roles_per_tenant
-                else {"tenant:super": user_context.x_tenant.roles},
+                (
+                    roles_per_tenant
+                    if roles_per_tenant
+                    else {"tenant:super": user_context.x_tenant.roles}
+                ),
             )
         return user
 
@@ -285,13 +287,13 @@ class BaseResource(Resource):
                     mediafile_filename = entity[mediafile_type]
                     mediafile_filename = mediafile_filename.split("/download/")[-1]
                     ticket_id = self._create_ticket(mediafile_filename)
-                    entity[
-                        mediafile_type
-                    ] = f"{self.storage_api_url_ext}/download-with-ticket/{mediafile_filename}?ticket_id={ticket_id}"
+                    entity[mediafile_type] = (
+                        f"{self.storage_api_url_ext}/download-with-ticket/{mediafile_filename}?ticket_id={ticket_id}"
+                    )
             if "primary_thumbnail_location" in entity:
-                entity[
-                    "primary_thumbnail_location"
-                ] = f'{self.image_api_url_ext}{entity["primary_thumbnail_location"]}'
+                entity["primary_thumbnail_location"] = (
+                    f'{self.image_api_url_ext}{entity["primary_thumbnail_location"]}'
+                )
         return entities
 
     def _inject_api_urls_into_mediafiles(self, mediafiles):
@@ -301,13 +303,13 @@ class BaseResource(Resource):
                     mediafile_filename = mediafile[mediafile_type]
                     mediafile_filename = mediafile_filename.split("/download/")[-1]
                     ticket_id = self._create_ticket(mediafile_filename)
-                    mediafile[
-                        mediafile_type
-                    ] = f"{self.storage_api_url_ext}/download-with-ticket/{mediafile_filename}?ticket_id={ticket_id}"
+                    mediafile[mediafile_type] = (
+                        f"{self.storage_api_url_ext}/download-with-ticket/{mediafile_filename}?ticket_id={ticket_id}"
+                    )
             if "thumbnail_file_location" in mediafile:
-                mediafile[
-                    "thumbnail_file_location"
-                ] = f'{self.image_api_url_ext}{mediafile["thumbnail_file_location"]}'
+                mediafile["thumbnail_file_location"] = (
+                    f'{self.image_api_url_ext}{mediafile["thumbnail_file_location"]}'
+                )
         return mediafiles
 
     def _is_rdf_post_call(self, content_type):

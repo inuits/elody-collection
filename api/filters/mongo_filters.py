@@ -34,9 +34,9 @@ class MongoFilters(MongoStorageManager):
             pipeline += [
                 {
                     "$sort": {
-                        self.get_sort_field(order_by): pymongo.ASCENDING
-                        if asc
-                        else pymongo.DESCENDING
+                        self.get_sort_field(order_by): (
+                            pymongo.ASCENDING if asc else pymongo.DESCENDING
+                        )
                     }
                 },
             ]

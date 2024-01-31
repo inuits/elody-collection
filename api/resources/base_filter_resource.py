@@ -28,9 +28,9 @@ class BaseFilterResource(BaseResource):
         if skip + limit < items["count"]:
             items["next"] = f"/{collection}/filter?skip={skip + limit}&limit={limit}"
         if skip > 0:
-            items[
-                "previous"
-            ] = f"/{collection}/filter?skip={max(0, skip - limit)}&limit={limit}"
+            items["previous"] = (
+                f"/{collection}/filter?skip={max(0, skip - limit)}&limit={limit}"
+            )
         items["results"] = self._inject_api_urls_into_entities(items["results"])
         return items
 

@@ -62,10 +62,10 @@ class Config(BaseResource):
                 if key in self.hard_coded_values:
                     config[f"{collection}_{key}_values"] = self.hard_coded_values[key]
                 else:
-                    config[
-                        f"{collection}_{key}_values"
-                    ] = self.storage.get_metadata_values_for_collection_item_by_key(
-                        collection, key
+                    config[f"{collection}_{key}_values"] = (
+                        self.storage.get_metadata_values_for_collection_item_by_key(
+                            collection, key
+                        )
                     )
         config["filters"] = self.__get_allowed_filters()
         self.__add_options_to_filters(

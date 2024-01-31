@@ -51,9 +51,9 @@ class GenericObject(BaseResource):
         if skip + limit < count:
             collection_data["next"] = f"/{collection}?skip={skip + limit}&limit={limit}"
         if skip >= limit:
-            collection_data[
-                "previous"
-            ] = f"/{collection}?skip={max(0, skip - limit)}&limit={limit}"
+            collection_data["previous"] = (
+                f"/{collection}?skip={max(0, skip - limit)}&limit={limit}"
+            )
         return collection_data
 
     @policy_factory.authenticate(RequestContext(request))
@@ -299,5 +299,7 @@ class GenericObjectRelations(BaseResource):
         entity = self._check_if_collection_and_item_exists(collection, id) or {}
         if content is None:
             content = self._get_content_according_content_type(request, "relations")
-        self.storage.delete_collection_item_relations(collection, entity["_id"], content)
+        self.storage.delete_collection_item_relations(
+            collection, entity["_id"], content
+        )
         return "", 204
