@@ -1,9 +1,9 @@
+import importlib
 import json
 import logging
 import os
 import secrets
 
-from amqp.amqpmanager import AmqpManager
 from elody.loader import load_apps, load_policies, load_queues
 from elody.util import CustomJSONEncoder, custom_json_dumps
 from flask import Flask
@@ -47,7 +47,29 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-rabbit = AmqpManager().get_amqp_manager()
+amqp_module = importlib.import_module(os.getenv("AMQP_MANAGER", "amqpstorm_flask"))
+auto_delete_exchange = os.getenv("AUTO_DELETE_EXCHANGE", False) in [
+    1,
+    "1",
+    True,
+    "True",
+    "true",
+]
+durable_exchange = os.getenv("DURABLE_EXCHANGE", True) in [1, "1", True, "True", "true"]
+passive_exchange = os.getenv("PASSIVE_EXCHANGE", False) in [
+    1,
+    "1",
+    True,
+    "True",
+    "true",
+]
+rabbit = amqp_module.RabbitMQ(
+    exchange_params=amqp_module.ExchangeParams(
+        auto_delete=auto_delete_exchange,
+        durable=durable_exchange,
+        passive=passive_exchange,
+    )
+)
 rabbit.init_app(app, "basic", json.loads, custom_json_dumps)
 
 app.register_blueprint(swaggerui_blueprint)
