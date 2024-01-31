@@ -82,7 +82,6 @@ def database_available():
 def rabbit_available():
     connection = rabbit.get_connection()
     if connection.is_open:
-        connection.close()
         return True, "Successfully reached RabbitMQ"
     return False, "Failed to reach RabbitMQ"
 
