@@ -73,7 +73,7 @@ class MongoStorageManager(GenericStorageManager):
                 connection_string += f"&replicaSet={self.mongo_replica_set}"
         return connection_string
 
-    def __delete_impacted_relations(self, collection, id):
+    def _delete_impacted_relations(self, collection, id):
         relations = self.get_collection_item_sub_item(collection, id, "relations")
         relations = relations if relations else []
         for obj in relations:
@@ -164,10 +164,12 @@ class MongoStorageManager(GenericStorageManager):
             "authored": "authoredBy",
             "authoredBy": "authored",
             "belongsTo": "hasMediafile",
+            "BelongsToParent": "hasChild",
             "components": "parent",
             "contains": "isIn",
             "definedBy": "defines",
             "defines": "definedBy",
+            "hasChild": "belongsToParent",
             "hasMediafile": "belongsTo",
             "hasTenant": "isTenantFor",
             "isIn": "contains",
@@ -180,9 +182,11 @@ class MongoStorageManager(GenericStorageManager):
             "authored": "entities",
             "authoredBy": "entities",
             "belongsTo": "entities",
+            "belongsToParent": "mediafiles",
             "components": "entities",
             "contains": "entities",
             "hasMediafile": "mediafiles",
+            "hasChild": "mediafiles",
             "isIn": "entities",
             "parent": "entities",
         }.get(relation, "entities")
@@ -242,6 +246,40 @@ class MongoStorageManager(GenericStorageManager):
             "mediafiles",
         )
         return self.db["mediafiles"].find_one(self.__get_id_query(mediafile_id))
+
+    def add_mediafile_to_parent(
+        self,
+        parent_id,
+        item_id,
+    ):
+        count = self.count_relation_items("mediafiles", parent_id)
+        self.add_relations_to_collection_item(
+            "mediafiles",
+            parent_id,
+            [
+                {
+                    "key": item_id,
+                    "label": "hasChild",
+                    "type": "hasChild",
+                    "metadata": [
+                        {
+                            "key": "order",
+                            "value": count + 1,
+                        }
+                    ],
+                    "sort": {
+                        "order": [
+                            {
+                                "value": count + 1,
+                            }
+                        ]
+                    },
+                }
+            ],
+            True,
+            "mediafiles",
+        )
+        return self.get_item_from_collection_by_id("mediafiles", item_id)
 
     def add_relations_to_collection_item(
         self, collection, id, relations, parent=True, dst_collection=None
@@ -393,6 +431,26 @@ class MongoStorageManager(GenericStorageManager):
         else:
             return self.db["history"].find_one(query, sort=[("timestamp", -1)])
 
+    def get_mediafile_linked_entities(self, mediafile, linked_entities=[]):
+        relations = self.get_collection_item_relations("mediafiles", mediafile["_id"])
+        for relation in relations:
+            if relation.get("type") == "belongsTo":
+                linked_entities.append(
+                    {
+                        "entity_id": relation["key"],
+                        "primary_mediafile": relation.get("is_primary"),
+                        "primary_thumbnail": relation.get("is_primary_thumbnail"),
+                    }
+                )
+            if relation.get("type") == "belongsToParent":
+                return self.get_mediafile_linked_entities(
+                    self.get_item_from_collection_by_id(
+                        "mediafiles", relation.get("key")
+                    ),
+                    linked_entities,
+                )
+        return linked_entities
+
     def get_item_from_collection_by_id(self, collection, id):
         if document := self.db[collection].find_one(self.__get_id_query(id)):
             return self._prepare_mongo_document(document, True)
@@ -435,20 +493,6 @@ class MongoStorageManager(GenericStorageManager):
         for document in documents:
             items["results"].append(self._prepare_mongo_document(document, True))
         return items
-
-    def get_mediafile_linked_entities(self, mediafile):
-        linked_entities = []
-        for relation in self.get_collection_item_relations(
-            "mediafiles", mediafile["_id"]
-        ):
-            linked_entities.append(
-                {
-                    "entity_id": relation["key"],
-                    "primary_mediafile": relation.get("is_primary"),
-                    "primary_thumbnail": relation.get("is_primary_thumbnail"),
-                }
-            )
-        return linked_entities
 
     def get_metadata_values_for_collection_item_by_key(self, collection, key):
         if key in ["type"]:

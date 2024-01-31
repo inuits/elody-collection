@@ -111,6 +111,20 @@ class BaseResource(Resource):
         self._check_if_collection_name_exists(collection)
         return self._abort_if_item_doesnt_exist(collection, id)
 
+    def _count_children_from_mediafile(self, parent_mediafile, count=0):
+        relations = self.storage.get_collection_item_relations(
+            "mediafiles", parent_mediafile["_id"]
+        )
+        for relation in relations:
+            if relation.get("type") == "hasChild":
+                child_mediafile = self.storage.get_item_from_collection_by_id(
+                    "mediafiles", relation["key"]
+                )
+                if child_mediafile:
+                    count += 1
+                    return self._count_children_from_mediafile(child_mediafile, count)
+        return count
+
     def _create_linked_data(self, request, content_type):
         content = request.get_data(as_text=True)
         try:
@@ -252,6 +266,22 @@ class BaseResource(Resource):
                 "entities", f'tenant:{entity["_id"]}'
             )
 
+    def _get_children_from_mediafile(self, parent_mediafile, linked_mediafiles=[]):
+        relations = self.storage.get_collection_item_relations(
+            "mediafiles", parent_mediafile["_id"]
+        )
+        for relation in relations:
+            if relation.get("type") == "hasChild":
+                child_mediafile = self.storage.get_item_from_collection_by_id(
+                    "mediafiles", relation["key"]
+                )
+                if child_mediafile:
+                    linked_mediafiles.append(child_mediafile)
+                    return self._get_children_from_mediafile(
+                        child_mediafile, linked_mediafiles
+                    )
+        return linked_mediafiles
+
     def _get_content_according_content_type(self, request, object_type="entity"):
         content_type = request.content_type
         match content_type:
@@ -265,6 +295,19 @@ class BaseResource(Resource):
                 return parsed_csv.get_type(object_type)
             case _:
                 return request.get_json()
+
+    def get_parent_mediafile(self, mediafile, parent_mediafile=None):
+        relations = self.storage.get_collection_item_relations(
+            "mediafiles", mediafile["_id"]
+        )
+        for relation in relations:
+            if relation.get("type") == "belongsToParent":
+                parent_mediafile = self.storage.get_item_from_collection_by_id(
+                    "mediafiles", relation["key"]
+                )
+                if parent_mediafile:
+                    return self.get_parent_mediafile(parent_mediafile, parent_mediafile)
+        return parent_mediafile
 
     def _get_tenant_label(self, item):
         return get_item_metadata_value(item, "name")
@@ -338,7 +381,7 @@ class BaseResource(Resource):
                 if "transcode_file_location" in mediafile:
                     entity["primary_transcode"] = mediafile["transcode_filename"]
                     entity["primary_transcode_location"] = mediafile[
-                        "transcode_file_location"
+                        "transcountde_file_location"
                     ]
                 if "img_width" in mediafile and "img_height" in mediafile:
                     entity["primary_width"] = mediafile["img_width"]

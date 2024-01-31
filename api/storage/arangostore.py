@@ -164,11 +164,13 @@ class ArangoStorageManager(GenericStorageManager):
 
     def __map_entity_relation(self, relation):
         return {
+            "belongsToParent": "hasChild",
             "box": "box_stories",
             "box_stories": "box",
             "components": "parent",
             "contains": "isIn",
             "frames": "stories",
+            "hasChild": "belongsToParent",
             "hasTestimony": "isTestimonyFor",
             "isIn": "contains",
             "isTestimonyFor": "hasTestimony",
@@ -222,6 +224,16 @@ class ArangoStorageManager(GenericStorageManager):
         self.db.graph(self.default_graph_name).edge_collection("hasMediafile").insert(
             data
         )
+        return self.db.document(mediafile_id)
+
+    def add_mediafile_to_parent(self, parent_id, mediafile_id):
+        if not (item_id := self.__get_id_for_collection_item("mediafiles", id)):
+            return None
+        data = {
+            "_from": item_id,
+            "_to": mediafile_id,
+        }
+        self.db.graph(self.default_graph_name).edge_collection("hasChild").insert(data)
         return self.db.document(mediafile_id)
 
     def add_relations_to_collection_item(
@@ -520,18 +532,23 @@ class ArangoStorageManager(GenericStorageManager):
         items["results"] = list(results)
         return items
 
-    def get_mediafile_linked_entities(self, mediafile):
-        linked_entities = []
-        for edge in self.db.collection("hasMediafile").find(
-            {"_from": mediafile["_id"]}
-        ):
-            linked_entities.append(
-                {
-                    "entity_id": edge["_from"],
-                    "primary_mediafile": edge["is_primary"],
-                    "primary_thumbnail": edge["is_primary_thumbnail"],
-                }
-            )
+    def get_mediafile_linked_entities(self, mediafile, linked_entities=[]):
+        relations = self.get_collection_item_relations("mediafiles", mediafile["_id"])
+        for relation in relations:
+            if relation.get("type") == "_from":
+                linked_entities.append(
+                    {
+                        "entity_id": relation["key"],
+                        "primary_mediafile": relation.get("is_primary"),
+                        "primary_thumbnail": relation.get("is_primary_thumbnail"),
+                    }
+                )
+            if relation.get("type") == "belongsToParent":
+                return self.get_mediafile_linked_entities(
+                    self.get_item_from_collection_by_id(
+                        "mediafiles", relation.get("key"), linked_entities
+                    )
+                )
         return linked_entities
 
     def get_metadata_values_for_collection_item_by_key(self, collection, key):

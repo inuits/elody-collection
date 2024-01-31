@@ -134,6 +134,8 @@ from resources.mediafile import (
     MediafileCopyright,
     MediafileDetail,
     MediafileMetadata,
+    MediafileDerivatives,
+    MediafileParent
 )
 from resources.saved_search import (
     SavedSearch,
@@ -181,6 +183,8 @@ api.add_resource(MediafileAssets, "/mediafiles/<string:id>/assets")
 api.add_resource(MediafileCopyright, "/mediafiles/<string:id>/copyright")
 api.add_resource(MediafileDetail, "/mediafiles/<string:id>")
 api.add_resource(MediafileMetadata, "/mediafiles/<string:id>/metadata")
+api.add_resource(MediafileDerivatives, "/mediafiles/<string:id>/derivatives")
+api.add_resource(MediafileParent, "/mediafiles/<string:id>/parent")
 
 api.add_resource(SavedSearch, "/saved_searches")
 api.add_resource(SavedSearchDetail, "/saved_searches/<string:id>")

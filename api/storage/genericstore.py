@@ -19,6 +19,13 @@ class GenericStorageManager:
     ):
         pass
 
+    def add_mediafile_to_parent(
+        self,
+        parent_id,
+        item_id,
+    ):
+        pass
+
     def add_relations_to_collection_item(
         self, collection, id, relations, parent=True, dst_collection=None
     ):
@@ -29,6 +36,10 @@ class GenericStorageManager:
 
     def check_health(self):
         return True
+
+    def count_relation_items(self, collection, id):
+        relations = self.get_collection_item_sub_item(collection, id, "relations")
+        return len(relations) if relations else 0
 
     def delete_collection_item_relations(self, collection, id, content, parent=True):
         pass
