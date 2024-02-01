@@ -121,6 +121,8 @@ from resources.filter import (
     FilterMatchers,
     FilterEntities,
     FilterEntitiesBySavedSearchId,
+    FilterGenericObjects,
+    FilterGenericObjectsBySavedSearchId,
     FilterMediafiles,
     FilterMediafilesBySavedSearchId,
 )
@@ -134,7 +136,7 @@ from resources.mediafile import (
     MediafileDetail,
     MediafileMetadata,
     MediafileDerivatives,
-    MediafileParent
+    MediafileParent,
 )
 from resources.saved_search import (
     SavedSearch,
@@ -203,6 +205,10 @@ api.add_resource(
     GenericObjectMetadataKey, "/<string:collection>/<string:id>/metadata/<string:key>"
 )
 api.add_resource(GenericObjectRelations, "/<string:collection>/<string:id>/relations")
+api.add_resource(FilterGenericObjects, "/<string:collection>/filters")
+api.add_resource(
+    FilterGenericObjectsBySavedSearchId, "/<string:collection>/filter/<string:id>"
+)
 
 # Initialize RabbitMQ Queues
 load_queues(logger)
