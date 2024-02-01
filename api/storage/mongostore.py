@@ -322,7 +322,7 @@ class MongoStorageManager(GenericStorageManager):
                 )
 
     def delete_item_from_collection(self, collection, id):
-        self.__delete_impacted_relations(collection, id)
+        self._delete_impacted_relations(collection, id)
         self.db[collection].delete_one(self.__get_id_query(id))
 
     def drop_all_collections(self):
