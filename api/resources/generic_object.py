@@ -103,7 +103,7 @@ class GenericObjectDetail(BaseResource):
         item=None,
         type=None,
         content=None,
-        date_updated=datetime.now(timezone.utc),
+        date_updated=None,
     ):
         self._check_if_collection_name_exists(collection)
         if item is None:
@@ -116,6 +116,8 @@ class GenericObjectDetail(BaseResource):
             self._abort_if_not_valid_type(collection_item, type)
             if type in self.schemas_by_type:
                 self._abort_if_not_valid_json(type, content)
+        if not date_updated:
+            date_updated = datetime.now(timezone.utc)
         content["date_updated"] = str(date_updated)
         content["version"] = collection_item.get("version", 0) + 1
         content["last_editor"] = (
@@ -138,7 +140,7 @@ class GenericObjectDetail(BaseResource):
         type=None,
         content=None,
         version=True,
-        date_updated=datetime.now(timezone.utc),
+        date_updated=None,
     ):
         self._check_if_collection_name_exists(collection)
         if item is None:
@@ -151,6 +153,8 @@ class GenericObjectDetail(BaseResource):
             self._abort_if_not_valid_type(collection_item, type)
             if type in self.schemas_by_type:
                 self._abort_if_not_valid_json(type, content)
+        if not date_updated:
+            date_updated = datetime.now(timezone.utc)
         content["date_updated"] = str(date_updated)
         if version:
             content["version"] = collection_item.get("version", 0) + 1
