@@ -60,16 +60,7 @@ class MongoFilters(MongoStorageManager):
         self, filter_request_body: list[dict], collection="entities"
     ):
         pipeline = []
-        pipeline.append(
-            {
-                "$lookup": {
-                    "from": collection,
-                    "localField": "relations.key",
-                    "foreignField": "_id",
-                    "as": "relationDocuments",
-                }
-            }
-        )
+        self.__append_lookups_to_pipeline(collection, filter_request_body, pipeline)
 
         filter_criteria = {}
         matchers = []
@@ -128,6 +119,31 @@ class MongoFilters(MongoStorageManager):
             pipeline.append({"$match": {operator: matchers}})
         pipeline.append({"$project": {"relationDocuments": 0, "numberOfRelations": 0}})
         return pipeline, filter_criteria
+
+    def __append_lookups_to_pipeline(self, collection, filter_request_body, pipeline):
+        pipeline.append(
+            {
+                "$lookup": {
+                    "from": collection,
+                    "localField": "relations.key",
+                    "foreignField": "_id",
+                    "as": "relationDocuments",
+                }
+            }
+        )
+        for filter_criteria in filter_request_body:
+            lookup = filter_criteria.get("lookup")
+            if lookup:
+                pipeline.append(
+                    {
+                        "$lookup": {
+                            "from": lookup["from"],
+                            "localField": lookup["local_field"],
+                            "foreignField": lookup["foreign_field"],
+                            "as": lookup["as"],
+                        }
+                    }
+                )
 
     def __provide_value_options_for_key_if_necessary(self, collection, filter, items):
         if not filter.get("provide_value_options_for_key", False):
