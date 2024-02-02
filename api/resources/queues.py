@@ -33,7 +33,7 @@ def add_entity_to_history(routing_key, body, message_id):
     relations = storage.get_collection_item_relations("entities", entity_id, True)
     content = {
         "object": entity,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": str(datetime.now(timezone.utc)),
         "collection": "entities",
         "relations": relations,
     }
