@@ -62,7 +62,7 @@ class GenericObject(BaseResource):
         collection,
         content=None,
         type=None,
-        date_created=datetime.now(timezone.utc),
+        date_created=None,
         version=1,
         user=None,
         accept_header=None,
@@ -73,6 +73,8 @@ class GenericObject(BaseResource):
             self._abort_if_not_valid_json(type, content)
         if user is not None:
             content["user"] = user
+        if not date_created:
+            date_created = datetime.now(timezone.utc)
         content["date_created"] = str(date_created)
         content["date_updated"] = str(date_created)
         content["version"] = version
