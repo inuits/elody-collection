@@ -205,7 +205,7 @@ api.add_resource(
     GenericObjectMetadataKey, "/<string:collection>/<string:id>/metadata/<string:key>"
 )
 api.add_resource(GenericObjectRelations, "/<string:collection>/<string:id>/relations")
-api.add_resource(FilterGenericObjects, "/<string:collection>/filters")
+api.add_resource(FilterGenericObjects, "/<string:collection>/filter")
 api.add_resource(
     FilterGenericObjectsBySavedSearchId, "/<string:collection>/filter/<string:id>"
 )
