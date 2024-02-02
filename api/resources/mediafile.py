@@ -165,7 +165,7 @@ class MediafileDerivatives(GenericObjectDetail):
                     response += f"{self.storage_api_url}/upload-with-ticket/{mediafile['filename']}?id={get_raw_id(mediafile)}&ticket_id={ticket_id}\n"
                 else:
                     response.append(mediafile)
-                parent_mediafile = self.get_item_from_collection_by_id("mediafiles", id)
+                parent_mediafile = self.storage.get_item_from_collection_by_id("mediafiles", id)
                 signal_mediafile_changed(rabbit, old_parent_mediafile, parent_mediafile)
             return self._create_response_according_accept_header(
                 response, accept_header, 201
