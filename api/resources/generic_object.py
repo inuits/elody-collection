@@ -67,6 +67,8 @@ class GenericObject(BaseResource):
         user=None,
         accept_header=None,
     ):
+        if request.args.get("soft", 0, int):
+            return "good", 200
         if content is None:
             content = self._get_content_according_content_type(request, collection)
         if type in self.schemas_by_type:
