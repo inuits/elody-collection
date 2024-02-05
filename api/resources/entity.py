@@ -99,8 +99,8 @@ class Entity(GenericObject):
         accept_header = request.headers.get("Accept")
         entity = self._decorate_entity(content)
         now = datetime.now(timezone.utc)
-        entity["date_created"] = str(now)
-        entity["date_updated"] = str(now)
+        entity["date_created"] = now.isoformat()
+        entity["date_updated"] = now.isoformat()
         entity["version"] = 1
         if not linked_data_request:
             self._abort_if_not_valid_json("entity", entity)
@@ -269,8 +269,8 @@ class EntityMediafilesCreate(GenericObjectDetail):
         )
         content["user"] = policy_factory.get_user_context().email or "default_uploader"
         now = datetime.now(timezone.utc)
-        content["date_created"] = str(now)
-        content["date_updated"] = str(now)
+        content["date_created"] = now.isoformat()
+        content["date_updated"] = now.isoformat()
         content["version"] = 1
         mediafile = self.storage.save_item_to_collection("mediafiles", content)
         upload_location = f'{self.storage_api_url}/upload/{content["filename"]}?id={get_raw_id(mediafile)}'

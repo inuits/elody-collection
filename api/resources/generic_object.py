@@ -75,8 +75,8 @@ class GenericObject(BaseResource):
             content["user"] = user
         if not date_created:
             date_created = datetime.now(timezone.utc)
-        content["date_created"] = str(date_created)
-        content["date_updated"] = str(date_created)
+        content["date_created"] = date_created.isoformat()
+        content["date_updated"] = date_created.isoformat()
         content["version"] = version
         try:
             collection_item = self.storage.save_item_to_collection(collection, content)
@@ -120,7 +120,7 @@ class GenericObjectDetail(BaseResource):
                 self._abort_if_not_valid_json(type, content)
         if not date_updated:
             date_updated = datetime.now(timezone.utc)
-        content["date_updated"] = str(date_updated)
+        content["date_updated"] = date_updated.isoformat()
         content["version"] = collection_item.get("version", 0) + 1
         content["last_editor"] = (
             policy_factory.get_user_context().email or "default_uploader"
@@ -157,7 +157,7 @@ class GenericObjectDetail(BaseResource):
                 self._abort_if_not_valid_json(type, content)
         if not date_updated:
             date_updated = datetime.now(timezone.utc)
-        content["date_updated"] = str(date_updated)
+        content["date_updated"] = date_updated.isoformat()
         if version:
             content["version"] = collection_item.get("version", 0) + 1
         content["last_editor"] = (
