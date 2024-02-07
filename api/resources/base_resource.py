@@ -233,12 +233,18 @@ class BaseResource(Resource):
 
     def _create_user_from_idp(self, assign_roles_from_idp=True, roles_per_tenant=None):
         user_context = policy_factory.get_user_context()
+        metadata = [{"key": "idp_user_id", "value": user_context.id}]
+        if user_context.email:
+            metadata.append({"key": "email", "value": user_context.email})
+        if user_context.preferred_username:
+            metadata.append(
+                {"key": "preferred_username", "value": user_context.preferred_username}
+            )
         user = {
-            "identifiers": list({user_context.id, user_context.email}),
-            "metadata": [
-                {"key": "idp_user_id", "value": user_context.id},
-                {"key": "email", "value": user_context.email},
-            ],
+            "identifiers": list(
+                {user_context.id, user_context.email, user_context.preferred_username}
+            ),
+            "metadata": metadata,
             "relations": [],
             "type": "user",
         }
