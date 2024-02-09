@@ -161,3 +161,33 @@ class NoneMatcher(BaseMatcher):
             return self.matcher_engine.none(key, parent_key)
 
         del parent_key
+
+
+class MetadataOnRelationExactMatcher(BaseMatcher):
+    def __init__(self):
+        super().__init__()
+
+    def match(self, key, value, parent_key, **kwargs):
+        if (
+            isinstance(key, str)
+            and isinstance(value, (str, int, float, bool))
+            and kwargs.get("match_exact", False)
+        ):
+            return self.matcher_engine.metadata_on_relation(
+                key, value, parent_key, True
+            )
+
+
+class MetadataOnRelationContainsMatcher(BaseMatcher):
+    def __init__(self):
+        super().__init__()
+
+    def match(self, key, value, parent_key, **kwargs):
+        if (
+            isinstance(key, str)
+            and isinstance(value, (str, int, float, bool))
+            and not kwargs.get("match_exact", False)
+        ):
+            return self.matcher_engine.metadata_on_relation(
+                key, value, parent_key, False
+            )

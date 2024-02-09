@@ -58,6 +58,19 @@ class MongoMatchers(BaseMatchers):
     def none(self, key, parent_key):
         return self.__any_none_match(key, parent_key, "$in")
 
+    def metadata_on_relation(self, key, value, parent_key, match_exact):
+        if not match_exact:
+            value = {"$regex": value, "$options": "i"}
+
+        return {
+            "$match": {
+                parent_key: {
+                    "$type": "array",
+                    "$elemMatch": {key: value},
+                }
+            }
+        }
+
     def __exact_contains_range_match(self, key: str, value, parent_key: str = ""):
         if parent_key:
             document_key, document_value = BaseMatchers.get_document_key_value(

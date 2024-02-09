@@ -53,8 +53,14 @@ class ArangoFilterTypeQueryGenerator(BaseFilterTypeQueryGenerator):
         )
         return self.__parse_query(filter)
 
-    def generate_query_for_relation_filter_type(self, matchers, filter_criteria):
-        filter = super().generate_query_for_relation_filter_type(
+    def generate_query_for_type_filter_type(self, matchers, filter_criteria):
+        filter = super().generate_query_for_type_filter_type(matchers, filter_criteria)
+        return self.__parse_query(filter)
+
+    def generate_query_for_metadata_on_relation_filter_type(
+        self, matchers, filter_criteria
+    ):
+        filter = super().generate_query_for_metadata_on_relation_filter_type(
             matchers, filter_criteria
         )
         return self.__parse_query(filter)
@@ -64,7 +70,3 @@ class ArangoFilterTypeQueryGenerator(BaseFilterTypeQueryGenerator):
             return filter
 
         return ""
-
-    def generate_query_for_type_filter_type(self, matchers, filter_criteria):
-        filter = super().generate_query_for_type_filter_type(matchers, filter_criteria)
-        return self.__parse_query(filter)

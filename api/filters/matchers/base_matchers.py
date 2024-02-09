@@ -86,3 +86,13 @@ class BaseMatchers(ABC):
     @abstractmethod
     def none(self, key: str, parent_key: str) -> dict | str:
         pass
+
+    @abstractmethod
+    def metadata_on_relation(
+        self,
+        key: str,
+        value: str | int | float | bool,
+        parent_key: str,
+        match_exact: bool,
+    ) -> dict | str:
+        pass

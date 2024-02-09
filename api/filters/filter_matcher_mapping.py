@@ -10,6 +10,8 @@ from filters.matchers.matchers import (
     InBetweenMatcher,
     AnyMatcher,
     NoneMatcher,
+    MetadataOnRelationExactMatcher,
+    MetadataOnRelationContainsMatcher,
 )
 
 
@@ -55,5 +57,9 @@ class FilterMatcherMapping(ABC):
             "any": AnyMatcher,
             "none": NoneMatcher,
             "exact": ExactMatcher,
+        },
+        "metadata_on_relation": {
+            "exact": MetadataOnRelationExactMatcher,
+            "contains": MetadataOnRelationContainsMatcher,
         },
     }

@@ -62,6 +62,26 @@ class ArangoMatchers(BaseMatchers):
             key, ["null", ""], parent_key, "=="
         )
 
+    def metadata_on_relation(self, key, value, parent_key, match_exact):
+        operator = "=="
+        if not match_exact:
+            operator = "LIKE"
+
+        return f"""
+            FILTER (
+                IS_ARRAY(doc.{parent_key})
+                AND (
+                    LENGTH(
+                        FOR item IN IS_ARRAY(doc.{parent_key}) ? doc.{parent_key} : []
+                            FILTER (
+                                item.{key} {operator} "{value}"
+                            )
+                            RETURN item
+                    ) > 0
+                )
+            )
+        """
+
     def __exact_contains_match(
         self,
         key: str,

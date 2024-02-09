@@ -28,6 +28,8 @@ def get_filter(input_type: str):
         return BooleanFilterType()
     if input_type == "type":
         return TypeFilterType()
+    if input_type == "metadata_on_relation":
+        return MetadataOnRelationFilterType()
 
     raise ValueError(f"No filter defined for input type '{input_type}'")
 
@@ -121,4 +123,17 @@ class TypeFilterType(BaseFilterType):
     def generate_query(self, filter_criteria: dict):
         return self.filter_type_engine.generate_query_for_type_filter_type(
             self.matchers, filter_criteria
+        )
+
+
+class MetadataOnRelationFilterType(BaseFilterType):
+    def __init__(self):
+        super().__init__()
+        self.matchers.update(FilterMatcherMapping.mapping["metadata_on_relation"])
+
+    def generate_query(self, filter_criteria: dict):
+        return (
+            self.filter_type_engine.generate_query_for_metadata_on_relation_filter_type(
+                self.matchers, filter_criteria
+            )
         )

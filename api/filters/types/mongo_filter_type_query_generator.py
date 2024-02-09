@@ -57,6 +57,14 @@ class MongoFilterTypeQueryGenerator(BaseFilterTypeQueryGenerator):
         filter = super().generate_query_for_type_filter_type(matchers, filter_criteria)
         return self.__parse_query(filter)
 
+    def generate_query_for_metadata_on_relation_filter_type(
+        self, matchers, filter_criteria
+    ):
+        filter = super().generate_query_for_metadata_on_relation_filter_type(
+            matchers, filter_criteria
+        )
+        return self.__parse_query(filter)
+
     def __parse_query(self, filter) -> list:
         if filter:
             if isinstance(filter, list):
