@@ -429,7 +429,7 @@ class BaseResource(Resource):
         )
 
     def _update_date_updated(self, collection, id):
-        content_date_updated = {"date_updated": datetime.now(timezone.utc).isoformat()}
+        content_date_updated = {"date_updated": datetime.now(timezone.utc)}
         return self.storage.patch_item_from_collection(
             collection, id, content_date_updated
         )
