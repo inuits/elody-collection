@@ -627,7 +627,7 @@ class MongoStorageManager(GenericStorageManager):
                 elif field in relation and relation[field]:
                     relation[field] = False
                     self.set_primary_field_other_relation(
-                        self._map_relation_to_collection(relation["label"]),
+                        self._map_relation_to_collection(relation["type"]),
                         relation["key"],
                         id,
                         field,
