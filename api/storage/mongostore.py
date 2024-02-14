@@ -626,9 +626,26 @@ class MongoStorageManager(GenericStorageManager):
                     relation[field] = True
                 elif field in relation and relation[field]:
                     relation[field] = False
+                    self.set_primary_field_other_relation(
+                        self._map_relation_to_collection(relation["label"]),
+                        relation["key"],
+                        id,
+                        field,
+                        False,
+                    )
             self.patch_item_from_collection(
                 collection, src_id, {"relations": relations}
             )
+
+    def set_primary_field_other_relation(
+        self, collection, id, updated_relation_id, field, value
+    ):
+        relations = self.get_collection_item_relations(collection, id)
+        for relation in relations:
+            if relation["key"] == updated_relation_id:
+                relation[field] = value
+                break
+        self.patch_item_from_collection(collection, id, {"relations": relations})
 
     def update_collection_item_relations(self, collection, id, content, parent=True):
         relations = self.get_collection_item_sub_item(collection, id, "relations")
