@@ -71,7 +71,9 @@ rabbit = amqp_module.RabbitMQ(
         passive=passive_exchange,
     )
 )
-rabbit.init_app(app, "basic", json.loads, custom_json_dumps)
+rabbit.init_app(
+    app, "basic", json.loads, custom_json_dumps, json_encoder=CustomJSONEncoder
+)
 
 app.register_blueprint(swaggerui_blueprint)
 
