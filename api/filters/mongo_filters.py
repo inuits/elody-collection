@@ -84,6 +84,7 @@ class MongoFilters(MongoStorageManager):
                 parent_key = filter_criteria["parent_key"]
                 document_key, _ = BaseMatchers.get_document_key_value(parent_key)
 
+                pipeline.append({"$match": {operator: matchers}})
                 pipeline.extend(
                     [
                         {
