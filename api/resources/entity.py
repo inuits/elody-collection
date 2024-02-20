@@ -401,9 +401,7 @@ class EntitySetPrimaryMediafile(GenericObjectDetail):
     @policy_factory.authenticate(RequestContext(request))
     def put(self, id, mediafile_id):
         entity = super().get("entities", id)
-        mediafile = self._abort_if_item_doesnt_exist("mediafiles", mediafile_id)
-        if not mediafile_is_public(mediafile):
-            abort(400, message=f"Mediafile with id {mediafile_id} is not public")
+        self._abort_if_item_doesnt_exist("mediafiles", mediafile_id)
         self.storage.set_primary_field_collection_item(
             "entities", get_raw_id(entity), mediafile_id, "is_primary"
         )
@@ -415,9 +413,7 @@ class EntitySetPrimaryThumbnail(GenericObjectDetail):
     @policy_factory.authenticate(RequestContext(request))
     def put(self, id, mediafile_id):
         entity = super().get("entities", id)
-        mediafile = self._abort_if_item_doesnt_exist("mediafiles", mediafile_id)
-        if not mediafile_is_public(mediafile):
-            abort(400, message=f"Mediafile with id {mediafile_id} is not public")
+        self._abort_if_item_doesnt_exist("mediafiles", mediafile_id)
         self.storage.set_primary_field_collection_item(
             "entities", get_raw_id(entity), mediafile_id, "is_primary_thumbnail"
         )
