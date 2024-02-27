@@ -156,6 +156,7 @@ class ArangoStorageManager(GenericStorageManager):
             "story": ["frames", "box", "story_box_visits"],
             "testimony": ["isTestimonyFor"],
             "thesaurus": [],
+            "consists_of": ["parent", "components"],
         }.get(type, ["components"])
         return [x for x in relations if not exclude or x not in exclude]
 
