@@ -193,6 +193,14 @@ class MongoStorageManager(GenericStorageManager):
             "isFormalDocumentTypeFor": "hasFormalDocumentType",
             "hasContentDocumentType": "isContentDocumentTypeFor",
             "isContentDocumentTypeFor": "hasContentDocumentType",
+            "hasMarineInfo": "isMarineInfoFor",
+            "isMarineInfoFor": "hasMarineInfo",
+            "hasVocab": "isVocabFor",
+            "isVocabFor": "hasVocab",
+            "hasMap": "isMapFor",
+            "isMapFor": "hasMap",
+            "hasPublication": "isPublicationFor",
+            "isPublicationFor": "hasPublication",
         }.get(relation)
 
     def _map_relation_to_collection(self, relation):
