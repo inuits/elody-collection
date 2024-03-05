@@ -91,9 +91,12 @@ class ArangoMatchers(BaseMatchers):
         is_datetime_value=False,
     ):
         if parent_key:
-            return self.__value_match_with_parent_key_of_type_array(
-                key, [value], parent_key, equality_operator, is_datetime_value
-            )
+            if parent_key == "edge":
+                return self.__value_match_with_edge(value)
+            else:
+                return self.__value_match_with_parent_key_of_type_array(
+                    key, [value], parent_key, equality_operator, is_datetime_value
+                )
         return self.__value_match_without_parent_key(key, value, equality_operator)
 
     def __value_match_without_parent_key(self, key: str, value, equality_operator: str):
@@ -106,6 +109,19 @@ class ArangoMatchers(BaseMatchers):
         return f"""
             FILTER (IS_ARRAY(doc.{key}) AND {array_condition})
                 OR (doc.{key} {equality_operator} "{prefix}{value}{suffix}")
+        """
+
+    def __value_match_with_edge(
+        self,
+        values: list,
+    ):
+        entitiesValues = ["entities/" + value for value in values]
+        mediafilesValues = ["mediafiles/" + value for value in values]
+        values = entitiesValues + mediafilesValues
+        return f"""
+            FILTER (
+                doc._from IN {values}
+            )
         """
 
     def __value_match_with_parent_key_of_type_array(

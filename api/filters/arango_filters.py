@@ -63,6 +63,11 @@ class ArangoFilters(ArangoStorageManager):
             if filter_criteria.get("operator", "and") != "or" and index > 0:
                 collection_or_result_set = f"results{counter - 1}"
 
+            return_statement = "RETURN doc"
+            if filter_criteria.get("edge_collection") is not None:
+                collection_or_result_set = filter_criteria["edge_collection"]
+                return_statement = "RETURN DOCUMENT(doc._to)"
+
             aql += f"""
                 LET {result_set} = (
                     FOR doc IN {collection_or_result_set}
@@ -72,7 +77,7 @@ class ArangoFilters(ArangoStorageManager):
                             else ""
                         }
                         {generated_query}
-                        RETURN doc
+                        {return_statement}
                 )
             """
             result_sets.append(result_set)

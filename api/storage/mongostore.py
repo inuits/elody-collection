@@ -176,7 +176,7 @@ class MongoStorageManager(GenericStorageManager):
             "isTenantFor": "hasTenant",
             "parent": "components",
             "hasAsset": "isAssetFor",
-            "isAssetFor": "hasAsset"
+            "isAssetFor": "hasAsset",
         }.get(relation)
 
     def _map_relation_to_collection(self, relation):
