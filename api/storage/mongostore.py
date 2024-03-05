@@ -177,6 +177,22 @@ class MongoStorageManager(GenericStorageManager):
             "parent": "components",
             "hasAsset": "isAssetFor",
             "isAssetFor": "hasAsset",
+            "hasAssetCategorie": "isAssetCategorieFor",
+            "isAssetCategorieFor": "hasAssetCategorie",
+            "hasLocationType": "isLocationTypeFor",
+            "isLocationTypeFor": "hasLocationType",
+            "hasEvent": "isEventFor",
+            "isEventFor": "hasEvent",
+            "hasProject": "isProjectFor",
+            "isProjectFor": "hasProject",
+            "hasLocation": "isLocationFor",
+            "isLocationFor": "hasLocation",
+            "hasPartner": "isPartnerFor",
+            "isPartnerFor": "hasPartner",
+            "hasFormalDocumentType": "isFormalDocumentTypeFor",
+            "isFormalDocumentTypeFor": "hasFormalDocumentType",
+            "hasContentDocumentType": "isContentDocumentTypeFor",
+            "isContentDocumentTypeFor": "hasContentDocumentType",
         }.get(relation)
 
     def _map_relation_to_collection(self, relation):
