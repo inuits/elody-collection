@@ -39,8 +39,10 @@ class ArangoStorageManager(GenericStorageManager):
             "definedBy",
             "defines",
             "frames",
+            "hasTenant",
             "hasTestimony",
             "isIn",
+            "isTenantFor",
             "isTestimonyFor",
             "parent",
             "stories",
@@ -148,15 +150,17 @@ class ArangoStorageManager(GenericStorageManager):
 
     def __get_relevant_relations(self, type, exclude=None):
         relations = {
-            "asset": ["isIn", "components", "parent", "hasTestimony"],
+            "asset": ["isIn", "components", "parent", "hasTenant", "hasTestimony"],
             "box": ["box_stories"],
             "box_visit": ["stories", "visited", "story_box"],
             "frame": ["stories", "components"],
-            "museum": [],
+            "museum": ["defines"],
             "story": ["frames", "box", "story_box_visits"],
+            "tenant": ["isTenantFor", "definedBy"],
             "testimony": ["isTestimonyFor"],
             "thesaurus": [],
-            "consists_of": ["parent", "components"],
+            "user": ["hasTenant"],
+            "consists_of": ["parent", "components"]
         }.get(type, ["components"])
         return [x for x in relations if not exclude or x not in exclude]
 
@@ -175,6 +179,7 @@ class ArangoStorageManager(GenericStorageManager):
             "definedBy": "defines",
             "frames": "stories",
             "hasChild": "belongsToParent",
+            "hasTenant": "isTenantFor",
             "hasTestimony": "isTestimonyFor",
             "isIn": "contains",
             "isTestimonyFor": "hasTestimony",
@@ -426,14 +431,28 @@ class ArangoStorageManager(GenericStorageManager):
         order_by=None,
         ascending=True,
     ):
-        if not filters:
+        if filters is None:
             filters = {}
+
+        filter_conditions = []
+
+        # QUICK FIX TO MATCH CERTAIN FILTER
+        if "metadata" in filters:
+            metadata_filters = filters["metadata"]
+            for key, value in metadata_filters.items():
+                if key == "$elemMatch":
+                    filter_conditions.append(
+                        f'FILTER LENGTH(FOR m IN c.metadata FILTER m.key == "{value["key"]}" AND m.value == "{value["value"]}" RETURN 1) > 0'
+                    )
+
+        filter_query = " AND ".join(filter_conditions) if filter_conditions else ""
         aql = f"""
             WITH mediafiles
             FOR c IN entities
                 {"FILTER c._key IN @ids" if "ids" in filters else ""}
                 {f'FILTER c.type == "{filters["type"]}"' if "type" in filters else ""}
         """
+        aql = aql + filter_query
         if skip_relations == 1:
             aql2 = "LET all_metadata = {'metadata': c.metadata}"
         else:
@@ -501,6 +520,7 @@ class ArangoStorageManager(GenericStorageManager):
         items = dict()
         extra_query = ""
         title_filter = ""
+        filter_conditions = []
         if not fields:
             fields = {}
         if not filters:
@@ -516,10 +536,22 @@ class ArangoStorageManager(GenericStorageManager):
                     FILTER metadata.key == "title"
                     FILTER LIKE(metadata.value, "%{filters["title"]}%", true)
             """
+        
+        # QUICK FIX TO MATCH CERTAIN FILTER    
+        if "metadata" in filters:
+            metadata_filters = filters["metadata"]
+            for key, value in metadata_filters.items():
+                if key == "$elemMatch":
+                    filter_conditions.append(
+                        f'FILTER LENGTH(FOR m IN c.metadata FILTER m.key == "{value["key"]}" AND m.value == "{value["value"]}" RETURN 1) > 0'
+                    )
+
+        filter_query = " AND ".join(filter_conditions) if filter_conditions else ""
         aql = f"""
             FOR c IN @@collection
                 {"FILTER c._key IN @ids" if "ids" in filters else ""}
                 {"FILTER c.user == @user_or_public OR NOT c.private" if "user_or_public" in filters else ""}
+                {filter_query}
                 {extra_query}
                 {title_filter}
                 {f'SORT c.{sort} {"ASC" if asc else "DESC"}' if sort else ""}
