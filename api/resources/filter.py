@@ -100,7 +100,7 @@ class FilterGenericObjects(BaseFilterResource):
             mappers.map_data_according_to_accept_header(
                 items,
                 accept_header,
-                collection,
+                "entities",  # specific collection name not relevant for this method
                 fields,
             ),
             accept_header,

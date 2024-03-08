@@ -232,7 +232,7 @@ class MongoStorageManager(GenericStorageManager):
             return document
         if not reversed and create_sortable_metadata:
             document["sort"] = self.__create_sortable_metadata(document["metadata"])
-        return document
+        return app.serialize(document, "elody")
 
     def add_mediafile_to_collection_item(
         self, collection, id, mediafile_id, mediafile_public

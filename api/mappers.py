@@ -1,3 +1,4 @@
+import app
 import csv
 import io
 import json
@@ -35,7 +36,13 @@ def map_data_according_to_accept_header(
         case "text/turtle":
             return map_to_rdf_data(data, data_type, format="turtle")
         case _:
-            return data
+            if data_type == "entities":
+                results = []
+                for result in data["results"]:
+                    results.append(app.serialize(result, "elody"))
+                data["results"] = results
+                return data
+            return app.serialize(data, "elody")
 
 
 def map_data_to_ldjson(data, format):

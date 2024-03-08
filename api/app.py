@@ -12,6 +12,8 @@ from flask_swagger_ui import get_swaggerui_blueprint
 from healthcheck import HealthCheck
 from importlib import import_module
 from inuits_policy_based_auth import PolicyFactory
+from object_configurations.object_configuration_mapper import ObjectConfigurationMapper
+from serialization.serializer import Serializer
 from storage.storagemanager import StorageManager
 
 if os.getenv("SENTRY_ENABLED", False) in ["True", "true", True]:
@@ -98,10 +100,20 @@ app.add_url_rule("/health", "healthcheck", view_func=lambda: health.run())
 policy_factory = PolicyFactory()
 load_apps(app, logger)
 try:
-    module = import_module("apps.permissions")
-    load_policies(policy_factory, logger, module.PERMISSIONS)
+    permissions_module = import_module("apps.permissions")
+    load_policies(policy_factory, logger, permissions_module.PERMISSIONS)
 except ModuleNotFoundError:
     load_policies(policy_factory, logger)
+
+try:
+    mapper_module = import_module("apps.mappers")
+    object_configuration_mapper = ObjectConfigurationMapper(
+        mapper_module.OBJECT_CONFIGURATION_MAPPER
+    )
+except ModuleNotFoundError:
+    object_configuration_mapper = ObjectConfigurationMapper()
+
+serialize = Serializer()
 
 from resources.generic_object import (
     GenericObject,

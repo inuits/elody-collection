@@ -43,7 +43,7 @@ class Mediafile(GenericObject):
 class MediafileAssets(GenericObjectDetail):
     @policy_factory.authenticate(RequestContext(request))
     def get(self, id):
-        mediafile = super().get("mediafiles", id)
+        mediafile, _ = super().get("mediafiles", id)
         entities = []
         for item in self.storage.get_mediafile_linked_entities(mediafile):
             entity = self.storage.get_item_from_collection_by_id(

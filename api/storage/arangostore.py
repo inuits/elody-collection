@@ -160,7 +160,7 @@ class ArangoStorageManager(GenericStorageManager):
             "testimony": ["isTestimonyFor"],
             "thesaurus": [],
             "user": ["hasTenant"],
-            "consists_of": ["parent", "components"]
+            "consists_of": ["parent", "components"],
         }.get(type, ["components"])
         return [x for x in relations if not exclude or x not in exclude]
 
@@ -536,8 +536,8 @@ class ArangoStorageManager(GenericStorageManager):
                     FILTER metadata.key == "title"
                     FILTER LIKE(metadata.value, "%{filters["title"]}%", true)
             """
-        
-        # QUICK FIX TO MATCH CERTAIN FILTER    
+
+        # QUICK FIX TO MATCH CERTAIN FILTER
         if "metadata" in filters:
             metadata_filters = filters["metadata"]
             for key, value in metadata_filters.items():

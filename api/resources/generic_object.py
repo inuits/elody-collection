@@ -97,7 +97,17 @@ class GenericObject(BaseResource):
 class GenericObjectDetail(BaseResource):
     @policy_factory.authenticate(RequestContext(request))
     def get(self, collection, id):
-        return self._check_if_collection_and_item_exists(collection, id)
+        item = self._check_if_collection_and_item_exists(collection, id)
+        accept_header = request.headers.get("Accept")
+        return self._create_response_according_accept_header(
+            mappers.map_data_according_to_accept_header(
+                item,
+                accept_header,
+                "entity",
+                [],
+            ),
+            accept_header,
+        )[0]
 
     @policy_factory.authenticate(RequestContext(request))
     def put(
