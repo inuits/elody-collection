@@ -39,10 +39,12 @@ def map_data_according_to_accept_header(
             if data_type == "entities":
                 results = []
                 for result in data["results"]:
-                    results.append(app.serialize(result, "elody"))
+                    results.append(
+                        app.serialize(result, "elody", hide_storage_format=True)
+                    )
                 data["results"] = results
                 return data
-            return app.serialize(data, "elody")
+            return app.serialize(data, "elody", hide_storage_format=True)
 
 
 def map_data_to_ldjson(data, format):
