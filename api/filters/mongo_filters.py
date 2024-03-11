@@ -16,6 +16,8 @@ class MongoFilters(MongoStorageManager):
         order_by=None,
         asc=True,
     ):
+        BaseMatchers.collection = collection
+
         items = {"count": 0, "results": list()}
         pipeline, last_filter = self.__generate_aggregation_pipeline(
             filter_request_body, collection

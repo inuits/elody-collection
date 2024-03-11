@@ -1,14 +1,17 @@
+import app
+
 from abc import ABC, abstractmethod
 
 
 class BaseMatchers(ABC):
     datetime_pattern = r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$"
+    collection = "entities"
 
     @staticmethod
     def get_document_key_value(parent_key: str) -> tuple[str, str]:
-        document_key = "type" if parent_key == "relations" else "key"
-        document_value = "key" if parent_key == "relations" else "value"
-        return document_key, document_value
+        config = app.object_configuration_mapper.get(BaseMatchers.collection)
+        document_key_value = config.filtering()["parent_keys"][parent_key]
+        return document_key_value["key"], document_key_value["value"]
 
     @abstractmethod
     def id(self, key: str, values: list[str], parent_key: str) -> dict | str:

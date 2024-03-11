@@ -1,4 +1,4 @@
-import re
+import re as regex
 
 
 def snake_to_camel(snake_case_str):
@@ -10,5 +10,5 @@ def snake_to_camel(snake_case_str):
 
 
 def camel_to_snake(camel_case_str):
-    snake_case_str = re.sub(r"(?<!^)(?=[A-Z])", "_", camel_case_str).lower()
+    snake_case_str = regex.sub(r"(?<!^)(?=[A-Z])", "_", camel_case_str).lower()
     return snake_case_str

@@ -3,6 +3,10 @@ from abc import ABC, abstractmethod
 
 class BaseObjectConfiguration(ABC):
     @abstractmethod
+    def filtering(self):
+        pass
+
+    @abstractmethod
     def logging(self, _):
         pass
 
