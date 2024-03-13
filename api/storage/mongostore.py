@@ -207,6 +207,10 @@ class MongoStorageManager(GenericStorageManager):
             "isKeywordFor": "hasKeyword",
             "hasLanguage": "isLanguageFor",
             "isLanguageFor": "hasLanguage",
+            "hasCollectionPart": "isCollectionPartFor",
+            "isCollectionPartFor": "hasCollectionPart",
+            "hasContext": "isContextFor",
+            "isContextFor": "hasContext",
         }.get(relation)
 
     def _map_relation_to_collection(self, relation):
