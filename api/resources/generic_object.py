@@ -221,7 +221,7 @@ class GenericObjectMetadata(BaseResource):
         self._abort_if_item_doesnt_exist(collection, id)
         if content is None:
             content = self._get_content_according_content_type(request, "metadata")
-        self._update_date_updated(collection, id)
+        self._update_date_updated_and_last_editor(collection, id)
         metadata = self.storage.add_sub_item_to_collection_item(
             collection, id, "metadata", content
         )
@@ -232,7 +232,7 @@ class GenericObjectMetadata(BaseResource):
         self._check_if_collection_and_item_exists(collection, id)
         if content is None:
             content = self._get_content_according_content_type(request, "metadata")
-        self._update_date_updated(collection, id)
+        self._update_date_updated_and_last_editor(collection, id)
         metadata = self.storage.update_collection_item_sub_item(
             collection, id, "metadata", content
         )
@@ -243,7 +243,7 @@ class GenericObjectMetadata(BaseResource):
         self._check_if_collection_and_item_exists(collection, id)
         if content is None:
             content = self._get_content_according_content_type(request, "metadata")
-        self._update_date_updated(collection, id)
+        self._update_date_updated_and_last_editor(collection, id)
         metadata = self.storage.patch_collection_item_metadata(collection, id, content)
         if not metadata:
             abort(400, message=f"Item with id {id} has no metadata")
@@ -284,7 +284,7 @@ class GenericObjectRelations(BaseResource):
         entity = self._check_if_collection_and_item_exists(collection, id) or {}
         if content is None:
             content = self._get_content_according_content_type(request, "relations")
-        self._update_date_updated(collection, id)
+        self._update_date_updated_and_last_editor(collection, id)
         relations = self.storage.add_relations_to_collection_item(
             collection, entity["_id"], content
         )
@@ -295,7 +295,7 @@ class GenericObjectRelations(BaseResource):
         entity = self._check_if_collection_and_item_exists(collection, id) or {}
         if content is None:
             content = self._get_content_according_content_type(request, "relations")
-        self._update_date_updated(collection, id)
+        self._update_date_updated_and_last_editor(collection, id)
         relations = self.storage.update_collection_item_relations(
             collection, entity["_id"], content
         )
@@ -306,7 +306,7 @@ class GenericObjectRelations(BaseResource):
         entity = self._check_if_collection_and_item_exists(collection, id) or {}
         if content is None:
             content = self._get_content_according_content_type(request, "relations")
-        self._update_date_updated(collection, id)
+        self._update_date_updated_and_last_editor(collection, id)
         relations = self.storage.patch_collection_item_relations(
             collection, entity["_id"], content
         )
