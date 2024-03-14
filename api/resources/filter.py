@@ -74,7 +74,7 @@ class FilterEntitiesBySavedSearchId(BaseFilterResource):
 
 
 class FilterGenericObjects(BaseFilterResource):
-    @policy_factory.authenticate(RequestContext(request))
+    @policy_factory.apply_policies(RequestContext(request))
     def post(self, collection):
         self._check_if_collection_name_exists(collection)
         accept_header = request.headers.get("Accept")

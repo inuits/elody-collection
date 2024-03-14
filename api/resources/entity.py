@@ -23,7 +23,7 @@ from resources.generic_object import (
 
 
 class Entity(GenericObject):
-    @policy_factory.authenticate(RequestContext(request))
+    @policy_factory.apply_policies(RequestContext(request))
     def get(self, filters=None):
         accept_header = request.headers.get("Accept")
         skip = request.args.get("skip", 0, int)
@@ -43,8 +43,9 @@ class Entity(GenericObject):
         access_restricting_filters = (
             policy_factory.get_user_context().access_restrictions.filters
         )
-        if isinstance(access_restricting_filters, dict):
-            filters = {**filters, **access_restricting_filters}
+        if isinstance(access_restricting_filters, list):
+            for filter in access_restricting_filters:
+                filters.update(filter)
         entities = self.storage.get_entities(
             skip,
             limit,

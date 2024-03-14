@@ -427,10 +427,12 @@ class BaseResource(Resource):
         self.storage.patch_collection_item_metadata(
             "entities", f"tenant:{get_raw_id(entity)}", metadata
         )
-    
+
     def _update_date_updated_and_last_editor(self, collection, id):
         content_date_updated = {"date_updated": datetime.now(timezone.utc)}
-        content_last_editor_updated = {"last_editor": policy_factory.get_user_context().email or "default_uploader"}
+        content_last_editor_updated = {
+            "last_editor": policy_factory.get_user_context().email or "default_uploader"
+        }
         return self.storage.patch_item_from_collection(
             collection, id, {**content_date_updated, **content_last_editor_updated}
         )

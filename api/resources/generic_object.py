@@ -13,7 +13,7 @@ from resources.base_resource import BaseResource
 
 
 class GenericObject(BaseResource):
-    @policy_factory.authenticate(RequestContext(request))
+    @policy_factory.apply_policies(RequestContext(request))
     def get(
         self,
         collection,
@@ -25,12 +25,19 @@ class GenericObject(BaseResource):
         asc=True,
     ):
         self._check_if_collection_name_exists(collection)
+        accept_header = request.headers.get("Accept")
         if fields is None:
             fields = {}
         if filters is None:
             filters = {}
         if ids := request.args.get("ids"):
             filters["ids"] = ids.split(",")
+        access_restricting_filters = (
+            policy_factory.get_user_context().access_restrictions.filters
+        )
+        if isinstance(access_restricting_filters, list):
+            for filter in access_restricting_filters:
+                filters.update(filter)
         collection_data = self.storage.get_items_from_collection(
             collection,
             skip=skip,
@@ -54,9 +61,17 @@ class GenericObject(BaseResource):
             collection_data["previous"] = (
                 f"/{collection}?skip={max(0, skip - limit)}&limit={limit}"
             )
-        return collection_data
+        return self._create_response_according_accept_header(
+            mappers.map_data_according_to_accept_header(
+                collection_data,
+                accept_header,
+                "entities",  # specific collection name not relevant for this method
+                fields,
+            ),
+            accept_header,
+        )
 
-    @policy_factory.authenticate(RequestContext(request))
+    @policy_factory.apply_policies(RequestContext(request))
     def post(
         self,
         collection,
@@ -95,7 +110,7 @@ class GenericObject(BaseResource):
 
 
 class GenericObjectDetail(BaseResource):
-    @policy_factory.authenticate(RequestContext(request))
+    @policy_factory.apply_policies(RequestContext(request))
     def get(self, collection, id):
         item = self._check_if_collection_and_item_exists(collection, id)
         accept_header = request.headers.get("Accept")
@@ -109,7 +124,7 @@ class GenericObjectDetail(BaseResource):
             accept_header,
         )[0]
 
-    @policy_factory.authenticate(RequestContext(request))
+    @policy_factory.apply_policies(RequestContext(request))
     def put(
         self,
         collection,
@@ -145,7 +160,7 @@ class GenericObjectDetail(BaseResource):
             return str(ex), 409
         return collection_item, 201
 
-    @policy_factory.authenticate(RequestContext(request))
+    @policy_factory.apply_policies(RequestContext(request))
     def patch(
         self,
         collection,
@@ -183,7 +198,7 @@ class GenericObjectDetail(BaseResource):
             return str(ex), 409
         return collection_item, 201
 
-    @policy_factory.authenticate(RequestContext(request))
+    @policy_factory.apply_policies(RequestContext(request))
     def delete(
         self,
         collection,
@@ -202,7 +217,7 @@ class GenericObjectDetail(BaseResource):
 
 
 class GenericObjectMetadata(BaseResource):
-    @policy_factory.authenticate(RequestContext(request))
+    @policy_factory.apply_policies(RequestContext(request))
     def get(self, collection, id, fields=None):
         self._check_if_collection_and_item_exists(collection, id)
         if fields is None:
@@ -216,7 +231,7 @@ class GenericObjectMetadata(BaseResource):
             accept_header,
         )
 
-    @policy_factory.authenticate(RequestContext(request))
+    @policy_factory.apply_policies(RequestContext(request))
     def post(self, collection, id, content=None):
         self._abort_if_item_doesnt_exist(collection, id)
         if content is None:
@@ -227,7 +242,7 @@ class GenericObjectMetadata(BaseResource):
         )
         return metadata, 201
 
-    @policy_factory.authenticate(RequestContext(request))
+    @policy_factory.apply_policies(RequestContext(request))
     def put(self, collection, id, content=None):
         self._check_if_collection_and_item_exists(collection, id)
         if content is None:
@@ -238,7 +253,7 @@ class GenericObjectMetadata(BaseResource):
         )
         return metadata, 201
 
-    @policy_factory.authenticate(RequestContext(request))
+    @policy_factory.apply_policies(RequestContext(request))
     def patch(self, collection, id, content=None):
         self._check_if_collection_and_item_exists(collection, id)
         if content is None:
@@ -251,14 +266,14 @@ class GenericObjectMetadata(BaseResource):
 
 
 class GenericObjectMetadataKey(BaseResource):
-    @policy_factory.authenticate(RequestContext(request))
+    @policy_factory.apply_policies(RequestContext(request))
     def get(self, collection, id, key):
         self._check_if_collection_and_item_exists(collection, id)
         return self.storage.get_collection_item_sub_item_key(
             collection, id, "metadata", key
         )
 
-    @policy_factory.authenticate(RequestContext(request))
+    @policy_factory.apply_policies(RequestContext(request))
     def delete(self, collection, id, key):
         self._check_if_collection_and_item_exists(collection, id)
         self.storage.delete_collection_item_sub_item_key(
@@ -268,7 +283,7 @@ class GenericObjectMetadataKey(BaseResource):
 
 
 class GenericObjectRelations(BaseResource):
-    @policy_factory.authenticate(RequestContext(request))
+    @policy_factory.apply_policies(RequestContext(request))
     def get(self, collection, id):
         self._check_if_collection_and_item_exists(collection, id)
 
@@ -279,7 +294,7 @@ class GenericObjectRelations(BaseResource):
 
         return self.storage.get_collection_item_relations(collection, id), 200
 
-    @policy_factory.authenticate(RequestContext(request))
+    @policy_factory.apply_policies(RequestContext(request))
     def post(self, collection, id, content=None):
         entity = self._check_if_collection_and_item_exists(collection, id) or {}
         if content is None:
@@ -290,7 +305,7 @@ class GenericObjectRelations(BaseResource):
         )
         return relations, 201
 
-    @policy_factory.authenticate(RequestContext(request))
+    @policy_factory.apply_policies(RequestContext(request))
     def put(self, collection, id, content=None):
         entity = self._check_if_collection_and_item_exists(collection, id) or {}
         if content is None:
@@ -301,7 +316,7 @@ class GenericObjectRelations(BaseResource):
         )
         return relations, 201
 
-    @policy_factory.authenticate(RequestContext(request))
+    @policy_factory.apply_policies(RequestContext(request))
     def patch(self, collection, id, content=None):
         entity = self._check_if_collection_and_item_exists(collection, id) or {}
         if content is None:
@@ -312,7 +327,7 @@ class GenericObjectRelations(BaseResource):
         )
         return relations, 201
 
-    @policy_factory.authenticate(RequestContext(request))
+    @policy_factory.apply_policies(RequestContext(request))
     def delete(self, collection, id, content=None):
         entity = self._check_if_collection_and_item_exists(collection, id) or {}
         if content is None:
