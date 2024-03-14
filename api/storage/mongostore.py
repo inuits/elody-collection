@@ -211,6 +211,16 @@ class MongoStorageManager(GenericStorageManager):
             "isCollectionPartFor": "hasCollectionPart",
             "hasContext": "isContextFor",
             "isContextFor": "hasContext",
+            "hasLicense": "isLicenseFor",
+            "isLicenseFor": "hasLicense",
+            "hasCreator": "isCreatorFor",
+            "isCreatorFor": "hasCreator",
+            "hasOwner": "isOwnerFor",
+            "isOwnerFor": "hasOwner",
+            "hasPerson": "isPersonFor",
+            "isPersonFor": "hasPerson",
+            "hasObject": "isObjectFor",
+            "isObjectFor": "hasObject",
         }.get(relation)
 
     def _map_relation_to_collection(self, relation):
