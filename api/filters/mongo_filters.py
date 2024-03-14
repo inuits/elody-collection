@@ -1,3 +1,4 @@
+import app
 import pymongo
 
 from filters.filter_option import FilterOption
@@ -33,15 +34,22 @@ class MongoFilters(MongoStorageManager):
             return items
         items["count"] = count[0]["count"]
         if order_by:
-            pipeline += [
-                {
-                    "$sort": {
-                        self.get_sort_field(order_by): (
-                            pymongo.ASCENDING if asc else pymongo.DESCENDING
-                        )
-                    }
-                },
-            ]
+            key_order_map = {order_by: pymongo.ASCENDING if asc else pymongo.DESCENDING}
+            sorting = app.object_configuration_mapper.get(collection).sorting(
+                key_order_map
+            )
+            if len(sorting) > 0:
+                pipeline += sorting
+            else:
+                pipeline += [
+                    {
+                        "$sort": {
+                            self.get_sort_field(order_by): (
+                                pymongo.ASCENDING if asc else pymongo.DESCENDING
+                            )
+                        }
+                    },
+                ]
         pipeline += [
             {"$skip": skip},
             {"$limit": limit},

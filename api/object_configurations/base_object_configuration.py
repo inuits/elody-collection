@@ -19,5 +19,9 @@ class BaseObjectConfiguration(ABC):
         pass
 
     @abstractmethod
+    def sorting(self, keys):
+        pass
+
+    @abstractmethod
     def validation(self):
         pass

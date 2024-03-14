@@ -25,5 +25,8 @@ class NoneConfiguration(BaseObjectConfiguration):
 
         return serializer
 
+    def sorting(self, _):
+        return []
+
     def validation(self):
         return "schema", {}
