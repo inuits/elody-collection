@@ -225,7 +225,7 @@ class EntityMediafiles(GenericObjectDetail):
 
     @policy_factory.authenticate(RequestContext(request))
     def post(self, id):
-        entity = super().get("entities", id)
+        entity = self._check_if_collection_and_item_exists("entities", id)
         content = self._get_content_according_content_type(request, "mediafile")
         mediafiles = content if isinstance(content, list) else [content]
         accept_header = request.headers.get("Accept")
