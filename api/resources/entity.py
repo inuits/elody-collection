@@ -106,7 +106,16 @@ class Entity(GenericObject):
         if not linked_data_request:
             self._abort_if_not_valid_json("entity", entity)
         try:
-            entity = self.storage.save_item_to_collection("entities", entity)
+            entity_relations = entity.get("relations", [])
+            if entity_relations:
+                entity.pop("relations")
+                self.storage.save_item_to_collection("entities", entity)
+                self.storage.add_relations_to_collection_item(
+                    "entities", entity["_id"], entity_relations
+                )
+                entity = self.storage.get_item_from_collection_by_id("entities", entity["_id"])
+            else:
+                entity = self.storage.save_item_to_collection("entities", entity)
             if accept_header == "text/uri-list":
                 response = ""
             else:
