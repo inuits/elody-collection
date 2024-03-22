@@ -5,16 +5,11 @@
 
 include:
   - project: 'inuits/gitlab-ci/pipeline-templates'
-    ref: 'v2.2.2'
-    file: 
-      - '/pipelines/multi-customer-delivery.yml'
-      - '/jobs/build-variant/pip.yml'
+    file: 'pip-pipeline.yml'
+    ref: 'v1.7.0'
 
 variables:
-  PROJECT: 'dams'
+  CUSTOMER: 'inuits'
   APPLICATION: 'dams-collection'
-
-customer:
-  parallel:
-    matrix:
-      - CUSTOMER: []
+  SKIP_DEPLOY: 'true'
+  
