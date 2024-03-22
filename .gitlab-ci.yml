@@ -13,3 +13,8 @@ include:
 variables:
   PROJECT: 'dams'
   APPLICATION: 'dams-collection'
+
+customer:
+  parallel:
+    matrix:
+      - CUSTOMER: []
