@@ -5,8 +5,10 @@
 
 include:
   - project: 'inuits/gitlab-ci/pipeline-templates'
-    file: '/jobs/build-variant/pip.yml'
     ref: 'v2.2.2'
+    file: 
+      - '/pipelines/multi-customer-delivery.yml'
+      - '/jobs/build-variant/pip.yml'
 
 variables:
   PROJECT: 'dams'
