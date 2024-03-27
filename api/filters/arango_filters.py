@@ -1,4 +1,3 @@
-from filters.matchers.base_matchers import BaseMatchers
 from filters.types.filter_types import get_filter
 from storage.arangostore import ArangoStorageManager
 
@@ -8,7 +7,6 @@ class ArangoFilters(ArangoStorageManager):
         if not self.db:
             raise ValueError("DB is not initialized")
 
-        BaseMatchers.collection = collection
         aql = self.__generate_aql_query(body, collection, order_by, asc)
         bind = {"skip": skip, "limit": limit}
 
