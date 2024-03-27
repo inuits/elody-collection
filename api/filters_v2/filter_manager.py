@@ -9,9 +9,11 @@ class FilterManager(metaclass=Singleton):
         self.__init_filter_engines()
 
     def __init_filter_engines(self):
-        self.filter_engine = {
+        filter_engine = {
             "mongo": MongoFilters,
-        }.get(os.getenv("DB_ENGINE", "mongo"))()
+        }.get(os.getenv("DB_ENGINE", "mongo"), None)
+        if filter_engine:
+            self.filter_engine = filter_engine()
 
     def get_filter_engine(self):
         return self.filter_engine
