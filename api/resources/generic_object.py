@@ -63,7 +63,9 @@ class GenericObject(BaseResource):
             )
         return self._create_response_according_accept_header(
             mappers.map_data_according_to_accept_header(
-                collection_data,
+                policy_factory.get_user_context().access_restrictions.post_request_hook(
+                    collection_data
+                ),
                 accept_header,
                 "entities",  # specific collection name not relevant for this method
                 fields,
@@ -112,7 +114,9 @@ class GenericObject(BaseResource):
 class GenericObjectDetail(BaseResource):
     @policy_factory.apply_policies(RequestContext(request))
     def get(self, collection, id):
-        item = self._check_if_collection_and_item_exists(collection, id)
+        item = policy_factory.get_user_context().bag.get(
+            "requested_item", self._check_if_collection_and_item_exists(collection, id)
+        )
         accept_header = request.headers.get("Accept")
         return self._create_response_according_accept_header(
             mappers.map_data_according_to_accept_header(
@@ -219,10 +223,12 @@ class GenericObjectDetail(BaseResource):
 class GenericObjectMetadata(BaseResource):
     @policy_factory.apply_policies(RequestContext(request))
     def get(self, collection, id, fields=None):
-        self._check_if_collection_and_item_exists(collection, id)
+        item = policy_factory.get_user_context().bag.get(
+            "requested_item", self._check_if_collection_and_item_exists(collection, id)
+        )
         if fields is None:
             fields = {}
-        metadata = self.storage.get_collection_item_sub_item(collection, id, "metadata")
+        metadata = item["metadata"]
         accept_header = request.headers.get("Accept")
         return self._create_response_according_accept_header(
             mappers.map_data_according_to_accept_header(

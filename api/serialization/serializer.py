@@ -2,18 +2,21 @@ import app
 
 
 class Serializer:
-    def __call__(self, entity, to_format, hide_storage_format=False):
-        if entity.get("storage_format"):
-            entity = entity["storage_format"]
+    def __call__(self, item, to_format, hide_storage_format=False):
+        if not isinstance(item, dict):
+            return item
 
-        from_format = entity.get("schema", {}).get("type", "elody")
+        if item.get("storage_format"):
+            item = item["storage_format"]
+
+        from_format = item.get("schema", {}).get("type", "elody")
         if from_format == to_format:
-            return entity
+            return item
 
-        config = app.object_configuration_mapper.get(entity["type"])
+        config = app.object_configuration_mapper.get(item["type"])
         serialize = config.serialization(from_format, to_format)
-        entity = serialize(entity)
+        item = serialize(item)
 
-        if hide_storage_format and entity.get("storage_format"):
-            del entity["storage_format"]
-        return entity
+        if hide_storage_format and item.get("storage_format"):
+            del item["storage_format"]
+        return item

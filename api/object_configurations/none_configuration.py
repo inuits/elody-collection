@@ -3,12 +3,7 @@ from object_configurations.base_object_configuration import BaseObjectConfigurat
 
 class NoneConfiguration(BaseObjectConfiguration):
     def filtering(self):
-        return {
-            "parent_keys": {
-                "metadata": {"key": "key", "value": "value"},
-                "relations": {"key": "type", "value": "key"},
-            }
-        }
+        return {"object_lists": {"metadata": "key", "relations": "type"}}
 
     def logging(self, _):
         return {"object_info": {}, "tags": {}}

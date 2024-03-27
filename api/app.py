@@ -139,8 +139,10 @@ from resources.entity import (
 from resources.filter import (
     FilterMatchers,
     FilterEntities,
+    FilterEntitiesV2,
     FilterEntitiesBySavedSearchId,
     FilterGenericObjects,
+    FilterGenericObjectsV2,
     FilterGenericObjectsBySavedSearchId,
     FilterMediafiles,
     FilterMediafilesBySavedSearchId,
@@ -186,6 +188,7 @@ api.add_resource(
 
 api.add_resource(FilterMatchers, "/filter/matchers")
 api.add_resource(FilterEntities, "/entities/filter")
+api.add_resource(FilterEntitiesV2, "/entities/filter_v2")
 api.add_resource(FilterEntitiesBySavedSearchId, "/entities/filter/<string:id>")
 api.add_resource(FilterMediafiles, "/mediafiles/filter")
 api.add_resource(FilterMediafilesBySavedSearchId, "/mediafiles/filter/<string:id>")
@@ -225,6 +228,7 @@ api.add_resource(
 )
 api.add_resource(GenericObjectRelations, "/<string:collection>/<string:id>/relations")
 api.add_resource(FilterGenericObjects, "/<string:collection>/filter")
+api.add_resource(FilterGenericObjectsV2, "/<string:collection>/filter_v2")
 api.add_resource(
     FilterGenericObjectsBySavedSearchId, "/<string:collection>/filter/<string:id>"
 )

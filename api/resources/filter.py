@@ -40,10 +40,43 @@ class FilterEntities(BaseFilterResource):
         )
         return self._create_response_according_accept_header(
             mappers.map_data_according_to_accept_header(
-                entities,
+                policy_factory.get_user_context().access_restrictions.post_request_hook(
+                    entities
+                ),
                 accept_header,
                 "entities",
                 fields,
+            ),
+            accept_header,
+        )
+
+
+class FilterEntitiesV2(BaseFilterResource):
+    @policy_factory.apply_policies(RequestContext(request))
+    def post(self):
+        if request.args.get("soft", 0, int):
+            return "good", 200
+        accept_header = request.headers.get("Accept")
+        query: list = request.get_json()
+        access_restricting_filters = (
+            policy_factory.get_user_context().access_restrictions.filters
+        )
+        if access_restricting_filters:
+            for filter in access_restricting_filters:
+                query.insert(0, filter)
+        order_by = request.args.get("order_by", None)
+        ascending = request.args.get("asc", 1, int)
+        entities = self._execute_advanced_search_with_query_v2(
+            query, "entities", order_by, ascending
+        )
+        return self._create_response_according_accept_header(
+            mappers.map_data_according_to_accept_header(
+                policy_factory.get_user_context().access_restrictions.post_request_hook(
+                    entities
+                ),
+                accept_header,
+                "entities",
+                [],
             ),
             accept_header,
         )
@@ -98,10 +131,43 @@ class FilterGenericObjects(BaseFilterResource):
         )
         return self._create_response_according_accept_header(
             mappers.map_data_according_to_accept_header(
-                items,
+                policy_factory.get_user_context().access_restrictions.post_request_hook(
+                    items
+                ),
                 accept_header,
                 "entities",  # specific collection name not relevant for this method
                 fields,
+            ),
+            accept_header,
+        )
+
+
+class FilterGenericObjectsV2(BaseFilterResource):
+    @policy_factory.apply_policies(RequestContext(request))
+    def post(self, collection):
+        if request.args.get("soft", 0, int):
+            return "good", 200
+        accept_header = request.headers.get("Accept")
+        query: list = request.get_json()
+        access_restricting_filters = (
+            policy_factory.get_user_context().access_restrictions.filters
+        )
+        if access_restricting_filters:
+            for filter in access_restricting_filters:
+                query.insert(0, filter)
+        order_by = request.args.get("order_by", None)
+        ascending = request.args.get("asc", 1, int)
+        items = self._execute_advanced_search_with_query_v2(
+            query, collection, order_by, ascending
+        )
+        return self._create_response_according_accept_header(
+            mappers.map_data_according_to_accept_header(
+                policy_factory.get_user_context().access_restrictions.post_request_hook(
+                    items
+                ),
+                accept_header,
+                "entities",
+                [],
             ),
             accept_header,
         )

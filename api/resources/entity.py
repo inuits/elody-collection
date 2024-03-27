@@ -67,7 +67,9 @@ class Entity(GenericObject):
         entities["results"] = self._inject_api_urls_into_entities(entities["results"])
         return self._create_response_according_accept_header(
             mappers.map_data_according_to_accept_header(
-                entities,
+                policy_factory.get_user_context().access_restrictions.post_request_hook(
+                    entities
+                ),
                 accept_header,
                 "entities",
                 fields,
