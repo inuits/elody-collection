@@ -2,6 +2,7 @@ import os
 
 from elody.util import Singleton
 from filters_v2.mongo_filters import MongoFilters
+from filters.arango_filters import ArangoFilters
 
 
 class FilterManager(metaclass=Singleton):
@@ -9,9 +10,9 @@ class FilterManager(metaclass=Singleton):
         self.__init_filter_engines()
 
     def __init_filter_engines(self):
-        filter_engine = {
-            "mongo": MongoFilters,
-        }.get(os.getenv("DB_ENGINE", "mongo"), None)
+        filter_engine = {"mongo": MongoFilters, "arango": ArangoFilters}.get(
+            os.getenv("DB_ENGINE", "mongo"), None
+        )
         if filter_engine:
             self.filter_engine = filter_engine()
 

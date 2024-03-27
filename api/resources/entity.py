@@ -115,7 +115,9 @@ class Entity(GenericObject):
                 self.storage.add_relations_to_collection_item(
                     "entities", get_raw_id(entity), entity_relations
                 )
-                entity = self.storage.get_item_from_collection_by_id("entities", get_raw_id(entity))
+                entity = self.storage.get_item_from_collection_by_id(
+                    "entities", get_raw_id(entity)
+                )
             else:
                 entity = self.storage.save_item_to_collection("entities", entity)
             if accept_header == "text/uri-list":
