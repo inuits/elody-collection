@@ -24,7 +24,7 @@ from resources.generic_object import (
 
 class Entity(GenericObject):
     @policy_factory.apply_policies(RequestContext(request))
-    def get(self, filters=None):
+    def get(self, spec="elody", filters=None):
         accept_header = request.headers.get("Accept")
         skip = request.args.get("skip", 0, int)
         limit = request.args.get("limit", 20, int)
@@ -78,7 +78,7 @@ class Entity(GenericObject):
         )
 
     @policy_factory.authenticate(RequestContext(request))
-    def post(self):
+    def post(self, spec="elody"):
         if request.args.get("soft", 0, int):
             return "good", 200
         content_type = request.content_type
@@ -144,7 +144,7 @@ class Entity(GenericObject):
 
 class EntityDetail(GenericObjectDetail):
     @policy_factory.authenticate(RequestContext(request))
-    def get(self, id):
+    def get(self, id, spec="elody"):
         entity = super().get("entities", id)
         entity = self._set_entity_mediafile_and_thumbnail(entity)
         if not request.args.get("skip_relations", 0, int):
@@ -165,7 +165,7 @@ class EntityDetail(GenericObjectDetail):
         )
 
     @policy_factory.authenticate(RequestContext(request))
-    def put(self, id):
+    def put(self, id, spec="elody"):
         if request.args.get("soft", 0, int):
             return "good", 200
         entity = self._abort_if_item_doesnt_exist("entities", id)
@@ -175,7 +175,7 @@ class EntityDetail(GenericObjectDetail):
         return updated_entity, 201
 
     @policy_factory.authenticate(RequestContext(request))
-    def patch(self, id):
+    def patch(self, id, spec="elody"):
         if request.args.get("soft", 0, int):
             return "good", 200
         entity = self._abort_if_item_doesnt_exist("entities", id)
@@ -185,7 +185,7 @@ class EntityDetail(GenericObjectDetail):
         return updated_entity, 201
 
     @policy_factory.authenticate(RequestContext(request))
-    def delete(self, id):
+    def delete(self, id, spec="elody"):
         if request.args.get("soft", 0, int):
             return "good", 200
         entity = super().get("entities", id)
@@ -307,7 +307,7 @@ class EntityMediafilesCreate(GenericObjectDetail):
 # super is called using MRO (method resolution order)
 class EntityMetadata(GenericObjectDetail, GenericObjectMetadata):
     @policy_factory.authenticate(RequestContext(request))
-    def get(self, id):
+    def get(self, id, spec="elody"):
         fields = [
             *request.args.getlist("field"),
             *request.args.getlist("field[]"),
@@ -315,14 +315,14 @@ class EntityMetadata(GenericObjectDetail, GenericObjectMetadata):
         return super(GenericObjectDetail, self).get("entities", id, fields=fields)
 
     @policy_factory.authenticate(RequestContext(request))
-    def post(self, id):
+    def post(self, id, spec="elody"):
         entity = super().get("entities", id)
         metadata = super(GenericObjectDetail, self).post("entities", id)
         signal_entity_changed(rabbit, entity)
         return metadata, 201
 
     @policy_factory.authenticate(RequestContext(request))
-    def put(self, id):
+    def put(self, id, spec="elody"):
         if request.args.get("soft", 0, int):
             return "good", 200
         entity = super().get("entities", id)
@@ -332,7 +332,7 @@ class EntityMetadata(GenericObjectDetail, GenericObjectMetadata):
         return metadata, 201
 
     @policy_factory.authenticate(RequestContext(request))
-    def patch(self, id):
+    def patch(self, id, spec="elody"):
         if request.args.get("soft", 0, int):
             return "good", 200
         entity = super().get("entities", id)
@@ -360,18 +360,18 @@ class EntityMetadataKey(GenericObjectDetail, GenericObjectMetadataKey):
 
 class EntityRelations(GenericObjectDetail, GenericObjectRelations):
     @policy_factory.authenticate(RequestContext(request))
-    def get(self, id):
+    def get(self, id, spec="elody"):
         return super(GenericObjectDetail, self).get("entities", id)
 
     @policy_factory.authenticate(RequestContext(request))
-    def post(self, id):
+    def post(self, id, spec="elody"):
         entity = super().get("entities", id)
         relations = super(GenericObjectDetail, self).post("entities", id)
         signal_entity_changed(rabbit, entity)
         return relations, 201
 
     @policy_factory.authenticate(RequestContext(request))
-    def put(self, id):
+    def put(self, id, spec="elody"):
         if request.args.get("soft", 0, int):
             return "good", 200
         entity = super().get("entities", id)
@@ -380,7 +380,7 @@ class EntityRelations(GenericObjectDetail, GenericObjectRelations):
         return relations, 201
 
     @policy_factory.authenticate(RequestContext(request))
-    def patch(self, id):
+    def patch(self, id, spec="elody"):
         if request.args.get("soft", 0, int):
             return "good", 200
         entity = super().get("entities", id)
@@ -389,7 +389,7 @@ class EntityRelations(GenericObjectDetail, GenericObjectRelations):
         return relations, 201
 
     @policy_factory.authenticate(RequestContext(request))
-    def delete(self, id):
+    def delete(self, id, spec="elody"):
         entity = super().get("entities", id)
         response = super(GenericObjectDetail, self).delete("entities", id)
         signal_entity_changed(rabbit, entity)

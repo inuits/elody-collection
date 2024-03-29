@@ -9,7 +9,7 @@ from resources.base_filter_resource import BaseFilterResource
 
 class FilterMatchers(BaseFilterResource):
     @policy_factory.authenticate(RequestContext(request))
-    def get(self):
+    def get(self, spec="elody"):
         return {
             key: [matcher.__name__ for _, matcher in value.items()]
             for key, value in FilterMatcherMapping.mapping.items()
@@ -18,7 +18,7 @@ class FilterMatchers(BaseFilterResource):
 
 class FilterEntities(BaseFilterResource):
     @policy_factory.authenticate(RequestContext(request))
-    def post(self):
+    def post(self, spec="elody"):
         accept_header = request.headers.get("Accept")
         query: list = request.get_json()
         if request.args.get("soft", 0, int):
@@ -53,7 +53,7 @@ class FilterEntities(BaseFilterResource):
 
 class FilterEntitiesV2(BaseFilterResource):
     @policy_factory.apply_policies(RequestContext(request))
-    def post(self):
+    def post(self, spec="elody"):
         if request.args.get("soft", 0, int):
             return "good", 200
         accept_header = request.headers.get("Accept")
@@ -108,7 +108,7 @@ class FilterEntitiesBySavedSearchId(BaseFilterResource):
 
 class FilterGenericObjects(BaseFilterResource):
     @policy_factory.apply_policies(RequestContext(request))
-    def post(self, collection):
+    def post(self, collection, spec="elody"):
         self._check_if_collection_name_exists(collection)
         accept_header = request.headers.get("Accept")
         query: list = request.get_json()
@@ -144,7 +144,7 @@ class FilterGenericObjects(BaseFilterResource):
 
 class FilterGenericObjectsV2(BaseFilterResource):
     @policy_factory.apply_policies(RequestContext(request))
-    def post(self, collection):
+    def post(self, collection, spec="elody"):
         if request.args.get("soft", 0, int):
             return "good", 200
         accept_header = request.headers.get("Accept")

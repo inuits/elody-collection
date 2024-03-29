@@ -23,6 +23,7 @@ class GenericObject(BaseResource):
         filters=None,
         sort=None,
         asc=True,
+        spec="elody",
     ):
         self._check_if_collection_name_exists(collection)
         accept_header = request.headers.get("Accept")
@@ -83,6 +84,7 @@ class GenericObject(BaseResource):
         version=1,
         user=None,
         accept_header=None,
+        spec="elody",
     ):
         if request.args.get("soft", 0, int):
             return "good", 200
@@ -113,7 +115,7 @@ class GenericObject(BaseResource):
 
 class GenericObjectDetail(BaseResource):
     @policy_factory.apply_policies(RequestContext(request))
-    def get(self, collection, id):
+    def get(self, collection, id, spec="elody"):
         item = policy_factory.get_user_context().bag.get(
             "requested_item", self._check_if_collection_and_item_exists(collection, id)
         )
@@ -137,6 +139,7 @@ class GenericObjectDetail(BaseResource):
         type=None,
         content=None,
         date_updated=None,
+        spec="elody",
     ):
         self._check_if_collection_name_exists(collection)
         if item is None:
@@ -174,6 +177,7 @@ class GenericObjectDetail(BaseResource):
         content=None,
         version=True,
         date_updated=None,
+        spec="elody",
     ):
         self._check_if_collection_name_exists(collection)
         if item is None:
@@ -208,6 +212,7 @@ class GenericObjectDetail(BaseResource):
         collection,
         id,
         item=None,
+        spec="elody",
     ):
         self._check_if_collection_name_exists(collection)
         if item is None:
@@ -222,7 +227,7 @@ class GenericObjectDetail(BaseResource):
 
 class GenericObjectMetadata(BaseResource):
     @policy_factory.apply_policies(RequestContext(request))
-    def get(self, collection, id, fields=None):
+    def get(self, collection, id, fields=None, spec="elody"):
         item = policy_factory.get_user_context().bag.get(
             "requested_item", self._check_if_collection_and_item_exists(collection, id)
         )
@@ -238,7 +243,7 @@ class GenericObjectMetadata(BaseResource):
         )
 
     @policy_factory.apply_policies(RequestContext(request))
-    def post(self, collection, id, content=None):
+    def post(self, collection, id, content=None, spec="elody"):
         self._abort_if_item_doesnt_exist(collection, id)
         if content is None:
             content = self._get_content_according_content_type(request, "metadata")
@@ -249,7 +254,7 @@ class GenericObjectMetadata(BaseResource):
         return metadata, 201
 
     @policy_factory.apply_policies(RequestContext(request))
-    def put(self, collection, id, content=None):
+    def put(self, collection, id, content=None, spec="elody"):
         self._check_if_collection_and_item_exists(collection, id)
         if content is None:
             content = self._get_content_according_content_type(request, "metadata")
@@ -260,7 +265,7 @@ class GenericObjectMetadata(BaseResource):
         return metadata, 201
 
     @policy_factory.apply_policies(RequestContext(request))
-    def patch(self, collection, id, content=None):
+    def patch(self, collection, id, content=None, spec="elody"):
         self._check_if_collection_and_item_exists(collection, id)
         if content is None:
             content = self._get_content_according_content_type(request, "metadata")
@@ -290,7 +295,7 @@ class GenericObjectMetadataKey(BaseResource):
 
 class GenericObjectRelations(BaseResource):
     @policy_factory.apply_policies(RequestContext(request))
-    def get(self, collection, id):
+    def get(self, collection, id, spec="elody"):
         self._check_if_collection_and_item_exists(collection, id)
 
         @after_this_request
@@ -301,7 +306,7 @@ class GenericObjectRelations(BaseResource):
         return self.storage.get_collection_item_relations(collection, id), 200
 
     @policy_factory.apply_policies(RequestContext(request))
-    def post(self, collection, id, content=None):
+    def post(self, collection, id, content=None, spec="elody"):
         entity = self._check_if_collection_and_item_exists(collection, id) or {}
         if content is None:
             content = self._get_content_according_content_type(request, "relations")
@@ -312,7 +317,7 @@ class GenericObjectRelations(BaseResource):
         return relations, 201
 
     @policy_factory.apply_policies(RequestContext(request))
-    def put(self, collection, id, content=None):
+    def put(self, collection, id, content=None, spec="elody"):
         entity = self._check_if_collection_and_item_exists(collection, id) or {}
         if content is None:
             content = self._get_content_according_content_type(request, "relations")
@@ -323,7 +328,7 @@ class GenericObjectRelations(BaseResource):
         return relations, 201
 
     @policy_factory.apply_policies(RequestContext(request))
-    def patch(self, collection, id, content=None):
+    def patch(self, collection, id, content=None, spec="elody"):
         entity = self._check_if_collection_and_item_exists(collection, id) or {}
         if content is None:
             content = self._get_content_according_content_type(request, "relations")
@@ -334,7 +339,7 @@ class GenericObjectRelations(BaseResource):
         return relations, 201
 
     @policy_factory.apply_policies(RequestContext(request))
-    def delete(self, collection, id, content=None):
+    def delete(self, collection, id, content=None, spec="elody"):
         entity = self._check_if_collection_and_item_exists(collection, id) or {}
         if content is None:
             content = self._get_content_according_content_type(request, "relations")

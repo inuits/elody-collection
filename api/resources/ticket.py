@@ -10,7 +10,7 @@ from resources.generic_object import (
 
 
 class Ticket(GenericObject):
-    @policy_factory.authenticate(RequestContext(request))
+    @policy_factory.apply_policies(RequestContext(request))
     def post(self):
         content = request.get_json()
         if "filename" not in content:
@@ -20,7 +20,7 @@ class Ticket(GenericObject):
 
 
 class TicketDetail(GenericObjectDetail):
-    @policy_factory.authenticate(RequestContext(request))
+    @policy_factory.apply_policies(RequestContext(request))
     def get(self, id):
         ticket = super().get("abstracts", id) or {}
         is_expired = datetime.now(tz=timezone.utc).timestamp() >= float(ticket["exp"])

@@ -110,8 +110,10 @@ try:
     object_configuration_mapper = ObjectConfigurationMapper(
         mapper_module.OBJECT_CONFIGURATION_MAPPER
     )
+    route_mapper = mapper_module.ROUTE_MAPPER
 except ModuleNotFoundError:
     object_configuration_mapper = ObjectConfigurationMapper()
+    route_mapper = {}
 
 serialize = Serializer()
 
@@ -167,70 +169,188 @@ from resources.tenant import Tenant
 from resources.ticket import Ticket, TicketDetail
 from resources.spec import AsyncAPISpec, OpenAPISpec
 
-api.add_resource(Batch, "/batch")
-api.add_resource(Config, "/config")
-api.add_resource(Entity, "/entities")
-api.add_resource(EntityDetail, "/entities/<string:id>")
-api.add_resource(EntityMediafiles, "/entities/<string:id>/mediafiles")
-api.add_resource(EntityMediafilesCreate, "/entities/<string:id>/mediafiles/create")
-api.add_resource(EntityMetadata, "/entities/<string:id>/metadata")
-api.add_resource(EntityMetadataKey, "/entities/<string:id>/metadata/<string:key>")
-api.add_resource(EntityRelations, "/entities/<string:id>/relations")
-api.add_resource(EntityRelationsAll, "/entities/<string:id>/relations/all")
+api.add_resource(Batch, route_mapper.get(Batch.__name__, "/batch"))
+api.add_resource(Config, route_mapper.get(Config.__name__, "/config"))
+api.add_resource(Entity, route_mapper.get(Entity.__name__, "/entities"))
+api.add_resource(
+    EntityDetail, route_mapper.get(EntityDetail.__name__, "/entities/<string:id>")
+)
+api.add_resource(
+    EntityMediafiles,
+    route_mapper.get(EntityMediafiles.__name__, "/entities/<string:id>/mediafiles"),
+)
+api.add_resource(
+    EntityMediafilesCreate,
+    route_mapper.get(
+        EntityMediafilesCreate.__name__, "/entities/<string:id>/mediafiles/create"
+    ),
+)
+api.add_resource(
+    EntityMetadata,
+    route_mapper.get(EntityMetadata.__name__, "/entities/<string:id>/metadata"),
+)
+api.add_resource(
+    EntityMetadataKey,
+    route_mapper.get(
+        EntityMetadataKey.__name__, "/entities/<string:id>/metadata/<string:key>"
+    ),
+)
+api.add_resource(
+    EntityRelations,
+    route_mapper.get(EntityRelations.__name__, "/entities/<string:id>/relations"),
+)
+api.add_resource(
+    EntityRelationsAll,
+    route_mapper.get(
+        EntityRelationsAll.__name__, "/entities/<string:id>/relations/all"
+    ),
+)
 api.add_resource(
     EntitySetPrimaryMediafile,
-    "/entities/<string:id>/set_primary_mediafile/<string:mediafile_id>",
+    route_mapper.get(
+        EntitySetPrimaryMediafile.__name__,
+        "/entities/<string:id>/set_primary_mediafile/<string:mediafile_id>",
+    ),
 )
 api.add_resource(
     EntitySetPrimaryThumbnail,
-    "/entities/<string:id>/set_primary_thumbnail/<string:mediafile_id>",
+    route_mapper.get(
+        EntitySetPrimaryThumbnail.__name__,
+        "/entities/<string:id>/set_primary_thumbnail/<string:mediafile_id>",
+    ),
 )
 
-api.add_resource(FilterMatchers, "/filter/matchers")
-api.add_resource(FilterEntities, "/entities/filter")
-api.add_resource(FilterEntitiesV2, "/entities/filter_v2")
-api.add_resource(FilterEntitiesBySavedSearchId, "/entities/filter/<string:id>")
-api.add_resource(FilterMediafiles, "/mediafiles/filter")
-api.add_resource(FilterMediafilesBySavedSearchId, "/mediafiles/filter/<string:id>")
-
-api.add_resource(History, "/history/<string:collection>/<string:id>")
-
-api.add_resource(Job, "/jobs")
-api.add_resource(JobDetail, "/jobs/<string:id>")
-
-api.add_resource(KeyValueStore, "/key_value_store")
-api.add_resource(KeyValueStoreDetail, "/key_value_store/<string:id>")
-
-api.add_resource(Mediafile, "/mediafiles")
-api.add_resource(MediafileAssets, "/mediafiles/<string:id>/assets")
-api.add_resource(MediafileCopyright, "/mediafiles/<string:id>/copyright")
-api.add_resource(MediafileDetail, "/mediafiles/<string:id>")
-api.add_resource(MediafileMetadata, "/mediafiles/<string:id>/metadata")
-api.add_resource(MediafileDerivatives, "/mediafiles/<string:id>/derivatives")
-api.add_resource(MediafileParent, "/mediafiles/<string:id>/parent")
-
-api.add_resource(SavedSearch, "/saved_searches")
-api.add_resource(SavedSearchDetail, "/saved_searches/<string:id>")
-
-api.add_resource(Tenant, "/tenants")
-
-api.add_resource(Ticket, "/tickets")
-api.add_resource(TicketDetail, "/tickets/<string:id>")
-
-api.add_resource(AsyncAPISpec, "/spec/dams-collection-api-events.html")
-api.add_resource(OpenAPISpec, "/spec/dams-collection-api.json")
-
-api.add_resource(GenericObject, "/<string:collection>")
-api.add_resource(GenericObjectDetail, "/<string:collection>/<string:id>")
-api.add_resource(GenericObjectMetadata, "/<string:collection>/<string:id>/metadata")
 api.add_resource(
-    GenericObjectMetadataKey, "/<string:collection>/<string:id>/metadata/<string:key>"
+    FilterMatchers, route_mapper.get(FilterMatchers.__name__, "/filter/matchers")
 )
-api.add_resource(GenericObjectRelations, "/<string:collection>/<string:id>/relations")
-api.add_resource(FilterGenericObjects, "/<string:collection>/filter")
-api.add_resource(FilterGenericObjectsV2, "/<string:collection>/filter_v2")
 api.add_resource(
-    FilterGenericObjectsBySavedSearchId, "/<string:collection>/filter/<string:id>"
+    FilterEntities, route_mapper.get(FilterEntities.__name__, "/entities/filter")
+)
+api.add_resource(
+    FilterEntitiesV2, route_mapper.get(FilterEntitiesV2.__name__, "/entities/filter_v2")
+)
+api.add_resource(
+    FilterEntitiesBySavedSearchId,
+    route_mapper.get(
+        FilterEntitiesBySavedSearchId.__name__, "/entities/filter/<string:id>"
+    ),
+)
+api.add_resource(
+    FilterMediafiles, route_mapper.get(FilterMediafiles.__name__, "/mediafiles/filter")
+)
+api.add_resource(
+    FilterMediafilesBySavedSearchId,
+    route_mapper.get(
+        FilterMediafilesBySavedSearchId.__name__, "/mediafiles/filter/<string:id>"
+    ),
+)
+
+api.add_resource(
+    History,
+    route_mapper.get(History.__name__, "/history/<string:collection>/<string:id>"),
+)
+
+api.add_resource(Job, route_mapper.get(Job.__name__, "/jobs"))
+api.add_resource(JobDetail, route_mapper.get(JobDetail.__name__, "/jobs/<string:id>"))
+
+api.add_resource(
+    KeyValueStore, route_mapper.get(KeyValueStore.__name__, "/key_value_store")
+)
+api.add_resource(
+    KeyValueStoreDetail,
+    route_mapper.get(KeyValueStoreDetail.__name__, "/key_value_store/<string:id>"),
+)
+
+api.add_resource(Mediafile, route_mapper.get(Mediafile.__name__, "/mediafiles"))
+api.add_resource(
+    MediafileAssets,
+    route_mapper.get(MediafileAssets.__name__, "/mediafiles/<string:id>/assets"),
+)
+api.add_resource(
+    MediafileCopyright,
+    route_mapper.get(MediafileCopyright.__name__, "/mediafiles/<string:id>/copyright"),
+)
+api.add_resource(
+    MediafileDetail,
+    route_mapper.get(MediafileDetail.__name__, "/mediafiles/<string:id>"),
+)
+api.add_resource(
+    MediafileMetadata,
+    route_mapper.get(MediafileMetadata.__name__, "/mediafiles/<string:id>/metadata"),
+)
+api.add_resource(
+    MediafileDerivatives,
+    route_mapper.get(
+        MediafileDerivatives.__name__, "/mediafiles/<string:id>/derivatives"
+    ),
+)
+api.add_resource(
+    MediafileParent,
+    route_mapper.get(MediafileParent.__name__, "/mediafiles/<string:id>/parent"),
+)
+
+api.add_resource(SavedSearch, route_mapper.get(SavedSearch.__name__, "/saved_searches"))
+api.add_resource(
+    SavedSearchDetail,
+    route_mapper.get(SavedSearchDetail.__name__, "/saved_searches/<string:id>"),
+)
+
+api.add_resource(Tenant, route_mapper.get(Tenant.__name__, "/tenants"))
+
+api.add_resource(Ticket, route_mapper.get(Ticket.__name__, "/tickets"))
+api.add_resource(
+    TicketDetail, route_mapper.get(TicketDetail.__name__, "/tickets/<string:id>")
+)
+
+api.add_resource(
+    AsyncAPISpec,
+    route_mapper.get(AsyncAPISpec.__name__, "/spec/dams-collection-api-events.html"),
+)
+api.add_resource(
+    OpenAPISpec,
+    route_mapper.get(OpenAPISpec.__name__, "/spec/dams-collection-api.json"),
+)
+
+api.add_resource(
+    GenericObject, route_mapper.get(GenericObject.__name__, "/<string:collection>")
+)
+api.add_resource(
+    GenericObjectDetail,
+    route_mapper.get(GenericObjectDetail.__name__, "/<string:collection>/<string:id>"),
+)
+api.add_resource(
+    GenericObjectMetadata,
+    route_mapper.get(
+        GenericObjectMetadata.__name__, "/<string:collection>/<string:id>/metadata"
+    ),
+)
+api.add_resource(
+    GenericObjectMetadataKey,
+    route_mapper.get(
+        GenericObjectMetadataKey.__name__,
+        "/<string:collection>/<string:id>/metadata/<string:key>",
+    ),
+)
+api.add_resource(
+    GenericObjectRelations,
+    route_mapper.get(
+        GenericObjectRelations.__name__, "/<string:collection>/<string:id>/relations"
+    ),
+)
+api.add_resource(
+    FilterGenericObjects,
+    route_mapper.get(FilterGenericObjects.__name__, "/<string:collection>/filter"),
+)
+api.add_resource(
+    FilterGenericObjectsV2,
+    route_mapper.get(FilterGenericObjectsV2.__name__, "/<string:collection>/filter_v2"),
+)
+api.add_resource(
+    FilterGenericObjectsBySavedSearchId,
+    route_mapper.get(
+        FilterGenericObjectsBySavedSearchId.__name__,
+        "/<string:collection>/filter/<string:id>",
+    ),
 )
 
 # Initialize RabbitMQ Queues

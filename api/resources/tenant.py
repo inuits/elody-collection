@@ -9,8 +9,8 @@ from resources.generic_object import (
 
 
 class Tenant(GenericObject):
-    @policy_factory.authenticate(RequestContext(request))
-    def get(self):
+    @policy_factory.apply_policies(RequestContext(request))
+    def get(self, spec="elody"):
         accept_header = request.headers.get("Accept")
         skip = request.args.get("skip", 0, int)
         limit = request.args.get("limit", 20, int)
