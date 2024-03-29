@@ -70,6 +70,8 @@ class GenericObject(BaseResource):
                 accept_header,
                 "entities",  # specific collection name not relevant for this method
                 fields,
+                spec,
+                request.args,
             ),
             accept_header,
         )
@@ -126,6 +128,8 @@ class GenericObjectDetail(BaseResource):
                 accept_header,
                 "entity",
                 [],
+                spec,
+                request.args,
             ),
             accept_header,
         )[0]
@@ -237,7 +241,7 @@ class GenericObjectMetadata(BaseResource):
         accept_header = request.headers.get("Accept")
         return self._create_response_according_accept_header(
             mappers.map_data_according_to_accept_header(
-                metadata, accept_header, "metadata", fields
+                metadata, accept_header, "metadata", fields, spec
             ),
             accept_header,
         )

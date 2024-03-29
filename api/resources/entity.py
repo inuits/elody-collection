@@ -73,6 +73,8 @@ class Entity(GenericObject):
                 accept_header,
                 "entities",
                 fields,
+                spec,
+                request.args,
             ),
             accept_header,
         )
@@ -160,6 +162,8 @@ class EntityDetail(GenericObjectDetail):
                 accept_header,
                 "entity",
                 fields,
+                spec,
+                request.args,
             ),
             accept_header,
         )

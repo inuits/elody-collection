@@ -4,6 +4,7 @@ import io
 import json
 
 from rdflib import Graph
+from serialization.case_converter import camel_to_snake
 
 
 def can_append_key(key, fields):
@@ -21,9 +22,22 @@ def csv_writer(header, rows):
     return output.getvalue()
 
 
+def __get_serialize_format(spec: str, request_parameters):
+    if spec == "ngsi-ld":
+        return f"{spec.replace('-', '_')}_{camel_to_snake(request_parameters.get('options', 'normalized'))}"
+    return spec
+
+
 def map_data_according_to_accept_header(
-    data, accept_header, data_type="metadata", fields=None
+    data,
+    accept_header,
+    data_type="metadata",
+    fields=None,
+    spec="elody",
+    request_parameters={},
 ):
+    serialize_format = __get_serialize_format(spec, request_parameters)
+
     match accept_header:
         case "application/ld+json":
             return map_to_rdf_data(data, data_type, format="json-ld")
@@ -40,11 +54,13 @@ def map_data_according_to_accept_header(
                 results = []
                 for result in data["results"]:
                     results.append(
-                        app.serialize(result, "elody", hide_storage_format=True)
+                        app.serialize(
+                            result, serialize_format, hide_storage_format=True
+                        )
                     )
                 data["results"] = results
                 return data
-            return app.serialize(data, "elody", hide_storage_format=True)
+            return app.serialize(data, serialize_format, hide_storage_format=True)
 
 
 def map_data_to_ldjson(data, format):

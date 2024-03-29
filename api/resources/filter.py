@@ -46,6 +46,8 @@ class FilterEntities(BaseFilterResource):
                 accept_header,
                 "entities",
                 fields,
+                spec,
+                request.args,
             ),
             accept_header,
         )
@@ -77,6 +79,8 @@ class FilterEntitiesV2(BaseFilterResource):
                 accept_header,
                 "entities",
                 [],
+                spec,
+                request.args,
             ),
             accept_header,
         )
@@ -137,6 +141,8 @@ class FilterGenericObjects(BaseFilterResource):
                 accept_header,
                 "entities",  # specific collection name not relevant for this method
                 fields,
+                spec,
+                request.args,
             ),
             accept_header,
         )
@@ -168,6 +174,8 @@ class FilterGenericObjectsV2(BaseFilterResource):
                 accept_header,
                 "entities",
                 [],
+                spec,
+                request.args,
             ),
             accept_header,
         )

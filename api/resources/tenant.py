@@ -39,6 +39,8 @@ class Tenant(GenericObject):
                 accept_header,
                 "entities",
                 [],
+                spec,
+                request.args,
             ),
             accept_header,
         )
