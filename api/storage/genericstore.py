@@ -12,7 +12,7 @@ class GenericStorageManager:
         for key in ["_id", "_key"]:
             if key in item:
                 identifiers.add(item[key])
-        return list(identifiers)
+        return list(filter(None, identifiers))
 
     def add_mediafile_to_collection_item(
         self, collection, id, mediafile_id, mediafile_public
