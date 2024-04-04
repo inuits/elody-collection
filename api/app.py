@@ -119,7 +119,9 @@ serialize = Serializer()
 
 from resources.generic_object import (
     GenericObject,
+    GenericObjectV2,
     GenericObjectDetail,
+    GenericObjectDetailV2,
     GenericObjectMetadata,
     GenericObjectMetadataKey,
     GenericObjectRelations,
@@ -315,8 +317,18 @@ api.add_resource(
     GenericObject, route_mapper.get(GenericObject.__name__, "/<string:collection>")
 )
 api.add_resource(
+    GenericObjectV2,
+    route_mapper.get(GenericObjectV2.__name__, "/v2/<string:collection>"),
+)
+api.add_resource(
     GenericObjectDetail,
     route_mapper.get(GenericObjectDetail.__name__, "/<string:collection>/<string:id>"),
+)
+api.add_resource(
+    GenericObjectDetailV2,
+    route_mapper.get(
+        GenericObjectDetailV2.__name__, "/v2/<string:collection>/<string:id>"
+    ),
 )
 api.add_resource(
     GenericObjectMetadata,

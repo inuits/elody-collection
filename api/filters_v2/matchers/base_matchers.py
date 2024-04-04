@@ -10,7 +10,7 @@ class BaseMatchers(ABC):
     @staticmethod
     def get_object_lists_config() -> dict:
         config = app.object_configuration_mapper.get(BaseMatchers.collection)
-        return config.filtering()["object_lists"]
+        return config.document_info()["object_lists"]
 
     @abstractmethod
     def exact(

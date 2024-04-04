@@ -1,3 +1,4 @@
+import app
 import mappers
 
 from app import policy_factory
@@ -115,12 +116,108 @@ class GenericObject(BaseResource):
         )
 
 
+# POC: currently only suitable when supporting multiples specs for a client
+class GenericObjectV2(BaseResource):
+    @policy_factory.apply_policies(RequestContext(request))
+    def get(
+        self,
+        collection,
+        skip=0,
+        limit=20,
+        fields=None,
+        filters=None,
+        sort=None,
+        asc=True,
+        spec="elody",
+    ):
+        self._check_if_collection_name_exists(collection)
+        accept_header = request.headers.get("Accept")
+        if fields is None:
+            fields = {}
+        if filters is None:
+            filters = {}
+        if ids := request.args.get("ids"):
+            filters["ids"] = ids.split(",")
+        access_restricting_filters = (
+            policy_factory.get_user_context().access_restrictions.filters
+        )
+        if isinstance(access_restricting_filters, list):
+            for filter in access_restricting_filters:
+                filters.update(filter)
+        collection_data = self.storage.get_items_from_collection(
+            collection,
+            skip=skip,
+            limit=limit,
+            fields=fields,
+            filters=filters,
+            sort=sort,
+            asc=asc,
+        )
+        count = collection_data["count"]
+        results = collection_data["results"]
+        collection_data = {
+            "total_count": count,
+            "results": results,
+            "limit": limit,
+            "skip": skip,
+        }
+        if skip + limit < count:
+            collection_data["next"] = f"/{collection}?skip={skip + limit}&limit={limit}"
+        if skip >= limit:
+            collection_data["previous"] = (
+                f"/{collection}?skip={max(0, skip - limit)}&limit={limit}"
+            )
+        return self._create_response_according_accept_header(
+            mappers.map_data_according_to_accept_header(
+                policy_factory.get_user_context().access_restrictions.post_request_hook(
+                    collection_data
+                ),
+                accept_header,
+                "entities",  # specific collection name not relevant for this method
+                fields,
+                spec,
+                request.args,
+            ),
+            accept_header,
+        )
+
+    @policy_factory.apply_policies(RequestContext(request))
+    def post(
+        self,
+        collection,
+        content=None,
+        spec="elody",
+    ):
+        if request.args.get("soft", 0, int):
+            return "good", 200
+        self._check_if_collection_name_exists(collection)
+        accept_header = request.headers.get("Accept")
+        content = self._get_content_according_content_type(
+            request, collection, content, {}, spec
+        )
+        create = app.object_configuration_mapper.get(content["type"]).crud()["creator"]
+        item = create(content)
+        try:
+            item = self.storage.save_item_to_collection_v2(collection, item)
+        except NonUniqueException as ex:
+            return ex.args[0]["errmsg"], 409
+        return self._create_response_according_accept_header(
+            mappers.map_data_according_to_accept_header(
+                item,
+                accept_header,
+                "entity",
+                [],
+                spec,
+                request.args,
+            ),
+            accept_header,
+        )[0]
+
+
 class GenericObjectDetail(BaseResource):
     @policy_factory.apply_policies(RequestContext(request))
     def get(self, collection, id, spec="elody"):
-        item = policy_factory.get_user_context().bag.get(
-            "requested_item", self._check_if_collection_and_item_exists(collection, id)
-        )
+        item = self._check_if_collection_and_item_exists(collection, id)
         accept_header = request.headers.get("Accept")
         return self._create_response_according_accept_header(
             mappers.map_data_according_to_accept_header(
@@ -229,12 +326,102 @@ class GenericObjectDetail(BaseResource):
         return "", 204
 
 
+# POC: currently only suitable when supporting multiples specs for a client
+class GenericObjectDetailV2(BaseResource):
+    def get(self, collection, id, spec="elody"):
+        if request.args.get("soft", 0, int):
+            return "good", 200
+        item = self._check_if_collection_and_item_exists(collection, id)
+        accept_header = request.headers.get("Accept")
+        return self._create_response_according_accept_header(
+            mappers.map_data_according_to_accept_header(
+                item,
+                accept_header,
+                "entity",
+                [],
+                spec,
+                request.args,
+            ),
+            accept_header,
+        )[0]
+
+    @policy_factory.apply_policies(RequestContext(request))
+    def put(
+        self,
+        collection,
+        id,
+        content=None,
+        spec="elody",
+    ):
+        if request.args.get("soft", 0, int):
+            return "good", 200
+        item = self._check_if_collection_and_item_exists(collection, id)
+        content = self._get_content_according_content_type(
+            request, collection, content, item, spec
+        )
+        try:
+            item = self.storage.put_item_from_collection(
+                collection, item, content, spec
+            )
+        except NonUniqueException as error:
+            return str(error), 409
+        return item, 200
+
+    @policy_factory.apply_policies(RequestContext(request))
+    def patch(
+        self,
+        collection,
+        id,
+        content=None,
+        spec="elody",
+    ):
+        if request.args.get("soft", 0, int):
+            return "good", 200
+        item = self._check_if_collection_and_item_exists(collection, id)
+        content = self._get_content_according_content_type(
+            request, collection, content, item, spec
+        )
+        try:
+            item = self.storage.patch_item_from_collection_v2(
+                collection, item, content, spec
+            )
+        except NonUniqueException as error:
+            return str(error), 409
+        accept_header = request.headers.get("Accept")
+        return (
+            self._create_response_according_accept_header(
+                mappers.map_data_according_to_accept_header(
+                    item,
+                    accept_header,
+                    "entity",
+                    [],
+                    spec,
+                    request.args,
+                ),
+                accept_header,
+            )[0],
+            200,
+        )
+
+    @policy_factory.apply_policies(RequestContext(request))
+    def delete(
+        self,
+        collection,
+        id,
+        item=None,
+        spec="elody",
+    ):
+        if request.args.get("soft", 0, int):
+            return "good", 200
+        item = self._check_if_collection_and_item_exists(collection, id)
+        self.storage.delete_item_from_collection(collection, get_raw_id(item))
+        return "", 204
+
+
 class GenericObjectMetadata(BaseResource):
     @policy_factory.apply_policies(RequestContext(request))
     def get(self, collection, id, fields=None, spec="elody"):
-        item = policy_factory.get_user_context().bag.get(
-            "requested_item", self._check_if_collection_and_item_exists(collection, id)
-        )
+        item = self._check_if_collection_and_item_exists(collection, id)
         if fields is None:
             fields = {}
         metadata = item["metadata"]

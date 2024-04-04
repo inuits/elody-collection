@@ -53,6 +53,8 @@ class FilterEntities(BaseFilterResource):
         )
 
 
+# currently only suitable when using generic policies
+# end goal is to replace this with FilterGenericObjectsV2
 class FilterEntitiesV2(BaseFilterResource):
     @policy_factory.apply_policies(RequestContext(request))
     def post(self, spec="elody"):
@@ -148,6 +150,7 @@ class FilterGenericObjects(BaseFilterResource):
         )
 
 
+# currently only suitable when using generic policies
 class FilterGenericObjectsV2(BaseFilterResource):
     @policy_factory.apply_policies(RequestContext(request))
     def post(self, collection, spec="elody"):

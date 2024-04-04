@@ -33,8 +33,10 @@ class MongoFilters(MongoStorageManager):
         items["count"] = count[0]["count"]
         if order_by:
             key_order_map = {order_by: pymongo.ASCENDING if asc else pymongo.DESCENDING}
-            sorting = app.object_configuration_mapper.get(collection).sorting(
-                key_order_map
+            sorting = (
+                app.object_configuration_mapper.get(collection)
+                .crud()
+                .get("sorting", lambda *_: [])(key_order_map)
             )
             if len(sorting) > 0:
                 pipeline += sorting

@@ -1,3 +1,4 @@
+import app
 import json
 import mappers
 import os
@@ -11,9 +12,6 @@ from elody.util import (
     mediafile_is_public,
     signal_entity_changed,
 )
-from flask import Response
-from flask_restful import Resource, abort
-from storage.storagemanager import StorageManager
 from elody.validator import validate_json
 from elody.schemas import (
     entity_schema,
@@ -21,6 +19,10 @@ from elody.schemas import (
     mediafile_schema,
     saved_search_schema,
 )
+from flask import Response
+from flask_restful import Resource, abort
+from inuits_policy_based_auth.exceptions import NoUserContextException
+from storage.storagemanager import StorageManager
 
 
 class BaseResource(Resource):
@@ -101,13 +103,25 @@ class BaseResource(Resource):
         return entity
 
     def _check_if_collection_name_exists(self, collection):
+        try:
+            policy_factory.get_user_context().bag.pop("requested_item", None)
+        except NoUserContextException:
+            pass
         if collection in self.known_collections:
             return
         if collection not in self.storage.get_existing_collections():
             abort(400, message=f"Collection {collection} does not exist.")
         self.known_collections.append(collection)
 
-    def _check_if_collection_and_item_exists(self, collection, id):
+    def _check_if_collection_and_item_exists(self, collection, id, item=None):
+        try:
+            item = item or policy_factory.get_user_context().bag.pop(
+                "requested_item", None
+            )
+        except NoUserContextException:
+            pass
+        if item:
+            return item
         self._check_if_collection_name_exists(collection)
         return self._abort_if_item_doesnt_exist(collection, id)
 
@@ -288,11 +302,13 @@ class BaseResource(Resource):
                     )
         return linked_mediafiles
 
-    def _get_content_according_content_type(self, request, object_type="entity"):
+    def _get_content_according_content_type(
+        self, request, object_type="entity", content=None, item={}, spec="elody"
+    ):
         content_type = request.content_type
         match content_type:
             case "application/json":
-                return request.get_json()
+                content = request.get_json()
             case "text/csv":
                 csv = request.get_data(as_text=True)
                 parsed_csv = CSVSingleObject(csv, object_type)
@@ -300,7 +316,20 @@ class BaseResource(Resource):
                     return getattr(parsed_csv, object_type)
                 return parsed_csv.get_type(object_type)
             case _:
-                return request.get_json()
+                content = request.get_json()
+        if item or content.get("type"):
+            type = item.get("type", content.get("type"))
+            schema_type = app.object_configuration_mapper.get(type).SCHEMA_TYPE
+            return app.serialize(
+                content,
+                type=type,
+                from_format=app.serialize.get_format(spec, request.args),
+                to_format=(
+                    item.get("schema", {}).get("type", "elody") if item else schema_type
+                ),
+            )
+        else:
+            return content
 
     def get_parent_mediafile(self, mediafile, parent_mediafile=None):
         relations = self.storage.get_collection_item_relations(

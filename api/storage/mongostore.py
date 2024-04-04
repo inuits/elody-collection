@@ -266,7 +266,7 @@ class MongoStorageManager(GenericStorageManager):
             return document
         if not reversed and create_sortable_metadata:
             document["sort"] = self.__create_sortable_metadata(document["metadata"])
-        return app.serialize(document, "elody")
+        return app.serialize(document, type=document.get("type"), to_format="elody")
 
     def add_mediafile_to_collection_item(
         self, collection, id, mediafile_id, mediafile_public
@@ -647,6 +647,54 @@ class MongoStorageManager(GenericStorageManager):
             raise ex
         return self.get_item_from_collection_by_id(collection, id)
 
+    def patch_item_from_collection_v2(self, collection, item, content, spec):
+        config = app.object_configuration_mapper.get(item["type"])
+        scope = config.crud()["spec_scope"].get(spec, None)
+        object_lists = config.document_info()["object_lists"]
+        patch_computed_values = config.crud()["computed_value_patcher"]
+        for key, value in content.items():
+            if not scope or key in scope:
+                if key in object_lists:
+                    for value_element in value:
+                        for item_element in item[key]:
+                            if (
+                                item_element[object_lists[key]]
+                                == value_element[object_lists[key]]
+                            ):
+                                item[key].remove(item_element)
+                    item[key].extend(value)
+                else:
+                    item[key] = value
+        try:
+            patch_computed_values(item)
+            self.db[collection].replace_one(self.__get_id_query(item["_id"]), item)
+        except pymongo.errors.DuplicateKeyError as error:
+            if error.code == 11000:
+                raise NonUniqueException(error.details)
+            raise error
+        return self._prepare_mongo_document(item, False, False)
+
+    def put_item_from_collection(self, collection, item, content, spec):
+        crud_config = app.object_configuration_mapper.get(item["type"]).crud()
+        scope = crud_config["spec_scope"].get(spec, None)
+        patch_computed_values = crud_config["computed_value_patcher"]
+        if scope:
+            for key, value in content.items():
+                if key in scope:
+                    item[key] = value
+        else:
+            item = content
+        try:
+            patch_computed_values(item)
+            self.db[collection].replace_one(self.__get_id_query(item["_id"]), item)
+        except pymongo.errors.DuplicateKeyError as error:
+            if error.code == 11000:
+                raise NonUniqueException(error.details)
+            raise error
+        if scope:
+            return self._prepare_mongo_document(item, False, False)
+        return self.get_item_from_collection_by_id(collection, item["_id"])
+
     def reindex_mediafile_parents(self, mediafile=None, parents=None):
         if mediafile:
             parents = self.get_mediafile_linked_entities(mediafile)
@@ -676,6 +724,15 @@ class MongoStorageManager(GenericStorageManager):
             if only_return_id
             else self.get_item_from_collection_by_id(collection, item_id)
         )
+
+    def save_item_to_collection_v2(self, collection, item):
+        try:
+            item_id = self.db[collection].insert_one(item).inserted_id
+        except pymongo.errors.DuplicateKeyError as ex:
+            if ex.code == 11000:
+                raise NonUniqueException(ex.details)
+            raise ex
+        return self.get_item_from_collection_by_id(collection, item_id)
 
     def set_primary_field_collection_item(self, collection, id, mediafile_id, field):
         for src_id, dst_id in [

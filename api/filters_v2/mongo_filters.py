@@ -189,8 +189,10 @@ class MongoFilters(MongoStorageManager):
 
     def __sort_stage(self, order_by, asc):
         key_order_map = {order_by: pymongo.ASCENDING if asc else pymongo.DESCENDING}
-        sorting = app.object_configuration_mapper.get(BaseMatchers.collection).sorting(
-            key_order_map
+        sorting = (
+            app.object_configuration_mapper.get(BaseMatchers.collection)
+            .crud()
+            .get("sorting", lambda *_: [])(key_order_map)
         )
 
         if len(sorting) > 0:

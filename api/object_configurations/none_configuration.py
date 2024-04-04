@@ -2,26 +2,23 @@ from object_configurations.base_object_configuration import BaseObjectConfigurat
 
 
 class NoneConfiguration(BaseObjectConfiguration):
-    def filtering(self):
-        return {"object_lists": {"metadata": "key", "relations": "type"}}
+    SCHEMA_TYPE = BaseObjectConfiguration.SCHEMA_TYPE
+    SCHEMA_VERSION = BaseObjectConfiguration.SCHEMA_VERSION
 
-    def logging(self, _):
-        return {"object_info": {}, "tags": {}}
+    def crud(self):
+        return super().crud()
+
+    def document_info(self):
+        return super().document_info()
+
+    def logging(self, item):
+        return super().logging(item)
 
     def migration(self):
-        def migrator(entity):
-            return entity
+        return super().migration()
 
-        return migrator
-
-    def serialization(self, from_format, to_format):  # pyright: ignore
-        def serializer(entity):
-            return entity
-
-        return serializer
-
-    def sorting(self, _):
-        return []
+    def serialization(self, from_format, to_format):
+        return super().serialization(from_format, to_format)
 
     def validation(self):
-        return "schema", {}
+        return super().validation()

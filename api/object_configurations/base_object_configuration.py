@@ -2,26 +2,39 @@ from abc import ABC, abstractmethod
 
 
 class BaseObjectConfiguration(ABC):
+    SCHEMA_TYPE = "elody"
+    SCHEMA_VERSION = 1
+
     @abstractmethod
-    def filtering(self):
-        pass
+    def crud(self):
+        return {
+            "collection": "entities",
+            "computed_value_patcher": lambda _: None,
+            "creator": lambda post_body, **_: post_body,
+        }
+
+    @abstractmethod
+    def document_info(self):
+        return {"object_lists": {"metadata": "key", "relations": "type"}}
 
     @abstractmethod
     def logging(self, _):
-        pass
+        return {"object_info": {}, "tags": {}}
 
     @abstractmethod
     def migration(self):
-        pass
+        def migrator(item):
+            return item
+
+        return migrator
 
     @abstractmethod
     def serialization(self, from_format, to_format):  # pyright: ignore
-        pass
+        def serializer(item):
+            return item
 
-    @abstractmethod
-    def sorting(self, keys):
-        pass
+        return serializer
 
     @abstractmethod
     def validation(self):
-        pass
+        return "schema", {}
