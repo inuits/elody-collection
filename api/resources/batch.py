@@ -30,11 +30,11 @@ class Batch(BaseResource):
         try:
             return CSVMultiObject(
                 csv,
-                {"entities": "same_entity", "mediafiles": "filename"},
+                {"entities": "same_entity", "mediafiles": "identifier"},
                 {
                     "mediafiles": [
                         "copyright_color",
-                        "filename",
+                        "identifier",
                         "publication_status",
                     ]
                 },
