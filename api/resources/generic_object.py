@@ -193,7 +193,7 @@ class GenericObjectV2(BaseResource):
         self._check_if_collection_name_exists(collection)
         accept_header = request.headers.get("Accept")
         content = self._get_content_according_content_type(
-            request, collection, content, {}, spec
+            request, collection, content, {}, spec, True
         )
         create = app.object_configuration_mapper.get(content["type"]).crud()["creator"]
         item = create(content)
@@ -357,7 +357,7 @@ class GenericObjectDetailV2(BaseResource):
             return "good", 200
         item = self._check_if_collection_and_item_exists(collection, id)
         content = self._get_content_according_content_type(
-            request, collection, content, item, spec
+            request, collection, content, item, spec, True
         )
         try:
             item = self.storage.put_item_from_collection(
@@ -379,7 +379,7 @@ class GenericObjectDetailV2(BaseResource):
             return "good", 200
         item = self._check_if_collection_and_item_exists(collection, id)
         content = self._get_content_according_content_type(
-            request, collection, content, item, spec
+            request, collection, content, item, spec, True
         )
         try:
             item = self.storage.patch_item_from_collection_v2(

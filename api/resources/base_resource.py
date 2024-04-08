@@ -302,8 +302,15 @@ class BaseResource(Resource):
                     )
         return linked_mediafiles
 
+    # this method will slowly transform into a simple unified method
     def _get_content_according_content_type(
-        self, request, object_type="entity", content=None, item={}, spec="elody"
+        self,
+        request,
+        object_type="entity",
+        content=None,
+        item={},
+        spec="elody",
+        v2=False,
     ):
         content_type = request.content_type
         match content_type:
@@ -317,7 +324,7 @@ class BaseResource(Resource):
                 return parsed_csv.get_type(object_type)
             case _:
                 content = request.get_json()
-        if item or content.get("type"):
+        if v2 and (item or content.get("type")):
             type = item.get("type", content.get("type"))
             schema_type = app.object_configuration_mapper.get(type).SCHEMA_TYPE
             return app.serialize(
