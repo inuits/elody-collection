@@ -14,6 +14,7 @@ from importlib import import_module
 from inuits_policy_based_auth import PolicyFactory
 from object_configurations.object_configuration_mapper import ObjectConfigurationMapper
 from serialization.serializer import Serializer
+from validation.validator import Validator
 from storage.storagemanager import StorageManager
 
 if os.getenv("SENTRY_ENABLED", False) in ["True", "true", True]:
@@ -116,6 +117,7 @@ except ModuleNotFoundError:
     route_mapper = {}
 
 serialize = Serializer()
+Validator = Validator().validator
 
 from resources.generic_object import (
     GenericObject,
