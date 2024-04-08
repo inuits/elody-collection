@@ -8,7 +8,7 @@ class BaseMatchers(ABC):
     collection = "entities"
 
     @staticmethod
-    def get_object_lists_config() -> dict:
+    def get_object_lists() -> dict:
         config = app.object_configuration_mapper.get(BaseMatchers.collection)
         return config.document_info()["object_lists"]
 

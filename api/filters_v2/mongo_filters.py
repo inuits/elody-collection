@@ -50,7 +50,7 @@ class MongoFilters(MongoStorageManager):
                 for option in items["results"]:
                     if key := options_requesting_filter.get("metadata_key_as_label"):
                         option["label"] = self.__get_filter_option_label(
-                            option["value"], key, BaseMatchers.get_object_lists_config()
+                            option["value"], key, BaseMatchers.get_object_lists()
                         )
             items["count"] = len(items["results"])
         else:
@@ -209,7 +209,7 @@ class MongoFilters(MongoStorageManager):
             ]
 
     def __project_stage(self, options_requesting_filter_keys):
-        object_lists_config = BaseMatchers.get_object_lists_config()
+        object_lists_config = BaseMatchers.get_object_lists()
         mappers = []
 
         if isinstance(options_requesting_filter_keys, list):

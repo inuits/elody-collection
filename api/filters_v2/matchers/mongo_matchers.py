@@ -55,15 +55,15 @@ class MongoMatchers(BaseMatchers):
         return self.__any_none_match(key, "$in")
 
     def __exact_contains_range_match(self, key: str, value):
-        object_lists_config = BaseMatchers.get_object_lists_config()
-        keys_info = interpret_flat_key(key, object_lists_config)
-        return self.__build_nested_matcher(object_lists_config, keys_info, value)
+        object_lists = BaseMatchers.get_object_lists()
+        keys_info = interpret_flat_key(key, object_lists)
+        return self.__build_nested_matcher(object_lists, keys_info, value)
 
     def __any_none_match(self, key: str, operator_to_match_none_values: str):
         value = {operator_to_match_none_values: [None, ""]}
-        object_lists_config = BaseMatchers.get_object_lists_config()
-        keys_info = interpret_flat_key(key, object_lists_config)
-        return self.__build_nested_matcher(object_lists_config, keys_info, value)
+        object_lists = BaseMatchers.get_object_lists()
+        keys_info = interpret_flat_key(key, object_lists)
+        return self.__build_nested_matcher(object_lists, keys_info, value)
 
     def __get_datetime_query_value(self, value, range_match: bool) -> dict | str:
         if not regex.match(BaseMatchers.datetime_pattern, value):
@@ -73,7 +73,7 @@ class MongoMatchers(BaseMatchers):
             return f"{value}"
         return {"$regex": f"^{value}"}
 
-    def __build_nested_matcher(self, object_lists_config, keys_info, value, index=0):
+    def __build_nested_matcher(self, object_lists, keys_info, value, index=0):
         if index == 0 and not any(info["is_object_list"] for info in keys_info):
             return {".".join(info["key"] for info in keys_info): value}
 
@@ -81,11 +81,11 @@ class MongoMatchers(BaseMatchers):
 
         if info["is_object_list"]:
             nested_matcher = self.__build_nested_matcher(
-                object_lists_config, keys_info, value, index + 1
+                object_lists, keys_info, value, index + 1
             )
             elem_match = {
                 "$elemMatch": {
-                    object_lists_config[info["key"]]: info["object_key"],
+                    object_lists[info["key"]]: info["object_key"],
                     keys_info[index + 1]["key"]: nested_matcher,
                 }
             }
