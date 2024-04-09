@@ -9,8 +9,8 @@ class Serializer:
     ):
         if not isinstance(item, dict) or not type:
             return item
-        if item.get("storage_format"):
-            item = item["storage_format"]
+        item = item.get("storage_format", item)
+        item["type"] = item.get("type", type)
 
         if from_format is None:
             from_format = item.get("schema", {}).get("type", "elody")

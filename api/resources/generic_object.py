@@ -328,6 +328,7 @@ class GenericObjectDetail(BaseResource):
 
 # POC: currently only suitable when supporting multiples specs for a client
 class GenericObjectDetailV2(BaseResource):
+    @policy_factory.apply_policies(RequestContext(request))
     def get(self, collection, id, spec="elody"):
         if request.args.get("soft", 0, int):
             return "good", 200

@@ -33,9 +33,9 @@ class Validator:
                 )
                 if content is None:
                     raise ValueError("Content is missing in the request.")
-                validation_method, validator = (
-                    app.object_configuration_mapper.get(object_type).validation()
-                )
+                validation_method, validator = app.object_configuration_mapper.get(
+                    object_type
+                ).validation()
                 if validation_method == "schema":
                     validation_error = validate_json(content, validator)
                     if validation_error:
@@ -46,7 +46,9 @@ class Validator:
                 elif validation_method == "function":
                     validator()
                 else:
-                    raise Exception(f"Validation method: {validation_method} doesn't exist ")
+                    raise Exception(
+                        f"Validation method: {validation_method} doesn't exist "
+                    )
 
                 return func(*args, **kwargs)
 

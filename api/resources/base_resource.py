@@ -312,18 +312,19 @@ class BaseResource(Resource):
         spec="elody",
         v2=False,
     ):
-        content_type = request.content_type
-        match content_type:
-            case "application/json":
-                content = request.get_json()
-            case "text/csv":
-                csv = request.get_data(as_text=True)
-                parsed_csv = CSVSingleObject(csv, object_type)
-                if object_type in ["metadata", "relations"]:
-                    return getattr(parsed_csv, object_type)
-                return parsed_csv.get_type(object_type)
-            case _:
-                content = request.get_json()
+        if not content:
+            content_type = request.content_type
+            match content_type:
+                case "application/json":
+                    content = request.get_json()
+                case "text/csv":
+                    csv = request.get_data(as_text=True)
+                    parsed_csv = CSVSingleObject(csv, object_type)
+                    if object_type in ["metadata", "relations"]:
+                        return getattr(parsed_csv, object_type)
+                    return parsed_csv.get_type(object_type)
+                case _:
+                    content = request.get_json()
         if v2 and (item or content.get("type")):
             type = item.get("type", content.get("type"))
             schema_type = app.object_configuration_mapper.get(type).SCHEMA_TYPE
@@ -332,7 +333,11 @@ class BaseResource(Resource):
                 type=type,
                 from_format=app.serialize.get_format(spec, request.args),
                 to_format=(
-                    item.get("schema", {}).get("type", "elody") if item else schema_type
+                    item.get("storage_format", item)
+                    .get("schema", {})
+                    .get("type", "elody")
+                    if item
+                    else schema_type
                 ),
             )
         else:

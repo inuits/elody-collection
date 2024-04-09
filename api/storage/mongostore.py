@@ -389,6 +389,33 @@ class MongoStorageManager(GenericStorageManager):
         self._delete_impacted_relations(collection, id)
         self.db[collection].delete_one(self.__get_id_query(id))
 
+    def delete_data_from_collection_item(self, collection, item, content, spec):
+        item = item.get("storage_format", item)
+        config = app.object_configuration_mapper.get(item["type"])
+        scope = config.crud()["spec_scope"].get(spec, None)
+        object_lists = config.document_info()["object_lists"]
+        patch_computed_values = config.crud()["computed_value_patcher"]
+        for key, value in content.items():
+            if not scope or key in scope:
+                if key in object_lists:
+                    for value_element in value:
+                        for item_element in item[key]:
+                            if (
+                                item_element[object_lists[key]]
+                                == value_element[object_lists[key]]
+                            ):
+                                item[key].remove(item_element)
+                else:
+                    del item[key]
+        try:
+            patch_computed_values(item)
+            self.db[collection].replace_one(self.__get_id_query(item["_id"]), item)
+        except pymongo.errors.DuplicateKeyError as error:
+            if error.code == 11000:
+                raise NonUniqueException(error.details)
+            raise error
+        return self._prepare_mongo_document(item, False, False)
+
     def drop_all_collections(self):
         self.db.entities.drop()
         self.db.jobs.drop()
@@ -648,6 +675,7 @@ class MongoStorageManager(GenericStorageManager):
         return self.get_item_from_collection_by_id(collection, id)
 
     def patch_item_from_collection_v2(self, collection, item, content, spec):
+        item = item.get("storage_format", item)
         config = app.object_configuration_mapper.get(item["type"])
         scope = config.crud()["spec_scope"].get(spec, None)
         object_lists = config.document_info()["object_lists"]
@@ -726,6 +754,7 @@ class MongoStorageManager(GenericStorageManager):
         )
 
     def save_item_to_collection_v2(self, collection, item):
+        item = item.get("storage_format", item)
         try:
             item_id = self.db[collection].insert_one(item).inserted_id
         except pymongo.errors.DuplicateKeyError as ex:
