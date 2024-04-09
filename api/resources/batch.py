@@ -96,7 +96,7 @@ class Batch(BaseResource):
                         "mediafile_id": get_raw_id(mediafile),
                     }
                     ticket_id = self._create_ticket(mediafile.get("identifier"), content=content)
-                    output += f"{self.storage_api_url}/upload/{ticket_id}\n"
+                    output += f"{self.storage_api_url}/upload/{ticket_id}?filename={mediafile.get('identifier')}\n"
             return self._create_response_according_accept_header(
                 output, accept_header, 201
             )
