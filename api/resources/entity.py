@@ -20,6 +20,7 @@ from resources.generic_object import (
     GenericObjectMetadataKey,
     GenericObjectRelations,
 )
+from filters.filter_manager import FilterManager
 
 
 class Entity(GenericObject):
@@ -141,6 +142,66 @@ class Entity(GenericObject):
         signal_entity_changed(rabbit, entity)
         return self._create_response_according_accept_header(
             response, accept_header, 201
+        )
+
+
+class EntityV2(GenericObject):
+    def __init__(self):
+        super().__init__()
+        self.filter_engine = FilterManager().get_filter_engine()
+
+    @policy_factory.apply_policies(RequestContext(request))
+    def get(self, spec="elody", filters=None):
+        if not self.filter_engine:
+            abort(500, message="Failed to init search engine")
+
+        accept_header = request.headers.get("Accept")
+        query: list = []
+        skip = request.args.get("skip", 0, int)
+        limit = request.args.get("limit", 20, int)
+        fields = [
+            *request.args.getlist("field"),
+            *request.args.getlist("field[]"),
+        ]
+        order_by = request.args.get("order_by", None)
+        ascending = request.args.get("asc", 1, int)
+        skip_relations = request.args.get("skip_relations", 0, int)
+        if item_type := request.args.get("type"):
+            query.insert(0, {"type": "type", "value": item_type})
+        if ids := request.args.get("ids"):
+            query.insert(0, {"key": "identifiers", "parent_key": "", "type": "id", "value": ids})
+        access_restricting_filters = (
+            policy_factory.get_user_context().access_restrictions.filters
+        )
+
+        if isinstance(access_restricting_filters, list):
+            for filter in access_restricting_filters:
+                query.insert(0, filter)
+
+        entities = self.filter_engine.filter(query, skip, limit, "entities", order_by, ascending)
+        type_filter = f"type={item_type}&" if item_type else ""
+        entities["limit"] = limit
+        if skip + limit < entities["count"]:
+            entities["next"] = (
+                f"/entities?{type_filter}skip={skip + limit}&limit={limit}&skip_relations={skip_relations}"
+            )
+        if skip > 0:
+            entities["previous"] = (
+                f"/entities?{type_filter}skip={max(0, skip - limit)}&limit={limit}&skip_relations={skip_relations}"
+            )
+        entities["results"] = self._inject_api_urls_into_entities(entities["results"])
+        return self._create_response_according_accept_header(
+            mappers.map_data_according_to_accept_header(
+                policy_factory.get_user_context().access_restrictions.post_request_hook(
+                    entities
+                ),
+                accept_header,
+                "entities",
+                fields,
+                spec,
+                request.args,
+            ),
+            accept_header,
         )
 
 
