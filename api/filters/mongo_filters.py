@@ -174,11 +174,12 @@ class MongoFilters(MongoStorageManager):
             elif "value" in item:
                 label = item.get("value")
                 if parent_key == "relations":
-                    label = self.__get_filter_option_label(
+                    filter_option_label = self.__get_filter_option_label(
                         collection,
                         item[document_value],
                         filter.get("metadata_key_as_label"),
                     )
+                    label = filter_option_label if filter_option_label != None else label
                 options.add(FilterOption(label, item[document_value]))
         items["results"] = [option.to_dict() for option in options]
 
@@ -221,4 +222,4 @@ class MongoFilters(MongoStorageManager):
                     },
                 ]
             )
-        )[0]["label"]
+        )[0].get("label")
