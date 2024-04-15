@@ -133,6 +133,7 @@ from resources.config import Config
 from resources.entity import (
     Entity,
     EntityV2,
+    EntityV2FilterV2,
     EntityDetail,
     EntityMediafiles,
     EntityMediafilesCreate,
@@ -178,6 +179,7 @@ api.add_resource(Batch, route_mapper.get(Batch.__name__, "/batch"))
 api.add_resource(Config, route_mapper.get(Config.__name__, "/config"))
 api.add_resource(Entity, route_mapper.get(Entity.__name__, "/entities"))
 api.add_resource(EntityV2, route_mapper.get(Entity.__name__, "/v2/entities"))
+api.add_resource(EntityV2FilterV2, route_mapper.get(EntityV2.__name__, "/v2/entities_filter_v2"))
 api.add_resource(
     EntityDetail, route_mapper.get(EntityDetail.__name__, "/entities/<string:id>")
 )
