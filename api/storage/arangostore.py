@@ -165,7 +165,7 @@ class ArangoStorageManager(GenericStorageManager):
             "thesaurus": [],
             "user": ["hasTenant"],
             "consists_of": ["parent", "components"],
-            "set": ["hasUser", "hasAsset"]
+            "set": ["hasUser", "hasAsset", "isIn"]
         }.get(type, ["components"])
         return [x for x in relations if not exclude or x not in exclude]
 
