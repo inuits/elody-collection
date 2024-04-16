@@ -261,6 +261,8 @@ class ArangoStorageManager(GenericStorageManager):
             return None
         for relation in relations:
             data = {}
+            if collection not in relation["key"]:
+                relation["key"] = collection + "/" + relation["key"]
             for key in [x for x in relation.keys() if x[0] != "_"]:
                 data[key] = relation[key]
             data["_from"] = item_id
