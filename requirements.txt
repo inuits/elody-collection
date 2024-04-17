@@ -38,7 +38,7 @@ pymongo==4.6.3
 pyparsing==3.1.2
 python-arango==7.9.1
 pytz==2024.1
-rabbitmq-pika-flask==1.2.33
+rabbitmq-pika-flask==1.2.35
 rdflib==7.0.0
 referencing==0.34.0
 requests==2.31.0
