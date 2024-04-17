@@ -92,12 +92,6 @@ def rabbit_available():
     return False, "Failed to reach RabbitMQ"
 
 
-health = HealthCheck()
-if os.getenv("HEALTH_CHECK_EXTERNAL_SERVICES", True) in ["True", "true", True]:
-    health.add_check(database_available)
-    health.add_check(rabbit_available)
-app.add_url_rule("/health", "healthcheck", view_func=lambda: health.run())
-
 policy_factory = PolicyFactory()
 load_apps(app, logger)
 try:
@@ -118,6 +112,14 @@ except ModuleNotFoundError:
 
 serialize = Serializer()
 Validator = Validator().validator
+
+health = HealthCheck()
+if os.getenv("HEALTH_CHECK_EXTERNAL_SERVICES", True) in ["True", "true", True]:
+    health.add_check(database_available)
+    health.add_check(rabbit_available)
+app.add_url_rule(
+    route_mapper.get("health", "/health"), "healthcheck", view_func=lambda: health.run()
+)
 
 from resources.generic_object import (
     GenericObject,

@@ -179,7 +179,9 @@ class MongoFilters(MongoStorageManager):
                         item[document_value],
                         filter.get("metadata_key_as_label"),
                     )
-                    label = filter_option_label if filter_option_label != None else label
+                    label = (
+                        filter_option_label if filter_option_label != None else label
+                    )
                 options.add(FilterOption(label, item[document_value]))
         items["results"] = [option.to_dict() for option in options]
 
