@@ -239,6 +239,8 @@ class MongoStorageManager(GenericStorageManager):
             "isAfgeleideFor": "hasAfgeleide",
             "hasExif": "isExifFor",
             "isExifFor": "hasExif",
+            "hasImageStatus": "isImageStatusFor",
+            "imageStatus": "hasImageStatus"
         }.get(relation)
 
     def _map_relation_to_collection(self, relation):
