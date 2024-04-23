@@ -12,10 +12,11 @@ from flask_swagger_ui import get_swaggerui_blueprint
 from healthcheck import HealthCheck
 from importlib import import_module
 from inuits_policy_based_auth import PolicyFactory
+from migration.migrator import Migrator
 from object_configurations.object_configuration_mapper import ObjectConfigurationMapper
 from serialization.serializer import Serializer
-from validation.validator import Validator
 from storage.storagemanager import StorageManager
+from validation.validator import Validator
 
 if os.getenv("SENTRY_ENABLED", False) in ["True", "true", True]:
     import sentry_sdk
@@ -110,6 +111,7 @@ except ModuleNotFoundError:
     object_configuration_mapper = ObjectConfigurationMapper()
     route_mapper = {}
 
+migrate = Migrator()
 serialize = Serializer()
 Validator = Validator().validator
 

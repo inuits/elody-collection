@@ -242,7 +242,7 @@ class MongoStorageManager(GenericStorageManager):
             "hasImageStatus": "isImageStatusFor",
             "imageStatus": "hasImageStatus",
             "hasDocument": "isDocumentFor",
-            "isDocumentFor": "hasDocument"
+            "isDocumentFor": "hasDocument",
         }.get(relation)
 
     def _map_relation_to_collection(self, relation):
@@ -270,7 +270,9 @@ class MongoStorageManager(GenericStorageManager):
             return document
         if not reversed and create_sortable_metadata:
             document["sort"] = self.__create_sortable_metadata(document["metadata"])
-        return app.serialize(document, type=document.get("type"), to_format="elody")
+        return app.serialize(
+            app.migrate(document), type=document.get("type"), to_format="elody"
+        )
 
     def add_mediafile_to_collection_item(
         self, collection, id, mediafile_id, mediafile_public

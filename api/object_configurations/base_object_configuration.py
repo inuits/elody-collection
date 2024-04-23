@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from migration.base_object_migrator import BaseObjectMigrator
 
 
 class BaseObjectConfiguration(ABC):
@@ -23,10 +24,7 @@ class BaseObjectConfiguration(ABC):
 
     @abstractmethod
     def migration(self):
-        def migrator(item):
-            return item
-
-        return migrator
+        return BaseObjectMigrator()
 
     @abstractmethod
     def serialization(self, from_format, to_format):  # pyright: ignore

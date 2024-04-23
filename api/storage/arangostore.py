@@ -52,7 +52,7 @@ class ArangoStorageManager(GenericStorageManager):
             "hasUser",
             "isUserFor",
             "hasAsset",
-            "isAssetFor"
+            "isAssetFor",
         ]
         self.edges = [*self.entity_relations, "hasMediafile"]
         self.client = ArangoClient(
@@ -165,7 +165,7 @@ class ArangoStorageManager(GenericStorageManager):
             "thesaurus": [],
             "user": ["hasTenant"],
             "consists_of": ["parent", "components"],
-            "set": ["hasUser", "hasAsset", "isIn"]
+            "set": ["hasUser", "hasAsset", "isIn"],
         }.get(type, ["components"])
         return [x for x in relations if not exclude or x not in exclude]
 
@@ -193,7 +193,7 @@ class ArangoStorageManager(GenericStorageManager):
             "hasUser": "isUserFor",
             "isUserFor": "hasUser",
             "hasAsset": "isAssetFor",
-            "isAssetFor": "hasAsset"
+            "isAssetFor": "hasAsset",
         }.get(relation)
 
     def __remove_edges(self, item_id, relation, edge_collection):
