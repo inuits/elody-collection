@@ -92,6 +92,7 @@ def rabbit_available():
         return True, "Successfully reached RabbitMQ"
     return False, "Failed to reach RabbitMQ"
 
+health = HealthCheck()
 
 policy_factory = PolicyFactory()
 load_apps(app, logger)
@@ -115,7 +116,6 @@ migrate = Migrator()
 serialize = Serializer()
 Validator = Validator().validator
 
-health = HealthCheck()
 if os.getenv("HEALTH_CHECK_EXTERNAL_SERVICES", True) in ["True", "true", True]:
     health.add_check(database_available)
     health.add_check(rabbit_available)
