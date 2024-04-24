@@ -92,6 +92,7 @@ def rabbit_available():
         return True, "Successfully reached RabbitMQ"
     return False, "Failed to reach RabbitMQ"
 
+
 health = HealthCheck()
 
 policy_factory = PolicyFactory()

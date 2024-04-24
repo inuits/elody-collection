@@ -28,7 +28,9 @@ class Mediafile(GenericObject):
         )
         if isinstance(access_restricting_filters, dict):
             filters = {**filters, **access_restricting_filters}
-        mediafiles = super().get("mediafiles", skip=skip, limit=limit, filters=filters)[0]
+        mediafiles = super().get("mediafiles", skip=skip, limit=limit, filters=filters)[
+            0
+        ]
         mediafiles["results"] = self._inject_api_urls_into_mediafiles(
             mediafiles["results"]
         )
