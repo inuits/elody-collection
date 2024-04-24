@@ -98,14 +98,19 @@ def unify_matchers_per_schema_into_one_match(matchers_per_schema):
     general_matchers = matchers_per_schema.pop("general")
     __combine_or_matchers(general_matchers)
 
-    for schema_matchers in matchers_per_schema.values():
-        __combine_or_matchers(schema_matchers)
-        if len(general_matchers) > 0:
-            schema_matchers.append(general_matchers[0])
+    if matchers_per_schema:
+        for schema_matchers in matchers_per_schema.values():
+            __combine_or_matchers(schema_matchers)
+            for general_matcher in general_matchers:
+                schema_matchers.append(general_matcher)
 
-    match.update(
-        {"$or": [{"$and": matchers} for matchers in matchers_per_schema.values()]}
-    )
+        match.update(
+            {"$or": [{"$and": matchers} for matchers in matchers_per_schema.values()]}
+        )
+    else:
+        for general_matcher in general_matchers:
+            match.update(general_matcher)
+
     return match
 
 
