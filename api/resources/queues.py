@@ -1,3 +1,6 @@
+import sys
+from os import getenv
+
 import app
 
 from datetime import datetime, timezone
@@ -11,8 +14,14 @@ def __is_malformed_message(data, fields):
         return True
     return False
 
+ 
+queue_prefix = getenv("QUEUE_PREFIX", "dams")
+routing_key_prefix = getenv("ROUTING_KEY_PREFIX", "dams")
 
-@app.rabbit.queue("dams.child_relation_changed")
+@app.rabbit.queue(
+    queue_name=f"{queue_prefix}-update_parent_relation_values",
+    routing_key=f"{routing_key_prefix}.child_relation_changed"
+)
 def update_parent_relation_values(routing_key, body, message_id):
     data = body["data"]
     if __is_malformed_message(data, ["collection", "parent_id"]):
@@ -22,7 +31,10 @@ def update_parent_relation_values(routing_key, body, message_id):
     )
 
 
-@app.rabbit.queue("dams.entity_changed")
+@app.rabbit.queue(
+    queue_name=f"{queue_prefix}-add_entity_to_history",
+    routing_key=f"{routing_key_prefix}.entity_changed"
+)
 def add_entity_to_history(routing_key, body, message_id):
     data = body["data"]
     if __is_malformed_message(data, ["location", "type"]):
@@ -40,7 +52,10 @@ def add_entity_to_history(routing_key, body, message_id):
     storage.save_item_to_collection("history", content)
 
 
-@app.rabbit.queue("dams.file_scanned")
+@app.rabbit.queue(
+    queue_name=f"{queue_prefix}-add_scan_info_to_mediafile",
+    routing_key=f"{routing_key_prefix}.file_scanned"
+)
 def add_scan_info_to_mediafile(routing_key, body, message_id):
     data = body["data"]
     if __is_malformed_message(data, ["clamav_version", "infected", "mediafile_id"]):
@@ -63,7 +78,10 @@ def add_scan_info_to_mediafile(routing_key, body, message_id):
     storage.patch_item_from_collection("mediafiles", data["mediafile_id"], content)
 
 
-@app.rabbit.queue("dams.job_changed")
+@app.rabbit.queue(
+    queue_name=f"{queue_prefix}-update_job",
+    routing_key=f"{routing_key_prefix}.job_changed"
+)
 def update_job(routing_key, body, message_id):
     StorageManager().get_db_engine().patch_item_from_collection(
         "jobs",
@@ -72,12 +90,18 @@ def update_job(routing_key, body, message_id):
     )
 
 
-@app.rabbit.queue("dams.job_created")
+@app.rabbit.queue(
+    queue_name=f"{queue_prefix}-create_job",
+    routing_key=f"{routing_key_prefix}.job_created"
+)
 def create_job(routing_key, body, message_id):
     StorageManager().get_db_engine().save_item_to_collection("jobs", body["data"])
 
 
-@app.rabbit.queue("dams.mediafile_changed")
+@app.rabbit.queue(
+    queue_name=f"{queue_prefix}-handle_mediafile_status_change",
+    routing_key=f"{routing_key_prefix}.mediafile_changed"
+)
 def handle_mediafile_status_change(routing_key, body, message_id):
     data = body["data"]
     if __is_malformed_message(data, ["mediafile", "old_mediafile"]):
@@ -97,7 +121,10 @@ def handle_mediafile_status_change(routing_key, body, message_id):
     storage.reindex_mediafile_parents(data["mediafile"])
 
 
-@app.rabbit.queue("dams.mediafiles_added_for_entity")
+@app.rabbit.queue(
+    queue_name=f"{queue_prefix}-handle_mediafiles_added_for_entity",
+    routing_key=f"{routing_key_prefix}.mediafiles_added_for_entity"
+)
 def handle_mediafiles_added_for_entity(routing_key, body, message_id):
     data = body["data"]
     mediafiles = data["mediafiles"]
@@ -164,7 +191,10 @@ def create_ocr_body(mediafiles_data, relation):
     }
 
 
-@app.rabbit.queue("dams.mediafile_deleted")
+@app.rabbit.queue(
+    queue_name=f"{queue_prefix}-handle_mediafile_deleted",
+    routing_key=f"{routing_key_prefix}.mediafile_deleted"
+)
 def handle_mediafile_deleted(routing_key, body, message_id):
     data = body["data"]
     deleted_mediafile = data["mediafile"]
