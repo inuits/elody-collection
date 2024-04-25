@@ -1,4 +1,11 @@
 class BaseObjectMigrator:
+    def __init__(self, *, silent=False):
+        self._silent = silent
+
+    @property
+    def silent(self):
+        return self._silent
+
     def bulk_migrate(self, *, dry_run=False):
         pass
 

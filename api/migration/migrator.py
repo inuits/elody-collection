@@ -4,6 +4,7 @@ from copy import deepcopy
 
 
 class Migrator:
+    DRY_RUN = False
     EXCEPTION_LIMIT = 2
 
     def __init__(self):
@@ -30,16 +31,23 @@ class Migrator:
                     item["type"],
                     self.__get_schema_to_upgrade_to(item_schema, latest_schema),
                 )
+                is_silent_migration = config.migration().silent
                 self.__validate_migration(
+                    is_silent_migration,
                     config.migration().lazy_migrate(deepcopy(item), dry_run=True),
                     item_schema,
                 )
-                migrated_item = config.migration().lazy_migrate(deepcopy(item))
+                migrated_item = config.migration().lazy_migrate(
+                    deepcopy(item), dry_run=self.DRY_RUN
+                )
             except Exception:
                 self.__patch_exception_count(1)
             else:
                 self.__patch_exception_count(0)
-                item = migrated_item
+                if not self.DRY_RUN:
+                    item = migrated_item
+                if is_silent_migration:
+                    break
 
         return item
 
@@ -49,27 +57,29 @@ class Migrator:
 
     def __get_item_schema(self, item):
         schema_type = item.get("schema", {}).get("type", "elody")
-        schema_version = item.get("schema", {}).get("version", 1)
+        schema_version = item.get("schema", {}).get("version", 0)
         return f"{schema_type}:{int(schema_version)}"
 
-    def __validate_migration(self, migrated_item, item_schema):
-        if self.__get_item_schema(migrated_item) == item_schema:
-            self.__patch_exception_count(self.EXCEPTION_LIMIT)
-            raise Exception(
-                f"Schema version is not being updated during the migration of item with id {migrated_item.get('id', migrated_item['_id'])}."
-            )
+    def __validate_migration(self, is_silent_migration, migrated_item, item_schema):
+        if not is_silent_migration:
+            if self.__get_item_schema(migrated_item) == item_schema:
+                self.__patch_exception_count(self.EXCEPTION_LIMIT)
+                raise Exception(
+                    f"Schema version is not being updated during the migration of item with id {migrated_item.get('id', migrated_item['_id'])}."
+                )
 
     def __get_schema_to_upgrade_to(self, item_schema, latest_schema):
         item_schema_type, item_schema_version = item_schema.split(":")
         latest_schema_type, latest_schema_version = latest_schema.split(":")
-        if item_schema_type != latest_schema_type:
-            raise Exception("Cannot lazily migrate to different schema types.")
+        # if item_schema_type != latest_schema_type:
+        #    raise Exception("Cannot lazily migrate to different schema types.")
         schema_version = (
             int(item_schema_version) + 1
             if int(item_schema_version) < int(latest_schema_version)
             else int(latest_schema_version)
         )
-        return f"{latest_schema_type}:{schema_version}"
+        new_schema = f"{latest_schema_type}:{schema_version}"
+        return new_schema if new_schema != latest_schema else None
 
     def __patch_exception_count(self, increase_count):
         if increase_count == 0:
