@@ -1,11 +1,13 @@
-import sys
-from os import getenv
-
 import app
 
 from datetime import datetime, timezone
 from elody.util import get_item_metadata_value, mediafile_is_public, get_raw_id
+from os import getenv
 from storage.storagemanager import StorageManager
+
+
+queue_prefix = getenv("QUEUE_PREFIX", "dams")
+routing_key_prefix = getenv("ROUTING_KEY_PREFIX", "dams")
 
 
 def __is_malformed_message(data, fields):
@@ -14,13 +16,10 @@ def __is_malformed_message(data, fields):
         return True
     return False
 
- 
-queue_prefix = getenv("QUEUE_PREFIX", "dams")
-routing_key_prefix = getenv("ROUTING_KEY_PREFIX", "dams")
 
 @app.rabbit.queue(
     queue_name=f"{queue_prefix}-update_parent_relation_values",
-    routing_key=f"{routing_key_prefix}.child_relation_changed"
+    routing_key=f"{routing_key_prefix}.child_relation_changed",
 )
 def update_parent_relation_values(routing_key, body, message_id):
     data = body["data"]
@@ -33,7 +32,7 @@ def update_parent_relation_values(routing_key, body, message_id):
 
 @app.rabbit.queue(
     queue_name=f"{queue_prefix}-add_entity_to_history",
-    routing_key=f"{routing_key_prefix}.entity_changed"
+    routing_key=f"{routing_key_prefix}.entity_changed",
 )
 def add_entity_to_history(routing_key, body, message_id):
     data = body["data"]
@@ -54,7 +53,7 @@ def add_entity_to_history(routing_key, body, message_id):
 
 @app.rabbit.queue(
     queue_name=f"{queue_prefix}-add_scan_info_to_mediafile",
-    routing_key=f"{routing_key_prefix}.file_scanned"
+    routing_key=f"{routing_key_prefix}.file_scanned",
 )
 def add_scan_info_to_mediafile(routing_key, body, message_id):
     data = body["data"]
@@ -80,7 +79,7 @@ def add_scan_info_to_mediafile(routing_key, body, message_id):
 
 @app.rabbit.queue(
     queue_name=f"{queue_prefix}-update_job",
-    routing_key=f"{routing_key_prefix}.job_changed"
+    routing_key=f"{routing_key_prefix}.job_changed",
 )
 def update_job(routing_key, body, message_id):
     StorageManager().get_db_engine().patch_item_from_collection(
@@ -92,7 +91,7 @@ def update_job(routing_key, body, message_id):
 
 @app.rabbit.queue(
     queue_name=f"{queue_prefix}-create_job",
-    routing_key=f"{routing_key_prefix}.job_created"
+    routing_key=f"{routing_key_prefix}.job_created",
 )
 def create_job(routing_key, body, message_id):
     StorageManager().get_db_engine().save_item_to_collection("jobs", body["data"])
@@ -100,7 +99,7 @@ def create_job(routing_key, body, message_id):
 
 @app.rabbit.queue(
     queue_name=f"{queue_prefix}-handle_mediafile_status_change",
-    routing_key=f"{routing_key_prefix}.mediafile_changed"
+    routing_key=f"{routing_key_prefix}.mediafile_changed",
 )
 def handle_mediafile_status_change(routing_key, body, message_id):
     data = body["data"]
@@ -123,7 +122,7 @@ def handle_mediafile_status_change(routing_key, body, message_id):
 
 @app.rabbit.queue(
     queue_name=f"{queue_prefix}-handle_mediafiles_added_for_entity",
-    routing_key=f"{routing_key_prefix}.mediafiles_added_for_entity"
+    routing_key=f"{routing_key_prefix}.mediafiles_added_for_entity",
 )
 def handle_mediafiles_added_for_entity(routing_key, body, message_id):
     data = body["data"]
@@ -193,7 +192,7 @@ def create_ocr_body(mediafiles_data, relation):
 
 @app.rabbit.queue(
     queue_name=f"{queue_prefix}-handle_mediafile_deleted",
-    routing_key=f"{routing_key_prefix}.mediafile_deleted"
+    routing_key=f"{routing_key_prefix}.mediafile_deleted",
 )
 def handle_mediafile_deleted(routing_key, body, message_id):
     data = body["data"]

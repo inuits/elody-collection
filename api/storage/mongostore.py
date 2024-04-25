@@ -760,9 +760,11 @@ class MongoStorageManager(GenericStorageManager):
         )
 
     def save_item_to_collection_v2(self, collection, item):
-        item = item.get("storage_format", item)
+        if not isinstance(item, list):
+            item = item.get("storage_format", item)
+            item = [item]
         try:
-            item_id = self.db[collection].insert_one(item).inserted_id
+            item_id = self.db[collection].insert_many(item).inserted_ids[0]
         except pymongo.errors.DuplicateKeyError as ex:
             if ex.code == 11000:
                 raise NonUniqueException(ex.details)
