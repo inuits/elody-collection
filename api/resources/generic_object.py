@@ -10,6 +10,7 @@ from elody.util import (
 from flask import after_this_request, request
 from flask_restful import abort
 from inuits_policy_based_auth import RequestContext
+from resources.base_filter_resource import BaseFilterResource
 from resources.base_resource import BaseResource
 
 
@@ -117,64 +118,25 @@ class GenericObject(BaseResource):
 
 
 # POC: currently only suitable when supporting multiples specs for a client
-class GenericObjectV2(BaseResource):
+class GenericObjectV2(BaseFilterResource, BaseResource):
     @policy_factory.apply_policies(RequestContext(request))
-    def get(
-        self,
-        collection,
-        skip=0,
-        limit=20,
-        fields=None,
-        filters=None,
-        sort=None,
-        asc=True,
-        spec="elody",
-    ):
+    def get(self, collection, spec="elody"):
         self._check_if_collection_name_exists(collection)
         accept_header = request.headers.get("Accept")
-        if fields is None:
-            fields = {}
-        if filters is None:
-            filters = {}
-        if ids := request.args.get("ids"):
-            filters["ids"] = ids.split(",")
-        access_restricting_filters = (
-            policy_factory.get_user_context().access_restrictions.filters
+        sort = request.args.get("order_by", None)
+        asc = bool(request.args.get("asc", 1, int))
+        filters = _get_filters_from_query_parameters(request)
+        items = self._execute_advanced_search_with_query_v2(
+            filters, collection, sort, asc
         )
-        if isinstance(access_restricting_filters, list):
-            for filter in access_restricting_filters:
-                filters.update(filter)
-        collection_data = self.storage.get_items_from_collection(
-            collection,
-            skip=skip,
-            limit=limit,
-            fields=fields,
-            filters=filters,
-            sort=sort,
-            asc=asc,
-        )
-        count = collection_data["count"]
-        results = collection_data["results"]
-        collection_data = {
-            "total_count": count,
-            "results": results,
-            "limit": limit,
-            "skip": skip,
-        }
-        if skip + limit < count:
-            collection_data["next"] = f"/{collection}?skip={skip + limit}&limit={limit}"
-        if skip >= limit:
-            collection_data["previous"] = (
-                f"/{collection}?skip={max(0, skip - limit)}&limit={limit}"
-            )
         return self._create_response_according_accept_header(
             mappers.map_data_according_to_accept_header(
                 policy_factory.get_user_context().access_restrictions.post_request_hook(
-                    collection_data
+                    items
                 ),
                 accept_header,
-                "entities",  # specific collection name not relevant for this method
-                fields,
+                "entities",
+                [],
                 spec,
                 request.args,
             ),
@@ -539,3 +501,33 @@ class GenericObjectRelations(BaseResource):
             collection, entity["_id"], content
         )
         return "", 204
+
+
+def _get_filters_from_query_parameters(request):
+    filters = []
+    access_restricting_filters = (
+        policy_factory.get_user_context().access_restrictions.filters
+    )
+    if access_restricting_filters:
+        for filter in access_restricting_filters:
+            filters.append(filter)
+
+    if type := request.args.get("type"):
+        filters.append({"type": "type", "value": type})
+    if fields := request.args.getlist("q"):
+        for field in fields:
+            key, value = field.split("==")
+            filters.append(
+                {
+                    "type": "text",
+                    "key": app.serialize(
+                        key,
+                        type="_default",
+                        from_format="query_parameter",
+                        to_format="filter_key",
+                    ),
+                    "value": value,
+                    "match_exact": False,
+                }
+            )
+    return filters
