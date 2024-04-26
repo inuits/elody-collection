@@ -11,7 +11,9 @@ def append_matcher(matcher, matchers, operator="and"):
         len_matchers, index = len(matchers), 0
         while index < len_matchers and not did_append_matcher:
             if matchers[index].get(matcher_key):
-                if matchers[index][matcher_key].get("$all"):
+                if isinstance(matchers[index][matcher_key], dict) and matchers[index][
+                    matcher_key
+                ].get("$all"):
                     matchers[index][matcher_key]["$all"].extend(
                         matcher[matcher_key]["$all"]
                     )
