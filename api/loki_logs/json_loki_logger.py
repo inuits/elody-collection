@@ -1,34 +1,25 @@
 import json
-import logging
-import logging.handlers
-from multiprocessing import Queue
 
-import logging_loki
 
 from loki_logs.loki_logger import LokiLogger
 
 
-class JsonLokiLogger(LokiLogger):
+class JsonLokiLogger:
     def __init__(
-            self,
-            loki_url: str| None = None,
-            default_loki_labels: dict | None = None,
-            headers: dict | None = None,
-            log_format: str | None = None,
-            log_dateformat: str | None = None
+            self, loki_logger: LokiLogger
     ):
-        super().__init__(loki_url, default_loki_labels, headers, log_format, log_dateformat)
+        self._loki_logger = loki_logger
 
     def _log(self, level, msg: str, tags: dict | None = None, extra_json_properties: dict | None = None,
              exc_info=None):
-        super_log_func = getattr(super(), level)
+        loki_log_func = getattr(self._loki_logger, level)
         dict_msg = {"message": msg}
         if extra_json_properties is not None:
             dict_msg.update(extra_json_properties)
         if level == 'exception':
-            super_log_func(json.dumps(dict_msg), tags, exc_info=exc_info)
+            loki_log_func(json.dumps(dict_msg), tags, exc_info=exc_info)
         else:
-            super_log_func(json.dumps(dict_msg), tags)
+            loki_log_func(json.dumps(dict_msg), tags)
 
     def debug(self, msg: str, tags: dict | None = None, extra_json_properties: dict | None = None):
         self._log('debug', msg, tags=tags, extra_json_properties=extra_json_properties)

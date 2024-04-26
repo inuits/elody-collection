@@ -12,6 +12,7 @@ from healthcheck import HealthCheck
 from importlib import import_module
 from inuits_policy_based_auth import PolicyFactory
 from loki_logs.json_loki_logger import JsonLokiLogger
+from loki_logs.loki_logger import LokiLogger
 from migration.migrator import Migrator
 from object_configurations.object_configuration_mapper import ObjectConfigurationMapper
 from serialization.serializer import Serializer
@@ -45,7 +46,7 @@ tenant_defining_types = (
     tenant_defining_types.split(",") if tenant_defining_types else []
 )
 
-logger = JsonLokiLogger(
+logger = LokiLogger(
     loki_url=os.getenv("LOKI_URL", None),
     default_loki_labels={
         "service_name": os.getenv("NOMAD_GROUP_NAME", "nomad_group_name"),
@@ -54,6 +55,7 @@ logger = JsonLokiLogger(
         "category": os.getenv("SERVICE_TYPE_CATEGORY", "collection"),
     },
     headers={"X-Scope-OrgID": os.getenv('LOKI_TENANT_ID', 'infra')}, )
+json_logger = JsonLokiLogger(logger)
 
 amqp_module = importlib.import_module(os.getenv("AMQP_MANAGER", "amqpstorm_flask"))
 auto_delete_exchange = os.getenv("AUTO_DELETE_EXCHANGE", False) in [
