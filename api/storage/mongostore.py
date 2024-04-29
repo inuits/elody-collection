@@ -243,6 +243,8 @@ class MongoStorageManager(GenericStorageManager):
             "imageStatus": "hasImageStatus",
             "hasDocument": "isDocumentFor",
             "isDocumentFor": "hasDocument",
+            "hasDownload": "isDownloadFor",
+            "isDownloadFor": "hasDownload"
         }.get(relation)
 
     def _map_relation_to_collection(self, relation):
