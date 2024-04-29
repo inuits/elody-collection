@@ -109,9 +109,11 @@ try:
         mapper_module.OBJECT_CONFIGURATION_MAPPER
     )
     route_mapper = mapper_module.ROUTE_MAPPER
+    collection_mapper = mapper_module.COLLECTION_MAPPER
 except ModuleNotFoundError:
     object_configuration_mapper = ObjectConfigurationMapper()
     route_mapper = {}
+    collection_mapper = {}
 
 migrate = Migrator()
 serialize = Serializer()
