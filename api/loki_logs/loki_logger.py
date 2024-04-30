@@ -1,7 +1,6 @@
 import logging
 import logging.handlers
 from multiprocessing import Queue
-from os import getenv
 
 import logging_loki
 

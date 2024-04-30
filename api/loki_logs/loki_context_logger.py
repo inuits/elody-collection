@@ -2,7 +2,6 @@ import copy
 
 from loki_logs.log_context import LogContext
 from loki_logs.loki_logger import LokiLogger
-from apps.pza.logs.pza_log_object import PzaLogObject
 
 
 class LokiContextLogger:
