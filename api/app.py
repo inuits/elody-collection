@@ -11,7 +11,6 @@ from flask_swagger_ui import get_swaggerui_blueprint
 from healthcheck import HealthCheck
 from importlib import import_module
 from inuits_policy_based_auth import PolicyFactory
-from loki_logs.json_loki_logger import JsonLokiLogger
 from loki_logs.loki_logger import LokiLogger
 from migration.migrator import Migrator
 from object_configurations.object_configuration_mapper import ObjectConfigurationMapper
@@ -55,7 +54,6 @@ logger = LokiLogger(
         "category": os.getenv("SERVICE_TYPE_CATEGORY", "collection"),
     },
     headers={"X-Scope-OrgID": os.getenv('LOKI_TENANT_ID', 'infra')}, )
-json_logger = JsonLokiLogger(logger)
 
 amqp_module = importlib.import_module(os.getenv("AMQP_MANAGER", "amqpstorm_flask"))
 auto_delete_exchange = os.getenv("AUTO_DELETE_EXCHANGE", False) in [
