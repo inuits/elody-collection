@@ -1,3 +1,5 @@
+import mappers
+
 from app import policy_factory, rabbit
 from elody.util import (
     mediafile_is_public,
@@ -17,12 +19,17 @@ from resources.generic_object import (
 
 class Mediafile(GenericObject):
     @policy_factory.authenticate(RequestContext(request))
-    def get(self):
+    def get(self, spec="elody"):
+        accept_header = request.headers.get("Accept")
         skip = request.args.get("skip", 0, int)
         limit = request.args.get("limit", 20, int)
         filters = {}
         if ids := request.args.get("ids"):
             filters["ids"] = ids.split(",")
+        fields = [
+            *request.args.getlist("field"),
+            *request.args.getlist("field[]"),
+        ]
         access_restricting_filters = (
             policy_factory.get_user_context().access_restrictions.filters
         )
@@ -34,7 +41,19 @@ class Mediafile(GenericObject):
         mediafiles["results"] = self._inject_api_urls_into_mediafiles(
             mediafiles["results"]
         )
-        return mediafiles
+        return self._create_response_according_accept_header(
+            mappers.map_data_according_to_accept_header(
+                policy_factory.get_user_context().access_restrictions.post_request_hook(
+                    mediafiles
+                ),
+                accept_header,
+                "mediafiles",
+                fields,
+                "elody",
+                request.args,
+            ),
+            accept_header,
+        )
 
     @policy_factory.authenticate(RequestContext(request))
     def post(self):

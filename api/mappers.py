@@ -79,7 +79,7 @@ def map_data_to_ldjson(data, format):
     return graph.serialize(format="json-ld")
 
 
-def map_entities_to_csv(entities, fields=None):
+def map_objects_to_csv(entities, fields=None):
     keys = list()
     root_values = list()
     for entity in entities:
@@ -110,7 +110,7 @@ def map_entities_to_csv(entities, fields=None):
     return csv_writer(keys, root_values)
 
 
-def map_entity_to_csv(entity, fields=None):
+def map_object_to_csv(entity, fields=None):
     keys = list()
     values = list()
     for id in entity.get("identifiers", []):
@@ -166,9 +166,11 @@ def map_to_csv(data, data_type, fields=None):
         case "metadata":
             return map_metadata_to_csv(data, fields)
         case "entities":
-            return map_entities_to_csv(data["results"], fields)
+            return map_objects_to_csv(data["results"], fields)
         case "entity":
-            return map_entity_to_csv(data, fields)
+            return map_object_to_csv(data, fields)
+        case "mediafiles":
+            return map_objects_to_csv(data["results"], fields)
         case _:
             return data
 

@@ -459,10 +459,6 @@ class MongoStorageManager(GenericStorageManager):
         order_by=None,
         ascending=True,
     ):
-        if "ids" in filters:
-            return self.__get_items_from_collection_by_ids(
-                "entities", filters["ids"], order_by, ascending
-            )
         return self.get_items_from_collection(
             "entities",
             skip=skip,
@@ -565,6 +561,10 @@ class MongoStorageManager(GenericStorageManager):
         sort=None,
         asc=True,
     ):
+        if "ids" in filters:
+            return self.__get_items_from_collection_by_ids(
+                collection, filters["ids"], sort, asc
+            )
         items = dict()
         if fields or filters:
             query = {
