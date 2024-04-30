@@ -28,6 +28,20 @@ class Config(BaseResource):
         "entities": ["publication_status", "type"],
     }
 
+    def __add_asset_fields_for_csv(self):
+        asset_fields = [
+            "id", "title", "collection", "externalIdentifier", "collectiontype", "type", "format",
+            "creator", "date", "publisher", "source", "description", "dc1_language", "dc1_relation", "brocade_archief",
+            "closed_deposit", "copyright_object", "copyright_paid", "copyright_asset", "copyright_color", "copyright_permission_needed", "isshownat"
+        ]
+        return asset_fields
+
+    def __add_mediafile_fields_for_csv(self):
+        mediafile_fields = [
+            "filename", "title", "copyright_color", "original_filename", "mimetype", "date_updated", "img_height", "img_width"
+        ]
+        return mediafile_fields
+
     def __add_options_to_filters(self, options, filters, filter_options_map):
         for collection, collection_filters in filters.items():
             for filter in collection_filters:
@@ -68,6 +82,8 @@ class Config(BaseResource):
                         )
                     )
         config["filters"] = self.__get_allowed_filters()
+        config["mediafile_fields"] = self.__add_mediafile_fields_for_csv()
+        config["asset_fields"] = self.__add_asset_fields_for_csv()
         self.__add_options_to_filters(
             config, config["filters"], self.filter_options_map
         )
