@@ -617,7 +617,16 @@ class MongoStorageManager(GenericStorageManager):
         return distinct_values
 
     def get_sort_field(self, field, relation_sort=False):
-        if field not in ["_id", "date_created", "object_id", "type", "version"]:
+        if field not in [
+            "_id",
+            "date_created",
+            "date_updated",
+            "last_editor",
+            "mimetype",
+            "object_id",
+            "type",
+            "version",
+        ]:
             return f"{'relations.' if relation_sort else ''}sort.{field}.value"
         return field
 

@@ -216,10 +216,12 @@ class FilterMediafiles(BaseFilterResource):
         access_restricting_filters = (
             policy_factory.get_user_context().access_restrictions.filters
         )
+        order_by = request.args.get("order_by", None)
+        ascending = request.args.get("asc", 1, int)
         if access_restricting_filters:
             for filter in access_restricting_filters:
                 query.insert(0, filter)
-        return self._execute_advanced_search_with_query(query, "mediafiles")
+        return self._execute_advanced_search_with_query(query, "mediafiles", order_by, ascending)
 
 
 class FilterMediafilesBySavedSearchId(BaseFilterResource):
