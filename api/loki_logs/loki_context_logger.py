@@ -5,9 +5,9 @@ from loki_logs.loki_logger import LokiLogger
 
 
 class LokiContextLogger:
-    def __init__(self, logger: LokiLogger, log_context: LogContext | None = LogContext()):
+    def __init__(self, logger: LokiLogger):
         self.logger = logger
-        self.log_context = log_context
+        self.log_context = LogContext()
 
     def _log(self, level, message, code=None, exc_info=None):
         self.log_context.set_message(message)
