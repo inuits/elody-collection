@@ -10,15 +10,14 @@ class LokiContextLogger:
         self.log_context = log_context
 
     def _log(self, level, message, code=None, exc_info=None):
-        log_context = copy.deepcopy(self.log_context)
-        log_context.set_message(message)
+        self.log_context.set_message(message)
         tags = {"message_code": code}
-        tags.update(log_context.get_tags())
+        tags.update(self.log_context.get_tags())
         log_func = getattr(self.logger, level)
         if level == "exception":
-            log_func(log_context.to_string(), tags, exc_info=exc_info)
+            log_func(self.log_context.to_string(), tags, exc_info=exc_info)
         else:
-            log_func(log_context.to_string(), tags)
+            log_func(self.log_context.to_string(), tags)
 
     def debug(self, message, code=None):
         self._log('debug', message, code)
