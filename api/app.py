@@ -389,6 +389,7 @@ api.add_resource(
 
 # Initialize RabbitMQ Queues
 load_queues(logger)
+import resources.queues
 
 if __name__ == "__main__":
     app.run()
