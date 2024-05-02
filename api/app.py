@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import secrets
+from importlib import import_module
 
 from elody.loader import load_apps, load_policies, load_queues
 from elody.util import CustomJSONEncoder, custom_json_dumps
@@ -10,8 +11,9 @@ from flask import Flask
 from flask_restful import Api
 from flask_swagger_ui import get_swaggerui_blueprint
 from healthcheck import HealthCheck
-from importlib import import_module
 from inuits_policy_based_auth import PolicyFactory
+
+from logging_loki import LokiLogger
 from migration.migrator import Migrator
 from object_configurations.object_configuration_mapper import ObjectConfigurationMapper
 from serialization.serializer import Serializer
@@ -45,12 +47,23 @@ tenant_defining_types = (
     tenant_defining_types.split(",") if tenant_defining_types else []
 )
 
-logging.basicConfig(
-    format="%(asctime)s %(process)d,%(threadName)s %(filename)s:%(lineno)d [%(levelname)s] %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-    level=logging.INFO,
-)
-logger = logging.getLogger(__name__)
+if int(os.getenv("LOKI_LOGGER", 0)) == 1:
+    logger = LokiLogger(
+        loki_url=os.getenv("LOKI_URL", None),
+        default_loki_labels={
+            "service_name": os.getenv("NOMAD_GROUP_NAME", "nomad_group_name"),
+            "env": os.getenv("NOMAD_JOB_NAME", "nomad_job_name-env").split("-")[-1],
+            "service_type": os.getenv("SERVICE_TYPE", "api"),
+            "category": os.getenv("SERVICE_TYPE_CATEGORY", "collection"),
+        },
+        headers={"X-Scope-OrgID": os.getenv('LOKI_TENANT_ID', 'infra')}, )
+else:
+    logging.basicConfig(
+        format="%(asctime)s %(process)d,%(threadName)s %(filename)s:%(lineno)d [%(levelname)s] %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+        level=logging.INFO,
+    )
+    logger = logging.getLogger(__name__)
 
 amqp_module = importlib.import_module(os.getenv("AMQP_MANAGER", "amqpstorm_flask"))
 auto_delete_exchange = os.getenv("AUTO_DELETE_EXCHANGE", False) in [
@@ -376,7 +389,6 @@ api.add_resource(
 
 # Initialize RabbitMQ Queues
 load_queues(logger)
-import resources.queues
 
 if __name__ == "__main__":
     app.run()
