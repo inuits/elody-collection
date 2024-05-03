@@ -35,9 +35,24 @@ class Mediafile(GenericObject):
         )
         if isinstance(access_restricting_filters, dict):
             filters = {**filters, **access_restricting_filters}
-        mediafiles = super().get("mediafiles", skip=skip, limit=limit, filters=filters)[
-            0
-        ]
+        if accept_header in [
+            "application/ld+json",
+            "application/n-triples",
+            "application/rdf+xml",
+            "text/csv",
+            "text/turtle",
+        ]:
+            mediafiles = self.storage.get_items_from_collection(
+                "mediafiles",
+                skip=skip,
+                limit=limit,
+                fields=fields,
+                filters=filters,
+            )
+        else:
+            mediafiles = super().get(
+                "mediafiles", skip=skip, limit=limit, filters=filters
+            )[0]
         mediafiles["results"] = self._inject_api_urls_into_mediafiles(
             mediafiles["results"]
         )
