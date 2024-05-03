@@ -277,8 +277,10 @@ class MongoStorageManager(GenericStorageManager):
         )
 
     def add_mediafile_to_collection_item(
-        self, collection, id, mediafile_id, mediafile_public
+        self, collection, id, mediafile_id, mediafile_public, relation_properties=None
     ):
+        if not relation_properties:
+            relation_properties = dict()
         primary_mediafile = mediafile_public
         primary_thumbnail = mediafile_public
         if mediafile_public:
@@ -294,24 +296,27 @@ class MongoStorageManager(GenericStorageManager):
             id,
             [
                 {
-                    "key": mediafile_id,
-                    "label": "hasMediafile",
-                    "type": "hasMediafile",
-                    "is_primary": primary_mediafile,
-                    "is_primary_thumbnail": primary_thumbnail,
-                    "metadata": [
-                        {
-                            "key": "order",
-                            "value": count + 1,
-                        }
-                    ],
-                    "sort": {
-                        "order": [
+                    **{
+                        "key": mediafile_id,
+                        "label": "hasMediafile",
+                        "type": "hasMediafile",
+                        "is_primary": primary_mediafile,
+                        "is_primary_thumbnail": primary_thumbnail,
+                        "metadata": [
                             {
+                                "key": "order",
                                 "value": count + 1,
                             }
-                        ]
+                        ],
+                        "sort": {
+                            "order": [
+                                {
+                                    "value": count + 1,
+                                }
+                            ]
+                        },
                     },
+                    **relation_properties,
                 }
             ],
             True,

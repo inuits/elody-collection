@@ -256,12 +256,14 @@ class EntityMediafiles(GenericObjectDetail):
                 mediafile = self._abort_if_item_doesnt_exist(
                     "mediafiles", get_raw_id(mediafile)
                 )
+            relation_properties = mediafile.pop("relation_properties", None)
             mediafile = self.storage.save_item_to_collection("mediafiles", mediafile)
             mediafile = self.storage.add_mediafile_to_collection_item(
                 "entities",
                 get_raw_id(entity),
                 mediafile["_id"],
                 mediafile_is_public(mediafile),
+                relation_properties,
             )
             if accept_header == "text/uri-list":
                 ticket_id = self._create_ticket(mediafile["filename"])
