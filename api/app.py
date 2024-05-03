@@ -56,7 +56,8 @@ if int(os.getenv("LOKI_LOGGER", 0)) == 1:
             "service_type": os.getenv("SERVICE_TYPE", "api"),
             "category": os.getenv("SERVICE_TYPE_CATEGORY", "collection"),
         },
-        headers={"X-Scope-OrgID": os.getenv('LOKI_TENANT_ID', 'infra')}, )
+        headers={"X-Scope-OrgID": os.getenv("LOKI_TENANT_ID", "infra")},
+    )
 else:
     logging.basicConfig(
         format="%(asctime)s %(process)d,%(threadName)s %(filename)s:%(lineno)d [%(levelname)s] %(message)s",

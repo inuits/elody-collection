@@ -30,15 +30,41 @@ class Config(BaseResource):
 
     def __add_asset_fields_for_csv(self):
         asset_fields = [
-            "id", "title", "collection", "externalIdentifier", "collectiontype", "type", "format",
-            "creator", "date", "publisher", "source", "description", "dc1_language", "dc1_relation", "brocade_archief",
-            "closed_deposit", "copyright_object", "copyright_paid", "copyright_asset", "copyright_color", "copyright_permission_needed", "isshownat"
+            "id",
+            "title",
+            "collection",
+            "externalIdentifier",
+            "collectiontype",
+            "type",
+            "format",
+            "creator",
+            "date",
+            "publisher",
+            "source",
+            "description",
+            "dc1_language",
+            "dc1_relation",
+            "brocade_archief",
+            "closed_deposit",
+            "copyright_object",
+            "copyright_paid",
+            "copyright_asset",
+            "copyright_color",
+            "copyright_permission_needed",
+            "isshownat",
         ]
         return asset_fields
 
     def __add_mediafile_fields_for_csv(self):
         mediafile_fields = [
-            "filename", "title", "copyright_color", "original_filename", "mimetype", "date_updated", "img_height", "img_width"
+            "filename",
+            "title",
+            "copyright_color",
+            "original_filename",
+            "mimetype",
+            "date_updated",
+            "img_height",
+            "img_width",
         ]
         return mediafile_fields
 

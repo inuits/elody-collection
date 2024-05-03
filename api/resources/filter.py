@@ -221,7 +221,9 @@ class FilterMediafiles(BaseFilterResource):
         if access_restricting_filters:
             for filter in access_restricting_filters:
                 query.insert(0, filter)
-        return self._execute_advanced_search_with_query(query, "mediafiles", order_by, ascending)
+        return self._execute_advanced_search_with_query(
+            query, "mediafiles", order_by, ascending
+        )
 
 
 class FilterMediafilesBySavedSearchId(BaseFilterResource):

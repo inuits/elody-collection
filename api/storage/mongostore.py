@@ -244,7 +244,7 @@ class MongoStorageManager(GenericStorageManager):
             "hasDocument": "isDocumentFor",
             "isDocumentFor": "hasDocument",
             "hasDownload": "isDownloadFor",
-            "isDownloadFor": "hasDownload"
+            "isDownloadFor": "hasDownload",
         }.get(relation)
 
     def _map_relation_to_collection(self, relation):
