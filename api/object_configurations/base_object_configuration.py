@@ -10,8 +10,9 @@ class BaseObjectConfiguration(ABC):
     def crud(self):
         return {
             "collection": "entities",
-            "computed_value_patcher": lambda _: None,
-            "creator": lambda post_body, **_: post_body,
+            "computed_value_patcher": lambda item: None,  # pyright: ignore
+            "creator": lambda post_body, **kwargs: post_body,  # pyright: ignore
+            "post_crud_hook": lambda *, crud, **kwargs: None,  # pyright: ignore
         }
 
     @abstractmethod

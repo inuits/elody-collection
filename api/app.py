@@ -3,7 +3,6 @@ import json
 import logging
 import os
 import secrets
-from importlib import import_module
 
 from elody.loader import load_apps, load_policies, load_queues
 from elody.util import CustomJSONEncoder, custom_json_dumps
@@ -11,8 +10,8 @@ from flask import Flask
 from flask_restful import Api
 from flask_swagger_ui import get_swaggerui_blueprint
 from healthcheck import HealthCheck
+from importlib import import_module
 from inuits_policy_based_auth import PolicyFactory
-
 from logging_loki import LokiLogger
 from migration.migrator import Migrator
 from object_configurations.object_configuration_mapper import ObjectConfigurationMapper

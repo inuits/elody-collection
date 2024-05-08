@@ -377,7 +377,7 @@ class GenericObjectDetailV2(BaseResource):
         if request.args.get("soft", 0, int):
             return "good", 200
         item = self._check_if_collection_and_item_exists(collection, id)
-        self.storage.delete_item_from_collection(collection, get_raw_id(item))
+        self.storage.delete_item(item)
         return "", 204
 
 
