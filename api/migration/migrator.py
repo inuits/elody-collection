@@ -4,7 +4,7 @@ from copy import deepcopy
 
 
 class Migrator:
-    DRY_RUN = False
+    DRY_RUN = True
     EXCEPTION_LIMIT = 2
 
     def __init__(self):
