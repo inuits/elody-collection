@@ -4,7 +4,6 @@ from copy import deepcopy
 
 
 class Migrator:
-    DRY_RUN = True
     EXCEPTION_LIMIT = 2
 
     def __init__(self):
@@ -31,22 +30,24 @@ class Migrator:
                     item["type"],
                     self.__get_schema_to_upgrade_to(item_schema, latest_schema),
                 )
-                is_silent_migration = config.migration().silent
+                if config.migration().status == "disabled":
+                    break
+
                 self.__validate_migration(
-                    is_silent_migration,
+                    config.migration().silent,
                     config.migration().lazy_migrate(deepcopy(item), dry_run=True),
                     item_schema,
                 )
                 migrated_item = config.migration().lazy_migrate(
-                    deepcopy(item), dry_run=self.DRY_RUN
+                    deepcopy(item), dry_run=config.migration().status == "dry_run"
                 )
             except Exception:
                 self.__patch_exception_count(1)
             else:
                 self.__patch_exception_count(0)
-                if not self.DRY_RUN:
+                if config.migration().status != "dry_run":
                     item = migrated_item
-                if is_silent_migration:
+                if config.migration().silent:
                     break
 
         return item
@@ -72,7 +73,8 @@ class Migrator:
         item_schema_type, item_schema_version = item_schema.split(":")
         latest_schema_type, latest_schema_version = latest_schema.split(":")
         # if item_schema_type != latest_schema_type:
-        #    raise Exception("Cannot lazily migrate to different schema types.")
+        #     self.__patch_exception_count(self.EXCEPTION_LIMIT)
+        #     raise Exception("Cannot lazily migrate to different schema types.")
         schema_version = (
             int(item_schema_version) + 1
             if int(item_schema_version) < int(latest_schema_version)

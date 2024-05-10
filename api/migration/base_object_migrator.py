@@ -1,6 +1,11 @@
 class BaseObjectMigrator:
-    def __init__(self, *, silent=False):
+    def __init__(self, *, status, silent=False):
+        self._status = status
         self._silent = silent
+
+    @property
+    def status(self):
+        return self._status
 
     @property
     def silent(self):

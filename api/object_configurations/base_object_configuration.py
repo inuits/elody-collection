@@ -25,7 +25,7 @@ class BaseObjectConfiguration(ABC):
 
     @abstractmethod
     def migration(self):
-        return BaseObjectMigrator()
+        return BaseObjectMigrator(status="disabled")
 
     @abstractmethod
     def serialization(self, from_format, to_format):  # pyright: ignore
