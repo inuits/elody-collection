@@ -21,7 +21,7 @@ gunicorn==22.0.0
 idna==3.7
 importlib-metadata==7.1.0
 inuits-policy-based-auth==9.6.0
-inuits-python-logging-loki==1.2.1
+inuits-python-logging-loki==1.4.1
 isodate==0.6.1
 itsdangerous==2.2.0
 Jinja2==3.1.4
