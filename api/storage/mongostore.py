@@ -250,7 +250,7 @@ class MongoStorageManager(GenericStorageManager):
             "hasVervaardiger": "isVervaardigerFor",
             "isVervaardgerFor": "hasVervaardiger",
             "hasPhotograper": "isPhotographerFor",
-            "isPhotographerFor": "hasPhotographer"
+            "isPhotographerFor": "hasPhotographer",
         }.get(relation)
 
     def _map_relation_to_collection(self, relation):
@@ -716,6 +716,8 @@ class MongoStorageManager(GenericStorageManager):
     def patch_item_from_collection_v2(self, collection, item, content, spec):
         item = item.get("storage_format", item)
         config = app.object_configuration_mapper.get(item["type"])
+        if not collection:
+            collection = config.crud()["collection"]
         scope = config.crud().get("spec_scope", {}).get(spec, None)
         object_lists = config.document_info()["object_lists"]
         patch_computed_values = config.crud()["computed_value_patcher"]
@@ -745,6 +747,8 @@ class MongoStorageManager(GenericStorageManager):
 
     def put_item_from_collection(self, collection, item, content, spec):
         crud_config = app.object_configuration_mapper.get(item["type"]).crud()
+        if not collection:
+            collection = crud_config["collection"]
         scope = crud_config["spec_scope"].get(spec, None)
         patch_computed_values = crud_config["computed_value_patcher"]
         post_crud_hook = crud_config["post_crud_hook"]

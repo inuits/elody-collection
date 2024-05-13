@@ -122,8 +122,18 @@ class BaseResource(Resource):
             pass
         if item:
             return item
-        self._check_if_collection_name_exists(collection)
-        return self._abort_if_item_doesnt_exist(collection, id)
+        if collection:
+            self._check_if_collection_name_exists(collection)
+            return self._abort_if_item_doesnt_exist(collection, id)
+        else:
+            collections = policy_factory.get_user_context().bag.get(
+                "autosearch_collections", ["entities"]
+            )
+            for collection in collections:
+                if item := self.storage.get_item_from_collection_by_id(collection, id):
+                    return item
+            else:
+                abort(404, message=f"Item with id {id} does not exist.")
 
     def _count_children_from_mediafile(self, parent_mediafile, count=0):
         relations = self.storage.get_collection_item_relations(
@@ -342,6 +352,18 @@ class BaseResource(Resource):
             )
         else:
             return content
+
+    def get_filters_from_query_parameters(self, request):
+        filters = []
+        access_restricting_filters = (
+            app.policy_factory.get_user_context().access_restrictions.filters
+        )
+        if access_restricting_filters:
+            for filter in access_restricting_filters:
+                filters.append(filter)
+        if type := request.args.get("type"):
+            filters.append({"type": "type", "value": type})
+        return filters
 
     def get_parent_mediafile(self, mediafile, parent_mediafile=None):
         relations = self.storage.get_collection_item_relations(

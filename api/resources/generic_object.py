@@ -120,12 +120,13 @@ class GenericObject(BaseResource):
 # POC: currently only suitable when supporting multiples specs for a client
 class GenericObjectV2(BaseFilterResource, BaseResource):
     @policy_factory.apply_policies(RequestContext(request))
-    def get(self, collection, spec="elody"):
+    def get(self, collection, filters=[], spec="elody"):
         self._check_if_collection_name_exists(collection)
         accept_header = request.headers.get("Accept")
         sort = request.args.get("order_by", None)
         asc = bool(request.args.get("asc", 1, int))
-        filters = _get_filters_from_query_parameters(request)
+        if len(filters) == 0:
+            filters = self.get_filters_from_query_parameters(request)
         items = self._execute_advanced_search_with_query_v2(
             filters, collection, sort, asc
         )
@@ -328,7 +329,21 @@ class GenericObjectDetailV2(BaseResource):
             )
         except NonUniqueException as error:
             return str(error), 409
-        return item, 200
+        accept_header = request.headers.get("Accept")
+        return (
+            self._create_response_according_accept_header(
+                mappers.map_data_according_to_accept_header(
+                    item,
+                    accept_header,
+                    "entity",
+                    [],
+                    spec,
+                    request.args,
+                ),
+                accept_header,
+            )[0],
+            200,
+        )
 
     @policy_factory.apply_policies(RequestContext(request))
     def patch(
@@ -501,33 +516,3 @@ class GenericObjectRelations(BaseResource):
             collection, entity["_id"], content
         )
         return "", 204
-
-
-def _get_filters_from_query_parameters(request):
-    filters = []
-    access_restricting_filters = (
-        policy_factory.get_user_context().access_restrictions.filters
-    )
-    if access_restricting_filters:
-        for filter in access_restricting_filters:
-            filters.append(filter)
-
-    if type := request.args.get("type"):
-        filters.append({"type": "type", "value": type})
-    if fields := request.args.getlist("q"):
-        for field in fields:
-            key, value = field.split("==")
-            filters.append(
-                {
-                    "type": "text",
-                    "key": app.serialize(
-                        key,
-                        type="_default",
-                        from_format="query_parameter",
-                        to_format="filter_key",
-                    ),
-                    "value": value,
-                    "match_exact": False,
-                }
-            )
-    return filters
