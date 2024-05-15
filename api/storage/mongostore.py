@@ -247,8 +247,8 @@ class MongoStorageManager(GenericStorageManager):
             "isDownloadFor": "hasDownload",
             "hasConfidentiality": "isConfidentialityFor",
             "isConfidentialityFor": "hasConfidentiality",
-            "hasVervaardiger": "isVervaardigerFor",
-            "isVervaardgerFor": "hasVervaardiger",
+            "hasManufacturer": "isManufacturerFor",
+            "isManufacturerFor": "hasManufacturer",
             "hasPhotograper": "isPhotographerFor",
             "isPhotographerFor": "hasPhotographer",
         }.get(relation)
