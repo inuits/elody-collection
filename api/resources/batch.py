@@ -1,4 +1,5 @@
 from app import policy_factory
+from datetime import datetime, timezone
 from elody.csv import CSVMultiObject
 from elody.exceptions import ColumnNotFoundException
 from elody.util import get_raw_id
@@ -50,6 +51,10 @@ class Batch(BaseResource):
             entity_matching_id = entity.pop("matching_id", None)
             if not dry_run:
                 relations = entity.pop("relations", list())
+                date_created = datetime.now(timezone.utc)
+                entity["date_created"] = date_created
+                entity["date_updated"] = date_created
+                entity["version"] = 1
                 entity = self.storage.save_item_to_collection("entities", entity)
                 self.storage.add_relations_to_collection_item(
                     "entities", get_raw_id(entity), relations
