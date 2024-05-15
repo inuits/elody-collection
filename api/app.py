@@ -13,7 +13,7 @@ from healthcheck import HealthCheck
 from importlib import import_module
 from inuits_policy_based_auth import PolicyFactory
 from logging_loki import LokiLogger
-from migration.migrator import Migrator
+from migration.lazy_migrator import LazyMigrator
 from object_configurations.object_configuration_mapper import ObjectConfigurationMapper
 from serialization.serializer import Serializer
 from storage.storagemanager import StorageManager
@@ -128,7 +128,7 @@ except ModuleNotFoundError:
     route_mapper = {}
     collection_mapper = {}
 
-migrate = Migrator()
+migrate = LazyMigrator()
 serialize = Serializer()
 Validator = Validator().validator
 

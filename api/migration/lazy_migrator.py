@@ -3,7 +3,7 @@ import app
 from copy import deepcopy
 
 
-class Migrator:
+class LazyMigrator:
     EXCEPTION_LIMIT = 2
 
     def __init__(self):
