@@ -20,15 +20,15 @@ class BaseObjectConfiguration(ABC):
         return {"object_lists": {"metadata": "key", "relations": "type"}}
 
     @abstractmethod
-    def logging(self, _):
-        return {"object_info": {}, "tags": {}}
+    def logging(self, flat_item, **kwargs):
+        return {"info_labels": {}, "loki_indexed_info_labels": {}}
 
     @abstractmethod
     def migration(self):
         return BaseObjectMigrator(status="disabled")
 
     @abstractmethod
-    def serialization(self, from_format, to_format):  # pyright: ignore
+    def serialization(self, from_format, to_format):
         def serializer(item):
             return item
 

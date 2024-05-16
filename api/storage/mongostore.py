@@ -409,11 +409,16 @@ class MongoStorageManager(GenericStorageManager):
         config = app.object_configuration_mapper.get(item["type"])
         patch_computed_values = config.crud()["computed_value_patcher"]
         post_crud_hook = config.crud()["post_crud_hook"]
-        patch_computed_values(item)
-        self.db[config.crud()["collection"]].delete_one(
-            self.__get_id_query(item["_id"])
-        )
-        post_crud_hook(crud="delete", item=item, storage=self)
+        try:
+            patch_computed_values(item)
+            self.db[config.crud()["collection"]].delete_one(
+                self.__get_id_query(item["_id"])
+            )
+            post_crud_hook(crud="delete", item=item, storage=self)
+            app.log.info("Successfully deleted item", item)
+        except Exception as error:
+            app.log.exception(str(error), item, exc_info=error)
+            raise error
 
     def delete_item_from_collection(self, collection, id):
         self._delete_impacted_relations(collection, id)
@@ -740,9 +745,11 @@ class MongoStorageManager(GenericStorageManager):
             self.db[collection].replace_one(self.__get_id_query(item["_id"]), item)
             post_crud_hook(crud="update", item=item, storage=self)
         except pymongo.errors.DuplicateKeyError as error:
+            app.log.exception(str(error), item, exc_info=error)
             if error.code == 11000:
                 raise NonUniqueException(error.details)
             raise error
+        app.log.info("Successfully patched item", item)
         return self._prepare_mongo_document(item, False, False)
 
     def put_item_from_collection(self, collection, item, content, spec):
@@ -763,11 +770,13 @@ class MongoStorageManager(GenericStorageManager):
             self.db[collection].replace_one(self.__get_id_query(item["_id"]), item)
             post_crud_hook(crud="update", item=item, storage=self)
         except pymongo.errors.DuplicateKeyError as error:
+            app.log.exception(str(error), item, exc_info=error)
             if error.code == 11000:
                 raise NonUniqueException(error.details)
             raise error
         if scope:
             return self._prepare_mongo_document(item, False, False)
+        app.log.info("Successfully put item", item)
         return self.get_item_from_collection_by_id(collection, item["_id"])
 
     def reindex_mediafile_parents(self, mediafile=None, parents=None):
@@ -804,6 +813,7 @@ class MongoStorageManager(GenericStorageManager):
         if not isinstance(items, list):
             items = items.get("storage_format", items)
             items = [items]
+        item = {}
         try:
             item_id = self.db[collection].insert_many(items).inserted_ids[0]
             for item in items:
@@ -811,10 +821,12 @@ class MongoStorageManager(GenericStorageManager):
                     item["type"]
                 ).crud()["post_crud_hook"]
                 post_crud_hook(crud="create", item=item, storage=self)
-        except pymongo.errors.DuplicateKeyError as ex:
-            if ex.code == 11000:
-                raise NonUniqueException(ex.details)
-            raise ex
+                app.log.info("Successfully saved item", item)
+        except pymongo.errors.DuplicateKeyError as error:
+            app.log.exception(str(error), item, exc_info=error)
+            if error.code == 11000:
+                raise NonUniqueException(error.details)
+            raise error
         return self.get_item_from_collection_by_id(collection, item_id)
 
     def set_primary_field_collection_item(self, collection, id, mediafile_id, field):

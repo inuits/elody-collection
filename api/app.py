@@ -12,6 +12,7 @@ from flask_swagger_ui import get_swaggerui_blueprint
 from healthcheck import HealthCheck
 from importlib import import_module
 from inuits_policy_based_auth import PolicyFactory
+from logging_elody.logger import Logger
 from logging_loki import LokiLogger
 from migration.lazy_migrator import LazyMigrator
 from object_configurations.object_configuration_mapper import ObjectConfigurationMapper
@@ -128,6 +129,7 @@ except ModuleNotFoundError:
     route_mapper = {}
     collection_mapper = {}
 
+log = Logger()
 migrate = LazyMigrator()
 serialize = Serializer()
 Validator = Validator().validator
