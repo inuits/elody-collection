@@ -81,7 +81,7 @@ class Logger:
         extra_json_properties = info["info_labels"]
         extra_json_properties.update(
             {
-                "trace_info": f"Logged from file: {frame_info.filename}, line: {frame_info.lineno}, in function: {frame_info.function}"
+                "frame_info": f"Logged from file: {frame_info.filename}, line: {frame_info.lineno}, in function: {frame_info.function}"
             }
         )
         if not getenv("LOKI_URL", None):
