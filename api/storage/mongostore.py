@@ -419,7 +419,9 @@ class MongoStorageManager(GenericStorageManager):
             post_crud_hook(crud="delete", item=item, storage=self)
             app.log.info("Successfully deleted item", item)
         except Exception as error:
-            app.log.exception(str(error), item, exc_info=error)
+            app.log.exception(
+                f"{error.__class__.__name__}: {error}", item, exc_info=error
+            )
             raise error
 
     def delete_item_from_collection(self, collection, id):
@@ -747,7 +749,9 @@ class MongoStorageManager(GenericStorageManager):
             self.db[collection].replace_one(self.__get_id_query(item["_id"]), item)
             post_crud_hook(crud="update", item=item, storage=self)
         except pymongo.errors.DuplicateKeyError as error:
-            app.log.exception(str(error), item, exc_info=error)
+            app.log.exception(
+                f"{error.__class__.__name__}: {error}", item, exc_info=error
+            )
             if error.code == 11000:
                 raise NonUniqueException(error.details)
             raise error
@@ -772,7 +776,9 @@ class MongoStorageManager(GenericStorageManager):
             self.db[collection].replace_one(self.__get_id_query(item["_id"]), item)
             post_crud_hook(crud="update", item=item, storage=self)
         except pymongo.errors.DuplicateKeyError as error:
-            app.log.exception(str(error), item, exc_info=error)
+            app.log.exception(
+                f"{error.__class__.__name__}: {error}", item, exc_info=error
+            )
             if error.code == 11000:
                 raise NonUniqueException(error.details)
             raise error
@@ -825,7 +831,9 @@ class MongoStorageManager(GenericStorageManager):
                 post_crud_hook(crud="create", item=item, storage=self)
                 app.log.info("Successfully saved item", item)
         except pymongo.errors.DuplicateKeyError as error:
-            app.log.exception(str(error), item, exc_info=error)
+            app.log.exception(
+                f"{error.__class__.__name__}: {error}", item, exc_info=error
+            )
             if error.code == 11000:
                 raise NonUniqueException(error.details)
             raise error

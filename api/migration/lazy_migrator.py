@@ -41,7 +41,12 @@ class LazyMigrator:
                 migrated_item = config.migration().lazy_migrate(
                     deepcopy(item), dry_run=config.migration().status == "dry_run"
                 )
-            except Exception:
+            except Exception as exception:
+                app.log.exception(
+                    f"{exception.__class__.__name__}: {exception}",
+                    item,
+                    exc_info=exception,
+                )
                 self.__patch_exception_count(1)
             else:
                 self.__patch_exception_count(0)

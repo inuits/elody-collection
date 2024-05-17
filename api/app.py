@@ -47,24 +47,16 @@ tenant_defining_types = (
     tenant_defining_types.split(",") if tenant_defining_types else []
 )
 
-if int(os.getenv("LOKI_LOGGER", 0)) == 1:
-    logger = LokiLogger(
-        loki_url=os.getenv("LOKI_URL", None),
-        default_loki_labels={
-            "service_name": os.getenv("NOMAD_GROUP_NAME", "nomad_group_name"),
-            "env": os.getenv("NOMAD_JOB_NAME", "nomad_job_name-env").split("-")[-1],
-            "service_type": os.getenv("SERVICE_TYPE", "api"),
-            "category": os.getenv("SERVICE_TYPE_CATEGORY", "collection"),
-        },
-        headers={"X-Scope-OrgID": os.getenv("LOKI_TENANT_ID", "infra")},
-    )
-else:
-    logging.basicConfig(
-        format="%(asctime)s %(process)d,%(threadName)s %(filename)s:%(lineno)d [%(levelname)s] %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-        level=logging.INFO,
-    )
-    logger = logging.getLogger(__name__)
+logger = LokiLogger(
+    loki_url=os.getenv("LOKI_URL", None),
+    default_loki_labels={
+        "service_name": os.getenv("NOMAD_GROUP_NAME", "nomad_group_name"),
+        "env": os.getenv("NOMAD_JOB_NAME", "nomad_job_name-env").split("-")[-1],
+        "service_type": os.getenv("SERVICE_TYPE", "api"),
+        "category": os.getenv("SERVICE_TYPE_CATEGORY", "collection"),
+    },
+    headers={"X-Scope-OrgID": os.getenv("LOKI_TENANT_ID", "infra")},
+)
 
 amqp_module = importlib.import_module(os.getenv("AMQP_MANAGER", "amqpstorm_flask"))
 auto_delete_exchange = os.getenv("AUTO_DELETE_EXCHANGE", False) in [
@@ -133,6 +125,22 @@ log = Logger()
 migrate = LazyMigrator()
 serialize = Serializer()
 Validator = Validator().validator
+
+
+@app.errorhandler(Exception)
+def exception(exception):
+    item = {}
+    try:
+        item = policy_factory.get_user_context().bag.get("requested_item", {})
+        if not item:
+            item = policy_factory.get_user_context().bag.get("item_being_processed")
+    except Exception:
+        pass
+    log.exception(
+        f"{exception.__class__.__name__}: {exception}", item, exc_info=exception
+    )
+    raise exception
+
 
 if os.getenv("HEALTH_CHECK_EXTERNAL_SERVICES", True) in ["True", "true", True]:
     health.add_check(database_available)

@@ -4,6 +4,7 @@ import mappers
 import os
 
 from app import policy_factory, rabbit, tenant_defining_types
+from copy import deepcopy
 from datetime import datetime, timezone, timedelta
 from elody.csv import CSVSingleObject
 from elody.util import (
@@ -104,7 +105,10 @@ class BaseResource(Resource):
 
     def _check_if_collection_name_exists(self, collection):
         try:
-            policy_factory.get_user_context().bag.pop("requested_item", None)
+            item = policy_factory.get_user_context().bag.pop("requested_item", None)
+            policy_factory.get_user_context().bag["item_being_processed"] = deepcopy(
+                item
+            )
         except NoUserContextException:
             pass
         if collection in self.known_collections:
@@ -117,6 +121,9 @@ class BaseResource(Resource):
         try:
             item = item or policy_factory.get_user_context().bag.pop(
                 "requested_item", None
+            )
+            policy_factory.get_user_context().bag["item_being_processed"] = deepcopy(
+                item
             )
         except NoUserContextException:
             pass
