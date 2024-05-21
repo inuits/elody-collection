@@ -30,6 +30,10 @@ def map_data_according_to_accept_header(
     request_parameters={},
 ):
     to_format = app.serialize.get_format(spec, request_parameters)
+    if spec != "elody":
+        return __serialize_data_according_to_accept_header(
+            data, data_type, to_format, accept_header
+        )
 
     match accept_header:
         case "application/ld+json":
@@ -43,24 +47,8 @@ def map_data_according_to_accept_header(
         case "text/turtle":
             return map_to_rdf_data(data, data_type, format="turtle")
         case _:
-            if data_type == "entities":
-                results = []
-                for result in data["results"]:
-                    results.append(
-                        app.serialize(
-                            result,
-                            type=result.get("type"),
-                            to_format=to_format,
-                            hide_storage_format=True,
-                        )
-                    )
-                data["results"] = results
-                return data
-            return app.serialize(
-                data,
-                type=data.get("type") if data_type == "entity" else None,
-                to_format=to_format,
-                hide_storage_format=True,
+            return __serialize_data_according_to_accept_header(
+                data, data_type, to_format, accept_header
             )
 
 
@@ -181,3 +169,29 @@ def map_to_rdf_data(data, data_type, format):
             return map_entity_to_rdf_data([data], format)
         case "entities":
             return map_entity_to_rdf_data(data.get("results"), format)
+
+
+def __serialize_data_according_to_accept_header(
+    data, data_type, to_format, accept_header
+):
+    if data_type == "entities":
+        results = []
+        for result in data["results"]:
+            results.append(
+                app.serialize(
+                    result,
+                    type=result.get("type"),
+                    to_format=to_format,
+                    accept_header=accept_header,
+                    hide_storage_format=True,
+                )
+            )
+        data["results"] = results
+        return data
+    return app.serialize(
+        data,
+        type=data.get("type") if data_type == "entity" else None,
+        to_format=to_format,
+        accept_header=accept_header,
+        hide_storage_format=True,
+    )

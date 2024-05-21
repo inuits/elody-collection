@@ -142,6 +142,7 @@ class GenericObjectV2(BaseFilterResource, BaseResource):
                 request.args,
             ),
             accept_header,
+            spec=spec,
         )
 
     @policy_factory.apply_policies(RequestContext(request))
@@ -174,6 +175,7 @@ class GenericObjectV2(BaseFilterResource, BaseResource):
                 request.args,
             ),
             accept_header,
+            spec=spec,
         )[0]
 
 
@@ -307,6 +309,7 @@ class GenericObjectDetailV2(BaseResource):
                 request.args,
             ),
             accept_header,
+            spec=spec,
         )[0]
 
     @policy_factory.apply_policies(RequestContext(request))
@@ -341,6 +344,7 @@ class GenericObjectDetailV2(BaseResource):
                     request.args,
                 ),
                 accept_header,
+                spec=spec,
             )[0],
             200,
         )
@@ -377,6 +381,7 @@ class GenericObjectDetailV2(BaseResource):
                     request.args,
                 ),
                 accept_header,
+                spec=spec,
             )[0],
             200,
         )

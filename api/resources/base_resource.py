@@ -193,8 +193,11 @@ class BaseResource(Resource):
         return mediafile
 
     def _create_response_according_accept_header(
-        self, response_data, accept_header=None, status_code=200
+        self, response_data, accept_header=None, status_code=200, spec="elody"
     ):
+        if spec != "elody":
+            return response_data, status_code
+
         match accept_header:
             case "application/json":
                 return response_data, status_code
