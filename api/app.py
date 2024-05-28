@@ -1,4 +1,3 @@
-import importlib
 import json
 import logging
 import os
@@ -58,7 +57,7 @@ logger = LokiLogger(
     headers={"X-Scope-OrgID": os.getenv("LOKI_TENANT_ID", "infra")},
 )
 
-amqp_module = importlib.import_module(os.getenv("AMQP_MANAGER", "amqpstorm_flask"))
+amqp_module = import_module(os.getenv("AMQP_MANAGER", "amqpstorm_flask"))
 auto_delete_exchange = os.getenv("AUTO_DELETE_EXCHANGE", False) in [
     1,
     "1",
