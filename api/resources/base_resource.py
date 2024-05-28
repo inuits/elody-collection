@@ -129,13 +129,11 @@ class BaseResource(Resource):
             pass
         if item:
             return item
-        if collection:
+        elif collection:
             self._check_if_collection_name_exists(collection)
             return self._abort_if_item_doesnt_exist(collection, id)
         else:
-            collections = policy_factory.get_user_context().bag.get(
-                "autosearch_collections", ["entities"]
-            )
+            collections = self._resolve_collections(collection=collection, id=id)
             for collection in collections:
                 if item := self.storage.get_item_from_collection_by_id(collection, id):
                     return item
@@ -446,6 +444,9 @@ class BaseResource(Resource):
         tenant = self.storage.get_item_from_collection_by_id("entities", tenant_id)
         relation = {"key": tenant["_id"], "type": "isIn"}
         self.storage.add_relations_to_collection_item("entities", entity_id, [relation])
+
+    def _resolve_collections(self, **kwargs):
+        return [kwargs.get("collection", "entities")]
 
     def _set_entity_mediafile_and_thumbnail(self, entity):
         mediafiles = self.storage.get_collection_item_mediafiles(
