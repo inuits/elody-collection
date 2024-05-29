@@ -431,7 +431,7 @@ class MongoStorageManager(GenericStorageManager):
     def delete_data_from_collection_item(self, collection, item, content, spec):
         item = item.get("storage_format", item)
         config = app.object_configuration_mapper.get(item["type"])
-        scope = config.crud()["spec_scope"].get(spec, None)
+        scope = config.crud().get("spec_scope", {}).get(spec, None)
         object_lists = config.document_info()["object_lists"]
         patch_computed_values = config.crud()["computed_value_patcher"]
         for key, value in content.items():
@@ -762,7 +762,7 @@ class MongoStorageManager(GenericStorageManager):
         crud_config = app.object_configuration_mapper.get(item["type"]).crud()
         if not collection:
             collection = crud_config["collection"]
-        scope = crud_config["spec_scope"].get(spec, None)
+        scope = crud_config.get("spec_scope", {}).get(spec, None)
         patch_computed_values = crud_config["computed_value_patcher"]
         post_crud_hook = crud_config["post_crud_hook"]
         if scope:
