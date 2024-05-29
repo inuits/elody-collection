@@ -11,8 +11,8 @@ class NoneConfiguration(BaseObjectConfiguration):
     def document_info(self):
         return super().document_info()
 
-    def logging(self, item):
-        return super().logging(item)
+    def logging(self, flat_item, **kwargs):
+        return super().logging(flat_item, **kwargs)
 
     def migration(self):
         return super().migration()
