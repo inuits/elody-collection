@@ -1,3 +1,5 @@
+import app
+
 from copy import deepcopy
 from elody.util import interpret_flat_key
 from filters_v2.matchers.base_matchers import BaseMatchers
@@ -32,14 +34,26 @@ def append_matcher(matcher, matchers, operator="and"):
 
 
 def get_filter_option_label(db, identifier, key):
-    return next(
-        db[BaseMatchers.collection].aggregate(
-            [
-                {"$match": {"identifiers": {"$in": [identifier]}}},
-                {"$project": {"label": get_options_mapper(key)}},
-            ]
+    try:
+        return next(
+            db[BaseMatchers.collection].aggregate(
+                [
+                    {"$match": {"identifiers": {"$in": [identifier]}}},
+                    {"$project": {"label": get_options_mapper(key)}},
+                ]
+            )
+        )["label"][0]["label"]
+    except Exception as exception:
+        app.log.exception(
+            f"Failed fetching filter option label.",
+            exc_info=exception,
+            info_labels={
+                "collection": BaseMatchers.collection,
+                "identifier": identifier,
+                "key_as_label": key,
+            },
         )
-    )["label"][0]["label"]
+        return identifier
 
 
 def get_options_mapper(key):

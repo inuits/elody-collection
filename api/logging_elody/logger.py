@@ -84,6 +84,8 @@ class Logger:
                 "frame_info": f"Logged from file: {frame_info.filename}, line: {frame_info.lineno}, in function: {frame_info.function}"
             }
         )
+        if info_labels := kwargs.get("info_labels"):
+            extra_json_properties.update(info_labels)
         if not getenv("LOKI_URL", None):
             extra_json_properties.update(tags)
 
