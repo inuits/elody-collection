@@ -361,7 +361,7 @@ class BaseResource(Resource):
         else:
             return content
 
-    def get_filters_from_query_parameters(self, request):
+    def get_filters_from_query_parameters(self, request, **_):
         filters = []
         access_restricting_filters = (
             app.policy_factory.get_user_context().access_restrictions.filters
