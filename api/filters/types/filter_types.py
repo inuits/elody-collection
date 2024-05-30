@@ -30,6 +30,10 @@ def get_filter(input_type: str):
         return TypeFilterType()
     if input_type == "metadata_on_relation":
         return MetadataOnRelationFilterType()
+    if input_type == "text-asset-engine":
+        return AssetEngineTextFilterType()
+    if input_type == "selection-asset-engine":
+        return AssetEngineSelectionFilterType()
 
     raise ValueError(f"No filter defined for input type '{input_type}'")
 
@@ -136,4 +140,26 @@ class MetadataOnRelationFilterType(BaseFilterType):
             self.filter_type_engine.generate_query_for_metadata_on_relation_filter_type(
                 self.matchers, filter_criteria
             )
+        )
+
+
+class AssetEngineTextFilterType(BaseFilterType):
+    def __init__(self):
+        super().__init__()
+        self.matchers.update(FilterMatcherMapping.mapping["text-asset-engine"])
+
+    def generate_query(self, filter_criteria: dict):
+        return self.filter_type_engine.generate_query_for_text_filter_type(
+            self.matchers, filter_criteria
+        )
+
+
+class AssetEngineSelectionFilterType(BaseFilterType):
+    def __init__(self):
+        super().__init__()
+        self.matchers.update(FilterMatcherMapping.mapping["selection-asset-engine"])
+
+    def generate_query(self, filter_criteria: dict):
+        return self.filter_type_engine.generate_query_for_selection_filter_type(
+            self.matchers, filter_criteria
         )

@@ -97,3 +97,19 @@ class BaseMatchers(ABC):
         match_exact: bool,
     ) -> dict | str:
         pass
+
+    @abstractmethod
+    def asset_engine_exact(
+        self,
+        key: str,
+        value: str | int | float | bool | list[str],
+        parent_key: str = "",
+        is_datetime_value: bool = False,
+    ) -> dict | str:
+        pass
+
+    @abstractmethod
+    def asset_engine_contains(
+        self, key: str, value: str, parent_key: str = ""
+    ) -> dict | str:
+        pass

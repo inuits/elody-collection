@@ -12,6 +12,8 @@ from filters.matchers.matchers import (
     NoneMatcher,
     MetadataOnRelationExactMatcher,
     MetadataOnRelationContainsMatcher,
+    AssetEngineExactMatcher,
+    AssetEngineContainsMatcher,
 )
 
 
@@ -61,5 +63,17 @@ class FilterMatcherMapping(ABC):
         "metadata_on_relation": {
             "exact": MetadataOnRelationExactMatcher,
             "contains": MetadataOnRelationContainsMatcher,
+        },
+        "text-asset-engine": {
+            "any": AnyMatcher,
+            "none": NoneMatcher,
+            "exact": AssetEngineExactMatcher,
+            "contains": AssetEngineContainsMatcher,
+        },
+        "selection-asset-engine": {
+            "any": AnyMatcher,
+            "none": NoneMatcher,
+            "exact": AssetEngineExactMatcher,
+            "contains": AssetEngineContainsMatcher,
         },
     }

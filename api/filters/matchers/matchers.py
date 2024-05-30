@@ -191,3 +191,27 @@ class MetadataOnRelationContainsMatcher(BaseMatcher):
             return self.matcher_engine.metadata_on_relation(
                 key, value, parent_key, False
             )
+
+
+class AssetEngineExactMatcher(BaseMatcher):
+    def __init__(self):
+        super().__init__()
+
+    def match(self, key, value, parent_key="", **kwargs):
+        if (
+            isinstance(key, str)
+            and isinstance(value, (str, int, float, bool, list))
+            and kwargs.get("match_exact", False)
+        ):
+            return self.matcher_engine.asset_engine_exact(
+                key, value, parent_key, kwargs.get("is_datetime_value", False)
+            )
+
+
+class AssetEngineContainsMatcher(BaseMatcher):
+    def __init__(self):
+        super().__init__()
+
+    def match(self, key, value, parent_key="", **kwargs):
+        if isinstance(key, str) and not kwargs.get("match_exact", False):
+            return self.matcher_engine.asset_engine_contains(key, value, parent_key)

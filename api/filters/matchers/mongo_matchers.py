@@ -71,6 +71,20 @@ class MongoMatchers(BaseMatchers):
             }
         }
 
+    def asset_engine_exact(self, key, value, parent_key, is_datetime_value):
+        if isinstance(value, list):
+            value = {"$in": value}
+        elif is_datetime_value:
+            value = self.__get_datetime_query_value(value, range_match=False)
+
+        return self.__asset_engine_exact_contains_range_match(key, value, parent_key)
+
+    def asset_engine_contains(self, key, value, parent_key):
+        match_value = {"$regex": value, "$options": "i"}
+        return self.__asset_engine_exact_contains_range_match(
+            key, match_value, parent_key
+        )
+
     def __exact_contains_range_match(self, key: str, value, parent_key: str = ""):
         if parent_key:
             document_key, document_value = BaseMatchers.get_document_key_value(
@@ -142,6 +156,32 @@ class MongoMatchers(BaseMatchers):
             or_conditions = [{key: value}]
 
         return {"$match": {"$or": or_conditions}}
+
+    def __asset_engine_exact_contains_range_match(
+        self, key: str, value, parent_key: str = ""
+    ):
+        if parent_key:
+            document_key, document_value = BaseMatchers.get_document_key_value(
+                parent_key
+            )
+            if isinstance(value, str) or (
+                isinstance(value, dict) and value.get("$regex")
+            ):
+                document_value = "value"
+
+            return {
+                "$match": {
+                    parent_key: {
+                        "$in": [
+                            {document_key: key, document_value: value},
+                            {document_key: key, document_value: value, "lang": "nl"},
+                            {document_key: key, document_value: value, "lang": "en"},
+                        ]
+                    }
+                }
+            }
+
+        return {"$match": {key: value}}
 
     def __get_datetime_query_value(self, value, range_match: bool) -> dict | str:
         if not regex.match(BaseMatchers.datetime_pattern, value):
