@@ -30,7 +30,7 @@ class BaseObjectConfiguration(ABC):
 
     @abstractmethod
     def serialization(self, from_format, to_format):
-        def serializer(item):
+        def serializer(item, **_):
             return item
 
         return serializer
