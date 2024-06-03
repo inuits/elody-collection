@@ -169,17 +169,35 @@ class MongoMatchers(BaseMatchers):
             ):
                 document_value = "value"
 
-            return {
-                "$match": {
-                    parent_key: {
-                        "$in": [
+            possible_values_for_field = list()
+            match value:
+                case {"$in": selection_values}:
+                    for selection_value in selection_values:
+                        possible_values_for_field.extend(
+                            [
+                                {document_key: key, document_value: selection_value},
+                                {
+                                    document_key: key,
+                                    document_value: selection_value,
+                                    "lang": "nl",
+                                },
+                                {
+                                    document_key: key,
+                                    document_value: selection_value,
+                                    "lang": "en",
+                                },
+                            ]
+                        )
+                case _:
+                    possible_values_for_field.extend(
+                        [
                             {document_key: key, document_value: value},
                             {document_key: key, document_value: value, "lang": "nl"},
                             {document_key: key, document_value: value, "lang": "en"},
                         ]
-                    }
-                }
-            }
+                    )
+
+            return {"$match": {parent_key: {"$in": possible_values_for_field}}}
 
         return {"$match": {key: value}}
 
