@@ -105,7 +105,7 @@ load_apps(app, logger)
 try:
     permissions_module = import_module("apps.permissions")
     load_policies(policy_factory, logger, permissions_module.PERMISSIONS)
-except ModuleNotFoundError:
+except (ModuleNotFoundError, AttributeError):
     load_policies(policy_factory, logger)
 
 try:
