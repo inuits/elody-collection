@@ -249,7 +249,7 @@ class MongoStorageManager(GenericStorageManager):
             "isConfidentialityFor": "hasConfidentiality",
             "hasManufacturer": "isManufacturerFor",
             "isManufacturerFor": "hasManufacturer",
-            "hasPhotograper": "isPhotographerFor",
+            "hasPhotographer": "isPhotographerFor",
             "isPhotographerFor": "hasPhotographer",
             "hasLicense": "isLicenseFor",
             "isLicenseFor": "hasLicense",
