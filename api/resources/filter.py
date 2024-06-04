@@ -88,6 +88,39 @@ class FilterEntitiesV2(BaseFilterResource):
         )
 
 
+class FilterMediafilesV2(BaseFilterResource):
+    @policy_factory.apply_policies(RequestContext(request))
+    def post(self, spec="elody"):
+        if request.args.get("soft", 0, int):
+            return "good", 200
+        accept_header = request.headers.get("Accept")
+        query: list = request.get_json()
+        access_restricting_filters = (
+            policy_factory.get_user_context().access_restrictions.filters
+        )
+        if access_restricting_filters:
+            for filter in access_restricting_filters:
+                query.insert(0, filter)
+        order_by = request.args.get("order_by", None)
+        ascending = request.args.get("asc", 1, int)
+        entities = self._execute_advanced_search_with_query_v2(
+            query, "mediafiles", order_by, ascending
+        )
+        return self._create_response_according_accept_header(
+            mappers.map_data_according_to_accept_header(
+                policy_factory.get_user_context().access_restrictions.post_request_hook(
+                    entities
+                ),
+                accept_header,
+                "mediafiles",
+                [],
+                spec,
+                request.args,
+            ),
+            accept_header,
+        )
+
+
 class FilterEntitiesBySavedSearchId(BaseFilterResource):
     @policy_factory.authenticate(RequestContext(request))
     def post(self, id):

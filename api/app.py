@@ -175,6 +175,7 @@ from resources.filter import (
     FilterMatchers,
     FilterEntities,
     FilterEntitiesV2,
+    FilterMediafilesV2,
     FilterEntitiesBySavedSearchId,
     FilterGenericObjects,
     FilterGenericObjectsV2,
@@ -261,6 +262,9 @@ api.add_resource(
 )
 api.add_resource(
     FilterEntitiesV2, route_mapper.get(FilterEntitiesV2.__name__, "/entities/filter_v2")
+)
+api.add_resource(
+    FilterMediafilesV2, route_mapper.get(FilterMediafilesV2.__name__, "/mediafiles/filter_v2")
 )
 api.add_resource(
     FilterEntitiesBySavedSearchId,
