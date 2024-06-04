@@ -205,6 +205,6 @@ class MongoFilters(MongoStorageManager):
                 document["count"][0]["count"] if len(document["count"]) > 0 else 0
             )
             for document in document["results"]:
-                items["results"].append(self._prepare_mongo_document(document, True))
+                items["results"].append(self._prepare_mongo_document(document, True, BaseMatchers.collection))
 
         return items

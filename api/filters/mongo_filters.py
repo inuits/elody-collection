@@ -58,7 +58,7 @@ class MongoFilters(MongoStorageManager):
             pipeline, allowDiskUse=self.allow_disk_use
         )
         for document in documents:
-            items["results"].append(self._prepare_mongo_document(document, True))
+            items["results"].append(self._prepare_mongo_document(document, True, collection))
         items["limit"] = limit
 
         self.__provide_value_options_for_key_if_necessary(
