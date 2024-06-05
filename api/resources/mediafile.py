@@ -113,6 +113,8 @@ class MediafileDetail(GenericObjectDetail):
 
     @policy_factory.authenticate(RequestContext(request))
     def put(self, id):
+        if request.args.get("soft", 0, int):
+            return "good", 200
         old_mediafile = super().get("mediafiles", id)
         mediafile = super().put(
             "mediafiles",
@@ -125,6 +127,8 @@ class MediafileDetail(GenericObjectDetail):
 
     @policy_factory.authenticate(RequestContext(request))
     def patch(self, id):
+        if request.args.get("soft", 0, int):
+            return "good", 200
         old_mediafile = super().get("mediafiles", id)
         mediafile = super().patch("mediafiles", id, item=old_mediafile)[0]
         signal_mediafile_changed(rabbit, old_mediafile, mediafile)
@@ -132,6 +136,8 @@ class MediafileDetail(GenericObjectDetail):
 
     @policy_factory.authenticate(RequestContext(request))
     def delete(self, id):
+        if request.args.get("soft", 0, int):
+            return "good", 200
         mediafile = super().get("mediafiles", id)
         linked_entities = self.storage.get_mediafile_linked_entities(mediafile)
         mediafile_derivatives = self._get_children_from_mediafile(mediafile)
