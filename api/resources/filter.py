@@ -68,11 +68,7 @@ class FilterEntitiesV2(BaseFilterResource):
         if access_restricting_filters:
             for filter in access_restricting_filters:
                 query.insert(0, filter)
-        order_by = request.args.get("order_by", None)
-        ascending = request.args.get("asc", 1, int)
-        entities = self._execute_advanced_search_with_query_v2(
-            query, "entities", order_by, ascending
-        )
+        entities = self._execute_advanced_search_with_query_v2(query, "entities")
         return self._create_response_according_accept_header(
             mappers.map_data_according_to_accept_header(
                 policy_factory.get_user_context().access_restrictions.post_request_hook(
@@ -197,11 +193,7 @@ class FilterGenericObjectsV2(BaseFilterResource):
         if access_restricting_filters:
             for filter in access_restricting_filters:
                 query.insert(0, filter)
-        order_by = request.args.get("order_by", None)
-        ascending = request.args.get("asc", 1, int)
-        items = self._execute_advanced_search_with_query_v2(
-            query, collection, order_by, ascending
-        )
+        items = self._execute_advanced_search_with_query_v2(query, collection)
         return self._create_response_according_accept_header(
             mappers.map_data_according_to_accept_header(
                 policy_factory.get_user_context().access_restrictions.post_request_hook(

@@ -36,9 +36,9 @@ class BaseFilterResource(BaseResource):
         items["results"] = self._inject_api_urls_into_entities(items["results"])
         return items
 
-    def _execute_advanced_search_with_query_v2(
-        self, query, collection="entities", order_by=None, asc=True
-    ):
+    def _execute_advanced_search_with_query_v2(self, query, collection="entities"):
+        order_by = request.args.get("order_by", None)
+        asc = bool(request.args.get("asc", 1, int))
         skip = request.args.get("skip", 0, int)
         limit = request.args.get("limit", 20, int)
 

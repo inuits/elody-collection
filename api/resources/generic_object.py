@@ -123,13 +123,9 @@ class GenericObjectV2(BaseFilterResource, BaseResource):
     def get(self, collection, filters=[], spec="elody"):
         self._check_if_collection_name_exists(collection)
         accept_header = request.headers.get("Accept")
-        sort = request.args.get("order_by", None)
-        asc = bool(request.args.get("asc", 1, int))
         if len(filters) == 0:
             filters = self.get_filters_from_query_parameters(request)
-        items = self._execute_advanced_search_with_query_v2(
-            filters, collection, sort, asc
-        )
+        items = self._execute_advanced_search_with_query_v2(filters, collection)
         return self._create_response_according_accept_header(
             mappers.map_data_according_to_accept_header(
                 policy_factory.get_user_context().access_restrictions.post_request_hook(
