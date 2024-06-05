@@ -253,6 +253,8 @@ class MongoStorageManager(GenericStorageManager):
             "isPhotographerFor": "hasPhotographer",
             "hasLicense": "isLicenseFor",
             "isLicenseFor": "hasLicense",
+            "hasOwner": "isOwnerFor",
+            "isOwnerFor": "hasOwner"
         }.get(relation)
 
     def _map_relation_to_collection(self, relation):
