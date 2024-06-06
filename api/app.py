@@ -59,11 +59,11 @@ def rabbit_available():
 load_sentry()
 app = init_app()
 register_swaggerui(app)
+init_mappers()
 init_api(app)
 init_rabbit(app)
 init_health_check(app, database_available, rabbit_available)
 init_policy_factory()
-init_mappers()
 
 validator = Validator().validator
 
