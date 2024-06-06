@@ -1,7 +1,8 @@
-from app import logger, policy_factory
 from elody.util import read_json_as_dict
 from flask import request
 from inuits_policy_based_auth import RequestContext
+from logging import Logger
+from policy_factory import authenticate, get_user_context
 from resources.base_resource import BaseResource
 
 
@@ -84,8 +85,8 @@ class Config(BaseResource):
 
     def __get_allowed_filters(self):
         allowed_filters = dict()
-        filters = read_json_as_dict("filters_new.json", logger)
-        permissions = policy_factory.get_user_context().x_tenant.scopes
+        filters = read_json_as_dict("filters_new.json", Logger(""))
+        permissions = get_user_context().x_tenant.scopes
         for collection, collection_filters in filters.items():
             allowed_filters[collection] = list()
             for filter in collection_filters:
@@ -94,7 +95,7 @@ class Config(BaseResource):
                     allowed_filters[collection].append(filter)
         return allowed_filters
 
-    @policy_factory.authenticate(RequestContext(request))
+    @authenticate(RequestContext(request))
     def get(self):
         config = dict()
         for collection, keys in self.keys_for_config.items():

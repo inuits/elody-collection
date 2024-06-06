@@ -1,5 +1,4 @@
-import app
-
+from configuration import get_object_configuration_mapper
 from elody.csv import CSVSingleObject
 from elody.validator import validate_json
 from flask import request
@@ -22,7 +21,7 @@ def _get_content_according_content_type(request, object_type="entity"):
 
 
 class Validator:
-    def validator(object_type=None):
+    def validator(self, object_type=None):
         def decorator(func):
             def wrapper(*args, **kwargs):
                 nonlocal object_type
@@ -33,9 +32,9 @@ class Validator:
                 )
                 if content is None:
                     raise ValueError("Content is missing in the request.")
-                validation_method, validator = app.object_configuration_mapper.get(
-                    object_type
-                ).validation()
+                validation_method, validator = (
+                    get_object_configuration_mapper().get(object_type).validation()
+                )
                 if validation_method == "schema":
                     validation_error = validate_json(content, validator)
                     if validation_error:

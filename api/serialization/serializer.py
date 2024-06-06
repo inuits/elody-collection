@@ -1,5 +1,4 @@
-import app
-
+from configuration import get_object_configuration_mapper
 from serialization.case_converter import camel_to_snake
 
 
@@ -37,7 +36,7 @@ class Serializer:
         return spec
 
     def __serialize(self, item, from_format, to_format, type, accept_header):
-        config = app.object_configuration_mapper.get(type)
+        config = get_object_configuration_mapper().get(type)
         serialize = config.serialization(from_format, to_format)
         return serialize(
             item,

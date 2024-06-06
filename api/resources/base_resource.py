@@ -1,12 +1,16 @@
-import app
 import json
 import mappers
-import os
 
-from app import policy_factory, rabbit, tenant_defining_types
+from configuration import get_object_configuration_mapper
 from copy import deepcopy
 from datetime import datetime, timezone, timedelta
 from elody.csv import CSVSingleObject
+from elody.schemas import (
+    entity_schema,
+    key_value_store_schema,
+    mediafile_schema,
+    saved_search_schema,
+)
 from elody.util import (
     get_item_metadata_value,
     get_raw_id,
@@ -14,15 +18,13 @@ from elody.util import (
     signal_entity_changed,
 )
 from elody.validator import validate_json
-from elody.schemas import (
-    entity_schema,
-    key_value_store_schema,
-    mediafile_schema,
-    saved_search_schema,
-)
 from flask import Response
 from flask_restful import Resource, abort
 from inuits_policy_based_auth.exceptions import NoUserContextException
+from os import getenv
+from policy_factory import get_user_context
+from rabbit import get_rabbit
+from serialization.serialize import serialize
 from storage.storagemanager import StorageManager
 
 
@@ -37,10 +39,14 @@ class BaseResource(Resource):
 
     def __init__(self):
         self.storage = StorageManager().get_db_engine()
-        self.collection_api_url = os.getenv("COLLECTION_API_URL")
-        self.image_api_url_ext = os.getenv("IMAGE_API_URL_EXT")
-        self.storage_api_url = os.getenv("STORAGE_API_URL")
-        self.storage_api_url_ext = os.getenv("STORAGE_API_URL_EXT")
+        self.collection_api_url = getenv("COLLECTION_API_URL")
+        self.image_api_url_ext = getenv("IMAGE_API_URL_EXT")
+        self.storage_api_url = getenv("STORAGE_API_URL")
+        self.storage_api_url_ext = getenv("STORAGE_API_URL_EXT")
+        self.tenant_defining_types = getenv("TENANT_DEFINING_TYPES")
+        self.tenant_defining_types = (
+            self.tenant_defining_types.split(",") if self.tenant_defining_types else []
+        )
 
     def __group_user_relations_by_idp_role_status(
         self, user_relations, roles_per_tenant
@@ -105,10 +111,8 @@ class BaseResource(Resource):
 
     def _check_if_collection_name_exists(self, collection):
         try:
-            item = policy_factory.get_user_context().bag.pop("requested_item", None)
-            policy_factory.get_user_context().bag["item_being_processed"] = deepcopy(
-                item
-            )
+            item = get_user_context().bag.pop("requested_item", None)
+            get_user_context().bag["item_being_processed"] = deepcopy(item)
         except NoUserContextException:
             pass
         if collection in self.known_collections:
@@ -119,12 +123,8 @@ class BaseResource(Resource):
 
     def _check_if_collection_and_item_exists(self, collection, id, item=None):
         try:
-            item = item or policy_factory.get_user_context().bag.pop(
-                "requested_item", None
-            )
-            policy_factory.get_user_context().bag["item_being_processed"] = deepcopy(
-                item
-            )
+            item = item or get_user_context().bag.pop("requested_item", None)
+            get_user_context().bag["item_being_processed"] = deepcopy(item)
         except NoUserContextException:
             pass
         if item:
@@ -187,7 +187,7 @@ class BaseResource(Resource):
             mediafile["_id"],
             mediafile_is_public(mediafile),
         )
-        signal_entity_changed(rabbit, entity)
+        signal_entity_changed(get_rabbit(), entity)
         return mediafile
 
     def _create_response_according_accept_header(
@@ -225,7 +225,7 @@ class BaseResource(Resource):
                 return response_data, status_code
 
     def _create_tenant(self, entity):
-        if tenant_defining_types and entity["type"] in tenant_defining_types:
+        if self.tenant_defining_types and entity["type"] in self.tenant_defining_types:
             tenant_id = f'tenant:{entity.get("_id", entity.get("id"))}'
             if not (tenant_label := self._get_tenant_label(entity)):
                 tenant_label = entity.get("_id", entity.get("id"))
@@ -240,7 +240,7 @@ class BaseResource(Resource):
             )
             self.__link_tenant_to_defining_entity(tenant["_id"], entity["_id"])
         elif entity["type"] not in ["role", "tenant", "user"]:
-            if tenant_id := policy_factory.get_user_context().x_tenant.id:
+            if tenant_id := get_user_context().x_tenant.id:
                 try:
                     self._link_entity_to_tenant(entity["_id"], tenant_id)
                 except Exception as ex:
@@ -251,11 +251,11 @@ class BaseResource(Resource):
             "bucket": self._get_upload_bucket(),
             "exp": (
                 datetime.now(tz=timezone.utc)
-                + timedelta(seconds=int(os.getenv("TICKET_LIFESPAN", 3600)))
+                + timedelta(seconds=int(getenv("TICKET_LIFESPAN", 3600)))
             ).timestamp(),
             "location": self._get_upload_location(filename),
             "type": "ticket",
-            "user": policy_factory.get_user_context().email or "default_uploader",
+            "user": get_user_context().email or "default_uploader",
         }
         if mediafile_id:
             ticket["mediafile_id"] = mediafile_id
@@ -264,17 +264,23 @@ class BaseResource(Resource):
         )
 
     def _create_user_from_idp(self, assign_roles_from_idp=True, roles_per_tenant=None):
-        user_context = policy_factory.get_user_context()
-        metadata = [{"key": "idp_user_id", "value": user_context.id}]
-        if user_context.email:
-            metadata.append({"key": "email", "value": user_context.email})
-        if user_context.preferred_username:
+        metadata = [{"key": "idp_user_id", "value": get_user_context().id}]
+        if get_user_context().email:
+            metadata.append({"key": "email", "value": get_user_context().email})
+        if get_user_context().preferred_username:
             metadata.append(
-                {"key": "preferred_username", "value": user_context.preferred_username}
+                {
+                    "key": "preferred_username",
+                    "value": get_user_context().preferred_username,
+                }
             )
         user = {
             "identifiers": list(
-                {user_context.id, user_context.email, user_context.preferred_username}
+                {
+                    get_user_context().id,
+                    get_user_context().email,
+                    get_user_context().preferred_username,
+                }
             ),
             "metadata": metadata,
             "relations": [],
@@ -287,7 +293,7 @@ class BaseResource(Resource):
                 (
                     roles_per_tenant
                     if roles_per_tenant
-                    else {"tenant:super": user_context.x_tenant.roles}
+                    else {"tenant:super": get_user_context().x_tenant.roles}
                 ),
             )
         return user
@@ -299,7 +305,7 @@ class BaseResource(Resource):
         return default_entity | entity
 
     def _delete_tenant(self, entity):
-        if tenant_defining_types and entity["type"] in tenant_defining_types:
+        if self.tenant_defining_types and entity["type"] in self.tenant_defining_types:
             self.storage.delete_item_from_collection(
                 "entities", f'tenant:{entity["_id"]}'
             )
@@ -345,11 +351,11 @@ class BaseResource(Resource):
                     content = request.get_json()
         if v2 and (item or content.get("type")):
             type = item.get("type", content.get("type"))
-            schema_type = app.object_configuration_mapper.get(type).SCHEMA_TYPE
-            return app.serialize(
+            schema_type = get_object_configuration_mapper().get(type).SCHEMA_TYPE
+            return serialize(
                 content,
                 type=type,
-                from_format=app.serialize.get_format(spec, request.args),
+                from_format=serialize.get_format(spec, request.args),
                 to_format=(
                     item.get("storage_format", item)
                     .get("schema", {})
@@ -363,9 +369,7 @@ class BaseResource(Resource):
 
     def get_filters_from_query_parameters(self, request, **_):
         filters = []
-        access_restricting_filters = (
-            app.policy_factory.get_user_context().access_restrictions.filters
-        )
+        access_restricting_filters = get_user_context().access_restrictions.filters
         if access_restricting_filters:
             for filter in access_restricting_filters:
                 filters.append(filter)
@@ -390,10 +394,10 @@ class BaseResource(Resource):
         return get_item_metadata_value(item, "name")
 
     def _get_upload_bucket(self):
-        return os.getenv("MINIO_BUCKET")
+        return getenv("MINIO_BUCKET")
 
     def _get_upload_location(self, filename):
-        if tenant_id := policy_factory.get_user_context().x_tenant.id:
+        if tenant_id := get_user_context().x_tenant.id:
             return f"{tenant_id}/{filename}"
         return filename
 
@@ -493,7 +497,10 @@ class BaseResource(Resource):
         return user
 
     def _update_tenant(self, entity, new_data):
-        if not tenant_defining_types or entity["type"] not in tenant_defining_types:
+        if (
+            not self.tenant_defining_types
+            or entity["type"] not in self.tenant_defining_types
+        ):
             return
         if self._get_tenant_label(entity) == self._get_tenant_label(new_data):
             return
@@ -505,7 +512,7 @@ class BaseResource(Resource):
     def _update_date_updated_and_last_editor(self, collection, id):
         content_date_updated = {"date_updated": datetime.now(timezone.utc)}
         content_last_editor_updated = {
-            "last_editor": policy_factory.get_user_context().email or "default_uploader"
+            "last_editor": get_user_context().email or "default_uploader"
         }
         return self.storage.patch_item_from_collection(
             collection, id, {**content_date_updated, **content_last_editor_updated}

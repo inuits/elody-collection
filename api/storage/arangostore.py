@@ -1,6 +1,3 @@
-import app
-import os
-
 from arango import (
     ArangoClient,
     DocumentInsertError,
@@ -15,13 +12,15 @@ from elody.util import (
     signal_edge_changed,
     signal_entity_changed,
 )
+from os import getenv
+from rabbit import get_rabbit
 from storage.genericstore import GenericStorageManager
 
 
 class ArangoStorageManager(GenericStorageManager):
     def __init__(self):
-        self.arango_db_name = os.getenv("ARANGO_DB_NAME")
-        self.default_graph_name = os.getenv("DEFAULT_GRAPH", "assets")
+        self.arango_db_name = getenv("ARANGO_DB_NAME")
+        self.default_graph_name = getenv("DEFAULT_GRAPH", "assets")
         self.collections = [
             "abstracts",
             "box_visits",
@@ -56,12 +55,12 @@ class ArangoStorageManager(GenericStorageManager):
         ]
         self.edges = [*self.entity_relations, "hasMediafile"]
         self.client = ArangoClient(
-            hosts=os.getenv("ARANGO_DB_HOST"), serializer=custom_json_dumps
+            hosts=getenv("ARANGO_DB_HOST"), serializer=custom_json_dumps
         )
         self.sys_db = self.client.db(
             "_system",
-            username=os.getenv("ARANGO_DB_USERNAME"),
-            password=os.getenv("ARANGO_DB_PASSWORD"),
+            username=getenv("ARANGO_DB_USERNAME"),
+            password=getenv("ARANGO_DB_PASSWORD"),
         )
         self.db = None
         self.id_cache = {}
@@ -72,8 +71,8 @@ class ArangoStorageManager(GenericStorageManager):
             self.sys_db.create_database(self.arango_db_name)
         self.db = self.client.db(
             self.arango_db_name,
-            username=os.getenv("ARANGO_DB_USERNAME"),
-            password=os.getenv("ARANGO_DB_PASSWORD"),
+            username=getenv("ARANGO_DB_USERNAME"),
+            password=getenv("ARANGO_DB_PASSWORD"),
         )
         for collection in self.collections:
             if not self.db.has_collection(collection):
@@ -670,7 +669,7 @@ class ArangoStorageManager(GenericStorageManager):
             if ex.error_code == 1210:
                 raise NonUniqueException(ex.error_message)
             raise ex
-        signal_child_relation_changed(app.rabbit, collection, item["_id"])
+        signal_child_relation_changed(get_rabbit(), collection, item["_id"])
         return item
 
     def reindex_mediafile_parents(self, mediafile=None, parents=None):
@@ -678,7 +677,7 @@ class ArangoStorageManager(GenericStorageManager):
             parents = self.get_mediafile_linked_entities(mediafile)
         for item in parents:
             entity = self.db.document(item["entity_id"])
-            signal_entity_changed(app.rabbit, entity)
+            signal_entity_changed(get_rabbit(), entity)
 
     def save_item_to_collection(
         self,
@@ -733,7 +732,7 @@ class ArangoStorageManager(GenericStorageManager):
             if ex.error_code == 1210:
                 raise NonUniqueException(ex.error_message)
             raise ex
-        signal_child_relation_changed(app.rabbit, collection, item["_id"])
+        signal_child_relation_changed(get_rabbit(), collection, item["_id"])
         return item
 
     def update_parent_relation_values(self, collection, parent_id):
@@ -758,7 +757,7 @@ class ArangoStorageManager(GenericStorageManager):
                     self.db.update_document(edge)
                     changed_ids.add(entity["_key"])
         if len(changed_ids):
-            signal_edge_changed(app.rabbit, changed_ids)
+            signal_edge_changed(get_rabbit(), changed_ids)
 
     def get_existing_collections(self):
         return self.collections

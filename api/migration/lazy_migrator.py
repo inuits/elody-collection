@@ -1,6 +1,6 @@
-import app
-
+from configuration import get_object_configuration_mapper
 from copy import deepcopy
+from logging_elody.log import log
 
 
 class LazyMigrator:
@@ -26,7 +26,7 @@ class LazyMigrator:
                 break
 
             try:
-                config = app.object_configuration_mapper.get(
+                config = get_object_configuration_mapper().get(
                     item["type"],
                     self.__get_schema_to_upgrade_to(item_schema, latest_schema),
                 )
@@ -42,7 +42,7 @@ class LazyMigrator:
                     deepcopy(item), dry_run=config.migration().status == "dry_run"
                 )
             except Exception as exception:
-                app.log.exception(
+                log.exception(
                     f"{exception.__class__.__name__}: {exception}",
                     item,
                     exc_info=exception,
@@ -58,7 +58,7 @@ class LazyMigrator:
         return item
 
     def __get_latest_schema(self, item_type):
-        config = app.object_configuration_mapper.get(item_type)
+        config = get_object_configuration_mapper().get(item_type)
         return f"{config.SCHEMA_TYPE}:{config.SCHEMA_VERSION}"
 
     def __get_item_schema(self, item):
@@ -77,9 +77,9 @@ class LazyMigrator:
     def __get_schema_to_upgrade_to(self, item_schema, latest_schema):
         item_schema_type, item_schema_version = item_schema.split(":")
         latest_schema_type, latest_schema_version = latest_schema.split(":")
-        # if item_schema_type != latest_schema_type:
-        #     self.__patch_exception_count(self.EXCEPTION_LIMIT)
-        #     raise Exception("Cannot lazily migrate to different schema types.")
+        if item_schema_type != latest_schema_type:
+            self.__patch_exception_count(self.EXCEPTION_LIMIT)
+            raise Exception("Cannot lazily migrate to different schema types.")
         schema_version = (
             int(item_schema_version) + 1
             if int(item_schema_version) < int(latest_schema_version)

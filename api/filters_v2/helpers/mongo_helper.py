@@ -1,8 +1,7 @@
-import app
-
 from copy import deepcopy
 from elody.util import interpret_flat_key
 from filters_v2.matchers.base_matchers import BaseMatchers
+from logging_elody.log import log
 
 
 def append_matcher(matcher, matchers, operator="and"):
@@ -44,7 +43,7 @@ def get_filter_option_label(db, identifier, key):
             )
         )["label"][0]["label"]
     except Exception as exception:
-        app.log.exception(
+        log.exception(
             f"Failed fetching filter option label.",
             exc_info=exception,
             info_labels={

@@ -1,14 +1,14 @@
 import mappers
 
-from app import policy_factory
 from filters.filter_matcher_mapping import FilterMatcherMapping
 from flask import request
 from inuits_policy_based_auth import RequestContext
+from policy_factory import apply_policies, authenticate, get_user_context
 from resources.base_filter_resource import BaseFilterResource
 
 
 class FilterMatchers(BaseFilterResource):
-    @policy_factory.authenticate(RequestContext(request))
+    @authenticate(RequestContext(request))
     def get(self, spec="elody"):
         return {
             key: [matcher.__name__ for _, matcher in value.items()]
@@ -17,15 +17,13 @@ class FilterMatchers(BaseFilterResource):
 
 
 class FilterEntities(BaseFilterResource):
-    @policy_factory.authenticate(RequestContext(request))
+    @authenticate(RequestContext(request))
     def post(self, spec="elody"):
         accept_header = request.headers.get("Accept")
         query: list = request.get_json()
         if request.args.get("soft", 0, int):
             return "good", 200
-        access_restricting_filters = (
-            policy_factory.get_user_context().access_restrictions.filters
-        )
+        access_restricting_filters = get_user_context().access_restrictions.filters
         if access_restricting_filters:
             for filter in access_restricting_filters:
                 query.insert(0, filter)
@@ -40,9 +38,7 @@ class FilterEntities(BaseFilterResource):
         )
         return self._create_response_according_accept_header(
             mappers.map_data_according_to_accept_header(
-                policy_factory.get_user_context().access_restrictions.post_request_hook(
-                    entities
-                ),
+                get_user_context().access_restrictions.post_request_hook(entities),
                 accept_header,
                 "entities",
                 fields,
@@ -56,24 +52,20 @@ class FilterEntities(BaseFilterResource):
 # currently only suitable when using generic policies
 # end goal is to replace this with FilterGenericObjectsV2
 class FilterEntitiesV2(BaseFilterResource):
-    @policy_factory.apply_policies(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def post(self, spec="elody"):
         if request.args.get("soft", 0, int):
             return "good", 200
         accept_header = request.headers.get("Accept")
         query: list = request.get_json()
-        access_restricting_filters = (
-            policy_factory.get_user_context().access_restrictions.filters
-        )
+        access_restricting_filters = get_user_context().access_restrictions.filters
         if access_restricting_filters:
             for filter in access_restricting_filters:
                 query.insert(0, filter)
         entities = self._execute_advanced_search_with_query_v2(query, "entities")
         return self._create_response_according_accept_header(
             mappers.map_data_according_to_accept_header(
-                policy_factory.get_user_context().access_restrictions.post_request_hook(
-                    entities
-                ),
+                get_user_context().access_restrictions.post_request_hook(entities),
                 accept_header,
                 "entities",
                 [],
@@ -85,24 +77,20 @@ class FilterEntitiesV2(BaseFilterResource):
 
 
 class FilterMediafilesV2(BaseFilterResource):
-    @policy_factory.apply_policies(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def post(self, spec="elody"):
         if request.args.get("soft", 0, int):
             return "good", 200
         accept_header = request.headers.get("Accept")
         query: list = request.get_json()
-        access_restricting_filters = (
-            policy_factory.get_user_context().access_restrictions.filters
-        )
+        access_restricting_filters = get_user_context().access_restrictions.filters
         if access_restricting_filters:
             for filter in access_restricting_filters:
                 query.insert(0, filter)
         entities = self._execute_advanced_search_with_query_v2(query, "mediafiles")
         return self._create_response_according_accept_header(
             mappers.map_data_according_to_accept_header(
-                policy_factory.get_user_context().access_restrictions.post_request_hook(
-                    entities
-                ),
+                get_user_context().access_restrictions.post_request_hook(entities),
                 accept_header,
                 "mediafiles",
                 [],
@@ -114,7 +102,7 @@ class FilterMediafilesV2(BaseFilterResource):
 
 
 class FilterEntitiesBySavedSearchId(BaseFilterResource):
-    @policy_factory.authenticate(RequestContext(request))
+    @authenticate(RequestContext(request))
     def post(self, id):
         accept_header = request.headers.get("Accept")
         fields = [
@@ -138,16 +126,14 @@ class FilterEntitiesBySavedSearchId(BaseFilterResource):
 
 
 class FilterGenericObjects(BaseFilterResource):
-    @policy_factory.apply_policies(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def post(self, collection, spec="elody"):
         self._check_if_collection_name_exists(collection)
         accept_header = request.headers.get("Accept")
         query: list = request.get_json()
         if request.args.get("soft", 0, int):
             return "good", 200
-        access_restricting_filters = (
-            policy_factory.get_user_context().access_restrictions.filters
-        )
+        access_restricting_filters = get_user_context().access_restrictions.filters
         if access_restricting_filters:
             for filter in access_restricting_filters:
                 query.insert(0, filter)
@@ -162,9 +148,7 @@ class FilterGenericObjects(BaseFilterResource):
         )
         return self._create_response_according_accept_header(
             mappers.map_data_according_to_accept_header(
-                policy_factory.get_user_context().access_restrictions.post_request_hook(
-                    items
-                ),
+                get_user_context().access_restrictions.post_request_hook(items),
                 accept_header,
                 "entities",  # specific collection name not relevant for this method
                 fields,
@@ -177,24 +161,20 @@ class FilterGenericObjects(BaseFilterResource):
 
 # currently only suitable when using generic policies
 class FilterGenericObjectsV2(BaseFilterResource):
-    @policy_factory.apply_policies(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def post(self, collection, spec="elody"):
         if request.args.get("soft", 0, int):
             return "good", 200
         accept_header = request.headers.get("Accept")
         query: list = request.get_json()
-        access_restricting_filters = (
-            policy_factory.get_user_context().access_restrictions.filters
-        )
+        access_restricting_filters = get_user_context().access_restrictions.filters
         if access_restricting_filters:
             for filter in access_restricting_filters:
                 query.insert(0, filter)
         items = self._execute_advanced_search_with_query_v2(query, collection)
         return self._create_response_according_accept_header(
             mappers.map_data_according_to_accept_header(
-                policy_factory.get_user_context().access_restrictions.post_request_hook(
-                    items
-                ),
+                get_user_context().access_restrictions.post_request_hook(items),
                 accept_header,
                 "entities",
                 [],
@@ -206,7 +186,7 @@ class FilterGenericObjectsV2(BaseFilterResource):
 
 
 class FilterGenericObjectsBySavedSearchId(BaseFilterResource):
-    @policy_factory.authenticate(RequestContext(request))
+    @authenticate(RequestContext(request))
     def post(self, collection, id):
         self._check_if_collection_name_exists(collection)
         accept_header = request.headers.get("Accept")
@@ -231,12 +211,10 @@ class FilterGenericObjectsBySavedSearchId(BaseFilterResource):
 
 
 class FilterMediafiles(BaseFilterResource):
-    @policy_factory.authenticate(RequestContext(request))
+    @authenticate(RequestContext(request))
     def post(self):
         query = request.get_json()
-        access_restricting_filters = (
-            policy_factory.get_user_context().access_restrictions.filters
-        )
+        access_restricting_filters = get_user_context().access_restrictions.filters
         order_by = request.args.get("order_by", None)
         ascending = request.args.get("asc", 1, int)
         if access_restricting_filters:
@@ -248,6 +226,6 @@ class FilterMediafiles(BaseFilterResource):
 
 
 class FilterMediafilesBySavedSearchId(BaseFilterResource):
-    @policy_factory.authenticate(RequestContext(request))
+    @authenticate(RequestContext(request))
     def post(self, id):
         return self._execute_advanced_search_with_saved_search(id, "mediafiles")

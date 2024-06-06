@@ -1,6 +1,5 @@
-import app
-
 from abc import ABC, abstractmethod
+from configuration import get_object_configuration_mapper
 
 
 class BaseMatchers(ABC):
@@ -9,7 +8,7 @@ class BaseMatchers(ABC):
 
     @staticmethod
     def get_object_lists() -> dict:
-        config = app.object_configuration_mapper.get(BaseMatchers.collection)
+        config = get_object_configuration_mapper().get(BaseMatchers.collection)
         return config.document_info()["object_lists"]
 
     @abstractmethod

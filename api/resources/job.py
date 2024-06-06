@@ -1,6 +1,6 @@
-from app import policy_factory
 from flask import request
 from inuits_policy_based_auth import RequestContext
+from policy_factory import authenticate
 from resources.generic_object import (
     GenericObject,
     GenericObjectDetail,
@@ -8,7 +8,7 @@ from resources.generic_object import (
 
 
 class Job(GenericObject):
-    @policy_factory.authenticate(RequestContext(request))
+    @authenticate(RequestContext(request))
     def get(self):
         skip = request.args.get("skip", 0, int)
         limit = request.args.get("limit", 20, int)
@@ -41,7 +41,7 @@ class Job(GenericObject):
 
 
 class JobDetail(GenericObjectDetail):
-    @policy_factory.authenticate(RequestContext(request))
+    @authenticate(RequestContext(request))
     def get(self, id):
         job = super().get("jobs", id)
         if job.get("parent_job_id"):

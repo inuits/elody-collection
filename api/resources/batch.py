@@ -1,4 +1,3 @@
-from app import policy_factory
 from datetime import datetime, timezone
 from elody.csv import CSVMultiObject
 from elody.exceptions import ColumnNotFoundException
@@ -6,6 +5,7 @@ from elody.util import get_raw_id
 from flask import request
 from flask_restful import abort
 from inuits_policy_based_auth import RequestContext
+from policy_factory import authenticate
 from resources.base_resource import BaseResource
 
 
@@ -79,7 +79,7 @@ class Batch(BaseResource):
                 entities_and_mediafiles.get("entities", list()).append(entity)
         return entities_and_mediafiles
 
-    @policy_factory.authenticate(RequestContext(request))
+    @authenticate(RequestContext(request))
     def post(self):
         content_type = request.content_type
         dry_run = request.args.get("dry_run", 0, int)

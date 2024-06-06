@@ -1,12 +1,15 @@
-import app
-import os
-import pymongo.errors
-
 from bson.codec_options import CodecOptions
+from configuration import get_object_configuration_mapper
 from datetime import datetime, timezone
 from elody.exceptions import NonUniqueException
 from elody.util import mediafile_is_public, signal_entity_changed
-from pymongo import MongoClient
+from logging_elody.log import log
+from migration.migrate import migrate
+from os import getenv
+from pymongo import ASCENDING, DESCENDING, MongoClient
+from pymongo.errors import DuplicateKeyError
+from rabbit import get_rabbit
+from serialization.serialize import serialize
 from storage.genericstore import GenericStorageManager
 from urllib.parse import quote_plus
 
@@ -15,13 +18,13 @@ class MongoStorageManager(GenericStorageManager):
     character_replace_map = {".": "="}
 
     def __init__(self):
-        self.mongo_db_name = os.getenv("MONGODB_DB_NAME", "dams")
-        self.mongo_hosts = os.getenv("MONGODB_HOSTS", "mongo").split(",")
-        self.mongo_port = int(os.getenv("MONGODB_PORT", 27017))
-        self.mongo_replica_set = os.getenv("MONGODB_REPLICA_SET")
-        self.mongo_username = os.getenv("MONGODB_USERNAME")
-        self.mongo_password = os.getenv("MONGODB_PASSWORD")
-        self.allow_disk_use = os.getenv("MONGODB_ALLOW_DISK_USE", False) in [
+        self.mongo_db_name = getenv("MONGODB_DB_NAME", "dams")
+        self.mongo_hosts = getenv("MONGODB_HOSTS", "mongo").split(",")
+        self.mongo_port = int(getenv("MONGODB_PORT", 27017))
+        self.mongo_replica_set = getenv("MONGODB_REPLICA_SET")
+        self.mongo_username = getenv("MONGODB_USERNAME")
+        self.mongo_password = getenv("MONGODB_PASSWORD")
+        self.allow_disk_use = getenv("MONGODB_ALLOW_DISK_USE", False) in [
             "True",
             "true",
             True,
@@ -107,12 +110,14 @@ class MongoStorageManager(GenericStorageManager):
         if sort:
             documents.sort(
                 self.get_sort_field(sort),
-                pymongo.ASCENDING if asc else pymongo.DESCENDING,
+                ASCENDING if asc else DESCENDING,
             )
         items["count"] = self.db[collection].count_documents(self.__get_ids_query(ids))
         items["results"] = list()
         for document in documents:
-            items["results"].append(self._prepare_mongo_document(document, True, collection))
+            items["results"].append(
+                self._prepare_mongo_document(document, True, collection)
+            )
         return items
 
     def __replace_dictionary_keys(self, data, reversed):
@@ -254,7 +259,7 @@ class MongoStorageManager(GenericStorageManager):
             "hasLicense": "isLicenseFor",
             "isLicenseFor": "hasLicense",
             "hasOwner": "isOwnerFor",
-            "isOwnerFor": "hasOwner"
+            "isOwnerFor": "hasOwner",
         }.get(relation)
 
     def _map_relation_to_collection(self, relation):
@@ -284,8 +289,8 @@ class MongoStorageManager(GenericStorageManager):
             document["type"] = "mediafile"
         if not reversed and create_sortable_metadata:
             document["sort"] = self.__create_sortable_metadata(document["metadata"])
-        return app.serialize(
-            app.migrate(document), type=document.get("type"), to_format="elody"
+        return serialize(
+            migrate(document), type=document.get("type"), to_format="elody"
         )
 
     def add_mediafile_to_collection_item(
@@ -412,7 +417,7 @@ class MongoStorageManager(GenericStorageManager):
 
     def delete_item(self, item):
         item = item.get("storage_format", item)
-        config = app.object_configuration_mapper.get(item["type"])
+        config = get_object_configuration_mapper().get(item["type"])
         patch_computed_values = config.crud()["computed_value_patcher"]
         post_crud_hook = config.crud()["post_crud_hook"]
         try:
@@ -421,11 +426,9 @@ class MongoStorageManager(GenericStorageManager):
                 self.__get_id_query(item["_id"])
             )
             post_crud_hook(crud="delete", item=item, storage=self)
-            app.log.info("Successfully deleted item", item)
+            log.info("Successfully deleted item", item)
         except Exception as error:
-            app.log.exception(
-                f"{error.__class__.__name__}: {error}", item, exc_info=error
-            )
+            log.exception(f"{error.__class__.__name__}: {error}", item, exc_info=error)
             raise error
 
     def delete_item_from_collection(self, collection, id):
@@ -434,7 +437,7 @@ class MongoStorageManager(GenericStorageManager):
 
     def delete_data_from_collection_item(self, collection, item, content, spec):
         item = item.get("storage_format", item)
-        config = app.object_configuration_mapper.get(item["type"])
+        config = get_object_configuration_mapper().get(item["type"])
         scope = config.crud().get("spec_scope", {}).get(spec, None)
         object_lists = config.document_info()["object_lists"]
         patch_computed_values = config.crud()["computed_value_patcher"]
@@ -453,7 +456,7 @@ class MongoStorageManager(GenericStorageManager):
         try:
             patch_computed_values(item)
             self.db[collection].replace_one(self.__get_id_query(item["_id"]), item)
-        except pymongo.errors.DuplicateKeyError as error:
+        except DuplicateKeyError as error:
             if error.code == 11000:
                 raise NonUniqueException(error.details)
             raise error
@@ -473,7 +476,7 @@ class MongoStorageManager(GenericStorageManager):
         )
         documents.sort(
             self.get_sort_field(sort, True),
-            pymongo.ASCENDING if asc else pymongo.DESCENDING,
+            ASCENDING if asc else DESCENDING,
         )
         for document in documents:
             mediafiles.append(self._prepare_mongo_document(document, True, collection))
@@ -620,12 +623,14 @@ class MongoStorageManager(GenericStorageManager):
         if sort:
             documents.sort(
                 self.get_sort_field(sort),
-                pymongo.ASCENDING if asc else pymongo.DESCENDING,
+                ASCENDING if asc else DESCENDING,
             )
         items["count"] = count
         items["results"] = list()
         for document in documents:
-            items["results"].append(self._prepare_mongo_document(document, True, collection))
+            items["results"].append(
+                self._prepare_mongo_document(document, True, collection)
+            )
         return items
 
     def get_metadata_values_for_collection_item_by_key(self, collection, key):
@@ -716,11 +721,14 @@ class MongoStorageManager(GenericStorageManager):
         self, collection, id, content, create_sortable_metadata=True
     ):
         content = self._prepare_mongo_document(
-            content, False, collection, create_sortable_metadata=create_sortable_metadata
+            content,
+            False,
+            collection,
+            create_sortable_metadata=create_sortable_metadata,
         )
         try:
             self.db[collection].update_one(self.__get_id_query(id), {"$set": content})
-        except pymongo.errors.DuplicateKeyError as ex:
+        except DuplicateKeyError as ex:
             if ex.code == 11000:
                 raise NonUniqueException(ex.details)
             raise ex
@@ -728,7 +736,7 @@ class MongoStorageManager(GenericStorageManager):
 
     def patch_item_from_collection_v2(self, collection, item, content, spec):
         item = item.get("storage_format", item)
-        config = app.object_configuration_mapper.get(item["type"])
+        config = get_object_configuration_mapper().get(item["type"])
         if not collection:
             collection = config.crud()["collection"]
         scope = config.crud().get("spec_scope", {}).get(spec, None)
@@ -752,18 +760,16 @@ class MongoStorageManager(GenericStorageManager):
             patch_computed_values(item)
             self.db[collection].replace_one(self.__get_id_query(item["_id"]), item)
             post_crud_hook(crud="update", item=item, storage=self)
-        except pymongo.errors.DuplicateKeyError as error:
-            app.log.exception(
-                f"{error.__class__.__name__}: {error}", item, exc_info=error
-            )
+        except DuplicateKeyError as error:
+            log.exception(f"{error.__class__.__name__}: {error}", item, exc_info=error)
             if error.code == 11000:
                 raise NonUniqueException(error.details)
             raise error
-        app.log.info("Successfully patched item", item)
+        log.info("Successfully patched item", item)
         return self._prepare_mongo_document(item, False, collection, False)
 
     def put_item_from_collection(self, collection, item, content, spec):
-        crud_config = app.object_configuration_mapper.get(item["type"]).crud()
+        crud_config = get_object_configuration_mapper().get(item["type"]).crud()
         if not collection:
             collection = crud_config["collection"]
         scope = crud_config.get("spec_scope", {}).get(spec, None)
@@ -779,16 +785,14 @@ class MongoStorageManager(GenericStorageManager):
             patch_computed_values(item)
             self.db[collection].replace_one(self.__get_id_query(item["_id"]), item)
             post_crud_hook(crud="update", item=item, storage=self)
-        except pymongo.errors.DuplicateKeyError as error:
-            app.log.exception(
-                f"{error.__class__.__name__}: {error}", item, exc_info=error
-            )
+        except DuplicateKeyError as error:
+            log.exception(f"{error.__class__.__name__}: {error}", item, exc_info=error)
             if error.code == 11000:
                 raise NonUniqueException(error.details)
             raise error
         if scope:
             return self._prepare_mongo_document(item, False, collection, False)
-        app.log.info("Successfully put item", item)
+        log.info("Successfully put item", item)
         return self.get_item_from_collection_by_id(collection, item["_id"])
 
     def reindex_mediafile_parents(self, mediafile=None, parents=None):
@@ -796,7 +800,7 @@ class MongoStorageManager(GenericStorageManager):
             parents = self.get_mediafile_linked_entities(mediafile)
         for item in parents:
             entity = self.get_item_from_collection_by_id("entities", item["entity_id"])
-            signal_entity_changed(app.rabbit, entity)
+            signal_entity_changed(get_rabbit(), entity)
 
     def save_item_to_collection(
         self,
@@ -808,10 +812,12 @@ class MongoStorageManager(GenericStorageManager):
         if not content.get("_id"):
             content["_id"] = self._get_autogenerated_id_for_item(content)
         content["identifiers"] = self._get_autogenerated_identifiers_for_item(content)
-        content = self._prepare_mongo_document(content, False, collection, create_sortable_metadata)
+        content = self._prepare_mongo_document(
+            content, False, collection, create_sortable_metadata
+        )
         try:
             item_id = self.db[collection].insert_one(content).inserted_id
-        except pymongo.errors.DuplicateKeyError as ex:
+        except DuplicateKeyError as ex:
             if ex.code == 11000:
                 raise NonUniqueException(ex.details)
             raise ex
@@ -829,15 +835,15 @@ class MongoStorageManager(GenericStorageManager):
         try:
             item_id = self.db[collection].insert_many(items).inserted_ids[0]
             for item in items:
-                post_crud_hook = app.object_configuration_mapper.get(
-                    item["type"]
-                ).crud()["post_crud_hook"]
+                post_crud_hook = (
+                    get_object_configuration_mapper()
+                    .get(item["type"])
+                    .crud()["post_crud_hook"]
+                )
                 post_crud_hook(crud="create", item=item, storage=self)
-                app.log.info("Successfully saved item", item)
-        except pymongo.errors.DuplicateKeyError as error:
-            app.log.exception(
-                f"{error.__class__.__name__}: {error}", item, exc_info=error
-            )
+                log.info("Successfully saved item", item)
+        except DuplicateKeyError as error:
+            log.exception(f"{error.__class__.__name__}: {error}", item, exc_info=error)
             if error.code == 11000:
                 raise NonUniqueException(error.details)
             raise error
@@ -892,11 +898,14 @@ class MongoStorageManager(GenericStorageManager):
         self, collection, id, content, create_sortable_metadata=True
     ):
         content = self._prepare_mongo_document(
-            content, False, collection, create_sortable_metadata=create_sortable_metadata
+            content,
+            False,
+            collection,
+            create_sortable_metadata=create_sortable_metadata,
         )
         try:
             self.db[collection].replace_one(self.__get_id_query(id), content)
-        except pymongo.errors.DuplicateKeyError as ex:
+        except DuplicateKeyError as ex:
             if ex.code == 11000:
                 raise NonUniqueException(ex.details)
             raise ex

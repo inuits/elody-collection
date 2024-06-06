@@ -1,9 +1,9 @@
-import app
 import csv
 import io
 import json
 
 from rdflib import Graph
+from serialization.serialize import serialize
 
 
 def can_append_key(key, fields):
@@ -29,7 +29,7 @@ def map_data_according_to_accept_header(
     spec="elody",
     request_parameters={},
 ):
-    to_format = app.serialize.get_format(spec, request_parameters)
+    to_format = serialize.get_format(spec, request_parameters)
     if spec != "elody":
         return __serialize_data_according_to_accept_header(
             data, data_type, to_format, accept_header
@@ -178,7 +178,7 @@ def __serialize_data_according_to_accept_header(
         results = []
         for result in data["results"]:
             results.append(
-                app.serialize(
+                serialize(
                     result,
                     type=result.get("type"),
                     to_format=to_format,
@@ -188,7 +188,7 @@ def __serialize_data_according_to_accept_header(
             )
         data["results"] = results
         return data
-    return app.serialize(
+    return serialize(
         data,
         type=data.get("type") if data_type == "entity" else None,
         to_format=to_format,

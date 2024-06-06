@@ -1,9 +1,9 @@
-import os
-import sys
+from os import path
+from sys import argv, path as sys_path
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from importlib import import_module
-from object_configurations.object_configuration_mapper import ObjectConfigurationMapper
+sys_path.append(path.dirname(path.dirname(path.abspath(__file__))))
+
+from configuration import init_mappers, get_object_configuration_mapper
 
 
 class BulkMigrator:
@@ -12,9 +12,9 @@ class BulkMigrator:
     def __init__(self):
         self.exception_count = 0
 
-    def __call__(self, type, object_configuration_mapper):
+    def __call__(self, type):
         self.exception_count = 0
-        config = object_configuration_mapper.get(type)
+        config = get_object_configuration_mapper().get(type)
         if config.migration().status == "disabled":
             return
 
@@ -23,12 +23,9 @@ class BulkMigrator:
                 break
 
             try:
+                config.migration().bulk_migrate(dry_run=True)
                 config.migration().bulk_migrate(
-                    object_configuration_mapper, dry_run=True
-                )
-                config.migration().bulk_migrate(
-                    object_configuration_mapper,
-                    dry_run=config.migration().status == "dry_run",
+                    dry_run=config.migration().status == "dry_run"
                 )
             except Exception:
                 self.__patch_exception_count(1)
@@ -44,14 +41,6 @@ class BulkMigrator:
 
 
 if __name__ == "__main__":
-    type = sys.argv[1]
-    try:
-        mapper_module = import_module("apps.mappers")
-        object_configuration_mapper = ObjectConfigurationMapper(
-            mapper_module.OBJECT_CONFIGURATION_MAPPER
-        )
-    except ModuleNotFoundError:
-        object_configuration_mapper = ObjectConfigurationMapper()
-
+    init_mappers()
     migrate = BulkMigrator()
-    migrate(type, object_configuration_mapper)
+    migrate(argv[1])

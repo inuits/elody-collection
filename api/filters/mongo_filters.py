@@ -1,6 +1,6 @@
-import app
 import pymongo
 
+from configuration import get_object_configuration_mapper
 from filters.filter_option import FilterOption
 from filters.matchers.base_matchers import BaseMatchers
 from filters.types.filter_types import get_filter
@@ -34,7 +34,8 @@ class MongoFilters(MongoStorageManager):
         if order_by:
             key_order_map = {order_by: pymongo.ASCENDING if asc else pymongo.DESCENDING}
             sorting = (
-                app.object_configuration_mapper.get(collection)
+                get_object_configuration_mapper()
+                .get(collection)
                 .crud()
                 .get("sorting", lambda *_: [])(key_order_map)
             )
@@ -58,7 +59,9 @@ class MongoFilters(MongoStorageManager):
             pipeline, allowDiskUse=self.allow_disk_use
         )
         for document in documents:
-            items["results"].append(self._prepare_mongo_document(document, True, collection))
+            items["results"].append(
+                self._prepare_mongo_document(document, True, collection)
+            )
         items["limit"] = limit
 
         self.__provide_value_options_for_key_if_necessary(

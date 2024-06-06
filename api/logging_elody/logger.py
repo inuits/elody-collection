@@ -1,14 +1,24 @@
-import app
 import inspect
 
+from configuration import get_object_configuration_mapper
 from elody.util import flatten_dict
-from logging_loki import JsonLokiLogger
+from logging_loki import JsonLokiLogger, LokiLogger
 from os import getenv
 
 
 class Logger:
     def __init__(self):
-        self._logger = JsonLokiLogger(app.logger)
+        logger = LokiLogger(
+            loki_url=getenv("LOKI_URL", None),
+            default_loki_labels={
+                "service_name": getenv("NOMAD_GROUP_NAME", "nomad_group_name"),
+                "env": getenv("NOMAD_JOB_NAME", "nomad_job_name-env").split("-")[-1],
+                "service_type": getenv("SERVICE_TYPE", "api"),
+                "category": getenv("SERVICE_TYPE_CATEGORY", "collection"),
+            },
+            headers={"X-Scope-OrgID": getenv("LOKI_TENANT_ID", "infra")},
+        )
+        self.logger = JsonLokiLogger(logger)
 
     def debug(self, message: str, item={}, **kwargs):
         self._log(
@@ -70,7 +80,7 @@ class Logger:
     ):
         if item is None:
             item = {}
-        config = app.object_configuration_mapper.get(item.get("type", "_default"))
+        config = get_object_configuration_mapper().get(item.get("type", "_default"))
         info = config.logging(
             flatten_dict(
                 config.document_info()["object_lists"], item.get("storage_format", item)
@@ -89,7 +99,7 @@ class Logger:
         if not getenv("LOKI_URL", None):
             extra_json_properties.update(tags)
 
-        log = getattr(self._logger, severity)
+        log = getattr(self.logger, severity)
         if exc_info:
             log(message, tags, extra_json_properties, exc_info)
         else:

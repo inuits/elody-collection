@@ -1,7 +1,6 @@
-import app
 import mappers
 
-from app import policy_factory
+from configuration import get_object_configuration_mapper
 from datetime import datetime, timezone
 from elody.exceptions import NonUniqueException
 from elody.util import (
@@ -10,12 +9,13 @@ from elody.util import (
 from flask import after_this_request, request
 from flask_restful import abort
 from inuits_policy_based_auth import RequestContext
+from policy_factory import apply_policies, get_user_context
 from resources.base_filter_resource import BaseFilterResource
 from resources.base_resource import BaseResource
 
 
 class GenericObject(BaseResource):
-    @policy_factory.apply_policies(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def get(
         self,
         collection,
@@ -35,9 +35,7 @@ class GenericObject(BaseResource):
             filters = {}
         if ids := request.args.get("ids"):
             filters["ids"] = ids.split(",")
-        access_restricting_filters = (
-            policy_factory.get_user_context().access_restrictions.filters
-        )
+        access_restricting_filters = get_user_context().access_restrictions.filters
         if isinstance(access_restricting_filters, list):
             for filter in access_restricting_filters:
                 filters.update(filter)
@@ -66,7 +64,7 @@ class GenericObject(BaseResource):
             )
         return self._create_response_according_accept_header(
             mappers.map_data_according_to_accept_header(
-                policy_factory.get_user_context().access_restrictions.post_request_hook(
+                get_user_context().access_restrictions.post_request_hook(
                     collection_data
                 ),
                 accept_header,
@@ -78,7 +76,7 @@ class GenericObject(BaseResource):
             accept_header,
         )
 
-    @policy_factory.apply_policies(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def post(
         self,
         collection,
@@ -119,7 +117,7 @@ class GenericObject(BaseResource):
 
 # POC: currently only suitable when supporting multiples specs for a client
 class GenericObjectV2(BaseFilterResource, BaseResource):
-    @policy_factory.apply_policies(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def get(self, collection, filters=[], spec="elody"):
         self._check_if_collection_name_exists(collection)
         accept_header = request.headers.get("Accept")
@@ -128,9 +126,7 @@ class GenericObjectV2(BaseFilterResource, BaseResource):
         items = self._execute_advanced_search_with_query_v2(filters, collection)
         return self._create_response_according_accept_header(
             mappers.map_data_according_to_accept_header(
-                policy_factory.get_user_context().access_restrictions.post_request_hook(
-                    items
-                ),
+                get_user_context().access_restrictions.post_request_hook(items),
                 accept_header,
                 "entities",
                 [],
@@ -141,7 +137,7 @@ class GenericObjectV2(BaseFilterResource, BaseResource):
             spec=spec,
         )
 
-    @policy_factory.apply_policies(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def post(
         self,
         collection,
@@ -155,7 +151,9 @@ class GenericObjectV2(BaseFilterResource, BaseResource):
         content = self._get_content_according_content_type(
             request, collection, content, {}, spec, True
         )
-        create = app.object_configuration_mapper.get(content["type"]).crud()["creator"]
+        create = (
+            get_object_configuration_mapper().get(content["type"]).crud()["creator"]
+        )
         item = create(content)
         try:
             item = self.storage.save_item_to_collection_v2(collection, item)
@@ -176,7 +174,7 @@ class GenericObjectV2(BaseFilterResource, BaseResource):
 
 
 class GenericObjectDetail(BaseResource):
-    @policy_factory.apply_policies(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def get(self, collection, id, spec="elody"):
         item = self._check_if_collection_and_item_exists(collection, id)
         accept_header = request.headers.get("Accept")
@@ -192,7 +190,7 @@ class GenericObjectDetail(BaseResource):
             accept_header,
         )[0]
 
-    @policy_factory.apply_policies(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def put(
         self,
         collection,
@@ -218,9 +216,7 @@ class GenericObjectDetail(BaseResource):
             date_updated = datetime.now(timezone.utc)
         content["date_updated"] = date_updated
         content["version"] = collection_item.get("version", 0) + 1
-        content["last_editor"] = (
-            policy_factory.get_user_context().email or "default_uploader"
-        )
+        content["last_editor"] = get_user_context().email or "default_uploader"
         try:
             collection_item = self.storage.update_item_from_collection(
                 collection, get_raw_id(collection_item), content
@@ -229,7 +225,7 @@ class GenericObjectDetail(BaseResource):
             return str(ex), 409
         return collection_item, 201
 
-    @policy_factory.apply_policies(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def patch(
         self,
         collection,
@@ -257,9 +253,7 @@ class GenericObjectDetail(BaseResource):
         content["date_updated"] = date_updated
         if version:
             content["version"] = collection_item.get("version", 0) + 1
-        content["last_editor"] = (
-            policy_factory.get_user_context().email or "default_uploader"
-        )
+        content["last_editor"] = get_user_context().email or "default_uploader"
         try:
             collection_item = self.storage.patch_item_from_collection(
                 collection, get_raw_id(collection_item), content
@@ -268,7 +262,7 @@ class GenericObjectDetail(BaseResource):
             return str(ex), 409
         return collection_item, 201
 
-    @policy_factory.apply_policies(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def delete(
         self,
         collection,
@@ -289,7 +283,7 @@ class GenericObjectDetail(BaseResource):
 
 # POC: currently only suitable when supporting multiples specs for a client
 class GenericObjectDetailV2(BaseResource):
-    @policy_factory.apply_policies(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def get(self, collection, id, spec="elody"):
         if request.args.get("soft", 0, int):
             return "good", 200
@@ -308,7 +302,7 @@ class GenericObjectDetailV2(BaseResource):
             spec=spec,
         )[0]
 
-    @policy_factory.apply_policies(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def put(
         self,
         collection,
@@ -345,7 +339,7 @@ class GenericObjectDetailV2(BaseResource):
             200,
         )
 
-    @policy_factory.apply_policies(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def patch(
         self,
         collection,
@@ -382,7 +376,7 @@ class GenericObjectDetailV2(BaseResource):
             200,
         )
 
-    @policy_factory.apply_policies(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def delete(
         self,
         collection,
@@ -398,7 +392,7 @@ class GenericObjectDetailV2(BaseResource):
 
 
 class GenericObjectMetadata(BaseResource):
-    @policy_factory.apply_policies(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def get(self, collection, id, fields=None, spec="elody"):
         item = self._check_if_collection_and_item_exists(collection, id)
         if fields is None:
@@ -412,7 +406,7 @@ class GenericObjectMetadata(BaseResource):
             accept_header,
         )
 
-    @policy_factory.apply_policies(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def post(self, collection, id, content=None, spec="elody"):
         self._abort_if_item_doesnt_exist(collection, id)
         if content is None:
@@ -423,7 +417,7 @@ class GenericObjectMetadata(BaseResource):
         )
         return metadata, 201
 
-    @policy_factory.apply_policies(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def put(self, collection, id, content=None, spec="elody"):
         self._check_if_collection_and_item_exists(collection, id)
         if content is None:
@@ -434,7 +428,7 @@ class GenericObjectMetadata(BaseResource):
         )
         return metadata, 201
 
-    @policy_factory.apply_policies(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def patch(self, collection, id, content=None, spec="elody"):
         self._check_if_collection_and_item_exists(collection, id)
         if content is None:
@@ -447,14 +441,14 @@ class GenericObjectMetadata(BaseResource):
 
 
 class GenericObjectMetadataKey(BaseResource):
-    @policy_factory.apply_policies(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def get(self, collection, id, key):
         self._check_if_collection_and_item_exists(collection, id)
         return self.storage.get_collection_item_sub_item_key(
             collection, id, "metadata", key
         )
 
-    @policy_factory.apply_policies(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def delete(self, collection, id, key):
         self._check_if_collection_and_item_exists(collection, id)
         self.storage.delete_collection_item_sub_item_key(
@@ -464,7 +458,7 @@ class GenericObjectMetadataKey(BaseResource):
 
 
 class GenericObjectRelations(BaseResource):
-    @policy_factory.apply_policies(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def get(self, collection, id, spec="elody"):
         self._check_if_collection_and_item_exists(collection, id)
 
@@ -475,7 +469,7 @@ class GenericObjectRelations(BaseResource):
 
         return self.storage.get_collection_item_relations(collection, id), 200
 
-    @policy_factory.apply_policies(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def post(self, collection, id, content=None, spec="elody"):
         entity = self._check_if_collection_and_item_exists(collection, id) or {}
         if content is None:
@@ -486,7 +480,7 @@ class GenericObjectRelations(BaseResource):
         )
         return relations, 201
 
-    @policy_factory.apply_policies(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def put(self, collection, id, content=None, spec="elody"):
         entity = self._check_if_collection_and_item_exists(collection, id) or {}
         if content is None:
@@ -497,7 +491,7 @@ class GenericObjectRelations(BaseResource):
         )
         return relations, 201
 
-    @policy_factory.apply_policies(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def patch(self, collection, id, content=None, spec="elody"):
         entity = self._check_if_collection_and_item_exists(collection, id) or {}
         if content is None:
@@ -508,7 +502,7 @@ class GenericObjectRelations(BaseResource):
         )
         return relations, 201
 
-    @policy_factory.apply_policies(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def delete(self, collection, id, content=None, spec="elody"):
         entity = self._check_if_collection_and_item_exists(collection, id) or {}
         if content is None:

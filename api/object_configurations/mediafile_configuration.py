@@ -1,5 +1,3 @@
-import app
-
 from elody.schemas import mediafile_schema
 from object_configurations.base_object_configuration import BaseObjectConfiguration
 

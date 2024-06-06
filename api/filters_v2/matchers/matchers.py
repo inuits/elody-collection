@@ -1,8 +1,7 @@
-import os
-
 from abc import ABC, abstractmethod
 from filters_v2.matchers.base_matchers import BaseMatchers
 from filters_v2.matchers.mongo_matchers import MongoMatchers
+from os import getenv
 
 
 class BaseMatcher(ABC):
@@ -10,7 +9,7 @@ class BaseMatcher(ABC):
         self.matcher_engine: BaseMatchers = {
             "mongo": MongoMatchers,
         }.get(
-            os.getenv("DB_ENGINE", "mongo")
+            getenv("DB_ENGINE", "mongo")
         )()  # type: ignore
 
     @abstractmethod

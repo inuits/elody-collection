@@ -1,5 +1,3 @@
-import os
-
 from abc import ABC, abstractmethod
 from filters_v2.filter_matcher_mapping import FilterMatcherMapping
 from filters_v2.matchers.matchers import BaseMatcher
@@ -9,6 +7,7 @@ from filters_v2.types.base_filter_type_query_generator import (
 from filters_v2.types.mongo_filter_type_query_generator import (
     MongoFilterTypeQueryGenerator,
 )
+from os import getenv
 from typing import Type
 
 
@@ -34,7 +33,7 @@ class BaseFilterType(ABC):
         self.filter_type_engine: BaseFilterTypeQueryGenerator = {
             "mongo": MongoFilterTypeQueryGenerator,
         }.get(
-            os.getenv("DB_ENGINE", "mongo")
+            getenv("DB_ENGINE", "mongo")
         )()  # type: ignore
         self.matchers: dict[str, Type[BaseMatcher]] = {}
 

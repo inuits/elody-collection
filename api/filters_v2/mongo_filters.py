@@ -1,6 +1,4 @@
-import app
-import pymongo
-
+from configuration import get_object_configuration_mapper
 from copy import deepcopy
 from filters_v2.helpers.mongo_helper import (
     append_matcher,
@@ -11,6 +9,7 @@ from filters_v2.helpers.mongo_helper import (
 )
 from filters_v2.matchers.base_matchers import BaseMatchers
 from filters_v2.types.filter_types import get_filter
+from pymongo import ASCENDING, DESCENDING
 from storage.mongostore import MongoStorageManager
 
 
@@ -144,9 +143,10 @@ class MongoFilters(MongoStorageManager):
         }
 
     def __sort_stage(self, order_by, asc):
-        key_order_map = {order_by: pymongo.ASCENDING if asc else pymongo.DESCENDING}
+        key_order_map = {order_by: ASCENDING if asc else DESCENDING}
         sorting = (
-            app.object_configuration_mapper.get(BaseMatchers.collection)
+            get_object_configuration_mapper()
+            .get(BaseMatchers.collection)
             .crud()
             .get("sorting", lambda *_: [])(key_order_map)
         )
@@ -158,7 +158,7 @@ class MongoFilters(MongoStorageManager):
                 {
                     "$sort": {
                         self.get_sort_field(order_by): (
-                            pymongo.ASCENDING if asc else pymongo.DESCENDING
+                            ASCENDING if asc else DESCENDING
                         )
                     }
                 }
@@ -205,6 +205,10 @@ class MongoFilters(MongoStorageManager):
                 document["count"][0]["count"] if len(document["count"]) > 0 else 0
             )
             for document in document["results"]:
-                items["results"].append(self._prepare_mongo_document(document, True, BaseMatchers.collection))
+                items["results"].append(
+                    self._prepare_mongo_document(
+                        document, True, BaseMatchers.collection
+                    )
+                )
 
         return items
