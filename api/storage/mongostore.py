@@ -38,15 +38,14 @@ class MongoStorageManager(GenericStorageManager):
 
     def __add_child_relations(self, id, relations, collection=None):
         for relation in relations:
-            if not collection:
-                collection = self._map_relation_to_collection(relation["type"])
+            collection_for_this_iteration = collection if collection else self._map_relation_to_collection(relation["type"])
             dst_relation = relation.copy()
             dst_relation["type"] = self._map_entity_relation(relation["type"])
             dst_relation["key"] = id
             dst_id = relation["key"]
             dst_content = [dst_relation]
             self.add_sub_item_to_collection_item(
-                collection, dst_id, "relations", dst_content
+                collection_for_this_iteration, dst_id, "relations", dst_content
             )
 
     def __create_sortable_metadata(self, metadata):
@@ -378,6 +377,7 @@ class MongoStorageManager(GenericStorageManager):
     def add_relations_to_collection_item(
         self, collection, id, relations, parent=True, dst_collection=None
     ):
+        print(f"ADDING BOTH RELATIONS with dst_collection: {dst_collection}")
         self.add_sub_item_to_collection_item(collection, id, "relations", relations)
         self.__add_child_relations(id, relations, dst_collection)
         return relations
