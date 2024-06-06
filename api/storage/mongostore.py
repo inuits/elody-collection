@@ -377,7 +377,6 @@ class MongoStorageManager(GenericStorageManager):
     def add_relations_to_collection_item(
         self, collection, id, relations, parent=True, dst_collection=None
     ):
-        print(f"ADDING BOTH RELATIONS with dst_collection: {dst_collection}")
         self.add_sub_item_to_collection_item(collection, id, "relations", relations)
         self.__add_child_relations(id, relations, dst_collection)
         return relations
