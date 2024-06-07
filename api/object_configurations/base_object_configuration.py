@@ -11,9 +11,9 @@ class BaseObjectConfiguration(ABC):
         return {
             "collection": "entities",
             "collection_history": "history",
-            "computed_value_patcher": lambda item: None,  # pyright: ignore
             "creator": lambda post_body, **kwargs: post_body,  # pyright: ignore
-            "post_crud_hook": lambda *, crud, **kwargs: None,  # pyright: ignore
+            "post_crud_hook": lambda **kwargs: None,  # pyright: ignore
+            "pre_crud_hook": lambda **kwargs: None,  # pyright: ignore
         }
 
     @abstractmethod

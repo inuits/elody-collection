@@ -417,10 +417,10 @@ class MongoStorageManager(GenericStorageManager):
     def delete_item(self, item):
         item = item.get("storage_format", item)
         config = get_object_configuration_mapper().get(item["type"])
-        patch_computed_values = config.crud()["computed_value_patcher"]
+        pre_crud_hook = config.crud()["pre_crud_hook"]
         post_crud_hook = config.crud()["post_crud_hook"]
         try:
-            patch_computed_values(item)
+            pre_crud_hook(item=item)
             self.db[config.crud()["collection"]].delete_one(
                 self.__get_id_query(item["_id"])
             )
@@ -439,7 +439,7 @@ class MongoStorageManager(GenericStorageManager):
         config = get_object_configuration_mapper().get(item["type"])
         scope = config.crud().get("spec_scope", {}).get(spec, None)
         object_lists = config.document_info()["object_lists"]
-        patch_computed_values = config.crud()["computed_value_patcher"]
+        pre_crud_hook = config.crud()["pre_crud_hook"]
         for key, value in content.items():
             if not scope or key in scope:
                 if key in object_lists:
@@ -453,7 +453,7 @@ class MongoStorageManager(GenericStorageManager):
                 else:
                     del item[key]
         try:
-            patch_computed_values(item)
+            pre_crud_hook(item=item)
             self.db[collection].replace_one(self.__get_id_query(item["_id"]), item)
         except DuplicateKeyError as error:
             if error.code == 11000:
@@ -740,7 +740,7 @@ class MongoStorageManager(GenericStorageManager):
             collection = config.crud()["collection"]
         scope = config.crud().get("spec_scope", {}).get(spec, None)
         object_lists = config.document_info()["object_lists"]
-        patch_computed_values = config.crud()["computed_value_patcher"]
+        pre_crud_hook = config.crud()["pre_crud_hook"]
         post_crud_hook = config.crud()["post_crud_hook"]
         for key, value in content.items():
             if not scope or key in scope:
@@ -756,7 +756,7 @@ class MongoStorageManager(GenericStorageManager):
                 else:
                     item[key] = value
         try:
-            patch_computed_values(item)
+            pre_crud_hook(item=item)
             self.db[collection].replace_one(self.__get_id_query(item["_id"]), item)
             post_crud_hook(crud="update", item=item, storage=self)
         except DuplicateKeyError as error:
@@ -772,7 +772,7 @@ class MongoStorageManager(GenericStorageManager):
         if not collection:
             collection = crud_config["collection"]
         scope = crud_config.get("spec_scope", {}).get(spec, None)
-        patch_computed_values = crud_config["computed_value_patcher"]
+        pre_crud_hook = crud_config["pre_crud_hook"]
         post_crud_hook = crud_config["post_crud_hook"]
         if scope:
             for key, value in content.items():
@@ -781,7 +781,7 @@ class MongoStorageManager(GenericStorageManager):
         else:
             item = content
         try:
-            patch_computed_values(item)
+            pre_crud_hook(item=item)
             self.db[collection].replace_one(self.__get_id_query(item["_id"]), item)
             post_crud_hook(crud="update", item=item, storage=self)
         except DuplicateKeyError as error:
