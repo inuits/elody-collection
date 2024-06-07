@@ -1,5 +1,3 @@
-import secrets
-
 from configuration import init_mappers
 from elody.loader import load_apps
 from elody.util import CustomJSONEncoder
@@ -7,9 +5,11 @@ from flask import Flask
 from flask_swagger_ui import get_swaggerui_blueprint
 from health import init_health_check
 from init_api import init_api
+from logging_elody.log import log
 from os import getenv
 from policy_factory import init_policy_factory, get_user_context
 from rabbit import init_rabbit, get_rabbit
+from secrets import token_hex
 from storage.storagemanager import StorageManager
 from validation.validator import Validator
 
@@ -35,7 +35,7 @@ def load_sentry():
 def init_app():
     app = Flask(__name__)
     app.config["RESTFUL_JSON"] = {"cls": CustomJSONEncoder}
-    app.secret_key = getenv("SECRET_KEY", secrets.token_hex(16))
+    app.secret_key = getenv("SECRET_KEY", token_hex(16))
     load_apps(app, None)
     return app
 
@@ -77,6 +77,9 @@ def exception(exception):
             item = get_user_context().bag.get("item_being_processed")
     except Exception:
         pass
+    log.exception(
+        f"{exception.__class__.__name__}: {exception}", item, exc_info=exception
+    )
     raise exception
 
 
