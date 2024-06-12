@@ -2,7 +2,7 @@ from bson.codec_options import CodecOptions
 from configuration import get_object_configuration_mapper
 from datetime import datetime, timezone
 from elody.exceptions import NonUniqueException
-from elody.util import mediafile_is_public, signal_entity_changed
+from elody.util import flatten_dict, mediafile_is_public, signal_entity_changed
 from logging_elody.log import log
 from migration.migrate import migrate
 from os import getenv
@@ -38,7 +38,11 @@ class MongoStorageManager(GenericStorageManager):
 
     def __add_child_relations(self, id, relations, collection=None):
         for relation in relations:
-            collection_for_this_iteration = collection if collection else self._map_relation_to_collection(relation["type"])
+            collection_for_this_iteration = (
+                collection
+                if collection
+                else self._map_relation_to_collection(relation["type"])
+            )
             dst_relation = relation.copy()
             dst_relation["type"] = self._map_entity_relation(relation["type"])
             dst_relation["key"] = id
@@ -85,6 +89,37 @@ class MongoStorageManager(GenericStorageManager):
                 "relations",
                 id,
             )
+
+    def __does_request_changes(self, item, content):
+        object_lists = (
+            get_object_configuration_mapper()
+            .get("none")
+            .document_info()["object_lists"]
+        )
+        flat_item = flatten_dict(
+            object_lists, serialize(item, type=item.get("type"), to_format="elody")
+        )
+        flat_content = flatten_dict(
+            object_lists,
+            serialize(
+                content,
+                type=content.get("type"),
+                from_format=item.get("schema", {}).get("type", "elody"),
+                to_format="elody",
+            ),
+        )
+        for key, content_value in flat_content.items():
+            if not (
+                key.startswith("metadata.") and key.endswith(".value")
+            ) and not key.startswith("relations."):
+                continue
+            elif flat_item.get(key) is None and not content_value:
+                continue
+            elif (item_value := flat_item.get(key)) and item_value == content_value:
+                continue
+            else:
+                return True
+        return False
 
     def __get_filter_fields(self, fields):
         filter_fields = {}
@@ -420,7 +455,7 @@ class MongoStorageManager(GenericStorageManager):
         pre_crud_hook = config.crud()["pre_crud_hook"]
         post_crud_hook = config.crud()["post_crud_hook"]
         try:
-            pre_crud_hook(item=item)
+            pre_crud_hook(crud="delete", item=item)
             self.db[config.crud()["collection"]].delete_one(
                 self.__get_id_query(item["_id"])
             )
@@ -440,6 +475,7 @@ class MongoStorageManager(GenericStorageManager):
         scope = config.crud().get("spec_scope", {}).get(spec, None)
         object_lists = config.document_info()["object_lists"]
         pre_crud_hook = config.crud()["pre_crud_hook"]
+        post_crud_hook = config.crud()["post_crud_hook"]
         for key, value in content.items():
             if not scope or key in scope:
                 if key in object_lists:
@@ -453,9 +489,12 @@ class MongoStorageManager(GenericStorageManager):
                 else:
                     del item[key]
         try:
-            pre_crud_hook(item=item)
+            pre_crud_hook(crud="update", item=item)
             self.db[collection].replace_one(self.__get_id_query(item["_id"]), item)
+            post_crud_hook(crud="update", item=item, storage=self)
+            log.info("Successfully deleted data from item", item)
         except DuplicateKeyError as error:
+            log.exception(f"{error.__class__.__name__}: {error}", item, exc_info=error)
             if error.code == 11000:
                 raise NonUniqueException(error.details)
             raise error
@@ -742,6 +781,8 @@ class MongoStorageManager(GenericStorageManager):
         object_lists = config.document_info()["object_lists"]
         pre_crud_hook = config.crud()["pre_crud_hook"]
         post_crud_hook = config.crud()["post_crud_hook"]
+        if not self.__does_request_changes(item, content):
+            return item
         for key, value in content.items():
             if not scope or key in scope:
                 if key in object_lists:
@@ -756,7 +797,7 @@ class MongoStorageManager(GenericStorageManager):
                 else:
                     item[key] = value
         try:
-            pre_crud_hook(item=item)
+            pre_crud_hook(crud="update", item=item)
             self.db[collection].replace_one(self.__get_id_query(item["_id"]), item)
             post_crud_hook(crud="update", item=item, storage=self)
         except DuplicateKeyError as error:
@@ -768,12 +809,14 @@ class MongoStorageManager(GenericStorageManager):
         return self._prepare_mongo_document(item, False, collection, False)
 
     def put_item_from_collection(self, collection, item, content, spec):
-        crud_config = get_object_configuration_mapper().get(item["type"]).crud()
+        config = get_object_configuration_mapper().get(item["type"])
         if not collection:
-            collection = crud_config["collection"]
-        scope = crud_config.get("spec_scope", {}).get(spec, None)
-        pre_crud_hook = crud_config["pre_crud_hook"]
-        post_crud_hook = crud_config["post_crud_hook"]
+            collection = config.crud()["collection"]
+        scope = config.crud().get("spec_scope", {}).get(spec, None)
+        pre_crud_hook = config.crud()["pre_crud_hook"]
+        post_crud_hook = config.crud()["post_crud_hook"]
+        if not self.__does_request_changes(item, content):
+            return item
         if scope:
             for key, value in content.items():
                 if key in scope:
@@ -781,7 +824,7 @@ class MongoStorageManager(GenericStorageManager):
         else:
             item = content
         try:
-            pre_crud_hook(item=item)
+            pre_crud_hook(crud="update", item=item)
             self.db[collection].replace_one(self.__get_id_query(item["_id"]), item)
             post_crud_hook(crud="update", item=item, storage=self)
         except DuplicateKeyError as error:
@@ -826,21 +869,22 @@ class MongoStorageManager(GenericStorageManager):
             else self.get_item_from_collection_by_id(collection, item_id)
         )
 
-    def save_item_to_collection_v2(self, collection, items):
+    def save_item_to_collection_v2(self, collection, items, is_history=False):
         if not isinstance(items, list):
             items = items.get("storage_format", items)
             items = [items]
         item = {}
         try:
             item_id = self.db[collection].insert_many(items).inserted_ids[0]
-            for item in items:
-                post_crud_hook = (
-                    get_object_configuration_mapper()
-                    .get(item["type"])
-                    .crud()["post_crud_hook"]
-                )
-                post_crud_hook(crud="create", item=item, storage=self)
-                log.info("Successfully saved item", item)
+            if not is_history:
+                for item in items:
+                    post_crud_hook = (
+                        get_object_configuration_mapper()
+                        .get(item["type"])
+                        .crud()["post_crud_hook"]
+                    )
+                    post_crud_hook(crud="create", item=item, storage=self)
+                    log.info("Successfully saved item", item)
         except DuplicateKeyError as error:
             log.exception(f"{error.__class__.__name__}: {error}", item, exc_info=error)
             if error.code == 11000:

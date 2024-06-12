@@ -2,8 +2,8 @@ from os import path
 from sys import argv, path as sys_path
 
 sys_path.append(path.dirname(path.dirname(path.abspath(__file__))))
-
 from configuration import init_mappers, get_object_configuration_mapper
+from logging_elody.log import log
 
 
 class BulkMigrator:
@@ -27,7 +27,12 @@ class BulkMigrator:
                 config.migration().bulk_migrate(
                     dry_run=config.migration().status == "dry_run"
                 )
-            except Exception:
+            except Exception as exception:
+                log.exception(
+                    f"{exception.__class__.__name__}: {exception}",
+                    {},
+                    exc_info=exception,
+                )
                 self.__patch_exception_count(1)
             else:
                 self.__patch_exception_count(0)
