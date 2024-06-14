@@ -91,16 +91,32 @@ class MongoStorageManager(GenericStorageManager):
             )
 
     def __does_request_changes(self, item, content):
+        def __is_changed(value, data={}, object_list_key=""):
+            if isinstance(value, dict):
+                if object_list_key:
+                    if data not in item[content_key]:
+                        return True
+                else:
+                    if content_value != item[content_key]:
+                        return True
+            else:
+                if object_list_key:
+                    item_value = flat_item.get(
+                        f"{content_key}.{data[object_list_key]}.{key}"
+                    )
+                else:
+                    item_value = flat_item.get(content_key)
+                if not item_value and value:
+                    return True
+                if item_value and item_value != value:
+                    return True
+
         object_lists = (
             get_object_configuration_mapper()
             .get("none")
             .document_info()["object_lists"]
         )
-        flat_item = flatten_dict(
-            object_lists, serialize(item, type=item.get("type"), to_format="elody")
-        )
-        flat_content = flatten_dict(
-            object_lists,
+        content = (
             serialize(
                 content,
                 type=content.get("type"),
@@ -108,17 +124,25 @@ class MongoStorageManager(GenericStorageManager):
                 to_format="elody",
             ),
         )
-        for key, content_value in flat_content.items():
-            if not (
-                key.startswith("metadata.") and key.endswith(".value")
-            ) and not key.startswith("relations."):
+        item = serialize(item, type=item.get("type"), to_format="elody")
+        flat_item = flatten_dict(object_lists, item)
+        if isinstance(content, tuple):
+            content = content[0]
+
+        for content_key, content_value in content.items():
+            if content_key in ["_id", "id", "identifiers", "storage_format"]:
                 continue
-            elif flat_item.get(key) is None and not content_value:
-                continue
-            elif (item_value := flat_item.get(key)) and item_value == content_value:
-                continue
+            if content_key in object_lists:
+                for data in content_value:
+                    for key, value in data.items():
+                        if content_key == "metadata" and key == "key":
+                            continue
+                        if __is_changed(value, data, object_lists[content_key]):
+                            return True
             else:
-                return True
+                if __is_changed(content_value):
+                    return True
+
         return False
 
     def __get_filter_fields(self, fields):
@@ -295,7 +319,7 @@ class MongoStorageManager(GenericStorageManager):
             "hasOwner": "isOwnerFor",
             "isOwnerFor": "hasOwner",
             "hasAssetPart": "isAssetPartFor",
-            "isAssetPartFor": "hasAssetPart"
+            "isAssetPartFor": "hasAssetPart",
         }.get(relation)
 
     def _map_relation_to_collection(self, relation):
