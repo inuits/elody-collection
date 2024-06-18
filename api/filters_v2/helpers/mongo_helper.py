@@ -18,12 +18,9 @@ def append_matcher(matcher, matchers, operator="and"):
                     matchers[index][matcher_key]["$all"].extend(
                         matcher[matcher_key]["$all"]
                     )
-                else:
-                    matchers[index][matcher_key] = matcher[matcher_key]
                 did_append_matcher = True
             index += 1
     elif operator == "or":
-        matcher[matcher_key] = matcher[matcher_key]["$all"][0]
         matcher = {"OR_MATCHER": matcher}
     else:
         raise Exception(f"Operator '{operator}' not supported.")
@@ -108,6 +105,15 @@ def get_options_requesting_filter(filter_request_body):
     return options_requesting_filter[0] if len(options_requesting_filter) > 0 else {}
 
 
+def has_selection_filter_with_multiple_values(filter_request_body):
+    selection_filter_with_multiple_values = [
+        filter_criteria
+        for filter_criteria in filter_request_body
+        if filter_criteria["type"] == "selection" and len(filter_criteria["value"]) > 1
+    ]
+    return len(selection_filter_with_multiple_values) > 0
+
+
 def unify_matchers_per_schema_into_one_match(matchers_per_schema):
     match = {}
     general_matchers = matchers_per_schema.pop("general")
@@ -119,9 +125,24 @@ def unify_matchers_per_schema_into_one_match(matchers_per_schema):
             for general_matcher in general_matchers:
                 schema_matchers.append(general_matcher)
 
-        match.update(
-            {"$or": [{"$and": matchers} for matchers in matchers_per_schema.values()]}
-        )
+        if len(matchers_per_schema) > 1:
+            for matchers in matchers_per_schema.values():
+                for i in range(1, len(matchers)):
+                    __unify_or_matchers(matchers[i])
+            match.update(
+                {
+                    "$or": [
+                        {"$and": matchers} for matchers in matchers_per_schema.values()
+                    ]
+                }
+            )
+        else:
+            for matchers in matchers_per_schema.values():
+                for matcher in matchers:
+                    if list(matcher.keys())[0] in ["schema.type", "schema.version"]:
+                        continue
+                    match.update(matcher)
+            __unify_or_matchers(match)
     else:
         for general_matcher in general_matchers:
             match.update(general_matcher)
@@ -138,3 +159,32 @@ def __combine_or_matchers(matchers):
             matchers.remove(matcher)
     if len(or_expression) > 0:
         matchers.append({"$or": or_expression})
+
+
+def __unify_or_matchers(match):
+    for or_matcher in match.get("$or", []):
+        for key, value in or_matcher.items():
+            if value.get("$all"):
+                prefixed_key = f"AND_PREFIX_{key}"
+                if match.get(prefixed_key):
+                    match[prefixed_key]["$in"].extend(value["$all"])
+                else:
+                    match.update({prefixed_key: {"$in": value["$all"]}})
+    if match.get("$or"):
+        del match["$or"]
+        match_deepcopy = deepcopy(match)
+        and_matchers = []
+        for key, value in match_deepcopy.items():
+            if key.startswith("AND_PREFIX_"):
+                and_matchers.append({key.removeprefix("AND_PREFIX_"): value})
+                match.pop(key)
+        match["$and"] = and_matchers
+
+        and_matchers = deepcopy(match.get("$and", []))
+        for and_matcher in and_matchers:
+            for key, value in and_matcher.items():
+                if not match.get(key):
+                    match[key] = value
+                    match.get("$and").remove(and_matcher)
+        if len(match.get("$and", [])) == 0:
+            del match["$and"]

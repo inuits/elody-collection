@@ -5,6 +5,7 @@ from filters_v2.helpers.mongo_helper import (
     get_filter_option_label,
     get_options_mapper,
     get_options_requesting_filter,
+    has_selection_filter_with_multiple_values,
     unify_matchers_per_schema_into_one_match,
 )
 from filters_v2.matchers.base_matchers import BaseMatchers
@@ -25,6 +26,10 @@ class MongoFilters(MongoStorageManager):
     ):
         BaseMatchers.collection = collection
         options_requesting_filter = get_options_requesting_filter(filter_request_body)
+        BaseMatchers.force_base_nested_matcher_builder = bool(
+            options_requesting_filter
+            or has_selection_filter_with_multiple_values(filter_request_body)
+        )
 
         lookup = self.__lookup_stage(filter_request_body)
         match = self.__match_stage(filter_request_body)

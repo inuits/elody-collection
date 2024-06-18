@@ -5,6 +5,19 @@ from configuration import get_object_configuration_mapper
 class BaseMatchers(ABC):
     datetime_pattern = r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$"
     collection = "entities"
+    force_base_nested_matcher_builder = False
+
+    @staticmethod
+    def get_base_nested_matcher_builder():
+        config = get_object_configuration_mapper().get("none")
+        return config.crud()["nested_matcher_builder"]
+
+    @staticmethod
+    def get_custom_nested_matcher_builder():
+        if BaseMatchers.force_base_nested_matcher_builder:
+            return BaseMatchers.get_base_nested_matcher_builder()
+        config = get_object_configuration_mapper().get(BaseMatchers.collection)
+        return config.crud()["nested_matcher_builder"]
 
     @staticmethod
     def get_object_lists() -> dict:
