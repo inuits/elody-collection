@@ -450,7 +450,9 @@ class BaseResource(Resource):
         self.storage.add_relations_to_collection_item("entities", entity_id, [relation])
 
     def _resolve_collections(self, **kwargs):
-        return [kwargs.get("collection", "entities")]
+        if not kwargs.get("collection"):
+            return ["entities", "mediafiles"]
+        return [kwargs.get("collection")]
 
     def _set_entity_mediafile_and_thumbnail(self, entity):
         mediafiles = self.storage.get_collection_item_mediafiles(
