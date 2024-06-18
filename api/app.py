@@ -68,19 +68,19 @@ init_policy_factory()
 validator = Validator().validator
 
 
-@app.errorhandler(Exception)
-def exception(exception):
-    item = {}
-    try:
-        item = get_user_context().bag.get("requested_item", {})
-        if not item:
-            item = get_user_context().bag.get("item_being_processed")
-    except Exception:
-        pass
-    log.exception(
-        f"{exception.__class__.__name__}: {exception}", item, exc_info=exception
-    )
-    raise exception
+# @app.errorhandler(Exception)
+# def exception(exception):
+#     item = {}
+#     try:
+#         item = get_user_context().bag.get("requested_item", {})
+#         if not item:
+#             item = get_user_context().bag.get("item_being_processed")
+#     except Exception:
+#         pass
+#     log.exception(
+#         f"{exception.__class__.__name__}: {exception}", item, exc_info=exception
+#     )
+#     raise exception
 
 
 if __name__ == "__main__":
