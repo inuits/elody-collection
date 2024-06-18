@@ -158,6 +158,9 @@ class MongoStorageManager(GenericStorageManager):
 
     def __get_id_query(self, id):
         return {"$or": [{"_id": id}, {"identifiers": id}]}
+    
+    def __get_metatdata_query(self, key, value):
+        return {"metadata": {"$elemMatch": {"key": key, "value": value}}}
 
     def __get_ids_query(self, ids):
         return {"$or": [{"_id": {"$in": ids}}, {"identifiers": {"$in": ids}}]}
@@ -650,6 +653,11 @@ class MongoStorageManager(GenericStorageManager):
 
     def get_item_from_collection_by_id(self, collection, id):
         if document := self.db[collection].find_one(self.__get_id_query(id)):
+            return self._prepare_mongo_document(document, True, collection)
+        return None
+
+    def get_item_from_collection_by_metadata(self, collection, key, value):
+        if document := self.db[collection].find_one(self.__get_metatdata_query(key, value)):
             return self._prepare_mongo_document(document, True, collection)
         return None
 
