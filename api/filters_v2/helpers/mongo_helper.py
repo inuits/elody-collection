@@ -144,9 +144,8 @@ def unify_matchers_per_schema_into_one_match(matchers_per_schema):
                     match.update(matcher)
             __unify_or_matchers(match)
     else:
-        for i in range(1, len(general_matchers)):
-            __unify_or_matchers(general_matchers[i])
-            match.update(general_matchers[i])
+        for general_matcher in general_matchers:
+            match.update(general_matcher)
 
     return match
 
