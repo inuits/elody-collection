@@ -158,7 +158,7 @@ class MongoStorageManager(GenericStorageManager):
 
     def __get_id_query(self, id):
         return {"$or": [{"_id": id}, {"identifiers": id}]}
-    
+
     def __get_metatdata_query(self, key, value):
         return {"metadata": {"$elemMatch": {"key": key, "value": value}}}
 
@@ -657,7 +657,9 @@ class MongoStorageManager(GenericStorageManager):
         return None
 
     def get_item_from_collection_by_metadata(self, collection, key, value):
-        if document := self.db[collection].find_one(self.__get_metatdata_query(key, value)):
+        if document := self.db[collection].find_one(
+            self.__get_metatdata_query(key, value)
+        ):
             return self._prepare_mongo_document(document, True, collection)
         return None
 
@@ -909,22 +911,19 @@ class MongoStorageManager(GenericStorageManager):
             items = [items]
         item = {}
         try:
-            item_id = self.db[collection].insert_many(items).inserted_ids[0]
-            if not is_history:
-                for item in items:
-                    post_crud_hook = (
-                        get_object_configuration_mapper()
-                        .get(item["type"])
-                        .crud()["post_crud_hook"]
-                    )
+            for item in items:
+                config = get_object_configuration_mapper().get(item["type"])
+                self.db[config.crud()["collection"]].insert_one(item)
+                if not is_history:
+                    post_crud_hook = config.crud()["post_crud_hook"]
                     post_crud_hook(crud="create", item=item, storage=self)
-                    log.info("Successfully saved item", item)
+                log.info("Successfully saved item", item)
         except DuplicateKeyError as error:
             log.exception(f"{error.__class__.__name__}: {error}", item, exc_info=error)
             if error.code == 11000:
                 raise NonUniqueException(error.details)
             raise error
-        return self.get_item_from_collection_by_id(collection, item_id)
+        return self.get_item_from_collection_by_id(collection, items[0]["_id"])
 
     def set_primary_field_collection_item(self, collection, id, mediafile_id, field):
         for src_id, dst_id in [

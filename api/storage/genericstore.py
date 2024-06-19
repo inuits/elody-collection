@@ -96,7 +96,7 @@ class GenericStorageManager:
 
     def get_item_from_collection_by_id(self, collection, id) -> dict:
         pass
-    
+
     def get_item_from_collection_by_metadata(self, collection, key, value) -> dict:
         pass
 
