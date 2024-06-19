@@ -127,7 +127,8 @@ def unify_matchers_per_schema_into_one_match(matchers_per_schema):
 
         if len(matchers_per_schema) > 1:
             for matchers in matchers_per_schema.values():
-                for i in range(1, len(matchers)):
+                len_matchers = len(matchers)
+                for i in range(1, len_matchers):
                     __unify_or_matchers(matchers[i])
             match.update(
                 {
@@ -138,10 +139,11 @@ def unify_matchers_per_schema_into_one_match(matchers_per_schema):
             )
         else:
             for matchers in matchers_per_schema.values():
-                for matcher in matchers:
-                    if list(matcher.keys())[0] in ["schema.type", "schema.version"]:
+                len_matchers = len(matchers)
+                for i in range(1, len_matchers):
+                    if list(matchers[i].keys())[0] in ["schema.type", "schema.version"]:
                         continue
-                    match.update(matcher)
+                    match.update(matchers[i])
             __unify_or_matchers(match)
     else:
         for general_matcher in general_matchers:
