@@ -12,6 +12,7 @@ from inuits_policy_based_auth import RequestContext
 from policy_factory import apply_policies, get_user_context
 from resources.base_filter_resource import BaseFilterResource
 from resources.base_resource import BaseResource
+from logging_elody.log import log
 
 
 class GenericObject(BaseResource):
@@ -159,6 +160,8 @@ class GenericObjectV2(BaseFilterResource, BaseResource):
             item = self.storage.save_item_to_collection_v2(collection, item)
         except NonUniqueException as ex:
             return ex.args[0]["errmsg"], 409
+        log.info(str(collection))
+        log.info(str(item))
         return self._create_response_according_accept_header(
             mappers.map_data_according_to_accept_header(
                 item,
