@@ -118,10 +118,10 @@ class GenericObject(BaseResource):
 # POC: currently only suitable when supporting multiples specs for a client
 class GenericObjectV2(BaseFilterResource, BaseResource):
     @apply_policies(RequestContext(request))
-    def get(self, collection, filters=[], spec="elody"):
+    def get(self, collection, filters=None, spec="elody"):
         self._check_if_collection_name_exists(collection)
         accept_header = request.headers.get("Accept")
-        if len(filters) == 0:
+        if filters is None:
             filters = self.get_filters_from_query_parameters(request)
         items = self._execute_advanced_search_with_query_v2(filters, collection)
         return self._create_response_according_accept_header(
