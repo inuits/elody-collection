@@ -913,7 +913,11 @@ class MongoStorageManager(GenericStorageManager):
         try:
             for item in items:
                 config = get_object_configuration_mapper().get(item["type"])
-                self.db[config.crud()["collection"]].insert_one(item)
+                self.db[
+                    config.crud()[
+                        "collection" if not is_history else "collection_history"
+                    ]
+                ].insert_one(item)
                 if not is_history:
                     post_crud_hook = config.crud()["post_crud_hook"]
                     post_crud_hook(crud="create", item=item, storage=self)
