@@ -5,6 +5,7 @@ from filters_v2.helpers.mongo_helper import (
     get_filter_option_label,
     get_options_mapper,
     get_options_requesting_filter,
+    has_non_exact_match_filter,
     has_selection_filter_with_multiple_values,
     unify_matchers_per_schema_into_one_match,
 )
@@ -12,7 +13,6 @@ from filters_v2.matchers.base_matchers import BaseMatchers
 from filters_v2.types.filter_types import get_filter
 from pymongo import ASCENDING, DESCENDING
 from storage.mongostore import MongoStorageManager
-from logging_elody.log import log
 
 
 class MongoFilters(MongoStorageManager):
@@ -29,6 +29,7 @@ class MongoFilters(MongoStorageManager):
         options_requesting_filter = get_options_requesting_filter(filter_request_body)
         BaseMatchers.force_base_nested_matcher_builder = bool(
             options_requesting_filter
+            or has_non_exact_match_filter(filter_request_body)
             or has_selection_filter_with_multiple_values(filter_request_body)
         )
 
@@ -43,7 +44,6 @@ class MongoFilters(MongoStorageManager):
         )
 
         pipeline = [*lookup, match, facet]
-        log.info(str(pipeline))
         documents = self.db[collection].aggregate(
             pipeline, allowDiskUse=self.allow_disk_use
         )
