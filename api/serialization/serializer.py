@@ -32,7 +32,10 @@ class Serializer:
 
     def get_format(self, spec: str, request_parameters):
         if spec == "ngsi-ld":
-            return f"{spec.replace('-', '_')}_{camel_to_snake(request_parameters.get('options', 'normalized'))}"
+            options = "_".join(
+                sorted(request_parameters.get("options", "normalized").split(","))
+            )
+            return f"{spec.replace('-', '_')}_{camel_to_snake(options)}"
         return spec
 
     def __serialize(self, item, from_format, to_format, type, accept_header):
