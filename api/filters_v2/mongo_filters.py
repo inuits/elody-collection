@@ -12,6 +12,7 @@ from filters_v2.matchers.base_matchers import BaseMatchers
 from filters_v2.types.filter_types import get_filter
 from pymongo import ASCENDING, DESCENDING
 from storage.mongostore import MongoStorageManager
+from logging_elody.log import log
 
 
 class MongoFilters(MongoStorageManager):
@@ -42,6 +43,7 @@ class MongoFilters(MongoStorageManager):
         )
 
         pipeline = [*lookup, match, facet]
+        log.info(str(pipeline))
         documents = self.db[collection].aggregate(
             pipeline, allowDiskUse=self.allow_disk_use
         )
