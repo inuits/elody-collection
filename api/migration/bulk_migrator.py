@@ -16,6 +16,7 @@ class BulkMigrator:
         self.exception_count = 0
         config = get_object_configuration_mapper().get(type)
         if config.migration().status == "disabled":
+            log.info(f"Migrations disabled for {type}")
             return
 
         while True:
