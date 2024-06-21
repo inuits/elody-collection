@@ -1,7 +1,7 @@
 from configuration import init_mappers
 from elody.loader import load_apps
 from elody.util import CustomJSONEncoder
-from flask import Flask
+from flask import Flask, jsonify
 from flask_swagger_ui import get_swaggerui_blueprint
 from health import init_health_check
 from init_api import init_api
@@ -12,6 +12,7 @@ from rabbit import init_rabbit, get_rabbit
 from secrets import token_hex
 from storage.storagemanager import StorageManager
 from validation.validator import Validator
+from werkzeug.exceptions import HTTPException
 
 
 SWAGGER_URL = "/api/docs"  # URL for exposing Swagger UI (without trailing '/')
@@ -68,19 +69,20 @@ init_policy_factory()
 validator = Validator().validator
 
 
-# @app.errorhandler(Exception)
-# def exception(exception):
-#     item = {}
-#     try:
-#         item = get_user_context().bag.get("requested_item", {})
-#         if not item:
-#             item = get_user_context().bag.get("item_being_processed")
-#     except Exception:
-#         pass
-#     log.exception(
-#         f"{exception.__class__.__name__}: {exception}", item, exc_info=exception
-#     )
-#     raise exception
+@app.errorhandler(HTTPException)
+@app.errorhandler(Exception)
+def exception(exception):
+    item = {}
+    try:
+        item = get_user_context().bag.get("requested_item", {})
+        if not item:
+            item = get_user_context().bag.get("item_being_processed")
+    except Exception:
+        pass
+    log.exception(
+        f"{exception.__class__.__name__}: {exception}", item, exc_info=exception
+    )
+    return jsonify(message=exception.description), exception.code
 
 
 if __name__ == "__main__":
