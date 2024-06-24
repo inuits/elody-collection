@@ -33,22 +33,32 @@ class MongoFilters(MongoStorageManager):
             or has_selection_filter_with_multiple_values(filter_request_body)
         )
 
-        lookup = self.__lookup_stage(filter_request_body)
-        match = self.__match_stage(filter_request_body)
-        facet = self.__facet_stage(
-            skip,
-            limit,
-            order_by,
-            asc,
-            options_requesting_filter.get("key"),
+        return self.__execute_aggregation_query(
+            filter_request_body, skip, limit, order_by, asc, options_requesting_filter
         )
 
-        pipeline = [*lookup, match, facet]
-        documents = self.db[collection].aggregate(
+    def __execute_aggregation_query(
+        self, filter_request_body, skip, limit, order_by, asc, options_requesting_filter
+    ):
+        pipeline = []
+        pipeline.extend(self.__lookup_stage(filter_request_body))
+        match_stage = self.__match_stage(filter_request_body)
+        pipeline.append(match_stage)
+
+        if options_requesting_filter_keys := options_requesting_filter.get("key"):
+            pipeline.extend(self.__project_stage(options_requesting_filter_keys))
+        else:
+            if order_by:
+                pipeline.extend(self.__sort_stage(order_by, asc))
+            pipeline.extend([{"$skip": skip}, {"$limit": limit}])
+
+        documents = self.db[BaseMatchers.collection].aggregate(
             pipeline, allowDiskUse=self.allow_disk_use
         )
-        document = list(documents)[0]
-        return self.__get_items(document, limit, skip, options_requesting_filter)
+        document = {"results": list(documents)}
+        return self.__get_items(
+            document, match_stage, limit, skip, options_requesting_filter
+        )
 
     def __lookup_stage(self, filter_request_body):
         lookups = []
@@ -130,25 +140,6 @@ class MongoFilters(MongoStorageManager):
 
         return {"$match": unify_matchers_per_schema_into_one_match(matchers_per_schema)}
 
-    def __facet_stage(
-        self, skip, limit, order_by, asc, options_requesting_filter_keys=None
-    ):
-        results = []
-        if options_requesting_filter_keys:
-            results.extend(self.__project_stage(options_requesting_filter_keys))
-        else:
-            if order_by:
-                results.extend(self.__sort_stage(order_by, asc))
-            results.append({"$skip": skip})
-            results.append({"$limit": limit})
-
-        return {
-            "$facet": {
-                "results": results,
-                "count": [{"$count": "count"}],
-            }
-        }
-
     def __sort_stage(self, order_by, asc):
         key_order_map = {order_by: ASCENDING if asc else DESCENDING}
         sorting = (
@@ -189,7 +180,7 @@ class MongoFilters(MongoStorageManager):
             {"$group": {"_id": "options", "options": {"$addToSet": "$options"}}},
         ]
 
-    def __get_items(self, document, limit, skip, options_requesting_filter):
+    def __get_items(self, document, match, limit, skip, options_requesting_filter=None):
         items = {"results": [], "count": 0}
 
         if options_requesting_filter:
@@ -208,8 +199,8 @@ class MongoFilters(MongoStorageManager):
         else:
             items["limit"] = limit
             items["skip"] = skip
-            items["count"] = (
-                document["count"][0]["count"] if len(document["count"]) > 0 else 0
+            items["count"] = self.db[BaseMatchers.collection].count_documents(
+                match["$match"]
             )
             for document in document["results"]:
                 items["results"].append(
