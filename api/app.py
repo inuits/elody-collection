@@ -82,7 +82,10 @@ def exception(exception):
     log.exception(
         f"{exception.__class__.__name__}: {exception}", item, exc_info=exception
     )
-    return jsonify(message=exception.description), exception.code
+    try:
+        return jsonify(message=exception.description), exception.code
+    except:
+        return jsonify(message=str(exception)), 500
 
 
 if __name__ == "__main__":
