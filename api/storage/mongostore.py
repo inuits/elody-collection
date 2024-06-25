@@ -820,6 +820,8 @@ class MongoStorageManager(GenericStorageManager):
         if not self.__does_request_changes(item, content):
             return item
         for key, value in content.items():
+            if value == "[protected content]":
+                continue
             if not scope or key in scope:
                 if key in object_lists:
                     for value_element in value:
@@ -856,6 +858,8 @@ class MongoStorageManager(GenericStorageManager):
         if scope:
             for key, value in content.items():
                 if key in scope:
+                    if value == "[protected content]":
+                        continue
                     item[key] = value
         else:
             item = content
