@@ -34,12 +34,16 @@ class Batch(BaseResource):
                 {"entities": "same_entity", "mediafiles": "filename"},
                 {
                     "mediafiles": [
-                        "copyright_color",
                         "filename",
                         "publication_status",
+                        "mediafile_copyright_color",
                     ]
                 },
                 {"mediafiles": {"copyright_color": "red"}},
+                {
+                    "asset_copyright_color": {"target": "entities", "map_to": "copyright_color"},
+                    "mediafile_copyright_color": {"target": "mediafiles", "map_to": "copyright_color"}
+                }
             )
         except ColumnNotFoundException:
             abort(422, message="One or more required columns headers aren't defined")
