@@ -11,7 +11,6 @@ from policy_factory import init_policy_factory, get_user_context
 from rabbit import init_rabbit, get_rabbit
 from secrets import token_hex
 from storage.storagemanager import StorageManager
-from validation.validator import Validator
 from werkzeug.exceptions import HTTPException
 
 
@@ -66,8 +65,6 @@ init_rabbit(app)
 init_health_check(app, database_available, rabbit_available)
 init_policy_factory()
 
-validator = Validator().validator
-
 
 @app.errorhandler(HTTPException)
 @app.errorhandler(Exception)
@@ -85,7 +82,7 @@ def exception(exception):
     try:
         return jsonify(message=exception.description), exception.code
     except:
-        return jsonify(message=str(exception)), 500
+        return jsonify(message=f"{exception.__class__.__name__}: {exception}"), 500
 
 
 if __name__ == "__main__":

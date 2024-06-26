@@ -12,6 +12,7 @@ from inuits_policy_based_auth import RequestContext
 from policy_factory import apply_policies, get_user_context
 from resources.base_filter_resource import BaseFilterResource
 from resources.base_resource import BaseResource
+from validation.validate import validate
 
 
 class GenericObject(BaseResource):
@@ -138,6 +139,7 @@ class GenericObjectV2(BaseFilterResource, BaseResource):
         )
 
     @apply_policies(RequestContext(request))
+    @validate(request)
     def post(
         self,
         collection,
@@ -303,6 +305,7 @@ class GenericObjectDetailV2(BaseResource):
         )[0]
 
     @apply_policies(RequestContext(request))
+    @validate(request)
     def put(
         self,
         collection,
@@ -340,6 +343,7 @@ class GenericObjectDetailV2(BaseResource):
         )
 
     @apply_policies(RequestContext(request))
+    @validate(request)
     def patch(
         self,
         collection,

@@ -109,10 +109,13 @@ class BaseResource(Resource):
         entity["metadata"] = [*entity.get("metadata", []), *relations]
         return entity
 
-    def _check_if_collection_name_exists(self, collection):
+    def _check_if_collection_name_exists(self, collection, is_validating_content=False):
         try:
-            item = get_user_context().bag.pop("requested_item", None)
-            get_user_context().bag["item_being_processed"] = deepcopy(item)
+            if is_validating_content:
+                item = get_user_context().bag.get("requested_item", None)
+            else:
+                item = get_user_context().bag.pop("requested_item", None)
+                get_user_context().bag["item_being_processed"] = deepcopy(item)
         except NoUserContextException:
             pass
         if collection in self.known_collections:
@@ -121,16 +124,21 @@ class BaseResource(Resource):
             abort(400, message=f"Collection {collection} does not exist.")
         self.known_collections.append(collection)
 
-    def _check_if_collection_and_item_exists(self, collection, id, item=None):
+    def _check_if_collection_and_item_exists(
+        self, collection, id, item=None, is_validating_content=False
+    ):
         try:
-            item = item or get_user_context().bag.pop("requested_item", None)
-            get_user_context().bag["item_being_processed"] = deepcopy(item)
+            if is_validating_content:
+                item = item or get_user_context().bag.get("requested_item", None)
+            else:
+                item = item or get_user_context().bag.pop("requested_item", None)
+                get_user_context().bag["item_being_processed"] = deepcopy(item)
         except NoUserContextException:
             pass
         if item:
             return item
         elif collection:
-            self._check_if_collection_name_exists(collection)
+            self._check_if_collection_name_exists(collection, is_validating_content)
             return self._abort_if_item_doesnt_exist(collection, id)
         else:
             collections = self._resolve_collections(collection=collection, id=id)

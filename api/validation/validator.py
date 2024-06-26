@@ -1,56 +1,46 @@
 from configuration import get_object_configuration_mapper
-from elody.csv import CSVSingleObject
 from elody.validator import validate_json
-from flask import request
-from flask_restful import abort, request
+from flask_restful import abort
+from resources.base_resource import BaseResource
 
 
-def _get_content_according_content_type(request, object_type="entity"):
-    content_type = request.content_type
-    match content_type:
-        case "application/json":
-            return request.get_json()
-        case "text/csv":
-            csv = request.get_data(as_text=True)
-            parsed_csv = CSVSingleObject(csv, object_type)
-            if object_type in ["metadata", "relations"]:
-                return getattr(parsed_csv, object_type)
-            return parsed_csv.get_type(object_type)
-        case _:
-            return request.get_json()
-
-
-class Validator:
-    def validator(self, object_type=None):
-        def decorator(func):
+class Validator(BaseResource):
+    def validate_dedecorator(self, request):
+        def decorator(function):
             def wrapper(*args, **kwargs):
-                nonlocal object_type
-                if object_type is None:
-                    object_type = request.path.split("/")[1]
-                content = _get_content_according_content_type(
-                    request, object_type=object_type
-                )
-                if content is None:
-                    raise ValueError("Content is missing in the request.")
-                validation_method, validator = (
-                    get_object_configuration_mapper().get(object_type).validation()
-                )
-                if validation_method == "schema":
-                    validation_error = validate_json(content, validator)
-                    if validation_error:
-                        abort(
-                            400,
-                            message=f"{validation_error}",
-                        )
-                elif validation_method == "function":
-                    validator()
-                else:
-                    raise Exception(
-                        f"Validation method: {validation_method} doesn't exist "
-                    )
+                if request.args.get("soft", 0, int):
+                    return function(*args, **kwargs)
 
-                return func(*args, **kwargs)
+                item = self._check_if_collection_and_item_exists(
+                    kwargs.get("collection"), id, is_validating_content=True
+                )
+                content = self._get_content_according_content_type(
+                    request,
+                    content=kwargs.get("content"),
+                    item=item,
+                    v2=True,
+                )
+                if not content:
+                    raise ValueError("Content is missing in the request.")
+
+                strategy, validator = (
+                    get_object_configuration_mapper().get(content["type"]).validation()
+                )
+                apply_strategy = getattr(self, f"_apply_{strategy}_strategy")
+                apply_strategy(validator, content, http_method=request.method)
+                return function(*args, **kwargs)
 
             return wrapper
 
         return decorator
+
+    def _apply_function_strategy(self, validator, content, http_method, **_):
+        try:
+            validator(http_method.lower(), content)
+        except Exception as exception:
+            abort(400, message=str(exception))
+
+    def _apply_schema_strategy(self, validator, content, **_):
+        validation_error = validate_json(content, validator)
+        if validation_error:
+            abort(400, message=f"{validation_error}")

@@ -40,7 +40,10 @@ class BaseObjectConfiguration(ABC):
 
     @abstractmethod
     def validation(self):
-        return "schema", {}
+        def validator(http_method, content, **_):  # pyright: ignore
+            pass
+
+        return "function", validator
 
     def __build_nested_matcher(self, object_lists, keys_info, value, index=0):
         if index == 0 and not any(info["is_object_list"] for info in keys_info):
