@@ -1,6 +1,7 @@
 from configuration import get_object_configuration_mapper
 from elody.validator import validate_json
 from flask_restful import abort
+from logging_elody.log import log
 from resources.base_resource import BaseResource
 
 
@@ -11,13 +12,15 @@ class Validator(BaseResource):
                 if request.args.get("soft", 0, int):
                     return function(*args, **kwargs)
 
+                http_method = request.method.lower()
                 item = self._check_if_collection_and_item_exists(
                     kwargs.get("collection"), id, is_validating_content=True
                 )
                 content = self._get_content_according_content_type(
                     request,
                     content=kwargs.get("content"),
-                    item=item,
+                    item={} if http_method == "post" else item,
+                    spec=kwargs.get("spec", "elody"),
                     v2=True,
                 )
                 if not content:
@@ -27,7 +30,7 @@ class Validator(BaseResource):
                     get_object_configuration_mapper().get(content["type"]).validation()
                 )
                 apply_strategy = getattr(self, f"_apply_{strategy}_strategy")
-                apply_strategy(validator, content, http_method=request.method)
+                apply_strategy(validator, content, http_method=http_method)
                 return function(*args, **kwargs)
 
             return wrapper
@@ -38,6 +41,11 @@ class Validator(BaseResource):
         try:
             validator(http_method.lower(), content)
         except Exception as exception:
+            log.exception(
+                f"{exception.__class__.__name__}: {exception}",
+                content,
+                exc_info=exception,
+            )
             abort(400, message=str(exception))
 
     def _apply_schema_strategy(self, validator, content, **_):
