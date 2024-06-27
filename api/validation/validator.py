@@ -12,14 +12,16 @@ class Validator(BaseResource):
                 if request.args.get("soft", 0, int):
                     return function(*args, **kwargs)
 
-                http_method = request.method.lower()
-                item = self._check_if_collection_and_item_exists(
-                    kwargs.get("collection"), id, is_validating_content=True
-                )
+                http_method, item = request.method.lower(), {}
+                if http_method != "post":
+                    item = self._check_if_collection_and_item_exists(
+                        kwargs.get("collection"), id, is_validating_content=True
+                    )
+
                 content = self._get_content_according_content_type(
                     request,
                     content=kwargs.get("content"),
-                    item={} if http_method == "post" else item,
+                    item=item,
                     spec=kwargs.get("spec", "elody"),
                     v2=True,
                 )
