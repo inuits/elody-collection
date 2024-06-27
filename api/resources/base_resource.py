@@ -361,7 +361,7 @@ class BaseResource(Resource):
             type = item.get("type", content.get("type"))
             schema_type = get_object_configuration_mapper().get(type).SCHEMA_TYPE
             return serialize(
-                content,
+                deepcopy(content),
                 type=type,
                 from_format=serialize.get_format(spec, request.args),
                 to_format=(
