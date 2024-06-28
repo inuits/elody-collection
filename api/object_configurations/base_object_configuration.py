@@ -61,6 +61,13 @@ class BaseObjectConfiguration(ABC):
                     keys_info[index + 1]["key"]: nested_matcher,
                 }
             }
+            if value in ["ANY_MATCH", "NONE_MATCH"]:
+                del elem_match["$elemMatch"][keys_info[index + 1]["key"]]
+                if value == "NONE_MATCH":
+                    if index > 0:
+                        elem_match = {"NOR_MATCHER": elem_match}
+                    else:
+                        return {"NOR_MATCHER": {info["key"]: elem_match}}
             return elem_match if index > 0 else {info["key"]: {"$all": [elem_match]}}
 
         return value

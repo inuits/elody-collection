@@ -3,7 +3,6 @@ from configuration import get_object_configuration_mapper
 
 
 class BaseMatchers(ABC):
-    datetime_pattern = r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$"
     collection = "entities"
     force_base_nested_matcher_builder = False
 

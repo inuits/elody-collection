@@ -11,7 +11,7 @@ def append_matcher(matcher, matchers, operator="and"):
     if operator == "and":
         len_matchers, index = len(matchers), 0
         while index < len_matchers and not did_append_matcher:
-            if matchers[index].get(matcher_key):
+            if matcher_key != "NOR_MATCHER" and matchers[index].get(matcher_key):
                 if isinstance(matchers[index][matcher_key], dict) and matchers[index][
                     matcher_key
                 ].get("$all"):
@@ -126,11 +126,13 @@ def has_selection_filter_with_multiple_values(filter_request_body):
 def unify_matchers_per_schema_into_one_match(matchers_per_schema):
     match = {}
     general_matchers = matchers_per_schema.pop("general")
-    __combine_or_matchers(general_matchers)
+    __combine_matchers(general_matchers, "or")
+    __combine_matchers(general_matchers, "nor")
 
     if matchers_per_schema:
         for schema_matchers in matchers_per_schema.values():
-            __combine_or_matchers(schema_matchers)
+            __combine_matchers(schema_matchers, "or")
+            __combine_matchers(schema_matchers, "nor")
             for general_matcher in general_matchers:
                 schema_matchers.append(general_matcher)
 
@@ -161,15 +163,15 @@ def unify_matchers_per_schema_into_one_match(matchers_per_schema):
     return match
 
 
-def __combine_or_matchers(matchers):
-    or_expression = []
+def __combine_matchers(matchers, matcher_type):
+    expressions = []
     matchers_deepcopy = deepcopy(matchers)
     for matcher in matchers_deepcopy:
-        if list(matcher.keys())[0] == "OR_MATCHER":
-            or_expression.append(matcher["OR_MATCHER"])
+        if list(matcher.keys())[0] == f"{matcher_type.upper()}_MATCHER":
+            expressions.append(matcher[f"{matcher_type.upper()}_MATCHER"])
             matchers.remove(matcher)
-    if len(or_expression) > 0:
-        matchers.append({"$or": or_expression})
+    if len(expressions) > 0:
+        matchers.append({f"${matcher_type}": expressions})
 
 
 def __unify_or_matchers(match):
