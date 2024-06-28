@@ -1,12 +1,12 @@
 from configuration import get_object_configuration_mapper
 from elody.validator import validate_json
-from flask_restful import abort
 from logging_elody.log import log
 from resources.base_resource import BaseResource
+from werkzeug.exceptions import BadRequest
 
 
 class Validator(BaseResource):
-    def validate_dedecorator(self, request):
+    def validate_decorator(self, request):
         def decorator(function):
             def wrapper(*args, **kwargs):
                 if request.args.get("soft", 0, int):
@@ -15,11 +15,13 @@ class Validator(BaseResource):
                 http_method, item = request.method.lower(), {}
                 if http_method != "post":
                     item = self._check_if_collection_and_item_exists(
-                        kwargs.get("collection"), id, is_validating_content=True
+                        kwargs.get("collection"),
+                        kwargs.get("id"),
+                        is_validating_content=True,
                     )
 
                 content = self._get_content_according_content_type(
-                    request,
+                    request=request,
                     content=kwargs.get("content"),
                     item=item,
                     spec=kwargs.get("spec", "elody"),
@@ -42,15 +44,15 @@ class Validator(BaseResource):
     def _apply_function_strategy(self, validator, content, http_method, **_):
         try:
             validator(http_method.lower(), content)
-        except Exception as exception:
+        except BadRequest as bad_request:
             log.exception(
-                f"{exception.__class__.__name__}: {exception}",
+                f"{bad_request.__class__.__name__}: {bad_request}",
                 content,
-                exc_info=exception,
+                exc_info=bad_request,
             )
-            abort(400, message=str(exception))
+            raise bad_request
 
     def _apply_schema_strategy(self, validator, content, **_):
         validation_error = validate_json(content, validator)
         if validation_error:
-            abort(400, message=f"{validation_error}")
+            raise BadRequest(f"{validation_error}")

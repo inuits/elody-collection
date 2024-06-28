@@ -141,7 +141,8 @@ class BaseResource(Resource):
             self._check_if_collection_name_exists(collection, is_validating_content)
             return self._abort_if_item_doesnt_exist(collection, id)
         else:
-            collections = self._resolve_collections(collection=collection, id=id)
+            resolve_collections = get_user_context().bag["collection_resolver"]
+            collections = resolve_collections(collection=collection, id=id)
             for collection in collections:
                 if item := self.storage.get_item_from_collection_by_id(collection, id):
                     return item
