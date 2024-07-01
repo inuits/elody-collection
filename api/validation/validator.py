@@ -6,14 +6,14 @@ from werkzeug.exceptions import BadRequest
 
 
 class Validator(BaseResource):
-    def validate_decorator(self, request):
+    def validate_decorator(self, http_method, request):
         def decorator(function):
             def wrapper(*args, **kwargs):
                 if request.args.get("soft", 0, int):
                     return function(*args, **kwargs)
 
-                http_method, item = request.method.lower(), {}
-                if http_method != "post":
+                item = {}
+                if http_method.lower() != "post":
                     item = self._check_if_collection_and_item_exists(
                         kwargs.get("collection"),
                         kwargs.get("id"),

@@ -139,7 +139,7 @@ class GenericObjectV2(BaseFilterResource, BaseResource):
         )
 
     @apply_policies(RequestContext(request))
-    @validate(request)
+    @validate("post", request)
     def post(
         self,
         collection,
@@ -305,7 +305,7 @@ class GenericObjectDetailV2(BaseResource):
         )[0]
 
     @apply_policies(RequestContext(request))
-    @validate(request)
+    @validate("put", request)
     def put(
         self,
         collection,
@@ -343,7 +343,7 @@ class GenericObjectDetailV2(BaseResource):
         )
 
     @apply_policies(RequestContext(request))
-    @validate(request)
+    @validate("patch", request)
     def patch(
         self,
         collection,
