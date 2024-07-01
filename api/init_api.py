@@ -48,6 +48,7 @@ from resources.mediafile import (
     MediafileParent,
 )
 from resources.saved_search import SavedSearch, SavedSearchDetail
+from resources.share_link import ShareLink, ShareLinkDetail
 from resources.spec import AsyncAPISpec, OpenAPISpec
 from resources.tenant import Tenant
 from resources.ticket import Ticket, TicketDetail
@@ -287,6 +288,16 @@ def init_api(app):
         SavedSearchDetail,
         get_route_mapper().get(
             SavedSearchDetail.__name__, "/saved_searches/<string:id>"
+        ),
+    )
+
+    api.add_resource(
+        ShareLink, get_route_mapper().get(ShareLink.__name__, "/share_links")
+    )
+    api.add_resource(
+        ShareLinkDetail,
+        get_route_mapper().get(
+            ShareLinkDetail.__name__, "/share_links/<string:id>"
         ),
     )
 

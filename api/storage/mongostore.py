@@ -323,6 +323,8 @@ class MongoStorageManager(GenericStorageManager):
             "isOwnerFor": "hasOwner",
             "hasAssetPart": "isAssetPartFor",
             "isAssetPartFor": "hasAssetPart",
+            "hasShareLink": "isShareLinkFor",
+            "isShareLinkFor": "hasShareLink"
         }.get(relation)
 
     def _map_relation_to_collection(self, relation):
