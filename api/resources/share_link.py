@@ -26,9 +26,7 @@ class ShareLink(GenericObject):
     def post(self):
         content = request.get_json()
         user = get_user_context().email or "default_uploader"
-        return super().post(
-            "entities", content=content, type="share_link", user=user
-        )
+        return super().post("entities", content=content, type="share_link", user=user)
 
 
 class ShareLinkDetail(GenericObjectDetail):

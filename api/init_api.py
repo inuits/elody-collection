@@ -296,9 +296,7 @@ def init_api(app):
     )
     api.add_resource(
         ShareLinkDetail,
-        get_route_mapper().get(
-            ShareLinkDetail.__name__, "/share_links/<string:id>"
-        ),
+        get_route_mapper().get(ShareLinkDetail.__name__, "/share_links/<string:id>"),
     )
 
     api.add_resource(Tenant, get_route_mapper().get(Tenant.__name__, "/tenants"))
