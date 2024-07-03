@@ -91,7 +91,7 @@ class MongoStorageManager(GenericStorageManager):
             )
 
     def __does_request_changes(self, item, content):
-        def __is_changed(value, data={}, object_list_key=""):
+        def __is_changed(value, data={}, object_list_key="", is_relation=False):
             if isinstance(value, dict):
                 if object_list_key:
                     if data not in item[content_key]:
@@ -109,7 +109,13 @@ class MongoStorageManager(GenericStorageManager):
                 if not item_value and value:
                     return True
                 if item_value and item_value != value:
-                    return True
+                    if is_relation:
+                        if item_value != flat_content.get(
+                            f"{content_key}.{data[object_list_key]}.{key}"
+                        ):
+                            return True
+                    else:
+                        return True
 
         object_lists = (
             get_object_configuration_mapper()
@@ -128,6 +134,7 @@ class MongoStorageManager(GenericStorageManager):
         flat_item = flatten_dict(object_lists, item)
         if isinstance(content, tuple):
             content = content[0]
+        flat_content = flatten_dict(object_lists, content)
 
         for content_key, content_value in content.items():
             if content_key in ["_id", "id", "identifiers", "storage_format"]:
@@ -137,7 +144,12 @@ class MongoStorageManager(GenericStorageManager):
                     for key, value in data.items():
                         if content_key == "metadata" and key == "key":
                             continue
-                        if __is_changed(value, data, object_lists[content_key]):
+                        if __is_changed(
+                            value,
+                            data,
+                            object_lists[content_key],
+                            is_relation=content_key == "relations",
+                        ):
                             return True
             else:
                 if __is_changed(content_value):
@@ -324,7 +336,7 @@ class MongoStorageManager(GenericStorageManager):
             "hasAssetPart": "isAssetPartFor",
             "isAssetPartFor": "hasAssetPart",
             "hasShareLink": "isShareLinkFor",
-            "isShareLinkFor": "hasShareLink"
+            "isShareLinkFor": "hasShareLink",
         }.get(relation)
 
     def _map_relation_to_collection(self, relation):
