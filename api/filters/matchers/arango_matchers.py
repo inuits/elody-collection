@@ -24,28 +24,28 @@ class ArangoMatchers(BaseMatchers):
             return self.__value_match_with_parent_key_of_type_array(
                 key, [value], parent_key, ">", is_datetime_value
             )
-        raise NotImplemented
+        raise NotImplementedError()
 
     def max(self, key, value, parent_key, is_datetime_value):
         if isinstance(key, str):
             return self.__value_match_with_parent_key_of_type_array(
                 key, [value], parent_key, "<", is_datetime_value
             )
-        raise NotImplemented
+        raise NotImplementedError()
 
     def min_included(self, key, value, parent_key, is_datetime_value):
         if isinstance(key, str):
             return self.__value_match_with_parent_key_of_type_array(
                 key, [value], parent_key, ">=", is_datetime_value
             )
-        raise NotImplemented
+        raise NotImplementedError()
 
     def max_included(self, key, value, parent_key, is_datetime_value):
         if isinstance(key, str):
             return self.__value_match_with_parent_key_of_type_array(
                 key, [value], parent_key, "<=", is_datetime_value
             )
-        raise NotImplemented
+        raise NotImplementedError()
 
     def in_between(self, key, min, max, parent_key, is_datetime_value):
         return self.__value_match_with_parent_key_of_type_array(
@@ -81,6 +81,12 @@ class ArangoMatchers(BaseMatchers):
                 )
             )
         """
+
+    def asset_engine_exact(self, key, value, parent_key, is_datetime_value):
+        raise NotImplementedError()
+
+    def asset_engine_contains(self, key, value, parent_key):
+        raise NotImplementedError()
 
     def __exact_contains_match(
         self,

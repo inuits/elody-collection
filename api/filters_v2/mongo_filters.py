@@ -24,6 +24,7 @@ class MongoFilters(MongoStorageManager):
         collection="entities",
         order_by=None,
         asc=True,
+        return_query_without_executing=False,
     ):
         BaseMatchers.collection = collection
         options_requesting_filter = get_options_requesting_filter(filter_request_body)
@@ -33,11 +34,16 @@ class MongoFilters(MongoStorageManager):
             or has_selection_filter_with_multiple_values(filter_request_body)
         )
 
-        return self.__execute_aggregation_query(
+        pipeline, match_stage = self.__generate_aggregation_query(
             filter_request_body, skip, limit, order_by, asc, options_requesting_filter
         )
+        if return_query_without_executing:
+            return pipeline
+        return self.__execute_aggregation_query(
+            pipeline, match_stage, skip, limit, options_requesting_filter
+        )
 
-    def __execute_aggregation_query(
+    def __generate_aggregation_query(
         self, filter_request_body, skip, limit, order_by, asc, options_requesting_filter
     ):
         pipeline = []
@@ -51,7 +57,11 @@ class MongoFilters(MongoStorageManager):
             if order_by:
                 pipeline.extend(self.__sort_stage(order_by, asc))
             pipeline.extend([{"$skip": skip}, {"$limit": limit}])
+        return pipeline, match_stage
 
+    def __execute_aggregation_query(
+        self, pipeline, match_stage, skip, limit, options_requesting_filter
+    ):
         documents = self.db[BaseMatchers.collection].aggregate(
             pipeline, allowDiskUse=self.allow_disk_use
         )

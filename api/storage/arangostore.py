@@ -442,7 +442,9 @@ class ArangoStorageManager(GenericStorageManager):
         order_by=None,
         ascending=True,
     ):
-        return self.get_items_from_collection("entities", skip, limit, None, filters, order_by, ascending)
+        return self.get_items_from_collection(
+            "entities", skip, limit, None, filters, order_by, ascending
+        )
 
     def get_history_for_item(self, collection, id, timestamp=None, all_entries=None):
         aql = f"""
@@ -460,7 +462,9 @@ class ArangoStorageManager(GenericStorageManager):
         if item_id := self.__get_id_for_collection_item(collection, id):
             item = self.db.document(item_id)
             if item:
-                relations = self.get_collection_item_relations(collection, id, entity=item)
+                relations = self.get_collection_item_relations(
+                    collection, id, entity=item
+                )
                 item["relations"] = relations
             return item
         return None

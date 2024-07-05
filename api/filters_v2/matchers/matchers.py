@@ -7,6 +7,7 @@ from os import getenv
 class BaseMatcher(ABC):
     def __init__(self):
         self.matcher_engine: BaseMatchers = {
+            "arango": MongoMatchers,
             "mongo": MongoMatchers,
         }.get(
             getenv("DB_ENGINE", "mongo")

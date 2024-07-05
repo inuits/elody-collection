@@ -31,6 +31,7 @@ def get_filter(input_type: str):
 class BaseFilterType(ABC):
     def __init__(self):
         self.filter_type_engine: BaseFilterTypeQueryGenerator = {
+            "arango": MongoFilterTypeQueryGenerator,
             "mongo": MongoFilterTypeQueryGenerator,
         }.get(
             getenv("DB_ENGINE", "mongo")

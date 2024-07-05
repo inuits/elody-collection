@@ -1,14 +1,13 @@
-from elody.schemas import mediafile_schema
+from elody.schemas import entity_schema
 from object_configurations.base_object_configuration import BaseObjectConfiguration
 
 
-class MediafileConfiguration(BaseObjectConfiguration):
-    SCHEMA_TYPE = "elody"
+class EntityConfiguration(BaseObjectConfiguration):
+    SCHEMA_TYPE = "entity"
     SCHEMA_VERSION = 1
 
     def crud(self):
-        crud = {"collection": "mediafiles"}
-        return {**super().crud(), **crud}
+        return super().crud()
 
     def document_info(self):
         return super().document_info()
@@ -23,4 +22,4 @@ class MediafileConfiguration(BaseObjectConfiguration):
         return super().serialization(from_format, to_format)
 
     def validation(self):
-        return "schema", mediafile_schema
+        return "schema", entity_schema
