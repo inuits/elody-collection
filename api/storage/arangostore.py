@@ -1,9 +1,9 @@
 from arango import (
-    ArangoClient,
     DocumentInsertError,
     DocumentReplaceError,
     DocumentUpdateError,
 )
+from arango.client import ArangoClient
 from elody.exceptions import NonUniqueException
 from elody.util import (
     custom_json_dumps,
@@ -280,7 +280,7 @@ class ArangoStorageManager(GenericStorageManager):
             self.db.graph(self.default_graph_name).edge_collection(
                 self.__map_entity_relation(relation["type"])
             ).insert(data)
-        return relations
+        return self.strip_relations(relations)
 
     def add_sub_item_to_collection_item(self, collection, id, sub_item, content):
         aql = """
@@ -362,11 +362,12 @@ class ArangoStorageManager(GenericStorageManager):
         return list(self.db.aql.execute(query, bind_vars=bind_vars))[0]
 
     def get_collection_item_relations(
-        self, collection, id, include_sub_relations=False, exclude=None
+        self, collection, id, include_sub_relations=False, exclude=None, entity={}
     ):
         if not exclude:
             exclude = []
-        entity = self.get_item_from_collection_by_id(collection, id)
+        if not entity:
+            entity = self.get_item_from_collection_by_id(collection, id)
         relevant_relations = self.__get_relevant_relations(entity["type"], exclude)
         relations = []
         for relation in relevant_relations:
@@ -430,7 +431,7 @@ class ArangoStorageManager(GenericStorageManager):
                         elif relation_object["label"] != "vervaardiger.rol":
                             if relation_object not in relations:
                                 relations.append(relation_object)
-        return relations
+        return self.strip_relations(relations)
 
     def get_entities(
         self,
@@ -441,64 +442,7 @@ class ArangoStorageManager(GenericStorageManager):
         order_by=None,
         ascending=True,
     ):
-        if filters is None:
-            filters = {}
-
-        filter_conditions = []
-
-        # QUICK FIX TO MATCH CERTAIN FILTER
-        if "metadata" in filters:
-            metadata_filters = filters["metadata"]
-            for key, value in metadata_filters.items():
-                if key == "$elemMatch":
-                    filter_conditions.append(
-                        f'FILTER LENGTH(FOR m IN c.metadata FILTER m.key == "{value["key"]}" AND m.value == "{value["value"]}" RETURN 1) > 0'
-                    )
-
-        filter_query = " AND ".join(filter_conditions) if filter_conditions else ""
-        aql = f"""
-            WITH mediafiles
-            FOR c IN entities
-                {"FILTER c._key IN @ids" if "ids" in filters else ""}
-                {f'FILTER c.type == "{filters["type"]}"' if "type" in filters else ""}
-        """
-        aql = aql + filter_query
-        if skip_relations == 1:
-            aql2 = "LET all_metadata = {'metadata': c.metadata}"
-        else:
-            aql2 = """
-                LET new_metadata = (
-                    FOR item,edge IN OUTBOUND c GRAPH 'assets'
-                        FILTER edge._id NOT LIKE 'hasMediafile%' AND edge._id NOT LIKE 'contains%'
-                        LET relation = {'key': edge._to, 'type': FIRST(SPLIT(edge._id, '/'))}
-                        RETURN HAS(edge, 'label') ? MERGE(relation, {'label': IS_NULL(edge.label.`@value`) ? edge.label : edge.label.`@value`}) : relation
-                )
-                LET all_metadata = {'metadata': APPEND(c.metadata, new_metadata)}
-            """
-        aql3 = """
-            LET primary_items = (
-                FOR item, edge IN OUTBOUND c hasMediafile
-                    FILTER edge.is_primary == true || edge.is_primary_thumbnail == true
-                    LET primary = edge.is_primary != true ? null : {primary_mediafile_location: item.original_file_location, primary_mediafile: item.filename, primary_transcode: item.transcode_filename, primary_transcode_location: item.transcode_file_location, primary_width: item.img_width, primary_height: item.img_height}
-                    LET primary_thumb = edge.is_primary_thumbnail != true ? null : {primary_thumbnail_location: item.thumbnail_file_location}
-                    RETURN primary != null AND primary_thumb != null ? MERGE(primary, primary_thumb) : (primary ? primary : primary_thumb)
-            )
-            LET merged_primary_items = COUNT(primary_items) > 1 ? MERGE(FIRST(primary_items), LAST(primary_items)) : FIRST(primary_items)
-            LIMIT @skip, @limit
-            RETURN merged_primary_items == null ? MERGE(c, all_metadata) : MERGE(c, all_metadata, merged_primary_items)
-        """
-        bind = {"skip": skip, "limit": limit}
-        if "ids" in filters:
-            bind["ids"] = filters["ids"]
-        results = self.db.aql.execute(
-            aql + aql2 + aql3, bind_vars=bind, full_count=True
-        )
-        items = dict()
-        items["count"] = results.statistics()["fullCount"]
-        items["results"] = list(results)
-        if "ids" in filters:
-            items["results"].sort(key=lambda x: filters["ids"].index(x["_key"]))
-        return items
+        return self.get_items_from_collection("entities", skip, limit, None, filters, order_by, ascending)
 
     def get_history_for_item(self, collection, id, timestamp=None, all_entries=None):
         aql = f"""
@@ -514,7 +458,11 @@ class ArangoStorageManager(GenericStorageManager):
 
     def get_item_from_collection_by_id(self, collection, id):
         if item_id := self.__get_id_for_collection_item(collection, id):
-            return self.db.document(item_id)
+            item = self.db.document(item_id)
+            if item:
+                relations = self.get_collection_item_relations(collection, id, entity=item)
+                item["relations"] = relations
+            return item
         return None
 
     def get_items_from_collection(
@@ -576,6 +524,12 @@ class ArangoStorageManager(GenericStorageManager):
         results = self.db.aql.execute(aql, bind_vars=bind, full_count=True)
         items["count"] = results.statistics()["fullCount"]
         items["results"] = list(results)
+        item_results = []
+        for item in items["results"]:
+            relations = self.get_collection_item_relations(collection, id, entity=item)
+            item["relations"] = relations
+            item_results.append(item)
+        items["results"] = item_results
         return items
 
     def get_mediafile_linked_entities(self, mediafile, linked_entities=[]):
@@ -709,6 +663,12 @@ class ArangoStorageManager(GenericStorageManager):
             elif edge["_to"] == new_primary_id and field in edge and not edge[field]:
                 edge[field] = True
                 self.db.update_document(edge)
+
+    def strip_relations(self, relations):
+        for relation in relations:
+            if relation["key"].find("/") > 0:
+                relation["key"] = relation["key"].split("/")[1]
+        return relations
 
     def update_collection_item_relations(self, collection, id, content, parent=True):
         item_id = self.__get_id_for_collection_item(collection, id)
