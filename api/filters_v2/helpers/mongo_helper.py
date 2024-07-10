@@ -1,3 +1,4 @@
+from configuration import get_object_configuration_mapper
 from copy import deepcopy
 from elody.util import interpret_flat_key
 from filters_v2.matchers.base_matchers import BaseMatchers
@@ -21,6 +22,15 @@ def append_matcher(matcher, matchers, operator="and"):
                 did_append_matcher = True
             index += 1
     elif operator == "or":
+        object_lists = (
+            get_object_configuration_mapper()
+            .get(BaseMatchers.collection)
+            .document_info()["object_lists"]
+        )
+        for appended_matcher in matchers:
+            key = list(matcher.keys())[0]
+            if key in appended_matcher.keys() and key not in object_lists.keys():
+                return
         matcher = {"OR_MATCHER": matcher}
     else:
         raise Exception(f"Operator '{operator}' not supported.")
@@ -109,7 +119,7 @@ def has_non_exact_match_filter(filter_request_body):
     non_exact_match_filter = [
         filter_criteria
         for filter_criteria in filter_request_body
-        if not filter_criteria.get("match_exact")
+        if not filter_criteria.get("match_exact") and filter_criteria["type"] != "type"
     ]
     return len(non_exact_match_filter) > 0
 
@@ -123,7 +133,7 @@ def has_selection_filter_with_multiple_values(filter_request_body):
     return len(selection_filter_with_multiple_values) > 0
 
 
-def unify_matchers_per_schema_into_one_match(matchers_per_schema):
+def unify_matchers_per_schema_into_one_match(matchers_per_schema, tidy_up_match):
     match = {}
     general_matchers = matchers_per_schema.pop("general")
     __combine_matchers(general_matchers, "or")
@@ -159,7 +169,10 @@ def unify_matchers_per_schema_into_one_match(matchers_per_schema):
     else:
         for general_matcher in general_matchers:
             match.update(general_matcher)
+        __unify_or_matchers(match)
 
+    if tidy_up_match:
+        return __tidy_up_match(match)
     return match
 
 
@@ -174,30 +187,47 @@ def __combine_matchers(matchers, matcher_type):
         matchers.append({f"${matcher_type}": expressions})
 
 
-def __unify_or_matchers(match):
-    for or_matcher in match.get("$or", []):
-        for key, value in or_matcher.items():
-            if value.get("$all"):
-                prefixed_key = f"AND_PREFIX_{key}"
-                if match.get(prefixed_key):
-                    match[prefixed_key]["$in"].extend(value["$all"])
-                else:
-                    match.update({prefixed_key: {"$in": value["$all"]}})
-    if match.get("$or"):
-        del match["$or"]
-        match_deepcopy = deepcopy(match)
-        and_matchers = []
-        for key, value in match_deepcopy.items():
-            if key.startswith("AND_PREFIX_"):
-                and_matchers.append({key.removeprefix("AND_PREFIX_"): value})
-                match.pop(key)
-        match["$and"] = and_matchers
+def __tidy_up_match(match):
+    tidy_match = {}
+    for matcher_key, matcher_value in match.items():
+        if isinstance(matcher_value, dict):
+            if len(matcher_value.items()) == 1:
+                key = list(matcher_value.keys())[0]
+                value = matcher_value[key]
+                if key in ["$all", "$in"] and len(value) == 1:
+                    matcher_value = value[0]
+            elif matcher_value.get("$all") and len(matcher_value.get("$in", [])) == 1:
+                matcher_value["$all"].extend(matcher_value["$in"])
+                del matcher_value["$in"]
+        elif matcher_key in ["$or", "$nor"]:
+            values = []
+            for value in matcher_value:
+                values.append(__tidy_up_match(value))
+            matcher_value = values
+        tidy_match.update({matcher_key: matcher_value})
+    return tidy_match
 
-        and_matchers = deepcopy(match.get("$and", []))
-        for and_matcher in and_matchers:
-            for key, value in and_matcher.items():
-                if not match.get(key):
-                    match[key] = value
-                    match.get("$and").remove(and_matcher)
-        if len(match.get("$and", [])) == 0:
-            del match["$and"]
+
+def __unify_or_matchers(match):
+    match_deepcopy = deepcopy(match)
+    for or_matcher in match_deepcopy.get("$or", []):
+        for key, value in or_matcher.items():
+            if (
+                isinstance(value, dict)
+                and value.get("$all")
+                and list(value["$all"][0].keys())[0] != "$elemMatch"
+            ):
+                if match.get(key):
+                    if match[key].get("$in"):
+                        match[key]["$in"].extend(value["$all"])
+                    else:
+                        match[key].update({"$in": value["$all"]})
+                else:
+                    match.update({key: {"$in": value["$all"]}})
+                match["$or"].remove({key: value})
+            elif key == "NOR_MATCHER":
+                match["$or"].append({"$nor": value})
+                match["$or"].remove({key: value})
+
+    if match.get("$or") is not None and len(match.get("$or")) == 0:
+        del match["$or"]

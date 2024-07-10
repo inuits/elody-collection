@@ -25,6 +25,7 @@ class MongoFilters(MongoStorageManager):
         order_by=None,
         asc=True,
         return_query_without_executing=False,
+        tidy_up_match=True,
     ):
         BaseMatchers.collection = collection
         options_requesting_filter = get_options_requesting_filter(filter_request_body)
@@ -35,7 +36,13 @@ class MongoFilters(MongoStorageManager):
         )
 
         pipeline, match_stage = self.__generate_aggregation_query(
-            filter_request_body, skip, limit, order_by, asc, options_requesting_filter
+            filter_request_body,
+            skip,
+            limit,
+            order_by,
+            asc,
+            options_requesting_filter,
+            tidy_up_match,
         )
         if return_query_without_executing:
             return pipeline
@@ -44,11 +51,18 @@ class MongoFilters(MongoStorageManager):
         )
 
     def __generate_aggregation_query(
-        self, filter_request_body, skip, limit, order_by, asc, options_requesting_filter
+        self,
+        filter_request_body,
+        skip,
+        limit,
+        order_by,
+        asc,
+        options_requesting_filter,
+        tidy_up_match,
     ):
         pipeline = []
         pipeline.extend(self.__lookup_stage(filter_request_body))
-        match_stage = self.__match_stage(filter_request_body)
+        match_stage = self.__match_stage(filter_request_body, tidy_up_match)
         pipeline.append(match_stage)
 
         if options_requesting_filter_keys := options_requesting_filter.get("key"):
@@ -87,7 +101,7 @@ class MongoFilters(MongoStorageManager):
                 )
         return lookups
 
-    def __match_stage(self, filter_request_body: list[dict]):
+    def __match_stage(self, filter_request_body: list[dict], tidy_up_match):
         matchers_per_schema = {"general": []}
 
         for filter_criteria in filter_request_body:
@@ -148,7 +162,11 @@ class MongoFilters(MongoStorageManager):
             if len(item_types) > 0:
                 matchers_per_schema["general"].append({"type": {"$in": item_types}})
 
-        return {"$match": unify_matchers_per_schema_into_one_match(matchers_per_schema)}
+        return {
+            "$match": unify_matchers_per_schema_into_one_match(
+                matchers_per_schema, tidy_up_match
+            )
+        }
 
     def __sort_stage(self, order_by, asc):
         key_order_map = {order_by: ASCENDING if asc else DESCENDING}

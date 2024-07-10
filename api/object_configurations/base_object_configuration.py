@@ -47,6 +47,8 @@ class BaseObjectConfiguration(ABC):
 
     def __build_nested_matcher(self, object_lists, keys_info, value, index=0):
         if index == 0 and not any(info["is_object_list"] for info in keys_info):
+            if value in ["ANY_MATCH", "NONE_MATCH"]:
+                value = {"$exists": value == "ANY_MATCH"}
             return {".".join(info["key"] for info in keys_info): value}
 
         info = keys_info[index]
