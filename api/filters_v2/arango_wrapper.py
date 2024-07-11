@@ -8,8 +8,6 @@ from storage.arangostore import ArangoStorageManager
 
 
 class ArangoWrapper(ArangoStorageManager):
-    OPERATOR_MAP = {"$gt": ">", "$gte": ">=", "$lt": "<", "$lte": "<="}
-
     def filter(
         self,
         filter_request_body,
