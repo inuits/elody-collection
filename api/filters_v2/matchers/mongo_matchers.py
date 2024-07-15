@@ -4,12 +4,14 @@ from filters_v2.matchers.base_matchers import BaseMatchers
 
 
 class MongoMatchers(BaseMatchers):
-    def exact(self, key, value, is_datetime_value):
+    def exact(self, key, value, is_datetime_value, aggregation):
         if isinstance(value, list):
             value = {"$in": value}
         elif is_datetime_value:
             value = self.__get_datetime_query_value(value)
             return self.__contains_range_match(key, value)
+        elif aggregation:
+            return self.__aggregation_match(key, value, aggregation, "$eq")
 
         object_lists = BaseMatchers.get_object_lists()
         keys_info = interpret_flat_key(key, object_lists)
@@ -20,34 +22,46 @@ class MongoMatchers(BaseMatchers):
         match_value = {"$regex": value, "$options": "i"}
         return self.__contains_range_match(key, match_value)
 
-    def min(self, key, value, is_datetime_value):
+    def min(self, key, value, is_datetime_value, aggregation):
         if is_datetime_value:
             value = self.__get_datetime_query_value(value)
+        elif aggregation:
+            return self.__aggregation_match(key, value, aggregation, "$gt")
 
         return self.__contains_range_match(key, {"$gt": value})
 
-    def max(self, key, value, is_datetime_value):
+    def max(self, key, value, is_datetime_value, aggregation):
         if is_datetime_value:
             value = self.__get_datetime_query_value(value)
+        elif aggregation:
+            return self.__aggregation_match(key, value, aggregation, "$lt")
 
         return self.__contains_range_match(key, {"$lt": value})
 
-    def min_included(self, key, value, is_datetime_value):
+    def min_included(self, key, value, is_datetime_value, aggregation):
         if is_datetime_value:
             value = self.__get_datetime_query_value(value)
+        elif aggregation:
+            return self.__aggregation_match(key, value, aggregation, "$gte")
 
         return self.__contains_range_match(key, {"$gte": value})
 
-    def max_included(self, key, value, is_datetime_value):
+    def max_included(self, key, value, is_datetime_value, aggregation):
         if is_datetime_value:
             value = self.__get_datetime_query_value(value)
+        elif aggregation:
+            return self.__aggregation_match(key, value, aggregation, "$lte")
 
         return self.__contains_range_match(key, {"$lte": value})
 
-    def in_between(self, key, min, max, is_datetime_value):
+    def in_between(self, key, min, max, is_datetime_value, aggregation):
         if is_datetime_value:
             min = self.__get_datetime_query_value(min)
             max = self.__get_datetime_query_value(max)
+        elif aggregation:
+            return self.__aggregation_match(
+                key, {"$gte": min, "$lte": max}, aggregation, "$and"
+            )
 
         return self.__contains_range_match(key, {"$gte": min, "$lte": max})
 
@@ -56,6 +70,27 @@ class MongoMatchers(BaseMatchers):
 
     def none(self, key):
         return self.__any_none_match(key, "NONE_MATCH")
+
+    def __aggregation_match(self, key: str, value, aggregation: str, operator: str):
+        if operator == "$and":
+            return {
+                "$expr": {
+                    "$and": [
+                        {
+                            operator: [
+                                {f"${aggregation}": {"$ifNull": [f"${key}", []]}},
+                                value[operator],
+                            ]
+                        }
+                        for operator in value.keys()
+                    ]
+                }
+            }
+        return {
+            "$expr": {
+                operator: [{f"${aggregation}": {"$ifNull": [f"${key}", []]}}, value]
+            }
+        }
 
     def __contains_range_match(self, key: str, value):
         object_lists = BaseMatchers.get_object_lists()

@@ -29,6 +29,7 @@ class BaseMatchers(ABC):
         key: str,
         value: str | int | float | bool | list[str],
         is_datetime_value: bool = False,
+        aggregation: str = "",
     ) -> dict:
         pass
 
@@ -42,6 +43,7 @@ class BaseMatchers(ABC):
         key: str,
         value: str | int,
         is_datetime_value: bool = False,
+        aggregation: str = "",
     ) -> dict:
         pass
 
@@ -51,6 +53,7 @@ class BaseMatchers(ABC):
         key: str,
         value: str | int,
         is_datetime_value: bool = False,
+        aggregation: str = "",
     ) -> dict:
         pass
 
@@ -60,6 +63,7 @@ class BaseMatchers(ABC):
         key: str,
         value: str | int,
         is_datetime_value: bool = False,
+        aggregation: str = "",
     ) -> dict:
         pass
 
@@ -69,6 +73,7 @@ class BaseMatchers(ABC):
         key: str,
         value: str | int,
         is_datetime_value: bool = False,
+        aggregation: str = "",
     ) -> dict:
         pass
 
@@ -79,6 +84,7 @@ class BaseMatchers(ABC):
         min: str | int,
         max: str | int,
         is_datetime_value: bool = False,
+        aggregation: str = "",
     ) -> dict:
         pass
 

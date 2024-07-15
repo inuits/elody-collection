@@ -29,7 +29,10 @@ class ExactMatcher(BaseMatcher):
             and kwargs.get("match_exact", False)
         ):
             return self.matcher_engine.exact(
-                key, value, kwargs.get("is_datetime_value", False)
+                key,
+                value,
+                kwargs.get("is_datetime_value", False),
+                kwargs.get("aggregation", ""),
             )
 
 
@@ -55,7 +58,10 @@ class MinMatcher(BaseMatcher):
             and not value.get("included")
         ):
             return self.matcher_engine.min(
-                key, value["min"], kwargs.get("is_datetime_value", False)
+                key,
+                value["min"],
+                kwargs.get("is_datetime_value", False),
+                kwargs.get("aggregation", ""),
             )
 
 
@@ -72,7 +78,10 @@ class MaxMatcher(BaseMatcher):
             and not value.get("included")
         ):
             return self.matcher_engine.max(
-                key, value["max"], kwargs.get("is_datetime_value", False)
+                key,
+                value["max"],
+                kwargs.get("is_datetime_value", False),
+                kwargs.get("aggregation", ""),
             )
 
 
@@ -89,7 +98,10 @@ class MinIncludedMatcher(BaseMatcher):
             and value.get("included")
         ):
             return self.matcher_engine.min_included(
-                key, value["min"], kwargs.get("is_datetime_value", False)
+                key,
+                value["min"],
+                kwargs.get("is_datetime_value", False),
+                kwargs.get("aggregation", ""),
             )
 
 
@@ -106,7 +118,10 @@ class MaxIncludedMatcher(BaseMatcher):
             and value.get("included")
         ):
             return self.matcher_engine.max_included(
-                key, value["max"], kwargs.get("is_datetime_value", False)
+                key,
+                value["max"],
+                kwargs.get("is_datetime_value", False),
+                kwargs.get("aggregation", ""),
             )
 
 
@@ -126,6 +141,7 @@ class InBetweenMatcher(BaseMatcher):
                 value["min"],
                 value["max"],
                 kwargs.get("is_datetime_value", False),
+                kwargs.get("aggregation", ""),
             )
 
 

@@ -36,6 +36,7 @@ class BaseFilterTypeQueryGenerator(ABC):
             filter_criteria["key"],
             filter_criteria["value"],
             match_exact=True,
+            aggregation=filter_criteria.get("aggregation", ""),
         )
 
     @abstractmethod
