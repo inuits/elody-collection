@@ -11,7 +11,7 @@ class MongoMatchers(BaseMatchers):
             value = self.__get_datetime_query_value(value)
             return self.__contains_range_match(key, value)
         elif aggregation:
-            return self.__aggregation_match(key, value, aggregation, "$eq")
+            return self.__aggregation_match(key, {"$eq": value}, aggregation)
 
         object_lists = BaseMatchers.get_object_lists()
         keys_info = interpret_flat_key(key, object_lists)
@@ -26,7 +26,7 @@ class MongoMatchers(BaseMatchers):
         if is_datetime_value:
             value = self.__get_datetime_query_value(value)
         elif aggregation:
-            return self.__aggregation_match(key, value, aggregation, "$gt")
+            return self.__aggregation_match(key, {"$gt": value}, aggregation)
 
         return self.__contains_range_match(key, {"$gt": value})
 
@@ -34,7 +34,7 @@ class MongoMatchers(BaseMatchers):
         if is_datetime_value:
             value = self.__get_datetime_query_value(value)
         elif aggregation:
-            return self.__aggregation_match(key, value, aggregation, "$lt")
+            return self.__aggregation_match(key, {"$lt": value}, aggregation)
 
         return self.__contains_range_match(key, {"$lt": value})
 
@@ -42,7 +42,7 @@ class MongoMatchers(BaseMatchers):
         if is_datetime_value:
             value = self.__get_datetime_query_value(value)
         elif aggregation:
-            return self.__aggregation_match(key, value, aggregation, "$gte")
+            return self.__aggregation_match(key, {"$gte": value}, aggregation)
 
         return self.__contains_range_match(key, {"$gte": value})
 
@@ -50,7 +50,7 @@ class MongoMatchers(BaseMatchers):
         if is_datetime_value:
             value = self.__get_datetime_query_value(value)
         elif aggregation:
-            return self.__aggregation_match(key, value, aggregation, "$lte")
+            return self.__aggregation_match(key, {"$lte": value}, aggregation)
 
         return self.__contains_range_match(key, {"$lte": value})
 
@@ -60,7 +60,7 @@ class MongoMatchers(BaseMatchers):
             max = self.__get_datetime_query_value(max)
         elif aggregation:
             return self.__aggregation_match(
-                key, {"$gte": min, "$lte": max}, aggregation, "$and"
+                key, {"$gte": min, "$lte": max}, aggregation
             )
 
         return self.__contains_range_match(key, {"$gte": min, "$lte": max})
@@ -71,24 +71,18 @@ class MongoMatchers(BaseMatchers):
     def none(self, key):
         return self.__any_none_match(key, "NONE_MATCH")
 
-    def __aggregation_match(self, key: str, value, aggregation: str, operator: str):
-        if operator == "$and":
-            return {
-                "$expr": {
-                    "$and": [
-                        {
-                            operator: [
-                                {f"${aggregation}": {"$ifNull": [f"${key}", []]}},
-                                value[operator],
-                            ]
-                        }
-                        for operator in value.keys()
-                    ]
-                }
-            }
+    def __aggregation_match(self, key: str, value, aggregation: str):
         return {
             "$expr": {
-                operator: [{f"${aggregation}": {"$ifNull": [f"${key}", []]}}, value]
+                "$and": [
+                    {
+                        operator: [
+                            {f"${aggregation}": {"$ifNull": [f"${key}", []]}},
+                            value[operator],
+                        ]
+                    }
+                    for operator in value.keys()
+                ]
             }
         }
 

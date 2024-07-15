@@ -1,10 +1,32 @@
-OPERATOR_MAP = {"$gt": ">", "$gte": ">=", "$lt": "<", "$lte": "<="}
+AGGREGATOR_MAP = {"$size": "LENGTH"}
+OPERATOR_MAP = {"$eq": "==", "$gt": ">", "$gte": ">=", "$lt": "<", "$lte": "<="}
 
 
 def get_comparison(key, value, element_name):
     if isinstance(value, dict):
         value_key = list(value.keys())[0]
-        if value_key == "$in":
+        if key == "$expr":
+            comparison = ""
+            for i in range(len(value[value_key])):
+                operator = list(value[value_key][i].keys())[0]
+                aggregator = list(value[value_key][i][operator][0].keys())[0]
+                field_key = value[value_key][i][operator][0][aggregator]["$ifNull"][0][
+                    1:
+                ]
+                field_value = value[value_key][i][operator][1]
+                if field_key.startswith("relations."):
+                    edge = field_key.split(".")[1]
+                    comparison += (
+                        f"{' AND ' if i > 0 else ''}{AGGREGATOR_MAP.get(aggregator)}("
+                    )
+                    comparison += f"\nFOR item IN {edge}"
+                    comparison += f"\nFILTER item._from == document._id"
+                    comparison += "\nRETURN item"
+                    comparison += f"\n) {OPERATOR_MAP.get(operator)} {field_value}"
+                else:
+                    comparison += f"{' AND ' if i > 0 else ''}{AGGREGATOR_MAP.get(aggregator)}({element_name}.{field_key}) {OPERATOR_MAP.get(operator)} {field_value}"
+            return f"({comparison})"
+        elif value_key == "$in":
             comparison = ""
             for i in range(len(value[value_key])):
                 comparison += f"{' OR ' if i > 0 else ''}'{value[value_key][i]}' IN {element_name}.{key}"
@@ -98,4 +120,4 @@ def parse_matcher_list(
                 )
             operator_index += 1
 
-    return f"{aql})" if close_bracket and aql.find("AND (") >= 0 else aql, index
+    return f"{aql})" if close_bracket or aql.find("AND (") >= 0 else aql, index
