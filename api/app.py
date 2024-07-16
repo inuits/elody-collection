@@ -41,11 +41,13 @@ def init_app():
     load_apps(app, None)
     return app
 
-def init_scheduler():    
-    checker = TtlChecker()
-    scheduler = BackgroundScheduler()
-    scheduler.add_job(checker, 'cron', hour=12, minute=10) 
-    scheduler.start()
+def init_scheduler():
+    load_background_scheduler = getenv("LOAD_BACKGROUND_SCHEDULER", False)
+    if load_background_scheduler:
+        checker = TtlChecker()
+        scheduler = BackgroundScheduler()
+        scheduler.add_job(checker, 'cron', hour=12, minute=10) 
+        scheduler.start()
 
 def register_swaggerui(app):
     swaggerui_blueprint = get_swaggerui_blueprint(SWAGGER_URL, API_URL)
