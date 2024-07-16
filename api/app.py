@@ -1,6 +1,6 @@
 from apscheduler.schedulers.background import BackgroundScheduler
-from cron_jobs.ttl_checker import TtlChecker
 from configuration import init_mappers
+from cron_jobs.ttl_checker import TtlChecker
 from elody.loader import load_apps
 from elody.util import CustomJSONEncoder
 from flask import Flask, jsonify
@@ -46,7 +46,7 @@ def init_scheduler():
     if load_background_scheduler:
         checker = TtlChecker()
         scheduler = BackgroundScheduler()
-        scheduler.add_job(checker, 'cron', hour=12, minute=10) 
+        scheduler.add_job(checker, 'cron', hour=12, minute=10)
         scheduler.start()
 
 def register_swaggerui(app):
