@@ -29,7 +29,11 @@ class ArangoWrapper(ArangoStorageManager):
                 aql = handle(stage[key], aql)
             except AttributeError:
                 pass
-        aql += "\nRETURN document"
+
+        if aql.find("COLLECT result") >= 0:
+            aql += "\nRETURN result"
+        else:
+            aql += "\nRETURN document"
 
         raise Exception(aql)
 
@@ -76,5 +80,23 @@ class ArangoWrapper(ArangoStorageManager):
             else:
                 aql += f"{get_filter_prefix(operator, index)}{'' if operator.endswith('(') else ' '}{get_comparison(key, value, element_name)}"
                 index += 1
+
+        return aql
+
+    def _handle_project_stage(self, project, aql):
+        map = project["options"]["$concatArrays"][0]["$map"]
+        object_list = map["input"]["$filter"]["input"][1:]
+        item_key = map["input"]["$filter"]["cond"]["$eq"][0].split(".")[1]
+        item_value = map["in"]["$cond"]["if"]["$isArray"].split(".")[1]
+        value = map["input"]["$filter"]["cond"]["$eq"][1]
+
+        aql += "\nLET options = ("
+        aql += f"\nFOR item IN document.{object_list}"
+        aql += f"\nFILTER item.{item_key} == '{value}'"
+        aql += f"\nRETURN {{ label: item.{item_value}, value: item.{item_value} }}"
+        aql += "\n)"
+        aql += "\nFOR option IN UNIQUE(options)"
+        aql += "\nFILTER option.label != null"
+        aql += "\nCOLLECT result = option INTO groups"
 
         return aql
