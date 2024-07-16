@@ -81,7 +81,7 @@ class MongoFilters(MongoStorageManager):
         )
         document = {"results": list(documents)}
         return self.__get_items(
-            document, match_stage, limit, skip, options_requesting_filter
+            document, match_stage, skip, limit, options_requesting_filter
         )
 
     def __lookup_stage(self, filter_request_body):
@@ -208,7 +208,7 @@ class MongoFilters(MongoStorageManager):
             {"$group": {"_id": "options", "options": {"$addToSet": "$options"}}},
         ]
 
-    def __get_items(self, document, match, limit, skip, options_requesting_filter=None):
+    def __get_items(self, document, match, skip, limit, options_requesting_filter=None):
         items = {"results": [], "count": 0}
 
         if options_requesting_filter:
@@ -225,8 +225,8 @@ class MongoFilters(MongoStorageManager):
                         )
             items["count"] = len(items["results"])
         else:
-            items["limit"] = limit
             items["skip"] = skip
+            items["limit"] = limit
             items["count"] = self.db[BaseMatchers.collection].count_documents(
                 match["$match"]
             )

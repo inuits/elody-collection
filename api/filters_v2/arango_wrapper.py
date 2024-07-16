@@ -20,13 +20,16 @@ class ArangoWrapper(ArangoStorageManager):
         mongo_pipeline: list[dict] = MongoFilters().filter(
             filter_request_body, skip, limit, collection, order_by, asc, True, False
         )  # pyright: ignore
+        aql = self.__generate_query(collection, mongo_pipeline)
+        return self.__execute_query(aql, collection, skip, limit)
 
+    def __generate_query(self, collection, mongo_pipeline):
         aql = f"FOR document IN {collection}"
         for stage in mongo_pipeline:
             try:
                 key = list(stage.keys())[0]
                 handle = getattr(self, f"_handle_{key[1:]}_stage")
-                aql = handle(stage[key], aql)
+                aql = handle(stage[key], aql, mongo_pipeline=mongo_pipeline)
             except AttributeError:
                 pass
 
@@ -34,11 +37,27 @@ class ArangoWrapper(ArangoStorageManager):
             aql += "\nRETURN result"
         else:
             aql += "\nRETURN document"
+        return aql
 
-        raise Exception(aql)
+    def __execute_query(self, aql, collection, skip, limit):
+        documents = self.db.aql.execute(aql, full_count=True)  # pyright: ignore
+        items = {
+            "results": [
+                (
+                    self.get_item_from_collection_by_id(collection, document["_id"])
+                    if document.get("_id")
+                    else document
+                )
+                for document in documents  # pyright: ignore
+            ]
+        }
+        items["skip"] = skip
+        items["limit"] = limit
+        items["count"] = documents.statistics()["fullCount"]  # pyright: ignore
+        return items
 
     def _handle_match_stage(
-        self, match, aql, *, element_name="document", operator="AND", index=0
+        self, match, aql, *, element_name="document", operator="AND", index=0, **_
     ):
         get_filter_prefix = (
             lambda operator, index: f"\n{'FILTER' if index == 0 else operator}"
@@ -83,7 +102,17 @@ class ArangoWrapper(ArangoStorageManager):
 
         return aql
 
-    def _handle_project_stage(self, project, aql):
+    def _handle_skip_stage(self, skip, aql, mongo_pipeline):
+        limit = [stage for stage in mongo_pipeline if stage.get("$limit") is not None][
+            0
+        ]["$limit"]
+        if skip is None or limit is None:
+            return aql
+
+        aql += f"\nLIMIT {skip}, {limit}"
+        return aql
+
+    def _handle_project_stage(self, project, aql, **_):
         map = project["options"]["$concatArrays"][0]["$map"]
         object_list = map["input"]["$filter"]["input"][1:]
         item_key = map["input"]["$filter"]["cond"]["$eq"][0].split(".")[1]
