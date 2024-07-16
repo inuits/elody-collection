@@ -677,13 +677,25 @@ class MongoStorageManager(GenericStorageManager):
             return self._prepare_mongo_document(document, True, collection)
         return None
 
+    def count_items_from_collection(self, collection, fields=None, filters=[]):
+        if fields or filters:
+            query = {
+                "$and": [
+                    self.__get_filter_fields(filters),
+                    self.__get_filter_fields(fields),
+                ]
+            }
+            return self.db[collection].count_documents(query)
+        else:
+            return self.db[collection].count_documents({})
+
     def get_items_from_collection(
         self,
         collection,
         skip=0,
         limit=20,
         fields=None,
-        filters=None,
+        filters=[],
         sort=None,
         asc=True,
     ):

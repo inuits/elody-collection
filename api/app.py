@@ -1,3 +1,5 @@
+from apscheduler.schedulers.background import BackgroundScheduler
+from cron_jobs.ttl_checker import TtlChecker
 from configuration import init_mappers
 from elody.loader import load_apps
 from elody.util import CustomJSONEncoder
@@ -39,6 +41,11 @@ def init_app():
     load_apps(app, None)
     return app
 
+def init_scheduler():    
+    checker = TtlChecker()
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(checker, 'cron', hour=12, minute=10) 
+    scheduler.start()
 
 def register_swaggerui(app):
     swaggerui_blueprint = get_swaggerui_blueprint(SWAGGER_URL, API_URL)
@@ -58,6 +65,8 @@ def rabbit_available():
 
 load_sentry()
 app = init_app()
+
+init_scheduler()
 register_swaggerui(app)
 init_mappers()
 init_api(app)
@@ -83,7 +92,6 @@ def exception(exception):
         return jsonify(message=exception.description), exception.code
     except:
         return jsonify(message=f"{exception.__class__.__name__}: {exception}"), 500
-
 
 if __name__ == "__main__":
     app.run()
