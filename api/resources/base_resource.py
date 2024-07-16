@@ -176,7 +176,7 @@ class BaseResource(Resource):
         return {"data": rdf_data}
 
     def _create_mediafile_for_entity(
-        self, entity, filename, metadata=None, dry_run=False
+        self, entity, filename, metadata=None, relations=None, dry_run=False
     ):
         content = {
             "filename": filename,
@@ -196,6 +196,10 @@ class BaseResource(Resource):
             mediafile["_id"],
             mediafile_is_public(mediafile),
         )
+        if relations:
+            self.storage.add_relations_to_collection_item(
+                "mediafiles", get_raw_id(mediafile), relations
+            )
         signal_entity_changed(get_rabbit(), entity)
         return mediafile
 

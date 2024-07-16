@@ -22,6 +22,7 @@ class Batch(BaseResource):
                     entity,
                     mediafile.get("filename"),
                     mediafile.get("metadata"),
+                    mediafile.get("relations"),
                     dry_run,
                 )
                 output.append(mediafile)
@@ -29,7 +30,7 @@ class Batch(BaseResource):
 
     def _get_parsed_csv(self, csv):
         try:
-            return CSVMultiObject(
+            csv_multi_object = CSVMultiObject(
                 csv,
                 {"entities": "same_entity", "mediafiles": "filename"},
                 {
@@ -37,6 +38,7 @@ class Batch(BaseResource):
                         "filename",
                         "publication_status",
                         "mediafile_copyright_color",
+                        "license",
                     ]
                 },
                 {"mediafiles": {"copyright_color": "red"}},
@@ -51,8 +53,48 @@ class Batch(BaseResource):
                     },
                 },
             )
+                
+            items_for_parsing = {
+                "mediafiles": {
+                    "key": "license",
+                    "map_to_key": "hasLicense",
+                }
+            }
+            self._parse_metadata_key_to_relation(csv_multi_object, items_for_parsing)
+            return csv_multi_object
         except ColumnNotFoundException:
             abort(422, message="One or more required columns headers aren't defined")
+        
+
+    def _parse_metadata_key_to_relation(self, csv_multi_object, items_for_parsing):
+        for key, parse_item in items_for_parsing.items():
+            method_name = f"get_{key}"
+            if hasattr(csv_multi_object, method_name):
+                items = getattr(csv_multi_object, method_name)()
+                for item in items:
+                    list_ = item.get("metadata", [])
+                    for list_item in list_:
+                        if list_item["key"] == parse_item["key"]:
+                            related_item = (
+                                self.storage.get_item_from_collection_by_metadata(
+                                    "entities", "key", list_item["value"]
+                                )
+                            )
+                            if not related_item:
+                                csv_multi_object.errors.update(
+                                   {"related_item": [f"Item for key {parse_item['key']} with value {list_item['value']} doesn't exist.\n"]}
+                                )
+                                break
+                            list_.remove(list_item)
+                            map_list = item.get("relations", [])
+                            map_list.append(
+                                {
+                                    "key": get_raw_id(related_item),
+                                    "type": parse_item["map_to_key"],
+                                }
+                            )
+                            item.update({"relations": map_list})
+                setattr(csv_multi_object, f"set_{key}", items)
 
     def _get_entities_and_mediafiles_from_csv(self, parsed_csv, dry_run=False):
         entities_and_mediafiles = dict()
