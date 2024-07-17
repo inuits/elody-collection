@@ -337,6 +337,14 @@ class MongoStorageManager(GenericStorageManager):
             "isAssetPartFor": "hasAssetPart",
             "hasShareLink": "isShareLinkFor",
             "isShareLinkFor": "hasShareLink",
+            "hasWork": "isWorkFor",
+            "isWorkFor": "hasWork",
+            "hasTargetAudience": "isTargetAudienceFor",
+            "isTargetAudienceFor": "hasTargetAudience",
+            "hasAuthor": "isAuthorFor",
+            "isAuthorFor": "hasAuthor",
+            "hasFormat": "isFormatFor",
+            "isFormatFor": "hasFormat"
         }.get(relation)
 
     def _map_relation_to_collection(self, relation):
