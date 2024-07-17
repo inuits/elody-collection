@@ -1,12 +1,14 @@
 from configuration import get_object_configuration_mapper
 from copy import deepcopy
+from filters_v2.helpers.base_helper import (
+    get_options_requesting_filter,
+    has_non_exact_match_filter,
+    has_selection_filter_with_multiple_values,
+)
 from filters_v2.helpers.mongo_helper import (
     append_matcher,
     get_filter_option_label,
     get_options_mapper,
-    get_options_requesting_filter,
-    has_non_exact_match_filter,
-    has_selection_filter_with_multiple_values,
     unify_matchers_per_schema_into_one_match,
 )
 from filters_v2.matchers.base_matchers import BaseMatchers

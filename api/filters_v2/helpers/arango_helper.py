@@ -1,3 +1,8 @@
+from elody.util import flatten_dict
+from filters_v2.matchers.base_matchers import BaseMatchers
+from logging_elody.log import log
+
+
 AGGREGATOR_MAP = {"$size": "LENGTH"}
 OPERATOR_MAP = {"$eq": "==", "$gt": ">", "$gte": ">=", "$lt": "<", "$lte": "<="}
 
@@ -48,6 +53,24 @@ def get_comparison(key, value, element_name):
     return f"{element_name}.{key} == {value}"
 
 
+def get_filter_option_label(get_item_from_collection_by_id, identifier, key):
+    try:
+        item = get_item_from_collection_by_id(BaseMatchers.collection, identifier)
+        flat_item = flatten_dict(BaseMatchers.get_object_lists(), item)
+        return flat_item[key]
+    except Exception as exception:
+        log.exception(
+            f"Failed fetching filter option label.",
+            exc_info=exception,
+            info_labels={
+                "collection": BaseMatchers.collection,
+                "identifier": identifier,
+                "key_as_label": key,
+            },
+        )
+        return identifier
+
+
 def handle_object_lists(
     key,
     value,
@@ -66,7 +89,7 @@ def handle_object_lists(
         aql += f"\nFOR item IN {element}"
         aql += _handle_match_stage(elem_match["$elemMatch"], "", element_name="item")
         if key == "relations":
-            aql += f"\n{operator} item._from == document._id"
+            aql += f"\n{operator if elem_match['$elemMatch'] else 'FILTER'} item._from == document._id"
         aql += "\nRETURN item"
         aql += f"\n) {'==' if is_none_matcher else '>'} 0"
         index += 1

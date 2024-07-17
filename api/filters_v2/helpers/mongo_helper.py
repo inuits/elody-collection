@@ -1,6 +1,6 @@
 from configuration import get_object_configuration_mapper
 from copy import deepcopy
-from elody.util import interpret_flat_key
+from elody.util import flatten_dict, interpret_flat_key
 from filters_v2.matchers.base_matchers import BaseMatchers
 from logging_elody.log import log
 
@@ -41,14 +41,11 @@ def append_matcher(matcher, matchers, operator="and"):
 
 def get_filter_option_label(db, identifier, key):
     try:
-        return next(
-            db[BaseMatchers.collection].aggregate(
-                [
-                    {"$match": {"identifiers": {"$in": [identifier]}}},
-                    {"$project": {"label": get_options_mapper(key)}},
-                ]
-            )
-        )["label"][0]["label"]
+        item = next(
+            db[BaseMatchers.collection].find({"identifiers": {"$in": [identifier]}})
+        )
+        flat_item = flatten_dict(BaseMatchers.get_object_lists(), item)
+        return flat_item[key]
     except Exception as exception:
         log.exception(
             f"Failed fetching filter option label.",
@@ -104,33 +101,6 @@ def get_options_mapper(key):
             },
         }
     }
-
-
-def get_options_requesting_filter(filter_request_body):
-    options_requesting_filter = [
-        filter_criteria
-        for filter_criteria in filter_request_body
-        if filter_criteria.get("provide_value_options_for_key")
-    ]
-    return options_requesting_filter[0] if len(options_requesting_filter) > 0 else {}
-
-
-def has_non_exact_match_filter(filter_request_body):
-    non_exact_match_filter = [
-        filter_criteria
-        for filter_criteria in filter_request_body
-        if not filter_criteria.get("match_exact") and filter_criteria["type"] != "type"
-    ]
-    return len(non_exact_match_filter) > 0
-
-
-def has_selection_filter_with_multiple_values(filter_request_body):
-    selection_filter_with_multiple_values = [
-        filter_criteria
-        for filter_criteria in filter_request_body
-        if filter_criteria["type"] == "selection" and len(filter_criteria["value"]) > 1
-    ]
-    return len(selection_filter_with_multiple_values) > 0
 
 
 def unify_matchers_per_schema_into_one_match(matchers_per_schema, tidy_up_match):

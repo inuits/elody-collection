@@ -53,7 +53,7 @@ class Batch(BaseResource):
                     },
                 },
             )
-                
+
             items_for_parsing = {
                 "mediafiles": {
                     "key": "license",
@@ -64,7 +64,6 @@ class Batch(BaseResource):
             return csv_multi_object
         except ColumnNotFoundException:
             abort(422, message="One or more required columns headers aren't defined")
-        
 
     def _parse_metadata_key_to_relation(self, csv_multi_object, items_for_parsing):
         for key, parse_item in items_for_parsing.items():
@@ -82,7 +81,11 @@ class Batch(BaseResource):
                             )
                             if not related_item:
                                 csv_multi_object.errors.update(
-                                   {"related_item": [f"Item for key {parse_item['key']} with value {list_item['value']} doesn't exist.\n"]}
+                                    {
+                                        "related_item": [
+                                            f"Item for key {parse_item['key']} with value {list_item['value']} doesn't exist.\n"
+                                        ]
+                                    }
                                 )
                                 break
                             list_.remove(list_item)

@@ -1,8 +1,10 @@
 from filters_v2.helpers.arango_helper import (
     get_comparison,
+    get_filter_option_label,
     handle_object_lists,
     parse_matcher_list,
 )
+from filters_v2.helpers.base_helper import get_options_requesting_filter
 from filters_v2.mongo_filters import MongoFilters
 from storage.arangostore import ArangoStorageManager
 
@@ -20,8 +22,12 @@ class ArangoWrapper(ArangoStorageManager):
         mongo_pipeline: list[dict] = MongoFilters().filter(
             filter_request_body, skip, limit, collection, order_by, asc, True, False
         )  # pyright: ignore
+        options_requesting_filter = get_options_requesting_filter(filter_request_body)
+
         aql = self.__generate_query(collection, mongo_pipeline)
-        return self.__execute_query(aql, collection, skip, limit)
+        return self.__execute_query(
+            aql, collection, skip, limit, options_requesting_filter
+        )
 
     def __generate_query(self, collection, mongo_pipeline):
         aql = f"FOR document IN {collection}"
@@ -39,21 +45,26 @@ class ArangoWrapper(ArangoStorageManager):
             aql += "\nRETURN document"
         return aql
 
-    def __execute_query(self, aql, collection, skip, limit):
+    def __execute_query(self, aql, collection, skip, limit, options_requesting_filter):
         documents = self.db.aql.execute(aql, full_count=True)  # pyright: ignore
-        items = {
-            "results": [
-                (
+        if options_requesting_filter:
+            items = {"results": list(documents)}  # pyright: ignore
+            for option in items["results"]:
+                if key := options_requesting_filter.get("metadata_key_as_label"):
+                    option["label"] = get_filter_option_label(
+                        self.get_item_from_collection_by_id, option["value"], key
+                    )
+            items["count"] = documents.statistics()["fullCount"]  # pyright: ignore
+        else:
+            items = {
+                "results": [
                     self.get_item_from_collection_by_id(collection, document["_id"])
-                    if document.get("_id")
-                    else document
-                )
-                for document in documents  # pyright: ignore
-            ]
-        }
-        items["skip"] = skip
-        items["limit"] = limit
-        items["count"] = documents.statistics()["fullCount"]  # pyright: ignore
+                    for document in documents  # pyright: ignore
+                ]
+            }
+            items["skip"] = skip
+            items["limit"] = limit
+            items["count"] = documents.statistics()["fullCount"]  # pyright: ignore
         return items
 
     def _handle_match_stage(
@@ -120,8 +131,12 @@ class ArangoWrapper(ArangoStorageManager):
         value = map["input"]["$filter"]["cond"]["$eq"][1]
 
         aql += "\nLET options = ("
-        aql += f"\nFOR item IN document.{object_list}"
-        aql += f"\nFILTER item.{item_key} == '{value}'"
+        if object_list == "relations":
+            aql += f"\nFOR item IN {value}"
+            aql += f"\nFILTER item._from == document._id"
+        else:
+            aql += f"\nFOR item IN document.{object_list}"
+            aql += f"\nFILTER item.{item_key} == '{value}'"
         aql += f"\nRETURN {{ label: item.{item_value}, value: item.{item_value} }}"
         aql += "\n)"
         aql += "\nFOR option IN UNIQUE(options)"
