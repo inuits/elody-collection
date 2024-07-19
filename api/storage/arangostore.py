@@ -461,6 +461,8 @@ class ArangoStorageManager(GenericStorageManager):
     def get_item_from_collection_by_id(self, collection, id):
         if item_id := self.__get_id_for_collection_item(collection, id):
             item = self.db.document(item_id)
+            if collection == "mediafiles":
+                item["type"] = "mediafile"
             if item:
                 relations = self.get_collection_item_relations(
                     collection, id, entity=item
