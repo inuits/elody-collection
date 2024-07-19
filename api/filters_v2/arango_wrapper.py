@@ -71,7 +71,7 @@ class ArangoWrapper(ArangoStorageManager):
         self, match, aql, *, element_name="document", operator="AND", index=0, **_
     ):
         get_filter_prefix = (
-            lambda operator, index: f"\n{'FILTER' if index == 0 else operator}"
+            lambda operator, index: f"\n{'FILTER (' if operator.endswith('(') else 'FILTER' if index == 0 else operator}"
         )
 
         for key, value in match.items():

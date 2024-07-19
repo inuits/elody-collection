@@ -139,7 +139,7 @@ def parse_matcher_list(
                         if operator_index > 0 or aql.find("\nOR ") >= 0
                         else "AND ("
                     ),
-                    index=index,
+                    index=operator_index if index == 0 else index,
                 )
             operator_index += 1
 
