@@ -24,18 +24,20 @@ class ArangoWrapper(ArangoStorageManager):
         )  # pyright: ignore
         options_requesting_filter = get_options_requesting_filter(filter_request_body)
 
-        aql = self.__generate_query(collection, mongo_pipeline)
+        aql = self.__generate_query(collection, mongo_pipeline, order_by)
         return self.__execute_query(
             aql, collection, skip, limit, options_requesting_filter
         )
 
-    def __generate_query(self, collection, mongo_pipeline):
+    def __generate_query(self, collection, mongo_pipeline, order_by):
         aql = f"FOR document IN {collection}"
         for stage in mongo_pipeline:
             try:
                 key = list(stage.keys())[0]
                 handle = getattr(self, f"_handle_{key[1:]}_stage")
-                aql = handle(stage[key], aql, mongo_pipeline=mongo_pipeline)
+                aql = handle(
+                    stage[key], aql, mongo_pipeline=mongo_pipeline, sort_field=order_by
+                )
             except AttributeError:
                 pass
 
@@ -113,7 +115,16 @@ class ArangoWrapper(ArangoStorageManager):
 
         return aql
 
-    def _handle_skip_stage(self, skip, aql, mongo_pipeline):
+    def _handle_sort_stage(self, sort, aql, sort_field, **_):
+        aql += "\nLET sortField = FIRST("
+        aql += "\nFOR metadata IN document.metadata"
+        aql += f"\nFILTER metadata.key == '{sort_field}'"
+        aql += "\nRETURN metadata"
+        aql += "\n)"
+        aql += f"\nSORT sortField {'ASC' if list(sort.values())[0] == 1 else 'DESC'}"
+        return aql
+
+    def _handle_skip_stage(self, skip, aql, mongo_pipeline, **_):
         limit = [stage for stage in mongo_pipeline if stage.get("$limit") is not None][
             0
         ]["$limit"]

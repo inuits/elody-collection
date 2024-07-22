@@ -37,7 +37,7 @@ def get_comparison(key, value, element_name):
                 comparison += f"{' OR ' if i > 0 else ''}'{value[value_key][i]}' IN {element_name}.{key}"
             return f"({element_name}.{key} IN {value[value_key]} OR ({comparison}))"
         elif value_key == "$regex":
-            return f"LOWER({element_name}.{key}) LIKE '%{value[value_key]}%'"
+            return f"LOWER({element_name}.{key}) LIKE '%{value[value_key].lower()}%'"
         elif value_key == "$exists":
             return f"{'' if value[value_key] else '!'}HAS({element_name}, '{key}')"
         else:
