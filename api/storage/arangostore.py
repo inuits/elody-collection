@@ -368,6 +368,8 @@ class ArangoStorageManager(GenericStorageManager):
             exclude = []
         if not entity:
             entity = self.get_item_from_collection_by_id(collection, id)
+        if collection == "mediafiles":
+            entity["type"] = "mediafile"
         relevant_relations = self.__get_relevant_relations(entity["type"], exclude)
         relations = []
         for relation in relevant_relations:
