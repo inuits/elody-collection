@@ -2,6 +2,7 @@ from configuration import get_object_configuration_mapper
 from copy import deepcopy
 from filters_v2.helpers.base_helper import (
     get_options_requesting_filter,
+    get_type_filter_value,
     has_non_exact_match_filter,
     has_selection_filter_with_multiple_values,
 )
@@ -30,6 +31,7 @@ class MongoFilters(MongoStorageManager):
         tidy_up_match=True,
     ):
         BaseMatchers.collection = collection
+        BaseMatchers.type = get_type_filter_value(filter_request_body)
         options_requesting_filter = get_options_requesting_filter(filter_request_body)
         BaseMatchers.force_base_nested_matcher_builder = bool(
             options_requesting_filter

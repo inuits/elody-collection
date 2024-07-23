@@ -5,6 +5,7 @@ from configuration import get_object_configuration_mapper
 class BaseMatchers(ABC):
     collection = "entities"
     force_base_nested_matcher_builder = False
+    type = ""
 
     @staticmethod
     def get_base_nested_matcher_builder():
@@ -15,12 +16,16 @@ class BaseMatchers(ABC):
     def get_custom_nested_matcher_builder():
         if BaseMatchers.force_base_nested_matcher_builder:
             return BaseMatchers.get_base_nested_matcher_builder()
-        config = get_object_configuration_mapper().get(BaseMatchers.collection)
+        config = get_object_configuration_mapper().get(
+            BaseMatchers.type or BaseMatchers.collection
+        )
         return config.crud()["nested_matcher_builder"]
 
     @staticmethod
     def get_object_lists() -> dict:
-        config = get_object_configuration_mapper().get(BaseMatchers.collection)
+        config = get_object_configuration_mapper().get(
+            BaseMatchers.type or BaseMatchers.collection
+        )
         return config.document_info()["object_lists"]
 
     @abstractmethod
