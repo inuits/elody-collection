@@ -346,7 +346,9 @@ class MongoStorageManager(GenericStorageManager):
             "hasFormat": "isFormatFor",
             "isFormatFor": "hasFormat",
             "hasExpression": "isExpressionFor",
-            "isExpressionFor": "hasExpression"
+            "isExpressionFor": "hasExpression",
+            "hasGenre": "isGenreFor",
+            "isGenreFor": "hasGenre"
         }.get(relation)
 
     def _map_relation_to_collection(self, relation):
