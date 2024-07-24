@@ -86,7 +86,7 @@ def handle_object_lists(
         aql += f"{get_filter_prefix(operator, index)}{'' if operator.endswith('(') else ' '}LENGTH("
         if key == "relations":
             element = elem_match["$elemMatch"].pop("type")
-        aql += f"\nFOR item IN IS_ARRAY({element}) ? {element} : []"
+        aql += f"\nFOR item IN {element if key == 'relations' else f'IS_ARRAY({element}) ? {element} : []'}"
         aql += _handle_match_stage(elem_match["$elemMatch"], "", element_name="item")
         if key == "relations":
             aql += f"\n{operator if elem_match['$elemMatch'] else 'FILTER'} item._from == document._id"
