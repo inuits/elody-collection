@@ -157,7 +157,7 @@ class ArangoWrapper(ArangoStorageManager):
             aql += f"\nFOR item IN {value}"
             aql += f"\nFILTER item._from == document._id"
         else:
-            aql += f"\nFOR item IN document.{object_list}"
+            aql += f"\nFOR item IN IS_ARRAY(document.{object_list}) ? document.{object_list} : []"
             aql += f"\nFILTER item.{item_key} == '{value}'"
         aql += f"\nRETURN {{ label: item.{item_value}, value: item.{item_value} }}"
         aql += "\n)"
