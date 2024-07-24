@@ -34,7 +34,7 @@ def get_comparison(key, value, element_name):
         elif value_key == "$in":
             comparison = ""
             for i in range(len(value[value_key])):
-                comparison += f"{' OR ' if i > 0 else ''}'{value[value_key][i]}' IN IS_ARRAY({element_name}.{key}) ? {element_name}.{key} : []"
+                comparison += f"{' OR ' if i > 0 else ''}'{value[value_key][i]}' IN {element_name}.{key}"
             return f"({element_name}.{key} IN {value[value_key]} OR ({comparison}))"
         elif value_key == "$regex":
             return f"LOWER({element_name}.{key}) LIKE '%{value[value_key].lower()}%'"
@@ -86,7 +86,7 @@ def handle_object_lists(
         aql += f"{get_filter_prefix(operator, index)}{'' if operator.endswith('(') else ' '}LENGTH("
         if key == "relations":
             element = elem_match["$elemMatch"].pop("type")
-        aql += f"\nFOR item IN {element}"
+        aql += f"\nFOR item IN IS_ARRAY({element}) ? {element} : []"
         aql += _handle_match_stage(elem_match["$elemMatch"], "", element_name="item")
         if key == "relations":
             aql += f"\n{operator if elem_match['$elemMatch'] else 'FILTER'} item._from == document._id"
