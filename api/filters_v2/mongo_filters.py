@@ -14,6 +14,7 @@ from filters_v2.helpers.mongo_helper import (
 )
 from filters_v2.matchers.base_matchers import BaseMatchers
 from filters_v2.types.filter_types import get_filter
+from logging_elody.log import log
 from pymongo import ASCENDING, DESCENDING
 from storage.mongostore import MongoStorageManager
 
@@ -80,9 +81,19 @@ class MongoFilters(MongoStorageManager):
     def __execute_aggregation_query(
         self, pipeline, match_stage, skip, limit, options_requesting_filter
     ):
-        documents = self.db[BaseMatchers.collection].aggregate(
-            pipeline, allowDiskUse=self.allow_disk_use
-        )
+        try:
+            documents = self.db[BaseMatchers.collection].aggregate(
+                pipeline, allowDiskUse=self.allow_disk_use
+            )
+        except Exception as exception:
+            log.exception(
+                f"{exception.__class__.__name__}: {exception}",
+                {},
+                exc_info=exception,
+                info_labels={"pipeline": pipeline},
+            )
+            raise exception
+
         document = {"results": list(documents)}
         return self.__get_items(
             document, match_stage, skip, limit, options_requesting_filter

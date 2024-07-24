@@ -6,6 +6,7 @@ from filters_v2.helpers.arango_helper import (
 )
 from filters_v2.helpers.base_helper import get_options_requesting_filter
 from filters_v2.mongo_filters import MongoFilters
+from logging_elody.log import log
 from storage.arangostore import ArangoStorageManager
 
 
@@ -48,7 +49,17 @@ class ArangoWrapper(ArangoStorageManager):
         return aql
 
     def __execute_query(self, aql, collection, skip, limit, options_requesting_filter):
-        documents = self.db.aql.execute(aql, full_count=True)  # pyright: ignore
+        try:
+            documents = self.db.aql.execute(aql, full_count=True)  # pyright: ignore
+        except Exception as exception:
+            log.exception(
+                f"{exception.__class__.__name__}: {exception}",
+                {},
+                exc_info=exception,
+                info_labels={"aql": aql},
+            )
+            raise exception
+
         if options_requesting_filter:
             items = {"results": list(documents)}  # pyright: ignore
             for option in items["results"]:
