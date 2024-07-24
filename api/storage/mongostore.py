@@ -18,6 +18,8 @@ class MongoStorageManager(GenericStorageManager):
     character_replace_map = {".": "="}
 
     def __init__(self):
+        if getenv("DB_ENGINE", "mongo") != "mongo":
+            return
         self.mongo_db_name = getenv("MONGODB_DB_NAME", "dams")
         self.mongo_hosts = getenv("MONGODB_HOSTS", "mongo").split(",")
         self.mongo_port = int(getenv("MONGODB_PORT", 27017))

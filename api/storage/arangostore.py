@@ -123,7 +123,7 @@ class ArangoStorageManager(GenericStorageManager):
         return result if len(result) > 1 else result[0]
 
     def __get_id_for_collection_item(self, collection, identifier):
-        if item_id := self.id_cache.get(identifier):
+        if identifier.find("/") != -1 and (item_id := self.id_cache.get(identifier)):
             return item_id
         if self.db.collection(collection).has(identifier):
             if identifier.startswith(f"{collection}/"):
