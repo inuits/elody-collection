@@ -10,6 +10,13 @@ queue_prefix = getenv("QUEUE_PREFIX", "dams")
 routing_key_prefix = getenv("ROUTING_KEY_PREFIX", "dams")
 
 
+def __argument_wrapper(*, queue_name, routing_key):
+    arguments = {"routing_key": routing_key}
+    if getenv("AMQP_MANAGER", "amqpstorm_flask") == "amqpstorm_flask":
+        arguments["queue_name"] = queue_name
+    return arguments
+
+
 def __is_malformed_message(data, fields):
     if not all(x in data for x in fields):
         log.error(f"Message malformed: missing one of {fields}")
@@ -18,8 +25,10 @@ def __is_malformed_message(data, fields):
 
 
 @get_rabbit().queue(
-    queue_name=f"{queue_prefix}-update_parent_relation_values",
-    routing_key=f"{routing_key_prefix}.child_relation_changed",
+    **__argument_wrapper(
+        queue_name=f"{queue_prefix}-update_parent_relation_values",
+        routing_key=f"{routing_key_prefix}.child_relation_changed",
+    )
 )
 def update_parent_relation_values(routing_key, body, message_id):
     data = body["data"]
@@ -31,8 +40,10 @@ def update_parent_relation_values(routing_key, body, message_id):
 
 
 @get_rabbit().queue(
-    queue_name=f"{queue_prefix}-add_entity_to_history",
-    routing_key=f"{routing_key_prefix}.entity_changed",
+    **__argument_wrapper(
+        queue_name=f"{queue_prefix}-add_entity_to_history",
+        routing_key=f"{routing_key_prefix}.entity_changed",
+    )
 )
 def add_entity_to_history(routing_key, body, message_id):
     data = body["data"]
@@ -52,8 +63,10 @@ def add_entity_to_history(routing_key, body, message_id):
 
 
 @get_rabbit().queue(
-    queue_name=f"{queue_prefix}-add_scan_info_to_mediafile",
-    routing_key=f"{routing_key_prefix}.file_scanned",
+    **__argument_wrapper(
+        queue_name=f"{queue_prefix}-add_scan_info_to_mediafile",
+        routing_key=f"{routing_key_prefix}.file_scanned",
+    )
 )
 def add_scan_info_to_mediafile(routing_key, body, message_id):
     data = body["data"]
@@ -78,8 +91,10 @@ def add_scan_info_to_mediafile(routing_key, body, message_id):
 
 
 @get_rabbit().queue(
-    queue_name=f"{queue_prefix}-update_job",
-    routing_key=f"{routing_key_prefix}.job_changed",
+    **__argument_wrapper(
+        queue_name=f"{queue_prefix}-update_job",
+        routing_key=f"{routing_key_prefix}.job_changed",
+    )
 )
 def update_job(routing_key, body, message_id):
     StorageManager().get_db_engine().patch_item_from_collection(
@@ -90,16 +105,20 @@ def update_job(routing_key, body, message_id):
 
 
 @get_rabbit().queue(
-    queue_name=f"{queue_prefix}-create_job",
-    routing_key=f"{routing_key_prefix}.job_created",
+    **__argument_wrapper(
+        queue_name=f"{queue_prefix}-create_job",
+        routing_key=f"{routing_key_prefix}.job_created",
+    )
 )
 def create_job(routing_key, body, message_id):
     StorageManager().get_db_engine().save_item_to_collection("jobs", body["data"])
 
 
 @get_rabbit().queue(
-    queue_name=f"{queue_prefix}-handle_mediafile_status_change",
-    routing_key=f"{routing_key_prefix}.mediafile_changed",
+    **__argument_wrapper(
+        queue_name=f"{queue_prefix}-handle_mediafile_status_change",
+        routing_key=f"{routing_key_prefix}.mediafile_changed",
+    )
 )
 def handle_mediafile_status_change(routing_key, body, message_id):
     data = body["data"]
@@ -121,8 +140,10 @@ def handle_mediafile_status_change(routing_key, body, message_id):
 
 
 @get_rabbit().queue(
-    queue_name=f"{queue_prefix}-handle_mediafiles_added_for_entity",
-    routing_key=f"{routing_key_prefix}.mediafiles_added_for_entity",
+    **__argument_wrapper(
+        queue_name=f"{queue_prefix}-handle_mediafiles_added_for_entity",
+        routing_key=f"{routing_key_prefix}.mediafiles_added_for_entity",
+    )
 )
 def handle_mediafiles_added_for_entity(routing_key, body, message_id):
     data = body["data"]
@@ -191,8 +212,10 @@ def create_ocr_body(mediafiles_data, relation):
 
 
 @get_rabbit().queue(
-    queue_name=f"{queue_prefix}-handle_mediafile_deleted",
-    routing_key=f"{routing_key_prefix}.mediafile_deleted",
+    **__argument_wrapper(
+        queue_name=f"{queue_prefix}-handle_mediafile_deleted",
+        routing_key=f"{routing_key_prefix}.mediafile_deleted",
+    )
 )
 def handle_mediafile_deleted(routing_key, body, message_id):
     data = body["data"]

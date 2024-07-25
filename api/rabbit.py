@@ -33,12 +33,12 @@ def init_rabbit(app):
         "True",
         "true",
     ]
-    try:
-        ExchangeParams = amqp_module.ExchangeParams
-    except TypeError:
-        ExchangeParams = getattr(
-            import_module(f"{amqp_module}.ExchangeParams"), "ExchangeParams"
-        )
+
+    ExchangeParams = (
+        amqp_module.ExchangeParams
+        if amqp_module.__name__ == "amqpstorm_flask"
+        else amqp_module.ExchangeParams.ExchangeParams
+    )
     _rabbit = amqp_module.RabbitMQ(
         exchange_params=ExchangeParams(
             auto_delete=auto_delete_exchange,
@@ -46,9 +46,12 @@ def init_rabbit(app):
             passive=passive_exchange,
         )
     )
-    _rabbit.init_app(
-        app, "basic", loads, custom_json_dumps, json_encoder=CustomJSONEncoder
-    )
+    if amqp_module == "amqpstorm_flask":
+        _rabbit.init_app(
+            app, "basic", loads, custom_json_dumps, json_encoder=CustomJSONEncoder
+        )
+    else:
+        _rabbit.init_app(app, "basic", loads, custom_json_dumps)
     load_queues(None)
 
 
