@@ -33,8 +33,14 @@ def init_rabbit(app):
         "True",
         "true",
     ]
+    try:
+        ExchangeParams = amqp_module.ExchangeParams
+    except TypeError:
+        ExchangeParams = getattr(
+            import_module(f"{amqp_module}.ExchangeParams"), "ExchangeParams"
+        )
     _rabbit = amqp_module.RabbitMQ(
-        exchange_params=amqp_module.ExchangeParams(
+        exchange_params=ExchangeParams(
             auto_delete=auto_delete_exchange,
             durable=durable_exchange,
             passive=passive_exchange,
