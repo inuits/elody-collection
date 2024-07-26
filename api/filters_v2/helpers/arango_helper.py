@@ -48,7 +48,7 @@ def get_comparison(key, value, element_name):
                 operator = " AND "
             return f"({comparison})"
     elif isinstance(value, str):
-        return f"LOWER({element_name}.{key}) == LOWER('{value}')"
+        return f"LOWER({element_name}.{key}) == {value.lower()}"
 
     return f"{element_name}.{key} == {value}"
 
