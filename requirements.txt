@@ -1,4 +1,4 @@
-AMQPStorm==2.10.7
+AMQPStorm==2.10.8
 amqpstorm-flask==0.4.7
 aniso8601==9.0.1
 apscheduler==3.10.4
