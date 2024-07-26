@@ -87,9 +87,11 @@ def handle_object_lists(
         if key == "relations":
             element = elem_match["$elemMatch"].pop("type")
         aql += f"\nFOR item IN {element if key == 'relations' else f'IS_ARRAY({element}) ? {element} : []'}"
-        aql += _handle_match_stage(elem_match["$elemMatch"], "", element_name="item")
+        aql += _handle_match_stage(
+            elem_match["$elemMatch"], "", element_name="item", operator="AND"
+        )
         if key == "relations":
-            aql += f"\n{operator if elem_match['$elemMatch'] else 'FILTER'} item._from == document._id"
+            aql += f"\nFILTER item._from == document._id"
         aql += "\nRETURN item"
         aql += f"\n) {'==' if is_none_matcher else '>'} 0"
         index += 1
@@ -123,7 +125,7 @@ def parse_matcher_list(
                     (
                         operator
                         if operator_index > 0 or aql.find("\nOR ") >= 0
-                        else "AND ("
+                        else "FILTER ("
                     ),
                     get_filter_prefix,
                     _handle_match_stage,
@@ -137,10 +139,10 @@ def parse_matcher_list(
                     operator=(
                         operator
                         if operator_index > 0 or aql.find("\nOR ") >= 0
-                        else "AND ("
+                        else "FILTER ("
                     ),
                     index=operator_index if index == 0 else index,
                 )
             operator_index += 1
 
-    return f"{aql})" if close_bracket or aql.find("AND (") >= 0 else aql, index
+    return f"{aql})" if close_bracket or aql.find("FILTER (") >= 0 else aql, index

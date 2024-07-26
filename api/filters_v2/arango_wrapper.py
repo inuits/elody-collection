@@ -81,7 +81,7 @@ class ArangoWrapper(ArangoStorageManager):
         return items
 
     def _handle_match_stage(
-        self, match, aql, *, element_name="document", operator="AND", index=0, **_
+        self, match, aql, *, element_name="document", operator="FILTER", index=0, **_
     ):
         get_filter_prefix = (
             lambda operator, index: f"\n{'FILTER (' if operator.endswith('(') else 'FILTER' if index == 0 else operator}"
@@ -116,7 +116,7 @@ class ArangoWrapper(ArangoStorageManager):
                     f"{element_name}.{key}",
                     aql,
                     index,
-                    "AND",
+                    "FILTER",
                     get_filter_prefix,
                     self._handle_match_stage,
                 )
