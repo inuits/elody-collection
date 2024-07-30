@@ -355,7 +355,7 @@ class MongoStorageManager(GenericStorageManager):
             "isTimeFor": "hasTime",
             "hasLitararyType": "isLiteraryTypeFor",
             "isLiteraryTypeFor": "hasLitararyType",
-            "hasPlace", "isPlaceFor",
+            "hasPlace": "isPlaceFor",
             "isPlaceFor": "hasPlace",
         }.get(relation)
 
