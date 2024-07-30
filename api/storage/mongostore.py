@@ -352,7 +352,7 @@ class MongoStorageManager(GenericStorageManager):
             "hasGenre": "isGenreFor",
             "isGenreFor": "hasGenre",
             "hasTime": "isTimeFor",
-            "isTimeFor": "hasTime"
+            "isTimeFor": "hasTime",
             "hasLitararyType": "isLiteraryTypeFor",
             "isLiteraryTypeFor": "hasLitararyType",
             "hasPlace", "isPlaceFor",
