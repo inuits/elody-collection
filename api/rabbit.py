@@ -46,7 +46,7 @@ def init_rabbit(app):
             passive=passive_exchange,
         )
     )
-    if amqp_module == "amqpstorm_flask":
+    if amqp_module.__name__ == "amqpstorm_flask":
         _rabbit.init_app(
             app, "basic", loads, custom_json_dumps, json_encoder=CustomJSONEncoder
         )
