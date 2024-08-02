@@ -1,6 +1,6 @@
 import mappers
 
-from filters.filter_matcher_mapping import FilterMatcherMapping
+from filters_v2.filter_matcher_mapping import FilterMatcherMapping
 from flask import request
 from inuits_policy_based_auth import RequestContext
 from policy_factory import apply_policies, authenticate, get_user_context
