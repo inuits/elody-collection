@@ -29,8 +29,6 @@ class FilterMatcherMapping(ABC):
             "in_between": InBetweenMatcher,
         },
         "number": {
-            "any": AnyMatcher,
-            "none": NoneMatcher,
             "exact": ExactMatcher,
             "min_included": MinIncludedMatcher,
             "max_included": MaxIncludedMatcher,
