@@ -6,12 +6,14 @@ from elody.util import flatten_dict, mediafile_is_public, signal_entity_changed
 from logging_elody.log import log
 from migration.migrate import migrate
 from os import getenv
+from policy_factory import get_user_context
 from pymongo import ASCENDING, DESCENDING, MongoClient
 from pymongo.errors import DuplicateKeyError
 from rabbit import get_rabbit
 from serialization.serialize import serialize
 from storage.genericstore import GenericStorageManager
 from urllib.parse import quote_plus
+from werkzeug.exceptions import BadRequest
 
 
 class MongoStorageManager(GenericStorageManager):
@@ -238,6 +240,20 @@ class MongoStorageManager(GenericStorageManager):
                     "is_primary_thumbnail",
                 )
             break
+
+    def __verify_uniqueness(self, item):
+        collections = get_user_context().bag["collection_resolver"]()
+        for collection in collections:
+            documents = list(
+                self.db[collection].find({"identifiers": {"$in": item["identifiers"]}})
+            )
+            if documents:
+                duplicate_keys = set(documents[0]["identifiers"]) & set(
+                    item["identifiers"]
+                )
+                raise BadRequest(
+                    f"Entity with following identifiers already exists: {', '.join(list(duplicate_keys))}"
+                )
 
     def _map_entity_relation(self, relation):
         return {
@@ -966,6 +982,8 @@ class MongoStorageManager(GenericStorageManager):
         item = {}
         try:
             for item in items:
+                if not is_history:
+                    self.__verify_uniqueness(item)
                 config = get_object_configuration_mapper().get(item["type"])
                 self.db[
                     config.crud()[
