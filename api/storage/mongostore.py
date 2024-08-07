@@ -242,7 +242,11 @@ class MongoStorageManager(GenericStorageManager):
             break
 
     def __verify_uniqueness(self, item):
-        collections = get_user_context().bag["collection_resolver"]()
+        resolve_collections = get_user_context().bag.get("collection_resolver")
+        if not resolve_collections:
+            return
+
+        collections = resolve_collections()
         for collection in collections:
             documents = list(
                 self.db[collection].find({"identifiers": {"$in": item["identifiers"]}})
