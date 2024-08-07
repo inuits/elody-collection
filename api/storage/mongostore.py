@@ -381,6 +381,8 @@ class MongoStorageManager(GenericStorageManager):
             "isLiteraryTypeFor": "hasLiteraryType",
             "hasPlace": "isPlaceFor",
             "isPlaceFor": "hasPlace",
+            "hasNomen": "isNomen",
+            "isNomen": "hasNomen",
         }.get(relation)
 
     def _map_relation_to_collection(self, relation):
