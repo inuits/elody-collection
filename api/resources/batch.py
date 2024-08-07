@@ -71,33 +71,42 @@ class Batch(BaseResource):
             if hasattr(csv_multi_object, method_name):
                 items = getattr(csv_multi_object, method_name)()
                 for item in items:
-                    list_ = item.get("metadata", [])
-                    for list_item in list_:
-                        if list_item["key"] == parse_item["key"]:
-                            related_item = (
-                                self.storage.get_item_from_collection_by_metadata(
-                                    "entities", "key", list_item["value"]
-                                )
-                            )
-                            if not related_item:
-                                csv_multi_object.errors.update(
-                                    {
-                                        "related_item": [
-                                            f"Item for key {parse_item['key']} with value {list_item['value']} doesn't exist.\n"
-                                        ]
-                                    }
-                                )
-                                break
-                            list_.remove(list_item)
-                            map_list = item.get("relations", [])
-                            map_list.append(
-                                {
-                                    "key": get_raw_id(related_item),
-                                    "type": parse_item["map_to_key"],
-                                }
-                            )
-                            item.update({"relations": map_list})
+                    self._parse_key_to_item(csv_multi_object, parse_item, item)
                 setattr(csv_multi_object, f"set_{key}", items)
+
+    def _parse_key_to_item(self, csv_multi_object, parse_item, item):
+        metadata_list = item.get("metadata", [])
+        for metadata_item in metadata_list:
+            if metadata_item["key"] == parse_item["key"]:
+                related_item = self.storage.get_item_from_collection_by_metadata(
+                    "entities", "key", metadata_item["value"]
+                )
+                if not related_item:
+                    self._add_error_to_csv_multi_object(
+                        csv_multi_object, parse_item, metadata_item
+                    )
+                    break
+                metadata_list.remove(metadata_item)
+                self._add_relation_to_relation_list(parse_item, item, related_item)
+
+    def _add_relation_to_relation_list(self, parse_item, item, related_item):
+        relation_list = item.get("relations", [])
+        relation_list.append(
+            {
+                "key": get_raw_id(related_item),
+                "type": parse_item["map_to_key"],
+            }
+        )
+        item.update({"relations": relation_list})
+
+    def _add_error_to_csv_multi_object(self, csv_multi_object, parse_item, list_item):
+        csv_multi_object.errors.update(
+            {
+                "related_item": [
+                    f"Item for key {parse_item['key']} with value {list_item['value']} doesn't exist.\n"
+                ]
+            }
+        )
 
     def _get_entities_and_mediafiles_from_csv(self, parsed_csv, dry_run=False):
         entities_and_mediafiles = dict()
