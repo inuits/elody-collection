@@ -500,6 +500,9 @@ class BaseResource(Resource):
         ) = self.__group_user_relations_by_idp_role_status(
             user["relations"], roles_per_tenant
         )
+        anonymous_user_id = getenv("ANONYMOUS_USER_ID", "anonymous_user")
+        if get_raw_id(user) == anonymous_user_id:
+            return user
         id = user["_id"]
 
         if len(new) > 0:
