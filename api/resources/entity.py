@@ -2,6 +2,8 @@ import mappers
 
 from datetime import datetime, timezone
 from elody.exceptions import InvalidObjectException, NonUniqueException
+from elody.csv import CSVMultiObject
+from elody.exceptions import ColumnNotFoundException
 from elody.util import (
     get_raw_id,
     mediafile_is_public,
@@ -10,6 +12,7 @@ from elody.util import (
     signal_mediafiles_added_for_entity,
 )
 from flask import after_this_request, request
+from flask_restful import abort
 from inuits_policy_based_auth import RequestContext
 from policy_factory import apply_policies, authenticate, get_user_context
 from rabbit import get_rabbit
@@ -209,13 +212,14 @@ class EntityMediafiles(GenericObjectDetail):
         skip = request.args.get("skip", 0, int)
         limit = request.args.get("limit", 20, int)
         asc = request.args.get("asc", 1, int)
+        order_by = request.args.get("order_by", "order", str)
         entity = super().get("entities", id)
         mediafiles = dict()
         mediafiles["count"] = self.storage.get_collection_item_mediafiles_count(
             entity["_id"]
         )
         mediafiles["results"] = self.storage.get_collection_item_mediafiles(
-            "entities", get_raw_id(entity), skip, limit, asc
+            "entities", get_raw_id(entity), skip, limit, asc, order_by
         )
         mediafiles["limit"] = limit
         mediafiles["skip"] = skip
@@ -435,3 +439,156 @@ class EntitySetPrimaryThumbnail(GenericObjectDetail):
         )
         signal_entity_changed(get_rabbit(), entity)
         return "", 204
+
+
+class EntityOrder(GenericObjectDetail):
+    def get(self, id):
+        entity = super().get("entities", id)
+        raw_id = get_raw_id(entity)
+
+        if entity.get("type") == "asset":
+            data_type = "mediafiles"
+            items = self.storage.get_collection_item_mediafiles("entities", raw_id)
+            fields = ["identifier", "type", "filename"]
+        else:
+            data_type = "entities"
+            relations = self.storage.get_collection_item_relations("entities", raw_id)
+            items = [
+                self.storage.get_item_from_collection_by_id(
+                    "entities", relation.get("key")
+                )
+                for relation in relations
+                if relation.get("type") == "hasAsset"
+            ]
+            fields = ["identifiers", "type"]
+
+        data = {}
+        data["results"] = items
+        return self._create_response_according_accept_header(
+            mappers.map_data_according_to_accept_header(
+                get_user_context().access_restrictions.post_request_hook(data),
+                "text/csv",
+                data_type,
+                fields,
+                "elody",
+                request.args,
+            ),
+            "text/csv",
+        )
+
+    @authenticate(RequestContext(request))
+    def post(self, id):
+        entity = super().get("entities", id)
+        if request.content_type != "text/csv":
+            raise Exception(f"Unsupported type {request.content_type}")
+        entity_type = self._determine_child_entity_type(entity)
+        relation_type, relation_type_reverse = self._determine_relation_types(
+            entity_type
+        )
+        csv_type = {"mediafiles": "mediafiles", "entities": "entities"}.get(entity_type)
+        parsed_csv = self._get_parsed_csv(request.get_data(as_text=True), entity_type)
+        items = self._get_items_from_csv(entity_type, parsed_csv)
+        items_dict = {item["matching_id"]: item for item in items}
+        items_order = {
+            item["matching_id"]: csv_order + 1 for csv_order, item in enumerate(items)
+        }
+
+        self.update_sort_order_on_relations(
+            id,
+            entity.get("relations", []),
+            relation_type,
+            relation_type_reverse,
+            csv_type,
+            items_dict,
+            items_order,
+        )
+
+        self.storage.update_item_from_collection("entities", id, entity)
+        return super().get("entities", id)
+
+    # Item with type asset will have mediafiles as children and other type e.g assetParts will have assets as children
+    def _determine_child_entity_type(self, entity):
+        if entity.get("type") == "asset":
+            entity_type = "mediafiles"
+        else:
+            entity_type = "entities"
+        return entity_type
+
+    def _determine_relation_types(self, entity_type):
+        relation_type = {"mediafiles": "hasMediafile", "entities": "hasAsset"}.get(
+            entity_type
+        )
+        relation_type_reverse = {
+            "mediafiles": "belongsTo",
+            "entities": "isAssetFor",
+        }.get(entity_type)
+        return relation_type, relation_type_reverse
+
+    def _get_items_from_csv(self, entity_type, parsed_csv):
+        return (
+            parsed_csv.get_entities()
+            if entity_type == "entities"
+            else parsed_csv.get_mediafiles()
+        )
+
+    def _get_parsed_csv(self, csv, entity_type):
+        try:
+            return CSVMultiObject(csv, {entity_type: "identifier"})
+        except ColumnNotFoundException:
+            abort(422, message="One or more required columns headers aren't defined")
+
+    def update_relation_metadata(self, relation, key, value):
+        existing_metadata = relation.get("metadata", [])
+        existing_item = next(
+            (item for item in existing_metadata if item["key"] == key), None
+        )
+
+        if existing_item:
+            existing_item["value"] = int(value)
+        else:
+            existing_metadata.append({"key": key, "value": int(value)})
+
+        relation["metadata"] = existing_metadata
+
+    def update_relation_sort(self, relation, key, value):
+        sort_field = relation.get("sort", {})
+        order = sort_field.get(key, [])
+
+        if not order:
+            relation["sort"] = {key: [{"value": int(value)}]}
+        else:
+            order[0]["value"] = int(value)
+
+    def update_sort_order_on_relations(
+        self,
+        id,
+        entity_relations,
+        relation_type,
+        relation_type_reverse,
+        csv_type,
+        items_dict,
+        items_order,
+    ):
+        for relation in entity_relations:
+            relation_item_id = relation.get("key")
+            if relation.get("type") == relation_type and relation_item_id in items_dict:
+                item = items_dict[relation_item_id]
+                # Use the order of the CSV
+                order_value = items_order[relation_item_id]
+                item = self.storage.get_item_from_collection_by_id(
+                    csv_type, relation_item_id
+                )
+                for item_relation in item.get("relations"):
+                    if (
+                        item_relation.get("type") == relation_type_reverse
+                        and item_relation.get("key") == id
+                    ):
+                        self.update_relation_metadata(
+                            item_relation, "order", order_value
+                        )
+                        self.update_relation_sort(item_relation, "order", order_value)
+                self.storage.update_item_from_collection(
+                    csv_type, relation_item_id, item
+                )
+                self.update_relation_metadata(relation, "order", order_value)
+                self.update_relation_sort(relation, "order", order_value)

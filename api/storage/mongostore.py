@@ -597,6 +597,7 @@ class MongoStorageManager(GenericStorageManager):
     def get_collection_item_mediafiles(
         self, collection, id, skip=0, limit=0, asc=1, sort="order"
     ):
+        item = self.get_item_from_collection_by_id(collection, id)
         mediafiles = []
         documents = self.db["mediafiles"].find(
             {"relations.key": id}, skip=skip, limit=limit
@@ -607,6 +608,22 @@ class MongoStorageManager(GenericStorageManager):
         )
         for document in documents:
             mediafiles.append(self._prepare_mongo_document(document, True, collection))
+        if sort == "order":
+            mediafiles_sort = []
+            for relation in item.get("relations", []):
+                if relation.get("type") == "hasMediafile":
+                    for metadata in relation.get("metadata", []):
+                        if metadata["key"] == "order":
+                            sort_order = metadata["value"]
+                        else:
+                            sort_order = ""
+                    data = { "id": relation.get("key"), "sort_order": sort_order}
+                    mediafiles_sort.append(data)
+            sort_dict = {item['id']: item['sort_order'] for item in mediafiles_sort}
+
+            # Sort the results using the sort dictionary
+            sorted_results = sorted(mediafiles, key=lambda x: sort_dict.get(x['_id'], len(mediafiles_sort)+1))
+            return sorted_results
         return mediafiles
 
     def get_collection_item_relations(
@@ -812,8 +829,11 @@ class MongoStorageManager(GenericStorageManager):
             "object_id",
             "type",
             "version",
+            "filename",
+            "original_filename",
         ]:
-            return f"{'relations.' if relation_sort else ''}sort.{field}.value"
+            # raise Exception(f"{'relations.hasMediafile.' if relation_sort else ''}metadata.{field}.value")
+            return f"{'relations.' if relation_sort else ''}metadata.{field}.value"
         return field
 
     def handle_mediafile_deleted(self, parents):

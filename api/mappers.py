@@ -79,10 +79,18 @@ def map_objects_to_csv(entities, fields=None):
             if "identifier" not in keys:
                 keys.append("identifier")
             values.append({0: id})
+        if can_append_key("identifier", fields):
+            if "identifier" not in keys:
+                keys.append("identifier")
+            values[0][0] = entity.get("_id")
         if can_append_key("type", fields):
             if "type" not in keys:
                 keys.append("type")
             values[0][1] = entity.get("type")
+        if can_append_key("filename", fields):
+            if "filename" not in keys:
+                keys.append("filename")
+            values[0][2] = entity.get("original_filename")
         for metadata in entity.get("metadata", []):
             key = metadata.get("key")
             if not can_append_key(key, fields):

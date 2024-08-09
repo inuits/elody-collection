@@ -13,6 +13,7 @@ from resources.entity import (
     EntityRelationsAll,
     EntitySetPrimaryMediafile,
     EntitySetPrimaryThumbnail,
+    EntityOrder,
 )
 from resources.filter import (
     FilterEntities,
@@ -119,6 +120,13 @@ def init_api(app):
         get_route_mapper().get(
             EntitySetPrimaryThumbnail.__name__,
             "/entities/<string:id>/set_primary_thumbnail/<string:mediafile_id>",
+        ),
+    )
+    api.add_resource(
+        EntityOrder,
+        get_route_mapper().get(
+            EntityOrder.__name__,
+            "/entities/<string:id>/order",
         ),
     )
 
