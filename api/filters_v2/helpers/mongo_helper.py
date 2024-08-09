@@ -41,9 +41,14 @@ def append_matcher(matcher, matchers, operator="and"):
 
 def get_filter_option_label(db, identifier, key):
     try:
-        item = next(
-            db[BaseMatchers.collection].find({"identifiers": {"$in": [identifier]}})
-        )
+        collection = BaseMatchers.collection
+        if key.find("|") > -1:
+            type, key = key.split("|")
+            collection = (
+                get_object_configuration_mapper().get(type).crud()["collection"]
+            )
+
+        item = next(db[collection].find({"identifiers": {"$in": [identifier]}}))
         flat_item = flatten_dict(BaseMatchers.get_object_lists(), item)
         return flat_item[key]
     except Exception as exception:
