@@ -184,7 +184,10 @@ class MongoFilters(MongoStorageManager):
         }
 
     def __sort_stage(self, order_by, asc):
-        key_order_map = {order_by: ASCENDING if asc else DESCENDING}
+        key_order_map = {}
+        keys = order_by.split(",")
+        for key in keys:
+            key_order_map.update({key: ASCENDING if asc else DESCENDING})
         sorting = (
             get_object_configuration_mapper()
             .get(BaseMatchers.collection)
