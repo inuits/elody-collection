@@ -2,8 +2,6 @@ from abc import ABC
 from filters_v2.matchers.matchers import (
     ExactMatcher,
     ContainsMatcher,
-    MinMatcher,
-    MaxMatcher,
     MinIncludedMatcher,
     MaxIncludedMatcher,
     InBetweenMatcher,
@@ -24,8 +22,8 @@ class FilterMatcherMapping(ABC):
             "any": AnyMatcher,
             "none": NoneMatcher,
             "exact": ExactMatcher,
-            "min": MinMatcher,
-            "max": MaxMatcher,
+            "min_included": MinIncludedMatcher,
+            "max_included": MaxIncludedMatcher,
             "in_between": InBetweenMatcher,
         },
         "number": {
