@@ -145,4 +145,8 @@ def parse_matcher_list(
                 )
             operator_index += 1
 
-    return f"{aql})" if close_bracket or aql.find("FILTER (") >= 0 else aql, index
+    return (
+        f"{aql})"
+        if (close_bracket or aql.find("FILTER (") >= 0) and aql[-1] != ")"
+        else aql
+    ), index
