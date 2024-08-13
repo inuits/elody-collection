@@ -926,6 +926,16 @@ class MongoStorageManager(GenericStorageManager):
                                 == value_element[object_lists[key]]
                             ):
                                 item[key].remove(item_element)
+                                break
+                        else:
+                            item_element = None
+                        pre_crud_hook(
+                            crud="update",
+                            object_list_elements={
+                                "item_element": item_element,
+                                "value_element": value_element,
+                            },
+                        )
                     item[key].extend(value)
                 else:
                     item[key] = value
@@ -946,6 +956,7 @@ class MongoStorageManager(GenericStorageManager):
         if not collection:
             collection = config.crud()["collection"]
         scope = config.crud().get("spec_scope", {}).get(spec, None)
+        object_lists = config.document_info()["object_lists"]
         pre_crud_hook = config.crud()["pre_crud_hook"]
         post_crud_hook = config.crud()["post_crud_hook"]
         if not self.__does_request_changes(item, content):
@@ -955,6 +966,12 @@ class MongoStorageManager(GenericStorageManager):
                 if key in scope:
                     if value == "[protected content]":
                         continue
+                    if key in object_lists:
+                        for value_element in value[object_lists[key]]:
+                            pre_crud_hook(
+                                crud="update",
+                                object_list_elements={"value_element": value_element},
+                            )
                     item[key] = value
         else:
             item = content
