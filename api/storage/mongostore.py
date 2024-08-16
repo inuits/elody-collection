@@ -242,7 +242,10 @@ class MongoStorageManager(GenericStorageManager):
             break
 
     def __verify_uniqueness(self, item):
-        resolve_collections = get_user_context().bag.get("collection_resolver")
+        try:
+            resolve_collections = get_user_context().bag.get("collection_resolver")
+        except:
+            resolve_collections = None
         if not resolve_collections:
             return
 
@@ -544,11 +547,19 @@ class MongoStorageManager(GenericStorageManager):
         pre_crud_hook = config.crud()["pre_crud_hook"]
         post_crud_hook = config.crud()["post_crud_hook"]
         try:
-            pre_crud_hook(crud="delete", item=item)
+            pre_crud_hook(
+                crud="delete", document=item, get_user_context=get_user_context
+            )
             self.db[config.crud()["collection"]].delete_one(
                 self.__get_id_query(item["_id"])
             )
-            post_crud_hook(crud="delete", item=item, storage=self)
+            post_crud_hook(
+                crud="delete",
+                document=item,
+                storage=self,
+                get_user_context=get_user_context,
+                get_rabbit=get_rabbit,
+            )
             log.info("Successfully deleted item", item)
         except Exception as error:
             log.exception(f"{error.__class__.__name__}: {error}", item, exc_info=error)
@@ -578,9 +589,17 @@ class MongoStorageManager(GenericStorageManager):
                 else:
                     del item[key]
         try:
-            pre_crud_hook(crud="update", item=item)
+            pre_crud_hook(
+                crud="update", document=item, get_user_context=get_user_context
+            )
             self.db[collection].replace_one(self.__get_id_query(item["_id"]), item)
-            post_crud_hook(crud="update", item=item, storage=self)
+            post_crud_hook(
+                crud="update",
+                document=item,
+                storage=self,
+                get_user_context=get_user_context,
+                get_rabbit=get_rabbit,
+            )
             log.info("Successfully deleted data from item", item)
         except DuplicateKeyError as error:
             log.exception(f"{error.__class__.__name__}: {error}", item, exc_info=error)
@@ -903,7 +922,9 @@ class MongoStorageManager(GenericStorageManager):
             raise ex
         return self.get_item_from_collection_by_id(collection, id)
 
-    def patch_item_from_collection_v2(self, collection, item, content, spec):
+    def patch_item_from_collection_v2(
+        self, collection, item, content, spec, *, run_post_crud_hook=True
+    ):
         item = item.get("storage_format", item)
         config = get_object_configuration_mapper().get(item["type"])
         if not collection:
@@ -919,30 +940,40 @@ class MongoStorageManager(GenericStorageManager):
                 continue
             if not scope or key in scope:
                 if key in object_lists:
-                    for value_element in value:
-                        for item_element in item[key]:
-                            if (
-                                item_element[object_lists[key]]
-                                == value_element[object_lists[key]]
-                            ):
-                                item[key].remove(item_element)
-                                break
-                        else:
-                            item_element = None
-                        pre_crud_hook(
-                            crud="update",
-                            object_list_elements={
-                                "item_element": item_element,
-                                "value_element": value_element,
-                            },
-                        )
+                    if key != "relations":
+                        for value_element in value:
+                            for item_element in item[key]:
+                                if (
+                                    item_element[object_lists[key]]
+                                    == value_element[object_lists[key]]
+                                ):
+                                    item[key].remove(item_element)
+                                    break
+                            else:
+                                item_element = None
+                            pre_crud_hook(
+                                crud="update",
+                                object_list_elements={
+                                    "item_element": item_element,
+                                    "value_element": value_element,
+                                },
+                            )
                     item[key].extend(value)
                 else:
                     item[key] = value
         try:
-            pre_crud_hook(crud="update", item=item)
+            pre_crud_hook(
+                crud="update", document=item, get_user_context=get_user_context
+            )
             self.db[collection].replace_one(self.__get_id_query(item["_id"]), item)
-            post_crud_hook(crud="update", item=item, storage=self)
+            if run_post_crud_hook:
+                post_crud_hook(
+                    crud="update",
+                    document=item,
+                    storage=self,
+                    get_user_context=get_user_context,
+                    get_rabbit=get_rabbit,
+                )
         except DuplicateKeyError as error:
             log.exception(f"{error.__class__.__name__}: {error}", item, exc_info=error)
             if error.code == 11000:
@@ -976,9 +1007,17 @@ class MongoStorageManager(GenericStorageManager):
         else:
             item = content
         try:
-            pre_crud_hook(crud="update", item=item)
+            pre_crud_hook(
+                crud="update", document=item, get_user_context=get_user_context
+            )
             self.db[collection].replace_one(self.__get_id_query(item["_id"]), item)
-            post_crud_hook(crud="update", item=item, storage=self)
+            post_crud_hook(
+                crud="update",
+                document=item,
+                storage=self,
+                get_user_context=get_user_context,
+                get_rabbit=get_rabbit,
+            )
         except DuplicateKeyError as error:
             log.exception(f"{error.__class__.__name__}: {error}", item, exc_info=error)
             if error.code == 11000:
@@ -1021,7 +1060,9 @@ class MongoStorageManager(GenericStorageManager):
             else self.get_item_from_collection_by_id(collection, item_id)
         )
 
-    def save_item_to_collection_v2(self, collection, items, is_history=False):
+    def save_item_to_collection_v2(
+        self, collection, items, *, is_history=False, run_post_crud_hook=True
+    ):
         if not isinstance(items, list):
             items = items.get("storage_format", items)
             items = [items]
@@ -1036,9 +1077,15 @@ class MongoStorageManager(GenericStorageManager):
                         "collection" if not is_history else "collection_history"
                     ]
                 ].insert_one(item)
-                if not is_history:
+                if not is_history and run_post_crud_hook:
                     post_crud_hook = config.crud()["post_crud_hook"]
-                    post_crud_hook(crud="create", item=item, storage=self)
+                    post_crud_hook(
+                        crud="create",
+                        document=item,
+                        storage=self,
+                        get_user_context=get_user_context,
+                        get_rabbit=get_rabbit,
+                    )
                 log.info("Successfully saved item", item)
         except DuplicateKeyError as error:
             log.exception(f"{error.__class__.__name__}: {error}", item, exc_info=error)

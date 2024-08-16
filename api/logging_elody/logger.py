@@ -4,6 +4,7 @@ from configuration import get_object_configuration_mapper
 from elody.util import flatten_dict
 from logging_loki import JsonLokiLogger, LokiLogger
 from os import getenv
+from policy_factory import get_user_context
 
 
 class Logger:
@@ -85,6 +86,7 @@ class Logger:
             flatten_dict(
                 config.document_info()["object_lists"], item.get("storage_format", item)
             ),
+            get_user_context=get_user_context,
             **kwargs,
         )
         tags = info["loki_indexed_info_labels"]

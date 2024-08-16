@@ -1,3 +1,4 @@
+from configuration import get_object_configuration_mapper
 from datetime import datetime, timezone
 from elody.util import get_item_metadata_value, mediafile_is_public, get_raw_id
 from logging_elody.log import log
@@ -97,11 +98,41 @@ def add_scan_info_to_mediafile(routing_key, body, message_id):
     )
 )
 def update_job(routing_key, body, message_id):
-    StorageManager().get_db_engine().patch_item_from_collection(
-        "jobs",
-        body["data"]["identifiers"][0],
-        body["data"],
-    )
+    try:
+        id, collection = None, None
+        if document_info_job_was_initiated_for := body["data"].get(
+            "document_info_job_was_initiated_for"
+        ):
+            if document_info_job_was_initiated_for.get(
+                "id"
+            ) and document_info_job_was_initiated_for.get("type"):
+                id = document_info_job_was_initiated_for["id"]
+                type = document_info_job_was_initiated_for["type"]
+                collection = (
+                    get_object_configuration_mapper().get(type).crud()["collection"]
+                )
+        else:
+            id = body["data"]["id"]
+            collection = (
+                get_object_configuration_mapper().get("job").crud()["collection"]
+            )
+
+        if id and collection:
+            storage = StorageManager().get_db_engine()
+            document = storage.get_item_from_collection_by_id(collection, id)
+            storage.patch_item_from_collection_v2(
+                collection,
+                document,
+                body["data"]["patch"],
+                "elody",
+                run_post_crud_hook=False,
+            )
+    except Exception as exception:
+        log.exception(
+            f"{exception.__class__.__name__}: {exception}",
+            info_labels={"mq_message": body},
+            exc_info=exception,
+        )
 
 
 @get_rabbit().queue(
@@ -111,7 +142,18 @@ def update_job(routing_key, body, message_id):
     )
 )
 def create_job(routing_key, body, message_id):
-    StorageManager().get_db_engine().save_item_to_collection("jobs", body["data"])
+    try:
+        job = body["data"]
+        collection = get_object_configuration_mapper().get("job").crud()["collection"]
+        StorageManager().get_db_engine().save_item_to_collection_v2(
+            collection, job, run_post_crud_hook=False
+        )
+    except Exception as exception:
+        log.exception(
+            f"{exception.__class__.__name__}: {exception}",
+            body["data"],
+            exc_info=exception,
+        )
 
 
 @get_rabbit().queue(

@@ -1,4 +1,6 @@
-from object_configurations.base_object_configuration import BaseObjectConfiguration
+from elody.object_configurations.base_object_configuration import (
+    BaseObjectConfiguration,
+)
 
 
 class NoneConfiguration(BaseObjectConfiguration):

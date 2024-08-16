@@ -1,5 +1,7 @@
+from elody.object_configurations.base_object_configuration import (
+    BaseObjectConfiguration,
+)
 from elody.schemas import mediafile_schema
-from object_configurations.base_object_configuration import BaseObjectConfiguration
 
 
 class MediafileConfiguration(BaseObjectConfiguration):

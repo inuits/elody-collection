@@ -1,4 +1,3 @@
-from elody.loader import load_policies
 from importlib import import_module
 from inuits_policy_based_auth import PolicyFactory, RequestContext
 
@@ -7,6 +6,8 @@ _policy_factory = PolicyFactory()
 
 
 def init_policy_factory():
+    from elody.loader import load_policies
+
     global _policy_factory
     try:
         permissions_module = import_module("apps.permissions")
