@@ -30,7 +30,7 @@ class Batch(BaseResource):
 
     def _get_parsed_csv(self, csv):
         try:
-            csv_multi_object = CSVMultiObject(
+            return CSVMultiObject(
                 csv,
                 {"entities": "same_entity", "mediafiles": "filename"},
                 {
@@ -38,7 +38,6 @@ class Batch(BaseResource):
                         "filename",
                         "publication_status",
                         "mediafile_copyright_color",
-                        "license",
                     ]
                 },
                 {"mediafiles": {"copyright_color": "red"}},
@@ -53,15 +52,6 @@ class Batch(BaseResource):
                     },
                 },
             )
-
-            items_for_parsing = {
-                "mediafiles": {
-                    "key": "license",
-                    "map_to_key": "hasLicense",
-                }
-            }
-            self._parse_metadata_key_to_relation(csv_multi_object, items_for_parsing)
-            return csv_multi_object
         except ColumnNotFoundException:
             abort(422, message="One or more required columns headers aren't defined")
 
