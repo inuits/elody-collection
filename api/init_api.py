@@ -37,7 +37,6 @@ from resources.generic_object import (
     GenericObjectV2,
 )
 from resources.history import History
-from resources.job import Job, JobDetail
 from resources.key_value_store import KeyValueStore, KeyValueStoreDetail
 from resources.mediafile import (
     Mediafile,
@@ -228,11 +227,6 @@ def init_api(app):
         get_route_mapper().get(
             History.__name__, "/history/<string:collection>/<string:id>"
         ),
-    )
-
-    api.add_resource(Job, get_route_mapper().get(Job.__name__, "/jobs"))
-    api.add_resource(
-        JobDetail, get_route_mapper().get(JobDetail.__name__, "/jobs/<string:id>")
     )
 
     api.add_resource(

@@ -102,7 +102,11 @@ class ArangoStorageManager(GenericStorageManager):
             if graph.has_edge_definition(edge):
                 continue
             definitions = {
+                "hasJob": ("entities", "jobs"),
                 "hasMediafile": ("entities", "mediafiles"),
+                "hasParentJob": ("jobs", "jobs"),
+                "isJobOf": ("jobs", "entities"),
+                "isParentJobOf": ("jobs", "jobs"),
                 "stories": ("box_visits", "entities"),
                 "story_box": ("box_visits", "entities"),
                 "story_box_visits": ("entities", "box_visits"),

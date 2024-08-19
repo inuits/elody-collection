@@ -103,7 +103,22 @@ class GenericObject(BaseResource):
         content["date_updated"] = date_created
         content["version"] = version
         try:
-            collection_item = self.storage.save_item_to_collection(collection, content)
+            entity_relations = content.get("relations", [])
+            if entity_relations:
+                content.pop("relations")
+                collection_item = self.storage.save_item_to_collection(
+                    collection, content
+                )
+                self.storage.add_relations_to_collection_item(
+                    collection, get_raw_id(collection_item), entity_relations
+                )
+                collection_item = self.storage.get_item_from_collection_by_id(
+                    collection, get_raw_id(collection_item)
+                )
+            else:
+                collection_item = self.storage.save_item_to_collection(
+                    collection, content
+                )
         except NonUniqueException as ex:
             return ex.args[0]["errmsg"], 409
         if accept_header == "text/uri-list":
@@ -178,6 +193,8 @@ class GenericObjectV2(BaseFilterResource, BaseResource):
 class GenericObjectDetail(BaseResource):
     @apply_policies(RequestContext(request))
     def get(self, collection, id, spec="elody"):
+        if request.args.get("soft", 0, int):
+            return "good", 200
         item = self._check_if_collection_and_item_exists(collection, id)
         accept_header = request.headers.get("Accept")
         return self._create_response_according_accept_header(
@@ -203,6 +220,8 @@ class GenericObjectDetail(BaseResource):
         date_updated=None,
         spec="elody",
     ):
+        if request.args.get("soft", 0, int):
+            return "good", 200
         self._check_if_collection_name_exists(collection)
         if item is None:
             collection_item = self._abort_if_item_doesnt_exist(collection, id)
@@ -239,6 +258,8 @@ class GenericObjectDetail(BaseResource):
         date_updated=None,
         spec="elody",
     ):
+        if request.args.get("soft", 0, int):
+            return "good", 200
         self._check_if_collection_name_exists(collection)
         if item is None:
             collection_item = self._abort_if_item_doesnt_exist(collection, id)
@@ -272,6 +293,8 @@ class GenericObjectDetail(BaseResource):
         item=None,
         spec="elody",
     ):
+        if request.args.get("soft", 0, int):
+            return "good", 200
         self._check_if_collection_name_exists(collection)
         if item is None:
             collection_item = self._abort_if_item_doesnt_exist(collection, id)
