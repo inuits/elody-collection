@@ -632,14 +632,12 @@ class MongoStorageManager(GenericStorageManager):
             for relation in item.get("relations", []):
                 if relation.get("type") == "hasMediafile":
                     for metadata in relation.get("metadata", []):
+                        sort_order = ""
                         if metadata["key"] == "order":
                             sort_order = metadata["value"]
-                        else:
-                            sort_order = ""
-                    data = {"id": relation.get("key"), "sort_order": sort_order}
-                    mediafiles_sort.append(data)
+                        data = {"id": relation.get("key"), "sort_order": sort_order}
+                        mediafiles_sort.append(data)
             sort_dict = {item["id"]: item["sort_order"] for item in mediafiles_sort}
-
             # Sort the results using the sort dictionary
             sorted_results = sorted(
                 mediafiles,
