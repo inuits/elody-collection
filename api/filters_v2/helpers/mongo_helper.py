@@ -48,7 +48,10 @@ def get_filter_option_label(db, identifier, key):
                 get_object_configuration_mapper().get(type).crud()["collection"]
             )
 
-        item = next(db[collection].find({"identifiers": {"$in": [identifier]}}))
+        item = db[collection].find_one({"identifiers": {"$in": [identifier]}})
+        if not item:
+            return identifier
+
         flat_item = flatten_dict(BaseMatchers.get_object_lists(), item)
         return flat_item[key]
     except Exception as exception:
