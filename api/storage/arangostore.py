@@ -4,6 +4,7 @@ from arango import (
     DocumentUpdateError,
 )
 from arango.client import ArangoClient
+from configuration import get_object_configuration_mapper
 from elody.exceptions import NonUniqueException
 from elody.util import (
     custom_json_dumps,
@@ -12,7 +13,9 @@ from elody.util import (
     signal_edge_changed,
     signal_entity_changed,
 )
+from logging_elody.log import log
 from os import getenv
+from policy_factory import get_user_context
 from rabbit import get_rabbit
 from storage.genericstore import GenericStorageManager
 
@@ -647,6 +650,69 @@ class ArangoStorageManager(GenericStorageManager):
         signal_child_relation_changed(get_rabbit(), collection, item["_id"])
         return item
 
+    def patch_item_from_collection_v2(
+        self, collection, item, content, spec, *, run_post_crud_hook=True
+    ):
+        item = item.get("storage_format", item)
+        config = get_object_configuration_mapper().get(item["type"])
+        if not collection:
+            collection = config.crud()["collection"]
+        scope = config.crud().get("spec_scope", {}).get(spec, None)
+        object_lists = config.document_info()["object_lists"]
+        pre_crud_hook = config.crud()["pre_crud_hook"]
+        post_crud_hook = config.crud()["post_crud_hook"]
+        if not self._does_request_changes(item, content):
+            return item
+        for key, value in content.items():
+            if value == "[protected content]":
+                continue
+            if not scope or key in scope:
+                if key in object_lists:
+                    if key != "relations":
+                        for value_element in value:
+                            for item_element in item[key]:
+                                if (
+                                    item_element[object_lists[key]]
+                                    == value_element[object_lists[key]]
+                                ):
+                                    item[key].remove(item_element)
+                                    break
+                            else:
+                                item_element = None
+                            pre_crud_hook(
+                                crud="update",
+                                object_list_elements={
+                                    "item_element": item_element,
+                                    "value_element": value_element,
+                                },
+                            )
+                    item[key].extend(value)
+                else:
+                    item[key] = value
+        try:
+            pre_crud_hook(
+                crud="update", document=item, get_user_context=get_user_context
+            )
+            item = self.db.collection(collection).update(
+                item, return_new=True, check_rev=False
+            )["new"]
+            if run_post_crud_hook:
+                post_crud_hook(
+                    crud="update",
+                    document=item,
+                    storage=self,
+                    get_user_context=get_user_context,
+                    get_rabbit=get_rabbit,
+                )
+            signal_child_relation_changed(get_rabbit(), collection, item["_id"])
+        except DocumentInsertError as error:
+            log.exception(f"{error.__class__.__name__}: {error}", item, exc_info=error)
+            if error.error_code == 1210:
+                raise NonUniqueException(error.error_message)
+            raise error
+        log.info("Successfully patched item", item)
+        return item
+
     def reindex_mediafile_parents(self, mediafile=None, parents=None):
         if mediafile:
             parents = self.get_mediafile_linked_entities(mediafile)
@@ -673,6 +739,48 @@ class ArangoStorageManager(GenericStorageManager):
             if ex.error_code == 1210:
                 raise NonUniqueException(ex.error_message)
             raise ex
+
+    def save_item_to_collection_v2(
+        self, collection, items, *, is_history=False, run_post_crud_hook=True
+    ):
+        if not isinstance(items, list):
+            items = items.get("storage_format", items)
+            items = [items]
+        item = {}
+        try:
+            for item in items:
+                item["_key"] = item.pop("_id")
+                if not is_history:
+                    # self.__verify_uniqueness(item)
+                    pass
+                config = get_object_configuration_mapper().get(item["type"])
+                item_relations = item.pop("relations", [])
+                self.db.insert_document(
+                    config.crud()[
+                        "collection" if not is_history else "collection_history"
+                    ],
+                    item,
+                )
+                if item_relations:
+                    self.add_relations_to_collection_item(
+                        collection, item["_key"], item_relations
+                    )
+                if not is_history and run_post_crud_hook:
+                    post_crud_hook = config.crud()["post_crud_hook"]
+                    post_crud_hook(
+                        crud="create",
+                        document=item,
+                        storage=self,
+                        get_user_context=get_user_context,
+                        get_rabbit=get_rabbit,
+                    )
+                log.info("Successfully saved item", item)
+        except DocumentInsertError as error:
+            log.exception(f"{error.__class__.__name__}: {error}", item, exc_info=error)
+            if error.error_code == 1210:
+                raise NonUniqueException(error.error_message)
+            raise error
+        return self.get_item_from_collection_by_id(collection, items[0]["_key"])
 
     def set_primary_field_collection_item(self, collection, id, mediafile_id, field):
         item_id = self.__get_id_for_collection_item(collection, id)

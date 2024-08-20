@@ -103,14 +103,14 @@ class GenericObject(BaseResource):
         content["date_updated"] = date_created
         content["version"] = version
         try:
-            entity_relations = content.get("relations", [])
-            if entity_relations:
+            item_relations = content.get("relations", [])
+            if item_relations:
                 content.pop("relations")
                 collection_item = self.storage.save_item_to_collection(
                     collection, content
                 )
                 self.storage.add_relations_to_collection_item(
-                    collection, get_raw_id(collection_item), entity_relations
+                    collection, get_raw_id(collection_item), item_relations
                 )
                 collection_item = self.storage.get_item_from_collection_by_id(
                     collection, get_raw_id(collection_item)
