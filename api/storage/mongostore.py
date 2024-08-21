@@ -319,6 +319,8 @@ class MongoStorageManager(GenericStorageManager):
             "isPlaceFor": "hasPlace",
             "hasNomen": "isNomen",
             "isNomen": "hasNomen",
+            "hasArchesLink": "isArchesLinkFor",
+            "isArchesLinkFor": "hasArchesLink",
         }.get(relation)
 
     def _map_relation_to_collection(self, relation):
