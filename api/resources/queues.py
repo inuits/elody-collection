@@ -5,6 +5,7 @@ from logging_elody.log import log
 from os import getenv
 from rabbit import get_rabbit
 from storage.storagemanager import StorageManager
+from time import sleep
 
 
 queue_prefix = getenv("QUEUE_PREFIX", "dams")
@@ -118,8 +119,12 @@ def update_job(routing_key, body, message_id):
             )
 
         if id and collection:
+            sleep(2)
             storage = StorageManager().get_db_engine()
             document = storage.get_item_from_collection_by_id(collection, id)
+            if not document:
+                sleep(5)
+                document = storage.get_item_from_collection_by_id(collection, id)
             storage.patch_item_from_collection_v2(
                 collection,
                 document,
@@ -144,6 +149,7 @@ def update_job(routing_key, body, message_id):
 def create_job(routing_key, body, message_id):
     try:
         job = body["data"]
+        job["computed_values"].update({"created_at": datetime.now(timezone.utc)})
         collection = get_object_configuration_mapper().get("job").crud()["collection"]
         StorageManager().get_db_engine().save_item_to_collection_v2(
             collection, job, run_post_crud_hook=False
