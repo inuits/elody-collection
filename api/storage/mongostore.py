@@ -213,6 +213,8 @@ class MongoStorageManager(GenericStorageManager):
             "parent": "components",
             "hasAsset": "isAssetFor",
             "isAssetFor": "hasAsset",
+            "hasMedia": "isMediaFor",
+            "isMediaFor": "hasMedia",
             "hasAssetCategory": "isAssetCategoryFor",
             "isAssetCategoryFor": "hasAssetCategory",
             "hasLocationType": "isLocationTypeFor",
