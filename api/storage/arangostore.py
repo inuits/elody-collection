@@ -18,6 +18,7 @@ from os import getenv
 from policy_factory import get_user_context
 from rabbit import get_rabbit
 from storage.genericstore import GenericStorageManager
+from time import sleep
 
 
 class ArangoStorageManager(GenericStorageManager):
@@ -238,7 +239,7 @@ class ArangoStorageManager(GenericStorageManager):
                 return
 
     def add_mediafile_to_collection_item(
-        self, collection, id, mediafile_id, mediafile_public
+        self, collection, id, mediafile_id, mediafile_public, relation_properties=None
     ):
         if not (item_id := self.__get_id_for_collection_item(collection, id)):
             return None
@@ -762,6 +763,7 @@ class ArangoStorageManager(GenericStorageManager):
                     item,
                 )
                 if item_relations:
+                    sleep(1)
                     self.add_relations_to_collection_item(
                         collection, item["_key"], item_relations
                     )
