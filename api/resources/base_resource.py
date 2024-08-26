@@ -269,6 +269,15 @@ class BaseResource(Resource):
             "location": self._get_upload_location(filename),
             "type": "ticket",
             "user": get_user_context().email or "default_uploader",
+            "metadata": [
+                {
+                    "key": "ttl",
+                    "value": (
+                        datetime.now(tz=timezone.utc)
+                        + timedelta(seconds=int(getenv("TICKET_CLEANUP", 90000)))
+                    ).timestamp(),
+                }
+            ],
         }
         if mediafile_id:
             ticket["mediafile_id"] = mediafile_id
