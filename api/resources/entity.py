@@ -9,6 +9,7 @@ from elody.util import (
     mediafile_is_public,
     signal_entity_changed,
     signal_entity_deleted,
+    signal_mediafile_deleted,
     signal_mediafiles_added_for_entity,
 )
 from flask import after_this_request, request
@@ -197,9 +198,11 @@ class EntityDetail(GenericObjectDetail):
                 "entities", get_raw_id(entity)
             )
             for mediafile in mediafiles:
+                linked_entities = self.storage.get_mediafile_linked_entities(mediafile)
                 self.storage.delete_item_from_collection(
                     "mediafiles", get_raw_id(mediafile)
                 )
+                signal_mediafile_deleted(get_rabbit(), mediafile, linked_entities)
         response = super().delete("entities", id)
         self._delete_tenant(entity)
         signal_entity_deleted(get_rabbit(), entity)

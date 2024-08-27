@@ -1,7 +1,8 @@
 import os
 import logging
 from datetime import datetime, timezone
-from elody.util import get_item_metadata_value, get_raw_id
+from elody.util import get_item_metadata_value, get_raw_id, signal_mediafile_deleted
+from rabbit import get_rabbit
 from storage.storagemanager import StorageManager
 
 
@@ -46,12 +47,15 @@ class TtlChecker:
             self.storage.delete_item_from_collection("history", history_item_id)
 
     def _delete_item_mediafiles(self, item_id, collection):
-        mediafiles = self.storage.get_collection_item_mediafiles(
-            collection, item_id
-        )
+        mediafiles = self.storage.get_collection_item_mediafiles(collection, item_id)
         for mediafile in mediafiles:
+            linked_entities = self.storage.get_mediafile_linked_entities(mediafile)
             self.storage.delete_item_from_collection(
                 "mediafiles", get_raw_id(mediafile)
+            )
+            signal_mediafile_deleted(get_rabbit(), mediafile, linked_entities)
+            logging.info(
+                f"DELETE MEDIAFILE UNDER ENTITY WITH ID: {get_raw_id(mediafile)}"
             )
 
     def _is_expired(self, ttl: float):
