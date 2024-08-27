@@ -8,6 +8,7 @@ from storage.storagemanager import StorageManager
 class TtlChecker:
     def __init__(self):
         self.hard_delete: bool = os.getenv("HARD_DELETE", False)
+        self.delete_mediafiles: bool = os.getenv("DELETE_MEDIAFILES", False)
         self.storage = StorageManager().get_db_engine()
 
     def __call__(self):
@@ -29,6 +30,8 @@ class TtlChecker:
                     if ttl and self._is_expired(ttl):
                         item_id = get_raw_id(item)
                         logging.info(f"DELETE ITEM WITH ID: {item_id}")
+                        if self.delete_mediafiles:
+                            self._delete_item_mediafiles(item_id, collection)
                         self.storage.delete_item_from_collection(collection, item_id)
                         if self.hard_delete in [True, "True", "true"]:
                             self._delete_history_of_item(item_id, collection)
@@ -41,6 +44,15 @@ class TtlChecker:
             history_item_id = get_raw_id(history_item)
             logging.info(f"DELETE ITEM FROM HISTORY WITH ID: {history_item_id}")
             self.storage.delete_item_from_collection("history", history_item_id)
+
+    def _delete_item_mediafiles(self, item_id, collection):
+        mediafiles = self.storage.get_collection_item_mediafiles(
+            collection, item_id
+        )
+        for mediafile in mediafiles:
+            self.storage.delete_item_from_collection(
+                "mediafiles", get_raw_id(mediafile)
+            )
 
     def _is_expired(self, ttl: float):
         return datetime.now(tz=timezone.utc).timestamp() >= float(ttl)
