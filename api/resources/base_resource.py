@@ -274,7 +274,10 @@ class BaseResource(Resource):
                     "key": "ttl",
                     "value": (
                         datetime.now(tz=timezone.utc)
-                        + timedelta(seconds=int(getenv("TICKET_CLEANUP", 90000)))
+                        + timedelta(
+                            seconds=int(getenv("TICKET_LIFESPAN", 3600))
+                            + int(getenv("TICKET_CLEANUP", 86400))
+                        )
                     ).timestamp(),
                 }
             ],
