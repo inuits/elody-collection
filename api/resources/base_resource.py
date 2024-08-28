@@ -414,6 +414,15 @@ class BaseResource(Resource):
                 if parent_mediafile:
                     return self.get_parent_mediafile(parent_mediafile, parent_mediafile)
         return parent_mediafile
+    
+    def _get_tenant_abbreviations(self, tenant):
+        abbreviations = []
+        for tenant_relation in tenant.get("relations", []):
+            if tenant_relation.get("type") == "definedBy":
+                institution = self.storage.get_item_from_collection_by_id("entities", tenant_relation.get("key"))
+                abbreviation = get_item_metadata_value(institution, "abbreviation")
+                abbreviations.append(abbreviation)
+        return abbreviations
 
     def _get_tenant_label(self, item):
         return get_item_metadata_value(item, "name")
