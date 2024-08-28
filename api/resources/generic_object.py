@@ -192,11 +192,13 @@ class GenericObjectV2(BaseFilterResource, BaseResource):
 
 class GenericObjectDetail(BaseResource):
     @apply_policies(RequestContext(request))
-    def get(self, collection, id, spec="elody"):
+    def get(self, collection, id, spec="elody", raw_data=False):
         if request.args.get("soft", 0, int):
             return "good", 200
         item = self._check_if_collection_and_item_exists(collection, id)
         accept_header = request.headers.get("Accept")
+        if raw_data:
+            return item
         return self._create_response_according_accept_header(
             mappers.map_data_according_to_accept_header(
                 item,

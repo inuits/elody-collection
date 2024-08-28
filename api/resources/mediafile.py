@@ -103,10 +103,25 @@ class MediafileCopyright(GenericObjectDetail):
 class MediafileDetail(GenericObjectDetail):
     @authenticate(RequestContext(request))
     def get(self, id):
-        mediafile = super().get("mediafiles", id)
+        mediafile = super().get("mediafiles", id, raw_data=True)
+        accept_header = request.headers.get("Accept")
+        fields = [
+            *request.args.getlist("field"),
+            *request.args.getlist("field[]"),
+        ]
         if request.args.get("raw", 0, int):
             return mediafile
-        return self._inject_api_urls_into_mediafiles([mediafile])[0]
+        return self._create_response_according_accept_header(
+            mappers.map_data_according_to_accept_header(
+                self._inject_api_urls_into_mediafiles([mediafile])[0],
+                accept_header,
+                "entity",
+                fields,
+                "elody",
+                request.args,
+            ),
+            accept_header,
+        )
 
     @authenticate(RequestContext(request))
     def put(self, id):
