@@ -119,11 +119,10 @@ def update_job(routing_key, body, message_id):
             )
 
         if id and collection:
-            sleep(1)
             storage = StorageManager().get_db_engine()
             document = storage.get_item_from_collection_by_id(collection, id)
             if not document:
-                sleep(1)
+                sleep(5)
                 document = storage.get_item_from_collection_by_id(collection, id)
             storage.patch_item_from_collection_v2(
                 collection,

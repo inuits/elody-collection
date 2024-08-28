@@ -127,12 +127,16 @@ class ArangoWrapper(ArangoStorageManager):
         return aql
 
     def _handle_sort_stage(self, sort, aql, sort_field, **_):
-        return aql
-        aql += "\nLET sortField = FIRST("
-        aql += "\nFOR metadata IN IS_ARRAY(document.metadata) ? document.metadata : []"
-        aql += f"\nFILTER metadata.key == '{sort_field}'"
-        aql += "\nRETURN metadata"
-        aql += "\n)"
+        if sort_field.startswith("metadata."):
+            aql += "\nLET sortField = FIRST("
+            aql += (
+                "\nFOR metadata IN IS_ARRAY(document.metadata) ? document.metadata : []"
+            )
+            aql += f"\nFILTER metadata.key == '{sort_field.split('.')}'"
+            aql += "\nRETURN metadata"
+            aql += "\n)"
+        else:
+            aql += f"\nLET sortField = document.{sort_field}"
         aql += f"\nSORT sortField {'ASC' if list(sort.values())[0] == 1 else 'DESC'}"
         return aql
 

@@ -44,6 +44,7 @@ class ArangoStorageManager(GenericStorageManager):
             "frames",
             "hasAsset",
             "hasJob",
+            "hasMediafile",
             "hasParentJob",
             "hasTenant",
             "hasTestimony",
@@ -51,6 +52,7 @@ class ArangoStorageManager(GenericStorageManager):
             "isAssetFor",
             "isIn",
             "isJobOf",
+            "isMediafileFor",
             "isParentJobOf",
             "isTenantFor",
             "isTestimonyFor",
@@ -61,7 +63,7 @@ class ArangoStorageManager(GenericStorageManager):
             "story_box_visits",
             "visited",
         ]
-        self.edges = [*self.entity_relations, "hasMediafile"]
+        self.edges = self.entity_relations
         self.client = ArangoClient(
             hosts=getenv("ARANGO_DB_HOST"), serializer=custom_json_dumps
         )
@@ -110,6 +112,7 @@ class ArangoStorageManager(GenericStorageManager):
                 "hasMediafile": ("entities", "mediafiles"),
                 "hasParentJob": ("jobs", "jobs"),
                 "isJobOf": ("jobs", "entities"),
+                "isMediafileFor": ("mediafiles", "entities"),
                 "isParentJobOf": ("jobs", "jobs"),
                 "stories": ("box_visits", "entities"),
                 "story_box": ("box_visits", "entities"),
@@ -165,12 +168,20 @@ class ArangoStorageManager(GenericStorageManager):
 
     def __get_relevant_relations(self, type, exclude=None):
         relations = {
-            "asset": ["isIn", "components", "parent", "hasTenant", "hasTestimony"],
+            "asset": [
+                "isIn",
+                "components",
+                "parent",
+                "hasTenant",
+                "hasTestimony",
+                "hasMediafile",
+            ],
             "box": ["box_stories"],
             "box_visit": ["stories", "visited", "story_box"],
             "consists_of": ["parent", "components"],
             "frame": ["stories", "components"],
             "job": ["hasJob", "hasParentJob", "isJobOf", "isParentJobOf"],
+            "mediafile": ["isMediafileFor"],
             "museum": ["defines"],
             "set": ["hasUser", "hasAsset", "isIn"],
             "story": ["frames", "box", "story_box_visits"],
@@ -198,6 +209,7 @@ class ArangoStorageManager(GenericStorageManager):
             "hasAsset": "isAssetFor",
             "hasChild": "belongsToParent",
             "hasJob": "isJobOf",
+            "hasMediafile": "isMediafileFor",
             "hasParentJob": "isParentJobOf",
             "hasTenant": "isTenantFor",
             "hasTestimony": "isTestimonyFor",
@@ -205,6 +217,7 @@ class ArangoStorageManager(GenericStorageManager):
             "isAssetFor": "hasAsset",
             "isIn": "contains",
             "isJobOf": "hasJob",
+            "isMediafileFor": "hasMediafile",
             "isParentJobOf": "hasParentJob",
             "isTestimonyFor": "hasTestimony",
             "isUserFor": "hasUser",
@@ -257,6 +270,14 @@ class ArangoStorageManager(GenericStorageManager):
                     data["is_primary_thumbnail"] = False
         self.db.graph(self.default_graph_name).edge_collection("hasMediafile").insert(
             data
+        )
+        self.db.graph(self.default_graph_name).edge_collection("isMediafileFor").insert(
+            {
+                "_from": data["_to"],
+                "_to": data["_from"],
+                "is_primary": data["is_primary"],
+                "is_primary_thumbnail": data["is_primary_thumbnail"],
+            }
         )
         return self.db.document(mediafile_id)
 

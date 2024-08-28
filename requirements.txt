@@ -21,7 +21,7 @@ flask-swagger-ui==4.11.1
 gunicorn==23.0.0
 idna==3.7
 importlib-metadata==8.2.0
-inuits-policy-based-auth==9.6.0
+inuits-policy-based-auth==9.6.1
 inuits-python-logging-loki==1.4.1
 isodate==0.6.1
 itsdangerous==2.2.0
