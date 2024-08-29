@@ -1,10 +1,12 @@
 import mappers
 
+from configuration import get_object_configuration_mapper
 from filters_v2.filter_matcher_mapping import FilterMatcherMapping
 from flask import request
 from inuits_policy_based_auth import RequestContext
 from policy_factory import apply_policies, authenticate, get_user_context
 from resources.base_filter_resource import BaseFilterResource
+from configuration import get_storage_mapper
 
 
 class FilterMatchers(BaseFilterResource):
@@ -62,7 +64,22 @@ class FilterEntitiesV2(BaseFilterResource):
         if access_restricting_filters:
             for filter in access_restricting_filters:
                 query.insert(0, filter)
-        entities = self._execute_advanced_search_with_query_v2(query, "entities")
+        type = ""
+        for dict in query:
+            if dict.get("type") == "type":
+                type = dict.get("value")
+        config = get_object_configuration_mapper().get(type)
+        storage_type = config.crud()["storage_type"]
+        collection = get_object_configuration_mapper().get(type).crud()["collection"]
+        if storage_type == "http":
+            http_storage = get_storage_mapper().get("http")
+            filter = config.serialization(f"{spec}_filter", f"{config.SCHEMA_TYPE}_filter")
+            filters = filter(query)
+            entities = http_storage.get_items_from_collection(
+                self, collection, filters=filters
+            )
+        else:
+            entities = self._execute_advanced_search_with_query_v2(query, "entities")
         return self._create_response_according_accept_header(
             mappers.map_data_according_to_accept_header(
                 get_user_context().access_restrictions.post_request_hook(entities),
@@ -165,13 +182,23 @@ class FilterGenericObjectsV2(BaseFilterResource):
     def post(self, collection, spec="elody"):
         if request.args.get("soft", 0, int):
             return "good", 200
+        config = get_object_configuration_mapper().get(collection)
+        storage_type = config.crud()["storage_type"]
+        if storage_type != "http":
+            self._check_if_collection_name_exists(collection)
         accept_header = request.headers.get("Accept")
         query: list = request.get_json()
         access_restricting_filters = get_user_context().access_restrictions.filters
         if access_restricting_filters:
             for filter in access_restricting_filters:
                 query.insert(0, filter)
-        items = self._execute_advanced_search_with_query_v2(query, collection)
+        if storage_type == "http":
+            http_storage = get_storage_mapper().get("http")
+            items = http_storage.get_items_from_collection(
+                self, collection
+            )
+        else:
+            items = self._execute_advanced_search_with_query_v2(query, collection)
         return self._create_response_according_accept_header(
             mappers.map_data_according_to_accept_header(
                 get_user_context().access_restrictions.post_request_hook(items),

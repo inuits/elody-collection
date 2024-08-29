@@ -6,13 +6,11 @@ from elody.util import CustomJSONEncoder
 from flask import Flask, jsonify
 from flask_swagger_ui import get_swaggerui_blueprint
 from health import init_health_check
-from init_api import init_api
 from logging_elody.log import log
 from os import getenv
 from policy_factory import init_policy_factory, get_user_context
 from rabbit import init_rabbit, get_rabbit
 from secrets import token_hex
-from storage.storagemanager import StorageManager
 from werkzeug.exceptions import HTTPException
 
 
@@ -38,6 +36,7 @@ def init_app():
     app = Flask(__name__)
     app.config["RESTFUL_JSON"] = {"cls": CustomJSONEncoder}
     app.secret_key = getenv("SECRET_KEY", token_hex(16))
+    init_mappers()
     load_apps(app, None)
     return app
 
@@ -57,6 +56,7 @@ def register_swaggerui(app):
 
 
 def database_available():
+    from storage.storagemanager import StorageManager
     return True, StorageManager().get_db_engine().check_health()
 
 
@@ -72,7 +72,7 @@ app = init_app()
 
 init_scheduler()
 register_swaggerui(app)
-init_mappers()
+from init_api import init_api
 init_api(app)
 init_rabbit(app)
 init_health_check(app, database_available, rabbit_available)

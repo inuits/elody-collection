@@ -1,6 +1,7 @@
 import mappers
 
 from configuration import get_object_configuration_mapper
+from configuration import get_storage_mapper
 from datetime import datetime, timezone
 from elody.exceptions import NonUniqueException
 from elody.util import (
@@ -28,7 +29,10 @@ class GenericObject(BaseResource):
         asc=True,
         spec="elody",
     ):
-        self._check_if_collection_name_exists(collection)
+        config = get_object_configuration_mapper().get(collection)
+        storage_type = config.crud()["storage_type"]
+        if storage_type != "http":
+            self._check_if_collection_name_exists(collection)
         accept_header = request.headers.get("Accept")
         if fields is None:
             fields = {}
@@ -40,15 +44,19 @@ class GenericObject(BaseResource):
         if isinstance(access_restricting_filters, list):
             for filter in access_restricting_filters:
                 filters.update(filter)
-        collection_data = self.storage.get_items_from_collection(
-            collection,
-            skip=skip,
-            limit=limit,
-            fields=fields,
-            filters=filters,
-            sort=sort,
-            asc=asc,
-        )
+        if storage_type == "http":
+            http_storage = get_storage_mapper().get("http")
+            collection_data = http_storage.get_items_from_collection(self, collection)
+        else:
+            collection_data = self.storage.get_items_from_collection(
+                collection,
+                skip=skip,
+                limit=limit,
+                fields=fields,
+                filters=filters,
+                sort=sort,
+                asc=asc,
+            )
         count = collection_data["count"]
         results = collection_data["results"]
         collection_data = {
@@ -195,7 +203,14 @@ class GenericObjectDetail(BaseResource):
     def get(self, collection, id, spec="elody", raw_data=False):
         if request.args.get("soft", 0, int):
             return "good", 200
-        item = self._check_if_collection_and_item_exists(collection, id)
+        config = get_object_configuration_mapper().get(collection)
+        storage_type = config.crud()["storage_type"]
+        if storage_type != "http":
+            item = self._check_if_collection_and_item_exists(collection, id)
+        else:
+            http_storage = get_storage_mapper().get("http")
+            item = http_storage.get_item_from_collection_by_id(self, collection, id)
+
         accept_header = request.headers.get("Accept")
         if raw_data:
             return item
