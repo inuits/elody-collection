@@ -392,6 +392,15 @@ class BaseResource(Resource):
         else:
             return content
 
+    def _get_date_from_object(self, object_dict, date_field):
+        now = datetime.now(timezone.utc)
+        if not date_field in object_dict:
+            return now
+        try:
+            return datetime.strptime(object_dict.get(date_field), "%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            return now
+
     def get_filters_from_query_parameters(self, request, **_):
         filters = []
         access_restricting_filters = get_user_context().access_restrictions.filters

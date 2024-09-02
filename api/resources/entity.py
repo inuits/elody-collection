@@ -1,6 +1,5 @@
 import mappers
 
-from datetime import datetime, timezone
 from elody.exceptions import InvalidObjectException, NonUniqueException
 from elody.csv import CSVMultiObject
 from elody.exceptions import ColumnNotFoundException
@@ -103,9 +102,8 @@ class Entity(GenericObject):
                 return str(ex), 400
         accept_header = request.headers.get("Accept")
         entity = self._decorate_entity(content)
-        now = datetime.now(timezone.utc)
-        entity["date_created"] = now
-        entity["date_updated"] = now
+        entity["date_created"] = self._get_date_from_object(entity, "date_created")
+        entity["date_updated"] = self._get_date_from_object(entity, "date_updated")
         entity["version"] = 1
         if not linked_data_request:
             self._abort_if_not_valid_json("entity", entity)
@@ -309,9 +307,8 @@ class EntityMediafilesCreate(GenericObjectDetail):
             f'/iiif/3/{content["filename"]}/full/,150/0/default.jpg'
         )
         content["user"] = get_user_context().email or "default_uploader"
-        now = datetime.now(timezone.utc)
-        content["date_created"] = now
-        content["date_updated"] = now
+        content["date_created"] = self._get_date_from_object(content, "date_created")
+        content["date_updated"] = self._get_date_from_object(content, "date_updated")
         content["version"] = 1
         mediafile = self.storage.save_item_to_collection("mediafiles", content)
         upload_location = f'{self.storage_api_url}/upload/{content["filename"]}?id={get_raw_id(mediafile)}'
