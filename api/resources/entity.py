@@ -275,6 +275,12 @@ class EntityMediafiles(GenericObjectDetail):
                 mediafile = self._abort_if_item_doesnt_exist(
                     "mediafiles", get_raw_id(mediafile)
                 )
+            mediafile["date_created"] = self._get_date_from_object(
+                mediafile, "date_created"
+            )
+            mediafile["date_updated"] = self._get_date_from_object(
+                mediafile, "date_updated"
+            )
             relation_properties = mediafile.pop("relation_properties", None)
             mediafile = self.storage.save_item_to_collection("mediafiles", mediafile)
             mediafile = self.storage.add_mediafile_to_collection_item(
