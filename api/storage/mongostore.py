@@ -109,7 +109,7 @@ class MongoStorageManager(GenericStorageManager):
         return {"$or": [{"_id": id}, {"identifiers": id}]}
 
     def __get_metatdata_query(self, key, value):
-        return {"metadata": {"$elemMatch": {"key": key, "value": value}}}
+        return {"metadata": {"$elemMatch": {"key": key, "value": {"$regex": value, "$options": "i"}}}}
 
     def __get_ids_query(self, ids):
         return {"$or": [{"_id": {"$in": ids}}, {"identifiers": {"$in": ids}}]}
