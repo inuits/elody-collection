@@ -199,8 +199,7 @@ class GenericObjectV2(BaseFilterResource, BaseResource):
 
 
 class GenericObjectDetail(BaseResource):
-    @apply_policies(RequestContext(request))
-    def get(self, collection, id, spec="elody", raw_data=False):
+    def get_object_detail(self, collection, id, spec="elody"):
         if request.args.get("soft", 0, int):
             return "good", 200
         config = get_object_configuration_mapper().get(collection)
@@ -210,10 +209,12 @@ class GenericObjectDetail(BaseResource):
         else:
             http_storage = get_storage_mapper().get("http")
             item = http_storage.get_item_from_collection_by_id(self, collection, id)
+        return item
 
+    @apply_policies(RequestContext(request))
+    def get(self, collection, id, spec="elody"):
+        item = self.get_object_detail(collection, id, spec)
         accept_header = request.headers.get("Accept")
-        if raw_data:
-            return item
         return self._create_response_according_accept_header(
             mappers.map_data_according_to_accept_header(
                 item,

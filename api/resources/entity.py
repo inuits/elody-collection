@@ -143,19 +143,21 @@ class Entity(GenericObject):
 
 
 class EntityDetail(GenericObjectDetail):
-    @authenticate(RequestContext(request))
-    def get(self, id, spec="elody", raw_data=False):
-        entity = super().get("entities", id, raw_data=True)
+    def get_entity_detail(self, id, spec="elody"):
+        entity = super().get_object_detail("entities", id)
         entity = self._set_entity_mediafile_and_thumbnail(entity)
         if not request.args.get("skip_relations", 0, int):
             entity = self._add_relations_to_metadata(entity)
+        return self._inject_api_urls_into_entities([entity])[0]
+
+    @authenticate(RequestContext(request))
+    def get(self, id, spec="elody"):
+        entity = self.get_entity_detail(id, spec)
         accept_header = request.headers.get("Accept")
         fields = [
             *request.args.getlist("field"),
             *request.args.getlist("field[]"),
         ]
-        if raw_data:
-            return self._inject_api_urls_into_entities([entity])[0]
         return self._create_response_according_accept_header(
             mappers.map_data_according_to_accept_header(
                 self._inject_api_urls_into_entities([entity])[0],
@@ -221,7 +223,7 @@ class EntityMediafiles(GenericObjectDetail):
             *request.args.getlist("field"),
             *request.args.getlist("field[]"),
         ]
-        entity = super().get("entities", id, raw_data=True)
+        entity = super().get_object_detail("entities", id)
         mediafiles = dict()
         mediafiles["count"] = self.storage.get_collection_item_mediafiles_count(
             entity["_id"]
@@ -305,7 +307,7 @@ class EntityMediafiles(GenericObjectDetail):
 class EntityMediafilesCreate(GenericObjectDetail):
     @authenticate(RequestContext(request))
     def post(self, id):
-        entity = super().get("entities", id)
+        entity = super().get_object_detail("entities", id)
         content = request.get_json()
         self._abort_if_not_valid_json("mediafile", content)
         content["original_file_location"] = f'/download/{content["filename"]}'
@@ -466,8 +468,9 @@ class EntitySetPrimaryThumbnail(GenericObjectDetail):
 
 
 class EntityOrder(GenericObjectDetail):
+    @authenticate(RequestContext(request))
     def get(self, id):
-        entity = super().get("entities", id)
+        entity = super().get_object_detail("entities", id)
         raw_id = get_raw_id(entity)
 
         if entity.get("type") == "asset":

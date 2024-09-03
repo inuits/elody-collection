@@ -103,7 +103,7 @@ class MediafileCopyright(GenericObjectDetail):
 class MediafileDetail(GenericObjectDetail):
     @authenticate(RequestContext(request))
     def get(self, id):
-        mediafile = super().get("mediafiles", id, raw_data=True)
+        mediafile = super().get_object_detail("mediafiles", id)
         accept_header = request.headers.get("Accept")
         fields = [
             *request.args.getlist("field"),
