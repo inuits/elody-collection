@@ -60,16 +60,22 @@ class Batch(BaseResource):
             method_name = f"get_{key}"
             if hasattr(csv_multi_object, method_name):
                 items = getattr(csv_multi_object, method_name)()
-                for item in items:
-                    self._parse_key_to_item(csv_multi_object, parse_item, item)
+                if isinstance(parse_item, list):
+                    for sub_item in parse_item:
+                        for item in items:
+                            self._parse_key_to_item(csv_multi_object, sub_item, item)
+                else:
+                    for item in items:
+                        self._parse_key_to_item(csv_multi_object, parse_item, item)
                 setattr(csv_multi_object, f"set_{key}", items)
+
 
     def _parse_key_to_item(self, csv_multi_object, parse_item, item):
         metadata_list = item.get("metadata", [])
         for metadata_item in metadata_list:
-            if metadata_item["key"] == parse_item["key"]:
+            if metadata_item["key"] == parse_item["csv_key"]:
                 related_item = self.storage.get_item_from_collection_by_metadata(
-                    "entities", "key", metadata_item["value"]
+                    "entities", parse_item["db_key"], metadata_item["value"]
                 )
                 if not related_item:
                     self._add_error_to_csv_multi_object(
