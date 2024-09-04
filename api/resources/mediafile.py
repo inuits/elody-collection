@@ -243,6 +243,15 @@ class MediafileDerivatives(GenericObjectDetail):
         self.storage.delete_collection_item_relations("mediafiles", id, relations)
 
 
+class MediafileDownload(GenericObjectDetail):
+    @authenticate(RequestContext(request))
+    def get(self, id):
+        mediafile = super().get("mediafiles", id)
+        filename = mediafile["filename"]
+        ticket_id = self._create_ticket(filename, id)
+        return f"{self.storage_api_url_ext}/download-with-ticket/{filename}?ticket_id={ticket_id}"
+
+
 class MediafileParent(GenericObjectDetail):
     @authenticate(RequestContext(request))
     def get(self, id):

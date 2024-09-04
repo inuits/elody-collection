@@ -44,6 +44,7 @@ from resources.mediafile import (
     MediafileCopyright,
     MediafileDerivatives,
     MediafileDetail,
+    MediafileDownload,
     MediafileMetadata,
     MediafileParent,
 )
@@ -259,6 +260,12 @@ def init_api(app):
         MediafileDerivatives,
         get_route_mapper().get(
             MediafileDerivatives.__name__, "/mediafiles/<string:id>/derivatives"
+        ),
+    )
+    api.add_resource(
+        MediafileDownload,
+        get_route_mapper().get(
+            MediafileDownload.__name__, "/mediafiles/<string:id>/download"
         ),
     )
     api.add_resource(
