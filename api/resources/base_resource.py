@@ -259,7 +259,7 @@ class BaseResource(Resource):
                 except Exception as ex:
                     abort(400, message=str(ex))
 
-    def _create_ticket(self, filename, mediafile_id=None):
+    def _create_ticket(self, filename, mediafile_id=None, copyright_color=None):
         ticket = {
             "bucket": self._get_upload_bucket(),
             "exp": (
@@ -284,6 +284,9 @@ class BaseResource(Resource):
         }
         if mediafile_id:
             ticket["mediafile_id"] = mediafile_id
+        if copyright_color:
+            copyright_dict = {"key": "copyright_color", "value": copyright_color}
+            ticket["metadata"].append(copyright_dict)
         return self.storage.save_item_to_collection(
             "abstracts", ticket, only_return_id=True, create_sortable_metadata=False
         )
