@@ -48,6 +48,7 @@ from resources.mediafile import (
     MediafileMetadata,
     MediafileParent,
 )
+from resources.job import StartJob, FinishJob, FailJob
 from resources.saved_search import SavedSearch, SavedSearchDetail
 from resources.share_link import ShareLink, ShareLinkDetail
 from resources.spec import AsyncAPISpec, OpenAPISpec
@@ -290,6 +291,18 @@ def init_api(app):
         get_route_mapper().get(OpenAPISpec.__name__, "/spec/dams-collection-api.json"),
     )
 
+    api.add_resource(
+        StartJob,
+        get_route_mapper().get(StartJob.__name__, "/job/start"),
+    )
+    api.add_resource(
+        FinishJob,
+        get_route_mapper().get(FinishJob.__name__, "/job/finish/<string:id>"),
+    )
+    api.add_resource(
+        FailJob,
+        get_route_mapper().get(FailJob.__name__, "/job/fail/<string:id>"),
+    )
     api.add_resource(
         SavedSearch, get_route_mapper().get(SavedSearch.__name__, "/saved_searches")
     )
