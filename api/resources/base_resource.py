@@ -427,14 +427,14 @@ class BaseResource(Resource):
                     return self.get_parent_mediafile(parent_mediafile, parent_mediafile)
         return parent_mediafile
     
-    def _get_tenant_abbreviations(self, tenant):
-        abbreviations = []
+    def _get_tenant_external_names(self, tenant):
+        external_names = []
         for tenant_relation in tenant.get("relations", []):
             if tenant_relation.get("type") == "definedBy":
                 institution = self.storage.get_item_from_collection_by_id("entities", tenant_relation.get("key"))
-                abbreviation = get_item_metadata_value(institution, "abbreviation")
-                abbreviations.append(abbreviation)
-        return abbreviations
+                external_name = get_item_metadata_value(institution, "externalName")
+                external_names.append(external_name)
+        return external_names
 
     def _get_tenant_label(self, item):
         return get_item_metadata_value(item, "name")
