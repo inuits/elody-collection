@@ -1,7 +1,7 @@
 from apscheduler.schedulers.background import BackgroundScheduler
 from configuration import init_mappers
 from cron_jobs.ttl_checker import TtlChecker
-from elody.loader import load_apps
+from elody.loader import load_apps, load_jobs
 from elody.util import CustomJSONEncoder
 from flask import Flask, jsonify
 from flask_swagger_ui import get_swaggerui_blueprint
@@ -48,6 +48,7 @@ def init_scheduler():
         scheduler = BackgroundScheduler()
         scheduler.add_job(checker, "cron", hour=12, minute=10)
         scheduler.start()
+        return scheduler
 
 
 def register_swaggerui(app):
@@ -70,9 +71,11 @@ def rabbit_available():
 load_sentry()
 app = init_app()
 
-init_scheduler()
+if scheduler := init_scheduler():
+    load_jobs(scheduler, None)
 register_swaggerui(app)
 from init_api import init_api
+
 init_api(app)
 init_rabbit(app)
 init_health_check(app, database_available, rabbit_available)
