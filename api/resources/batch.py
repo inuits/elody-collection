@@ -98,7 +98,7 @@ class Batch(BaseResource):
         csv_multi_object.errors.update(
             {
                 "related_item": [
-                    f"Item for key {parse_item['key']} with value {list_item['value']} doesn't exist.\n"
+                    f"Item for key {parse_item['csv_key']} with value {list_item['value']} doesn't exist.\n"
                 ]
             }
         )
