@@ -73,7 +73,9 @@ class FilterEntitiesV2(BaseFilterResource):
         collection = get_object_configuration_mapper().get(type).crud()["collection"]
         if storage_type == "http":
             http_storage = get_storage_mapper().get("http")
-            filter = config.serialization(f"{spec}_filter", f"{config.SCHEMA_TYPE}_filter")
+            filter = config.serialization(
+                f"{spec}_filter", f"{config.SCHEMA_TYPE}_filter"
+            )
             filters = filter(query)
             entities = http_storage.get_items_from_collection(
                 self, collection, filters=filters
@@ -194,9 +196,7 @@ class FilterGenericObjectsV2(BaseFilterResource):
                 query.insert(0, filter)
         if storage_type == "http":
             http_storage = get_storage_mapper().get("http")
-            items = http_storage.get_items_from_collection(
-                self, collection
-            )
+            items = http_storage.get_items_from_collection(self, collection)
         else:
             items = self._execute_advanced_search_with_query_v2(query, collection)
         return self._create_response_according_accept_header(

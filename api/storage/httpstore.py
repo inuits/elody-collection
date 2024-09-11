@@ -16,6 +16,6 @@ class HttpStorageManager(GenericStorageManager):
         asc=True,
     ):
         pass
-    
+
     def get_item_from_collection_by_id(self, collection, id):
         pass

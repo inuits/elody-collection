@@ -27,6 +27,7 @@ def init_mappers():
         from storage.memorystore import MemoryStorageManager
         from storage.mongostore import MongoStorageManager
         from storage.httpstore import HttpStorageManager
+
         _object_configuration_mapper = ObjectConfigurationMapper()
         _route_mapper = {}
         _collection_mapper = {}
@@ -52,7 +53,7 @@ def get_collection_mapper():
     global _collection_mapper
     return _collection_mapper
 
+
 def get_storage_mapper():
     global _storage_mapper
     return _storage_mapper
-    

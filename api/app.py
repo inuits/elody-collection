@@ -58,6 +58,7 @@ def register_swaggerui(app):
 
 def database_available():
     from storage.storagemanager import StorageManager
+
     return True, StorageManager().get_db_engine().check_health()
 
 

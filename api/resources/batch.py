@@ -69,7 +69,6 @@ class Batch(BaseResource):
                         self._parse_key_to_item(csv_multi_object, parse_item, item)
                 setattr(csv_multi_object, f"set_{key}", items)
 
-
     def _parse_key_to_item(self, csv_multi_object, parse_item, item):
         metadata_list = item.get("metadata", [])
         for metadata_item in metadata_list:
