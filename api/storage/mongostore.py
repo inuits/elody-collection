@@ -109,7 +109,11 @@ class MongoStorageManager(GenericStorageManager):
         return {"$or": [{"_id": id}, {"identifiers": id}]}
 
     def __get_metatdata_query(self, key, value):
-        return {"metadata": {"$elemMatch": {"key": key, "value": {"$regex": value, "$options": "i"}}}}
+        return {
+            "metadata": {
+                "$elemMatch": {"key": key, "value": {"$regex": value, "$options": "i"}}
+            }
+        }
 
     def __get_ids_query(self, ids):
         return {"$or": [{"_id": {"$in": ids}}, {"identifiers": {"$in": ids}}]}
@@ -483,9 +487,13 @@ class MongoStorageManager(GenericStorageManager):
         config = get_object_configuration_mapper().get(item["type"])
         pre_crud_hook = config.crud()["pre_crud_hook"]
         post_crud_hook = config.crud()["post_crud_hook"]
+        timestamp = datetime.now(timezone.utc)
         try:
             pre_crud_hook(
-                crud="delete", document=item, get_user_context=get_user_context
+                crud="delete",
+                timestamp=timestamp,
+                document=item,
+                get_user_context=get_user_context,
             )
             self.db[config.crud()["collection"]].delete_one(
                 self.__get_id_query(item["_id"])
@@ -513,6 +521,7 @@ class MongoStorageManager(GenericStorageManager):
         object_lists = config.document_info()["object_lists"]
         pre_crud_hook = config.crud()["pre_crud_hook"]
         post_crud_hook = config.crud()["post_crud_hook"]
+        timestamp = datetime.now(timezone.utc)
         for key, value in content.items():
             if not scope or key in scope:
                 if key in object_lists:
@@ -527,7 +536,10 @@ class MongoStorageManager(GenericStorageManager):
                     del item[key]
         try:
             pre_crud_hook(
-                crud="update", document=item, get_user_context=get_user_context
+                crud="update",
+                timestamp=timestamp,
+                document=item,
+                get_user_context=get_user_context,
             )
             self.db[collection].replace_one(self.__get_id_query(item["_id"]), item)
             post_crud_hook(
@@ -870,6 +882,7 @@ class MongoStorageManager(GenericStorageManager):
         post_crud_hook = config.crud()["post_crud_hook"]
         if not self._does_request_changes(item, content):
             return item
+        timestamp = datetime.now(timezone.utc)
         for key, value in content.items():
             if value == "[protected content]":
                 continue
@@ -888,6 +901,7 @@ class MongoStorageManager(GenericStorageManager):
                                 item_element = None
                             pre_crud_hook(
                                 crud="update",
+                                timestamp=timestamp,
                                 object_list_elements={
                                     "item_element": item_element,
                                     "value_element": value_element,
@@ -898,7 +912,10 @@ class MongoStorageManager(GenericStorageManager):
                     item[key] = value
         try:
             pre_crud_hook(
-                crud="update", document=item, get_user_context=get_user_context
+                crud="update",
+                timestamp=timestamp,
+                document=item,
+                get_user_context=get_user_context,
             )
             self.db[collection].replace_one(self.__get_id_query(item["_id"]), item)
             if run_post_crud_hook:
@@ -927,6 +944,7 @@ class MongoStorageManager(GenericStorageManager):
         post_crud_hook = config.crud()["post_crud_hook"]
         if not self._does_request_changes(item, content):
             return item
+        timestamp = datetime.now(timezone.utc)
         if scope:
             for key, value in content.items():
                 if key in scope:
@@ -936,6 +954,7 @@ class MongoStorageManager(GenericStorageManager):
                         for value_element in value[object_lists[key]]:
                             pre_crud_hook(
                                 crud="update",
+                                timestamp=timestamp,
                                 object_list_elements={"value_element": value_element},
                             )
                     item[key] = value
@@ -943,7 +962,10 @@ class MongoStorageManager(GenericStorageManager):
             item = content
         try:
             pre_crud_hook(
-                crud="update", document=item, get_user_context=get_user_context
+                crud="update",
+                timestamp=timestamp,
+                document=item,
+                get_user_context=get_user_context,
             )
             self.db[collection].replace_one(self.__get_id_query(item["_id"]), item)
             post_crud_hook(
