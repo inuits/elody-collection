@@ -1,6 +1,8 @@
 import csv
 import io
 import json
+import uuid
+import re
 
 from rdflib import Graph
 from serialization.serialize import serialize
@@ -12,6 +14,12 @@ def can_append_key(key, fields):
     return key in fields
 
 
+def is_relation_field(field):
+    if re.fullmatch("(has|is)([A-Z][a-z]+)+", field):
+        return True
+    return False
+
+
 def csv_writer(header, rows):
     output = io.StringIO()
     writer = csv.writer(output)
@@ -19,6 +27,14 @@ def csv_writer(header, rows):
     for row in rows:
         writer.writerow(row)
     return output.getvalue()
+
+
+def is_uuid(value):
+    try:
+        uuid.UUID(value)
+        return True
+    except ValueError:
+        return False
 
 
 def map_data_according_to_accept_header(
@@ -93,6 +109,8 @@ def map_objects_to_csv(entities, fields=None):
             values[0][2] = entity.get("original_filename")
         for metadata in entity.get("metadata", []):
             key = metadata.get("key")
+            if is_uuid(key):
+                continue
             if not can_append_key(key, fields):
                 continue
             if key not in keys:
@@ -121,17 +139,69 @@ def map_object_to_csv(entity, fields=None):
         values[0].append(entity.get("type"))
     for metadata in entity.get("metadata", []):
         key = metadata.get("key")
+        if is_uuid(key):
+            continue
         if not can_append_key(key, fields):
             continue
         keys.append(key)
         values[0].append(metadata.get("value"))
     for relation in entity.get("relations", []):
-        label = relation.get("label")
-        if not can_append_key(label, fields):
+        type = relation.get("type")
+        if not can_append_key(type, fields):
             continue
-        keys.append(label)
+        keys.append(type)
         values[0].append(relation.get("key"))
     return csv_writer(keys, values)
+
+
+def map_csv_to_dict(csv_data):
+    # Convert the CSV data into a StringIO object for reading
+    csv_file = io.StringIO(csv_data)
+    reader = csv.reader(csv_file)
+
+    # Read the header
+    header = next(reader)
+
+    # Initialize the dictionary structure
+    entity = {
+        "identifiers": [],
+        "metadata": [],
+        "relations": [],
+        "type": None,
+    }
+
+    root_fields = []
+    ignore_metadata_fields = ["bibliographic_citation", "dc_rights"]
+    type_values = ["asset", "mediafile"]
+
+    for row in reader:
+        for idx, value in enumerate(row):
+            key = header[idx]
+            if key.startswith("identifier") and is_uuid(value):
+                entity["identifiers"].append(value)
+            elif key == "type" and value in type_values:
+                entity["type"] = value
+            elif (
+                key not in root_fields
+                and not is_relation_field(key)
+                and key not in ignore_metadata_fields
+            ):
+                metadata_value = cast_to_boolean(value)
+                entity["metadata"].append({"key": key, "value": metadata_value})
+            elif is_relation_field(key):
+                entity["relations"].append({"type": key, "key": value})
+
+    # Remove duplicates from the identifiers list
+    entity["identifiers"] = list(set(entity["identifiers"]))
+    return entity
+
+
+def cast_to_boolean(value):
+    if value.lower() == "true":
+        return True
+    elif value.lower() == "false":
+        return False
+    return value
 
 
 def map_entity_to_rdf_data(objects, format):

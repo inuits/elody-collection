@@ -1,7 +1,7 @@
 import mappers
 
 from elody.exceptions import InvalidObjectException, NonUniqueException
-from elody.csv import CSVMultiObject
+from elody.csv import CSVMultiObject, CSVSingleObject
 from elody.exceptions import ColumnNotFoundException
 from elody.util import (
     get_raw_id,
@@ -140,6 +140,9 @@ class Entity(GenericObject):
         return self._create_response_according_accept_header(
             response, accept_header, 201
         )
+        
+        # def put(self, spec="elody"):
+            
 
 
 class EntityDetail(GenericObjectDetail):
@@ -175,7 +178,11 @@ class EntityDetail(GenericObjectDetail):
         if request.args.get("soft", 0, int):
             return "good", 200
         entity = self._abort_if_item_doesnt_exist("entities", id)
-        updated_entity = super().put("entities", id, item=entity)[0]
+        if request.headers.get("content-type") == "text/csv":
+            content_mapped_to_dict = mappers.map_csv_to_dict(request.get_data(as_text=True))
+            updated_entity = super().put("entities", id, item=entity, content=content_mapped_to_dict)[0]
+        else:    
+            updated_entity = super().put("entities", id, item=entity)[0]
         self._update_tenant(entity, updated_entity)
         signal_entity_changed(get_rabbit(), updated_entity)
         return updated_entity, 201
