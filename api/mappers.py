@@ -8,7 +8,9 @@ from rdflib import Graph
 from serialization.serialize import serialize
 
 
-def can_append_key(key, fields):
+def can_append_key(key, fields, excluded_fields=[]):
+    if key in excluded_fields:
+        return False
     if not fields:
         return True
     return key in fields
@@ -44,6 +46,7 @@ def map_data_according_to_accept_header(
     fields=None,
     spec="elody",
     request_parameters={},
+    exclude_non_editable_fields=False,
 ):
     to_format = serialize.get_format(spec, request_parameters)
     if spec != "elody":
@@ -59,7 +62,7 @@ def map_data_according_to_accept_header(
         case "application/rdf+xml":
             return map_to_rdf_data(data, data_type, format="pretty-xml")
         case "text/csv":
-            return map_to_csv(data, data_type, fields)
+            return map_to_csv(data, data_type, fields, exclude_non_editable_fields)
         case "text/turtle":
             return map_to_rdf_data(data, data_type, format="turtle")
         case _:
@@ -83,35 +86,51 @@ def map_data_to_ldjson(data, format):
     return graph.serialize(format="json-ld")
 
 
-def map_objects_to_csv(entities, fields=None):
+def map_objects_to_csv(entities, fields=None, exclude_non_editable_fields=False):
     keys = list()
     root_values = list()
+    excluded_fields = []
+    if exclude_non_editable_fields:
+        excluded_fields = [
+            "identifier",
+            "type",
+            "filename",
+            "bibliographic_citation_overwrite",
+            "dc_rights_overwrite",
+            "brocade_archief",
+            "copyright_color_calculation",
+            "isshownat",
+            "copyright_paid",
+            "institution",
+            "format",
+            "date",
+            "collectiontype",
+            "copyright_object",
+        ]
     for entity in entities:
         values = list()
         for id in entity.get("identifiers", []):
-            if not can_append_key("identifiers", fields):
+            if not can_append_key("identifiers", fields, excluded_fields):
                 values.append({})
                 break
             if "identifier" not in keys:
                 keys.append("identifier")
             values.append({0: id})
-        if can_append_key("identifier", fields):
+        if can_append_key("identifier", fields, excluded_fields):
             if "identifier" not in keys:
                 keys.append("identifier")
             values[0][0] = entity.get("_id")
-        if can_append_key("type", fields):
+        if can_append_key("type", fields, excluded_fields):
             if "type" not in keys:
                 keys.append("type")
             values[0][1] = entity.get("type")
-        if can_append_key("filename", fields):
+        if can_append_key("filename", fields, excluded_fields):
             if "filename" not in keys:
                 keys.append("filename")
             values[0][2] = entity.get("original_filename")
         for metadata in entity.get("metadata", []):
             key = metadata.get("key")
-            if is_uuid(key):
-                continue
-            if not can_append_key(key, fields):
+            if not can_append_key(key, fields, excluded_fields):
                 continue
             if key not in keys:
                 keys.append(metadata.get("key"))
@@ -227,12 +246,14 @@ def map_metadata_to_csv(metadata, fields=None):
     return csv_writer(keys, [values])
 
 
-def map_to_csv(data, data_type, fields=None):
+def map_to_csv(data, data_type, fields=None, exclude_non_editable_fields=False):
     match data_type:
         case "metadata":
             return map_metadata_to_csv(data, fields)
         case "entities":
-            return map_objects_to_csv(data["results"], fields)
+            return map_objects_to_csv(
+                data["results"], fields, exclude_non_editable_fields
+            )
         case "entity":
             return map_object_to_csv(data, fields)
         case "mediafiles":
