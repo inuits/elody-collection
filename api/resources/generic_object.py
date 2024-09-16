@@ -138,6 +138,42 @@ class GenericObject(BaseResource):
             response, accept_header, 201
         )
 
+    @apply_policies(RequestContext(request))
+    def put(
+        self,
+        collection,
+        type=None,
+        content=None,
+        date_updated=None,
+        spec="elody",
+    ):
+        if request.args.get("soft", 0, int):
+            return "good", 200
+        self._check_if_collection_name_exists(collection)
+        collection_items = []
+        if content is None:
+            items = self._get_content_according_content_type(request, collection)
+        else:
+            items = content
+        for item in items:
+            if type is not None:
+                self._abort_if_not_valid_type(item, type)
+                if type in self.schemas_by_type:
+                    self._abort_if_not_valid_json(type, content)
+            if not date_updated:
+                date_updated = datetime.now(timezone.utc)
+            item["date_updated"] = date_updated
+            item["version"] = item.get("version", 0) + 1
+            item["last_editor"] = get_user_context().email or "default_uploader"
+            try:
+                collection_item = self.storage.update_item_from_collection(
+                    collection, get_raw_id(item), item
+                )
+            except NonUniqueException as ex:
+                return str(ex), 409
+            collection_items.append(collection_item)
+        return collection_items
+
 
 # POC: currently only suitable when supporting multiples specs for a client
 class GenericObjectV2(BaseFilterResource, BaseResource):
