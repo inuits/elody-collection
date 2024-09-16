@@ -184,6 +184,9 @@ class EntityDetail(GenericObjectDetail):
 
     @authenticate(RequestContext(request))
     def get(self, id, spec="elody"):
+        exclude_non_editable_fields = request.args.get(
+            "exclude_non_editable_fields", "false"
+        ).lower() in ["true", "1"]
         entity = self.get_entity_detail(id, spec)
         accept_header = request.headers.get("Accept")
         fields = [
@@ -198,6 +201,7 @@ class EntityDetail(GenericObjectDetail):
                 fields,
                 spec,
                 request.args,
+                exclude_non_editable_fields
             ),
             accept_header,
         )
@@ -207,11 +211,11 @@ class EntityDetail(GenericObjectDetail):
         if request.args.get("soft", 0, int):
             return "good", 200
         entity = self._abort_if_item_doesnt_exist("entities", id)
+        content = None
         if request.headers.get("content-type") == "text/csv":
-            content_mapped_to_dict = mappers.map_csv_to_dict(request.get_data(as_text=True))
-            updated_entity = super().put("entities", id, item=entity, content=content_mapped_to_dict)[0]
-        else:    
-            updated_entity = super().put("entities", id, item=entity)[0]
+            csv_data = request.get_data(as_text=True)
+            content = self.update_object_values_from_csv(csv_data)[0]
+        updated_entity = super().put("entities", id, item=entity, content=content)[0]
         self._update_tenant(entity, updated_entity)
         signal_entity_changed(get_rabbit(), updated_entity)
         return updated_entity, 201
