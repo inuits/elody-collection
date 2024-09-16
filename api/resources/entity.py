@@ -29,6 +29,9 @@ class Entity(GenericObject):
     @apply_policies(RequestContext(request))
     def get(self, spec="elody", filters=None):
         accept_header = request.headers.get("Accept")
+        exclude_non_editable_fields = request.args.get(
+            "exclude_non_editable_fields", "false"
+        ).lower() in ["true", "1"]
         skip = request.args.get("skip", 0, int)
         limit = request.args.get("limit", 20, int)
         fields = [
@@ -74,6 +77,7 @@ class Entity(GenericObject):
                 fields,
                 spec,
                 request.args,
+                exclude_non_editable_fields=exclude_non_editable_fields,
             ),
             accept_header,
         )
@@ -143,6 +147,31 @@ class Entity(GenericObject):
         
         # def put(self, spec="elody"):
             
+
+    @authenticate(RequestContext(request))
+    def put(self, spec="elody"):
+        if request.args.get("soft", 0, int):
+            return "good", 200
+        accept_header = request.headers.get("Accept")
+        content = None
+        if accept_header == "text/csv":
+            csv_data = request.get_data(as_text=True)
+            content = self.update_object_values_from_csv(csv_data)
+            entities = self.get_original_entities_from_csv(csv_data)
+        else:
+            entities_from_body = self._get_content_according_content_type(
+                request, "entities"
+            )
+            entities = self.get_original_entities_from_json(entities_from_body)
+        entity_dict = {get_raw_id(entity): entity for entity in entities}
+        updated_entities = super().put("entities", content=content)
+        for updated_entity in updated_entities:
+            entity_id = get_raw_id(updated_entity)
+            if entity_id in entity_dict:
+                entity = entity_dict[entity_id]
+                self._update_tenant(entity, updated_entity)
+                signal_entity_changed(get_rabbit(), updated_entity)
+        return updated_entities, 201
 
 
 class EntityDetail(GenericObjectDetail):
