@@ -7,10 +7,36 @@ import re
 from rdflib import Graph
 from serialization.serialize import serialize
 
+# TODO Move to client specifik codebase
+general_excluded_fields = [
+    "identifier",
+    "type",
+    "filename",
+    "bibliographic_citation_overwrite",
+    "dc_rights_overwrite",
+    "brocade_archief",
+    "copyright_color_calculation",
+    "isshownat",
+    "copyright_paid",
+    "institution",
+    "format",
+    "date",
+    "collectiontype",
+    "copyright_object",
+    "bibliographic_citation",
+    "dc_rights",
+    # All relation fields
+    "has*",
+]
+
 
 def can_append_key(key, fields, excluded_fields=[]):
     if key in excluded_fields:
         return False
+    for pattern in excluded_fields:
+        if pattern.endswith("*"):
+            if re.match(pattern.replace("*", ".*"), key):
+                return False
     if not fields:
         return True
     return key in fields
@@ -91,22 +117,7 @@ def map_objects_to_csv(entities, fields=None, exclude_non_editable_fields=False)
     root_values = list()
     excluded_fields = []
     if exclude_non_editable_fields:
-        excluded_fields = [
-            "identifier",
-            "type",
-            "filename",
-            "bibliographic_citation_overwrite",
-            "dc_rights_overwrite",
-            "brocade_archief",
-            "copyright_color_calculation",
-            "isshownat",
-            "copyright_paid",
-            "institution",
-            "format",
-            "date",
-            "collectiontype",
-            "copyright_object",
-        ]
+        excluded_fields = general_excluded_fields
     for entity in entities:
         values = list()
         for id in entity.get("identifiers", []):
@@ -143,76 +154,38 @@ def map_objects_to_csv(entities, fields=None, exclude_non_editable_fields=False)
     return csv_writer(keys, root_values)
 
 
-def map_object_to_csv(entity, fields=None):
+def map_object_to_csv(entity, fields=None, exclude_non_editable_fields=False):
     keys = list()
     values = list()
+    excluded_fields = []
+    if exclude_non_editable_fields:
+        excluded_fields = general_excluded_fields
+
     for id in entity.get("identifiers", []):
-        if not can_append_key("identifiers", fields):
+        if not can_append_key("identifiers", fields, excluded_fields):
             values.append([])
             break
         if "identifier" not in keys:
             keys.append("identifier")
         values.append([id])
-    if can_append_key("type", fields):
+    if can_append_key("type", fields, excluded_fields):
         keys.append("type")
         values[0].append(entity.get("type"))
     for metadata in entity.get("metadata", []):
         key = metadata.get("key")
         if is_uuid(key):
             continue
-        if not can_append_key(key, fields):
+        if not can_append_key(key, fields, excluded_fields):
             continue
         keys.append(key)
         values[0].append(metadata.get("value"))
     for relation in entity.get("relations", []):
         type = relation.get("type")
-        if not can_append_key(type, fields):
+        if not can_append_key(type, fields, excluded_fields):
             continue
         keys.append(type)
         values[0].append(relation.get("key"))
     return csv_writer(keys, values)
-
-
-def map_csv_to_dict(csv_data):
-    # Convert the CSV data into a StringIO object for reading
-    csv_file = io.StringIO(csv_data)
-    reader = csv.reader(csv_file)
-
-    # Read the header
-    header = next(reader)
-
-    # Initialize the dictionary structure
-    entity = {
-        "identifiers": [],
-        "metadata": [],
-        "relations": [],
-        "type": None,
-    }
-
-    root_fields = []
-    ignore_metadata_fields = ["bibliographic_citation", "dc_rights"]
-    type_values = ["asset", "mediafile"]
-
-    for row in reader:
-        for idx, value in enumerate(row):
-            key = header[idx]
-            if key.startswith("identifier") and is_uuid(value):
-                entity["identifiers"].append(value)
-            elif key == "type" and value in type_values:
-                entity["type"] = value
-            elif (
-                key not in root_fields
-                and not is_relation_field(key)
-                and key not in ignore_metadata_fields
-            ):
-                metadata_value = cast_to_boolean(value)
-                entity["metadata"].append({"key": key, "value": metadata_value})
-            elif is_relation_field(key):
-                entity["relations"].append({"type": key, "key": value})
-
-    # Remove duplicates from the identifiers list
-    entity["identifiers"] = list(set(entity["identifiers"]))
-    return entity
 
 
 def cast_to_boolean(value):
@@ -255,7 +228,7 @@ def map_to_csv(data, data_type, fields=None, exclude_non_editable_fields=False):
                 data["results"], fields, exclude_non_editable_fields
             )
         case "entity":
-            return map_object_to_csv(data, fields)
+            return map_object_to_csv(data, fields, exclude_non_editable_fields)
         case "mediafiles":
             return map_objects_to_csv(data["results"], fields)
         case _:
