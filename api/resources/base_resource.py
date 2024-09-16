@@ -1,5 +1,7 @@
 import json
 import mappers
+import csv
+import io
 
 from configuration import get_object_configuration_mapper
 from copy import deepcopy
@@ -15,6 +17,7 @@ from elody.util import (
     get_item_metadata_value,
     get_raw_id,
     mediafile_is_public,
+    parse_string_to_bool,
     signal_entity_changed,
 )
 from elody.validator import validate_json
@@ -414,6 +417,34 @@ class BaseResource(Resource):
             filters.append({"type": "type", "value": type})
         return filters
 
+    def get_original_entities_from_csv(self, csv_data):
+        csv_file = io.StringIO(csv_data)
+        reader = csv.reader(csv_file)
+        header = next(reader)
+        entities = []
+
+        for row in reader:
+            identifier = None
+            for index, value in enumerate(row):
+                key = header[index]
+                if key == "identifier":
+                    identifier = value
+            if identifier is not None:
+                entity = self.storage.get_item_from_collection_by_id(
+                    "entities", identifier
+                )
+                entities.append(entity)
+        return entities
+
+    def get_original_entities_from_json(self, updated_entities):
+        entities = []
+        for entity in updated_entities:
+            entity = self.storage.get_item_from_collection_by_id(
+                "entities", get_raw_id(entity)
+            )
+            entities.append(entity)
+        return entities
+
     def get_parent_mediafile(self, mediafile, parent_mediafile=None):
         relations = self.storage.get_collection_item_relations(
             "mediafiles", mediafile["_id"]
@@ -440,6 +471,41 @@ class BaseResource(Resource):
 
     def _get_tenant_label(self, item):
         return get_item_metadata_value(item, "name")
+
+    def update_object_values_from_csv(self, csv_data):
+        csv_file = io.StringIO(csv_data)
+        reader = csv.reader(csv_file)
+        header = next(reader)
+
+        entities = []
+        updated_values = {}
+        for row in reader:
+            row_data = {}
+            identifier = None
+            for index, value in enumerate(row):
+                key = header[index]
+                if key == "identifier":
+                    identifier = value
+                row_data[key] = value
+            if identifier is not None:
+                updated_values[identifier] = row_data
+                entity = self.storage.get_item_from_collection_by_id(
+                    "entities", identifier
+                )
+                entities.append(entity)
+
+        for entity in entities:
+            entity_id = get_raw_id(entity)
+            if entity_id in updated_values:
+                updates = updated_values[entity_id]
+                for key, value in updates.items():
+                    if key == "identifier":
+                        continue
+                    for metadata in entity.get("metadata"):
+                        if metadata.get("key") == key:
+                            metadata["value"] = parse_string_to_bool(value)
+                            break
+        return entities
 
     def _get_upload_bucket(self):
         return getenv("MINIO_BUCKET")
