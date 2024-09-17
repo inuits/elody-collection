@@ -144,9 +144,6 @@ class Entity(GenericObject):
         return self._create_response_according_accept_header(
             response, accept_header, 201
         )
-        
-        # def put(self, spec="elody"):
-            
 
     @authenticate(RequestContext(request))
     def put(self, spec="elody"):
