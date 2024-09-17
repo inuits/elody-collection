@@ -154,7 +154,7 @@ class Entity(GenericObject):
             return "good", 200
         accept_header = request.headers.get("Accept")
         content = None
-        if accept_header == "text/csv":
+        if request.headers.get("content-type") == "text/csv":
             csv_data = request.get_data(as_text=True)
             content = self.update_object_values_from_csv(csv_data)
             entities = self.get_original_entities_from_csv(csv_data)
