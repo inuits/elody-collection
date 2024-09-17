@@ -498,13 +498,23 @@ class BaseResource(Resource):
             entity_id = get_raw_id(entity)
             if entity_id in updated_values:
                 updates = updated_values[entity_id]
+                entity_metadata = entity.get("metadata", [])
                 for key, value in updates.items():
                     if key == "identifier":
                         continue
-                    for metadata in entity.get("metadata"):
+                    metadata_found = False
+                    for metadata in entity_metadata:
                         if metadata.get("key") == key:
                             metadata["value"] = parse_string_to_bool(value)
+                            metadata_found = True
                             break
+                    if not metadata_found:
+                        new_metadata = {
+                            "key": key,
+                            "value": parse_string_to_bool(value)
+                        }
+                        entity_metadata.append(new_metadata)
+                entity["metadata"] = entity_metadata
         return entities
 
     def _get_upload_bucket(self):
