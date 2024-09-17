@@ -152,7 +152,6 @@ class Entity(GenericObject):
     def put(self, spec="elody"):
         if request.args.get("soft", 0, int):
             return "good", 200
-        accept_header = request.headers.get("Accept")
         content = None
         if request.headers.get("content-type") == "text/csv":
             csv_data = request.get_data(as_text=True)
