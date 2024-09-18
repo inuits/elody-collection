@@ -27,6 +27,7 @@ general_excluded_fields = [
     "dc_rights",
     # All relation fields
     "has*",
+    "is*",
 ]
 
 
