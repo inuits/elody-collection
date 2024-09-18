@@ -1,13 +1,14 @@
 import mappers
 
 from elody.exceptions import InvalidObjectException, NonUniqueException
-from elody.csv import CSVMultiObject
+from elody.csv import CSVMultiObject, CSVSingleObject
 from elody.exceptions import ColumnNotFoundException
 from elody.util import (
     get_raw_id,
     mediafile_is_public,
     signal_entity_changed,
     signal_entity_deleted,
+    signal_mediafile_changed,
     signal_mediafile_deleted,
     signal_mediafiles_added_for_entity,
 )
@@ -29,6 +30,9 @@ class Entity(GenericObject):
     @apply_policies(RequestContext(request))
     def get(self, spec="elody", filters=None):
         accept_header = request.headers.get("Accept")
+        exclude_non_editable_fields = request.args.get(
+            "exclude_non_editable_fields", "false"
+        ).lower() in ["true", "1"]
         skip = request.args.get("skip", 0, int)
         limit = request.args.get("limit", 20, int)
         fields = [
@@ -74,6 +78,7 @@ class Entity(GenericObject):
                 fields,
                 spec,
                 request.args,
+                exclude_non_editable_fields=exclude_non_editable_fields,
             ),
             accept_header,
         )
@@ -141,6 +146,30 @@ class Entity(GenericObject):
             response, accept_header, 201
         )
 
+    @authenticate(RequestContext(request))
+    def put(self, spec="elody"):
+        if request.args.get("soft", 0, int):
+            return "good", 200
+        content = None
+        if request.headers.get("content-type") == "text/csv":
+            csv_data = request.get_data(as_text=True)
+            content = self.update_object_values_from_csv(csv_data)
+            entities = self.get_original_items_from_csv(csv_data)
+        else:
+            entities_from_body = self._get_content_according_content_type(
+                request, "entities"
+            )
+            entities = self.get_original_items_from_json(entities_from_body)
+        entity_dict = {get_raw_id(entity): entity for entity in entities}
+        updated_entities = super().put("entities", content=content)
+        for updated_entity in updated_entities:
+            entity_id = get_raw_id(updated_entity)
+            if entity_id in entity_dict:
+                entity = entity_dict[entity_id]
+                self._update_tenant(entity, updated_entity)
+                signal_entity_changed(get_rabbit(), updated_entity)
+        return updated_entities, 201
+
 
 class EntityDetail(GenericObjectDetail):
     def get_entity_detail(self, id, spec="elody"):
@@ -152,6 +181,9 @@ class EntityDetail(GenericObjectDetail):
 
     @authenticate(RequestContext(request))
     def get(self, id, spec="elody"):
+        exclude_non_editable_fields = request.args.get(
+            "exclude_non_editable_fields", "false"
+        ).lower() in ["true", "1"]
         entity = self.get_entity_detail(id, spec)
         accept_header = request.headers.get("Accept")
         fields = [
@@ -166,6 +198,7 @@ class EntityDetail(GenericObjectDetail):
                 fields,
                 spec,
                 request.args,
+                exclude_non_editable_fields,
             ),
             accept_header,
         )
@@ -175,7 +208,11 @@ class EntityDetail(GenericObjectDetail):
         if request.args.get("soft", 0, int):
             return "good", 200
         entity = self._abort_if_item_doesnt_exist("entities", id)
-        updated_entity = super().put("entities", id, item=entity)[0]
+        content = None
+        if request.headers.get("content-type") == "text/csv":
+            csv_data = request.get_data(as_text=True)
+            content = self.update_object_values_from_csv(csv_data)[0]
+        updated_entity = super().put("entities", id, item=entity, content=content)[0]
         self._update_tenant(entity, updated_entity)
         signal_entity_changed(get_rabbit(), updated_entity)
         return updated_entity, 201
@@ -211,9 +248,12 @@ class EntityDetail(GenericObjectDetail):
         return response
 
 
-class EntityMediafiles(GenericObjectDetail):
+class EntityMediafiles(GenericObjectDetail, GenericObject):
     @authenticate(RequestContext(request))
     def get(self, id):
+        exclude_non_editable_fields = request.args.get(
+            "exclude_non_editable_fields", "false"
+        ).lower() in ["true", "1"]
         skip = request.args.get("skip", 0, int)
         limit = request.args.get("limit", 20, int)
         asc = request.args.get("asc", 1, int)
@@ -256,6 +296,7 @@ class EntityMediafiles(GenericObjectDetail):
                 fields,
                 "elody",
                 request.args,
+                exclude_non_editable_fields,
             ),
             accept_header,
         )
@@ -302,6 +343,29 @@ class EntityMediafiles(GenericObjectDetail):
         return self._create_response_according_accept_header(
             response, accept_header, 201
         )
+
+    @authenticate(RequestContext(request))
+    def put(self, id):
+        if request.args.get("soft", 0, int):
+            return "good", 200
+        content = None
+        if request.headers.get("content-type") == "text/csv":
+            csv_data = request.get_data(as_text=True)
+            content = self.update_object_values_from_csv(csv_data, collection="mediafiles")
+            mediafiles = self.get_original_items_from_csv(csv_data, collection="mediafiles")
+        else:
+            mediafiles_from_body = self._get_content_according_content_type(
+                request, "mediafiles"
+            )
+            mediafiles = self.get_original_items_from_json(mediafiles_from_body, collection="mediafiles")
+        mediafile_dict = {get_raw_id(mediafile): mediafile for mediafile in mediafiles}
+        updated_mediafiles = super(GenericObjectDetail, self).put("mediafiles", content=content)
+        for updated_mediafile in updated_mediafiles:
+            mediafile_id = get_raw_id(updated_mediafile)
+            if mediafile_id in mediafile_dict:
+                old_mediafile = mediafile_dict[mediafile_id]
+                signal_mediafile_changed(get_rabbit(), old_mediafile, updated_mediafile)
+        return updated_mediafiles, 201
 
 
 class EntityMediafilesCreate(GenericObjectDetail):

@@ -1,5 +1,7 @@
 import json
 import mappers
+import csv
+import io
 
 from configuration import get_object_configuration_mapper
 from copy import deepcopy
@@ -15,6 +17,7 @@ from elody.util import (
     get_item_metadata_value,
     get_raw_id,
     mediafile_is_public,
+    parse_string_to_bool,
     signal_entity_changed,
 )
 from elody.validator import validate_json
@@ -414,6 +417,34 @@ class BaseResource(Resource):
             filters.append({"type": "type", "value": type})
         return filters
 
+    def get_original_items_from_csv(self, csv_data, collection="entities"):
+        csv_file = io.StringIO(csv_data)
+        reader = csv.reader(csv_file)
+        header = next(reader)
+        items = []
+
+        for row in reader:
+            identifier = None
+            for index, value in enumerate(row):
+                key = header[index]
+                if key == "identifier":
+                    identifier = value
+            if identifier is not None:
+                item = self.storage.get_item_from_collection_by_id(
+                    collection, identifier
+                )
+                items.append(item)
+        return items
+
+    def get_original_items_from_json(self, updated_items, collection="entities"):
+        items = []
+        for item in updated_items:
+            item = self.storage.get_item_from_collection_by_id(
+                collection, get_raw_id(item)
+            )
+            items.append(item)
+        return items
+
     def get_parent_mediafile(self, mediafile, parent_mediafile=None):
         relations = self.storage.get_collection_item_relations(
             "mediafiles", mediafile["_id"]
@@ -440,6 +471,65 @@ class BaseResource(Resource):
 
     def _get_tenant_label(self, item):
         return get_item_metadata_value(item, "name")
+
+    def update_object_values_from_csv(self, csv_data, collection="entities"):
+        csv_file = io.StringIO(csv_data)
+        reader = csv.reader(csv_file)
+        header = next(reader)
+
+        items, updated_values = self.process_csv_rows(reader, header, collection)
+        self.update_metadata_of_items(items, updated_values)
+        return items
+
+    def process_csv_rows(self, reader, header, collection):
+        items = []
+        updated_values = {}
+        seen_identifiers = set()
+
+        for row in reader:
+            row_data = {header[index]: value for index, value in enumerate(row)}
+            identifier = row_data.get("identifier")
+
+            if identifier:
+                item = self.storage.get_item_from_collection_by_id(collection, identifier)
+                item_identifiers = set(item.get("identifiers", []))
+
+                if not item_identifiers.intersection(seen_identifiers):
+                    items.append(item)
+                    seen_identifiers.update(item_identifiers)
+                updated_values[identifier] = row_data
+
+        return items, updated_values
+
+    def update_metadata_of_items(self, items, updated_values):
+        for item in items:
+            item_id = get_raw_id(item)
+            if item_id in updated_values:
+                updates = updated_values[item_id]
+                item_metadata = item.get("metadata", [])
+
+                self.update_metadata(item_metadata, updates)
+
+                item["metadata"] = item_metadata
+
+    def update_metadata(self, item_metadata, updates):
+        for key, value in updates.items():
+            if key == "identifier":
+                continue
+
+            metadata_found = False
+            for metadata in item_metadata:
+                if metadata.get("key") == key:
+                    metadata["value"] = parse_string_to_bool(value)
+                    metadata_found = True
+                    break
+
+            if not metadata_found:
+                new_metadata = {
+                    "key": key,
+                    "value": parse_string_to_bool(value)
+                }
+                item_metadata.append(new_metadata)
 
     def _get_upload_bucket(self):
         return getenv("MINIO_BUCKET")
