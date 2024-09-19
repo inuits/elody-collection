@@ -126,7 +126,7 @@ def map_objects_to_csv(entities, fields=None, exclude_non_editable_fields=False)
             if not can_append_key("identifiers", fields, excluded_fields):
                 values.append({})
                 break
-            if "identifier" not in keys:
+            if "identifiers" not in keys:
                 keys.append("identifiers")
             values.append({0: id})
         if can_append_key("identifier", fields, excluded_fields):
@@ -167,7 +167,7 @@ def map_object_to_csv(entity, fields=None, exclude_non_editable_fields=False):
         if not can_append_key("identifiers", fields, excluded_fields):
             values.append([])
             break
-        if "identifier" not in keys:
+        if "identifiers" not in keys:
             keys.append("identifiers")
         values.append([id])
     if can_append_key("type", fields, excluded_fields):
