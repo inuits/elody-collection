@@ -327,6 +327,8 @@ class MongoStorageManager(GenericStorageManager):
             "isNomen": "hasNomen",
             "hasArchesLink": "isArchesLinkFor",
             "isArchesLinkFor": "hasArchesLink",
+            "hasAdlibLink": "isAdlibLinkFor",
+            "isAdlibLinkFor": "hasAdlibLink",
         }.get(relation)
 
     def _map_relation_to_collection(self, relation):
