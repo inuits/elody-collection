@@ -28,6 +28,7 @@ general_excluded_fields = [
     # All relation fields
     "has*",
     "is*",
+    "belongsTo"
 ]
 
 
@@ -126,7 +127,7 @@ def map_objects_to_csv(entities, fields=None, exclude_non_editable_fields=False)
                 values.append({})
                 break
             if "identifier" not in keys:
-                keys.append("identifier")
+                keys.append("identifiers")
             values.append({0: id})
         if can_append_key("identifier", fields, excluded_fields):
             if "identifier" not in keys:
@@ -167,7 +168,7 @@ def map_object_to_csv(entity, fields=None, exclude_non_editable_fields=False):
             values.append([])
             break
         if "identifier" not in keys:
-            keys.append("identifier")
+            keys.append("identifiers")
         values.append([id])
     if can_append_key("type", fields, excluded_fields):
         keys.append("type")

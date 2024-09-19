@@ -488,7 +488,7 @@ class BaseResource(Resource):
 
         for row in reader:
             row_data = {header[index]: value for index, value in enumerate(row)}
-            identifier = row_data.get("identifier")
+            identifier = row_data.get("identifiers")
 
             if identifier:
                 item = self.storage.get_item_from_collection_by_id(collection, identifier)
