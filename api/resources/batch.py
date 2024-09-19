@@ -55,7 +55,9 @@ class Batch(BaseResource):
         except ColumnNotFoundException:
             abort(422, message="One or more required columns headers aren't defined")
 
-    def _parse_metadata_key_to_relation(self, csv_multi_object, items_for_parsing):
+    def _parse_metadata_key_to_relation(
+        self, csv_multi_object, items_for_parsing, key_to_remove_in_metadata=[]
+    ):
         for key, parse_item in items_for_parsing.items():
             method_name = f"get_{key}"
             if hasattr(csv_multi_object, method_name):
@@ -67,7 +69,17 @@ class Batch(BaseResource):
                 else:
                     for item in items:
                         self._parse_key_to_item(csv_multi_object, parse_item, item)
-                setattr(csv_multi_object, f"set_{key}", items)
+                if key_to_remove_in_metadata:
+                    for key in key_to_remove_in_metadata:
+                        items = self.remove_metadata_by_key(items, key)
+                        setattr(csv_multi_object, f"set_{key}", items)
+
+    def remove_metadata_by_key(self, data, key_to_remove):
+        for item in data:
+            item["metadata"] = [
+                meta for meta in item["metadata"] if meta["key"] != key_to_remove
+            ]
+        return data
 
     def _parse_key_to_item(self, csv_multi_object, parse_item, item):
         metadata_list = item.get("metadata", [])
