@@ -351,15 +351,23 @@ class EntityMediafiles(GenericObjectDetail, GenericObject):
         content = None
         if request.headers.get("content-type") == "text/csv":
             csv_data = request.get_data(as_text=True)
-            content = self.update_object_values_from_csv(csv_data, collection="mediafiles")
-            mediafiles = self.get_original_items_from_csv(csv_data, collection="mediafiles")
+            content = self.update_object_values_from_csv(
+                csv_data, collection="mediafiles"
+            )
+            mediafiles = self.get_original_items_from_csv(
+                csv_data, collection="mediafiles"
+            )
         else:
             mediafiles_from_body = self._get_content_according_content_type(
                 request, "mediafiles"
             )
-            mediafiles = self.get_original_items_from_json(mediafiles_from_body, collection="mediafiles")
+            mediafiles = self.get_original_items_from_json(
+                mediafiles_from_body, collection="mediafiles"
+            )
         mediafile_dict = {get_raw_id(mediafile): mediafile for mediafile in mediafiles}
-        updated_mediafiles = super(GenericObjectDetail, self).put("mediafiles", content=content)
+        updated_mediafiles = super(GenericObjectDetail, self).put(
+            "mediafiles", content=content
+        )
         for updated_mediafile in updated_mediafiles:
             mediafile_id = get_raw_id(updated_mediafile)
             if mediafile_id in mediafile_dict:

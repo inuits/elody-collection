@@ -491,7 +491,9 @@ class BaseResource(Resource):
             identifier = row_data.get("identifiers")
 
             if identifier:
-                item = self.storage.get_item_from_collection_by_id(collection, identifier)
+                item = self.storage.get_item_from_collection_by_id(
+                    collection, identifier
+                )
                 item_identifiers = set(item.get("identifiers", []))
 
                 if not item_identifiers.intersection(seen_identifiers):
@@ -525,10 +527,7 @@ class BaseResource(Resource):
                     break
 
             if not metadata_found:
-                new_metadata = {
-                    "key": key,
-                    "value": parse_string_to_bool(value)
-                }
+                new_metadata = {"key": key, "value": parse_string_to_bool(value)}
                 item_metadata.append(new_metadata)
 
     def _get_upload_bucket(self):

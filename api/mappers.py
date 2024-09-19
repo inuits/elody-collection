@@ -28,7 +28,7 @@ general_excluded_fields = [
     # All relation fields
     "has*",
     "is*",
-    "belongsTo"
+    "belongsTo",
 ]
 
 
