@@ -232,7 +232,7 @@ def map_to_csv(data, data_type, fields=None, exclude_non_editable_fields=False):
         case "entity":
             return map_object_to_csv(data, fields, exclude_non_editable_fields)
         case "mediafiles":
-            return map_objects_to_csv(data["results"], fields)
+            return map_objects_to_csv(data["results"], fields, exclude_non_editable_fields)
         case _:
             return data
 

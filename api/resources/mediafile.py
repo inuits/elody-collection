@@ -22,6 +22,9 @@ class Mediafile(GenericObject):
     @authenticate(RequestContext(request))
     def get(self, spec="elody"):
         accept_header = request.headers.get("Accept")
+        exclude_non_editable_fields = request.args.get(
+            "exclude_non_editable_fields", "false"
+        ).lower() in ["true", "1"]
         skip = request.args.get("skip", 0, int)
         limit = request.args.get("limit", 20, int)
         filters = {}
@@ -63,6 +66,7 @@ class Mediafile(GenericObject):
                 fields,
                 "elody",
                 request.args,
+                exclude_non_editable_fields
             ),
             accept_header,
         )
@@ -71,6 +75,29 @@ class Mediafile(GenericObject):
     def post(self):
         accept_header = request.headers.get("Accept")
         return super().post("mediafiles", type="mediafile", accept_header=accept_header)
+
+    @authenticate(RequestContext(request))
+    def put(self):
+        if request.args.get("soft", 0, int):
+            return "good", 200
+        content = None
+        if request.headers.get("content-type") == "text/csv":
+            csv_data = request.get_data(as_text=True)
+            content = self.update_object_values_from_csv(csv_data, collection="mediafiles")
+            mediafiles = self.get_original_items_from_csv(csv_data)
+        else:
+            mediafiles_from_body = self._get_content_according_content_type(
+                request, collection="mediafiles"
+            )
+            mediafiles = self.get_original_items_from_json(mediafiles_from_body, "mediafiles")
+        mediafile_dict = {get_raw_id(mediafile): mediafile for mediafile in mediafiles}
+        updated_mediafiles = super().put("mediafiles", content=content)
+        for updated_mediafile in updated_mediafiles:
+            mediafile_id = get_raw_id(updated_mediafile)
+            if mediafile_id in mediafile_dict:
+                old_mediafile = mediafile_dict[mediafile_id]
+                signal_mediafile_changed(get_rabbit(), old_mediafile, updated_mediafile)
+        return updated_mediafiles, 201
 
 
 class MediafileAssets(GenericObjectDetail):
