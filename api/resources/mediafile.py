@@ -66,7 +66,7 @@ class Mediafile(GenericObject):
                 fields,
                 "elody",
                 request.args,
-                exclude_non_editable_fields
+                exclude_non_editable_fields,
             ),
             accept_header,
         )
@@ -83,13 +83,17 @@ class Mediafile(GenericObject):
         content = None
         if request.headers.get("content-type") == "text/csv":
             csv_data = request.get_data(as_text=True)
-            content = self.update_object_values_from_csv(csv_data, collection="mediafiles")
+            content = self.update_object_values_from_csv(
+                csv_data, collection="mediafiles"
+            )
             mediafiles = self.get_original_items_from_csv(csv_data)
         else:
             mediafiles_from_body = self._get_content_according_content_type(
                 request, collection="mediafiles"
             )
-            mediafiles = self.get_original_items_from_json(mediafiles_from_body, "mediafiles")
+            mediafiles = self.get_original_items_from_json(
+                mediafiles_from_body, "mediafiles"
+            )
         mediafile_dict = {get_raw_id(mediafile): mediafile for mediafile in mediafiles}
         updated_mediafiles = super().put("mediafiles", content=content)
         for updated_mediafile in updated_mediafiles:
@@ -131,6 +135,9 @@ class MediafileDetail(GenericObjectDetail):
     @authenticate(RequestContext(request))
     def get(self, id):
         mediafile = super().get_object_detail("mediafiles", id)
+        exclude_non_editable_fields = request.args.get(
+            "exclude_non_editable_fields", "false"
+        ).lower() in ["true", "1"]
         accept_header = request.headers.get("Accept")
         fields = [
             *request.args.getlist("field"),
@@ -146,6 +153,7 @@ class MediafileDetail(GenericObjectDetail):
                 fields,
                 "elody",
                 request.args,
+                exclude_non_editable_fields,
             ),
             accept_header,
         )
@@ -154,15 +162,22 @@ class MediafileDetail(GenericObjectDetail):
     def put(self, id):
         if request.args.get("soft", 0, int):
             return "good", 200
-        old_mediafile = super().get("mediafiles", id)
-        mediafile = super().put(
+        mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
+        content = None
+        if request.headers.get("content-type") == "text/csv":
+            csv_data = request.get_data(as_text=True)
+            content = self.update_object_values_from_csv(
+                csv_data, collection="mediafiles"
+            )[0]
+        updated_mediafile = super().put(
             "mediafiles",
             id,
-            item=old_mediafile,
+            item=mediafile,
+            content=content,
             type="mediafile",
         )[0]
-        signal_mediafile_changed(get_rabbit(), old_mediafile, mediafile)
-        return mediafile, 201
+        signal_mediafile_changed(get_rabbit(), mediafile, updated_mediafile)
+        return updated_mediafile, 201
 
     @authenticate(RequestContext(request))
     def patch(self, id):
