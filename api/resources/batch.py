@@ -2,14 +2,21 @@ from datetime import datetime, timezone
 from elody.csv import CSVMultiObject
 from elody.exceptions import ColumnNotFoundException
 from elody.util import get_raw_id
+from elody.job import start_job, finish_job, fail_job
 from flask import request
 from flask_restful import abort
 from inuits_policy_based_auth import RequestContext
-from policy_factory import authenticate
+from policy_factory import authenticate, get_user_context
+from rabbit import get_rabbit
 from resources.base_resource import BaseResource
 
 
 class Batch(BaseResource):
+    def __init__(self):
+        super().__init__()
+        self.main_job_id = ""
+        self.get_rabbit = lambda: get_rabbit()
+
     def __add_matching_mediafiles_to_entity(
         self, entity_matching_id, entity, mediafiles, dry_run=False
     ):
@@ -53,7 +60,9 @@ class Batch(BaseResource):
                 },
             )
         except ColumnNotFoundException:
-            abort(422, message="One or more required columns headers aren't defined")
+            message = "One or more required columns headers aren't defined"
+            fail_job(self.main_job_id, message, get_rabbit=self.get_rabbit)
+            abort(422, message=message)
 
     def _parse_metadata_key_to_relation(
         self, csv_multi_object, items_for_parsing, key_to_remove_in_metadata=[]
@@ -107,13 +116,9 @@ class Batch(BaseResource):
         item.update({"relations": relation_list})
 
     def _add_error_to_csv_multi_object(self, csv_multi_object, parse_item, list_item):
-        csv_multi_object.errors.update(
-            {
-                "related_item": [
-                    f"Item for key {parse_item['csv_key']} with value {list_item['value']} doesn't exist.\n"
-                ]
-            }
-        )
+        message = f"Item for key {parse_item['csv_key']} with value {list_item['value']} doesn't exist.\n"
+        fail_job(self.main_job_id, message, get_rabbit=self.get_rabbit)
+        csv_multi_object.errors.update({"related_item": [message]})
 
     def _get_entities_and_mediafiles_from_csv(self, parsed_csv, dry_run=False):
         entities_and_mediafiles = dict()
@@ -152,6 +157,12 @@ class Batch(BaseResource):
 
     @authenticate(RequestContext(request))
     def post(self):
+        self.main_job_id = start_job(
+            "Start Import for CSV",
+            "Start Import",
+            get_rabbit=self.get_rabbit,
+            user_email=get_user_context().email,
+        )
         content_type = request.content_type
         dry_run = request.args.get("dry_run", 0, int)
         if content_type == "text/csv":
@@ -164,13 +175,17 @@ class Batch(BaseResource):
             if accept_header != "text/uri-list" or dry_run:
                 output = entities_and_mediafiles
                 output["errors"] = parsed_csv.get_errors()
+                finish_job(self.main_job_id, get_rabbit=self.get_rabbit)
                 return output, 201
             else:
                 output = ""
                 for mediafile in entities_and_mediafiles.get("mediafiles", list()):
                     ticket_id = self._create_ticket(mediafile.get("filename"))
                     output += f"{self.storage_api_url}/upload-with-ticket/{mediafile.get('filename')}?id={get_raw_id(mediafile)}&ticket_id={ticket_id}\n"
+            finish_job(self.main_job_id, get_rabbit=self.get_rabbit)
             return self._create_response_according_accept_header(
                 output, accept_header, 201
             )
-        abort(415, message=f"Only content type text/csv is allowed, not {content_type}")
+        message = f"Only content type text/csv is allowed, not {content_type}"
+        fail_job(self.main_job_id, message, get_rabbit=self.get_rabbit)
+        abort(415, message=message)
