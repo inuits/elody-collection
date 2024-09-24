@@ -14,7 +14,8 @@ from resources.base_resource import BaseResource
 class Batch(BaseResource):
     def __init__(self):
         super().__init__()
-        self.main_job_id = ""
+        self.main_job_id_with_dry_run = ""
+        self.main_job_id_without_dry_run = ""
         self.get_rabbit = lambda: get_rabbit()
 
     def __add_matching_mediafiles_to_entity(
@@ -61,7 +62,8 @@ class Batch(BaseResource):
             )
         except ColumnNotFoundException:
             message = "One or more required columns headers aren't defined"
-            fail_job(self.main_job_id, message, get_rabbit=self.get_rabbit)
+            fail_job(self.main_job_id_with_dry_run, message, get_rabbit=self.get_rabbit)
+            fail_job(self.main_job_id_without_dry_run, message, get_rabbit=self.get_rabbit)
             abort(422, message=message)
 
     def _parse_metadata_key_to_relation(
@@ -117,7 +119,8 @@ class Batch(BaseResource):
 
     def _add_error_to_csv_multi_object(self, csv_multi_object, parse_item, list_item):
         message = f"Item for key {parse_item['csv_key']} with value {list_item['value']} doesn't exist.\n"
-        fail_job(self.main_job_id, message, get_rabbit=self.get_rabbit)
+        fail_job(self.main_job_id_with_dry_run, message, get_rabbit=self.get_rabbit)
+        fail_job(self.main_job_id_without_dry_run, message, get_rabbit=self.get_rabbit)
         csv_multi_object.errors.update({"related_item": [message]})
 
     def _get_entities_and_mediafiles_from_csv(self, parsed_csv, dry_run=False):
@@ -157,14 +160,21 @@ class Batch(BaseResource):
 
     @authenticate(RequestContext(request))
     def post(self):
-        self.main_job_id = start_job(
-            "Start Import for CSV",
+        self.main_job_id_with_dry_run = start_job(
+            "Start Import for CSV with a dry run",
             "Start Import",
             get_rabbit=self.get_rabbit,
             user_email=get_user_context().email,
         )
         content_type = request.content_type
         dry_run = request.args.get("dry_run", 0, int)
+        if not dry_run:
+            self.main_job_id_without_dry_run = start_job(
+                "Start Import for CSV without a dry_run",
+                "Start Import",
+                get_rabbit=self.get_rabbit,
+                user_email=get_user_context().email,
+            )
         if content_type == "text/csv":
             output = dict()
             accept_header = request.headers.get("Accept")
@@ -175,17 +185,20 @@ class Batch(BaseResource):
             if accept_header != "text/uri-list" or dry_run:
                 output = entities_and_mediafiles
                 output["errors"] = parsed_csv.get_errors()
-                finish_job(self.main_job_id, get_rabbit=self.get_rabbit)
+                finish_job(self.main_job_id_with_dry_run, get_rabbit=self.get_rabbit)
+                finish_job(self.main_job_id_without_dry_run, get_rabbit=self.get_rabbit)
                 return output, 201
             else:
                 output = ""
                 for mediafile in entities_and_mediafiles.get("mediafiles", list()):
                     ticket_id = self._create_ticket(mediafile.get("filename"))
                     output += f"{self.storage_api_url}/upload-with-ticket/{mediafile.get('filename')}?id={get_raw_id(mediafile)}&ticket_id={ticket_id}\n"
-            finish_job(self.main_job_id, get_rabbit=self.get_rabbit)
+            finish_job(self.main_job_id_with_dry_run, get_rabbit=self.get_rabbit)
+            finish_job(self.main_job_id_without_dry_run, get_rabbit=self.get_rabbit)
             return self._create_response_according_accept_header(
                 output, accept_header, 201
             )
         message = f"Only content type text/csv is allowed, not {content_type}"
-        fail_job(self.main_job_id, message, get_rabbit=self.get_rabbit)
+        fail_job(self.main_job_id_with_dry_run, message, get_rabbit=self.get_rabbit)
+        fail_job(self.main_job_id_without_dry_run, message, get_rabbit=self.get_rabbit)
         abort(415, message=message)
