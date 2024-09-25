@@ -494,7 +494,8 @@ class BaseResource(Resource):
                 item = self.storage.get_item_from_collection_by_id(
                     collection, identifier
                 )
-                abort(400, message=f"Item with {identifier} doesn't exist for {collection} in the uploaded csv.")
+                if not item:
+                    abort(400, message=f"Item with {identifier} doesn't exist for {collection} in the uploaded csv.")
                 item_identifiers = set(item.get("identifiers", []))
 
                 if not item_identifiers.intersection(seen_identifiers):
