@@ -262,13 +262,9 @@ class BaseResource(Resource):
                 except Exception as ex:
                     abort(400, message=str(ex))
 
-    def _create_ticket(self, filename, mediafile_id=None):
+    def _create_ticket(self, filename, mediafile_id=None, exp=None):
         ticket = {
             "bucket": self._get_upload_bucket(),
-            "exp": (
-                datetime.now(tz=timezone.utc)
-                + timedelta(seconds=int(getenv("TICKET_LIFESPAN", 3600)))
-            ).timestamp(),
             "location": self._get_upload_location(filename),
             "type": "ticket",
             "user": get_user_context().email or "default_uploader",
@@ -285,6 +281,15 @@ class BaseResource(Resource):
                 }
             ],
         }
+        if exp:
+            ticket["exp"] = exp
+        else:
+            ticket["exp"] = (
+                (
+                    datetime.now(tz=timezone.utc)
+                    + timedelta(seconds=int(getenv("TICKET_LIFESPAN", 3600)))
+                ).timestamp(),
+            )
         if mediafile_id:
             ticket["mediafile_id"] = mediafile_id
         return self.storage.save_item_to_collection(
@@ -468,6 +473,15 @@ class BaseResource(Resource):
 
     def _get_tenant_label(self, item):
         return get_item_metadata_value(item, "name")
+    
+    def get_downloadset_ttl(self, mediafile):
+        ttl = None
+        if mediafile.get("mimetype") == "application/zip":
+            for relation in mediafile.get("relations", []):
+                if "is_downloadset" in relation:
+                    asset = self.storage.get_item_from_collection_by_id("entities", relation.get("key"))
+                    ttl = get_item_metadata_value(asset, "ttl")
+        return ttl
 
     def update_object_values_from_csv(self, csv_data, collection="entities"):
         csv_file = io.StringIO(csv_data)
@@ -492,7 +506,10 @@ class BaseResource(Resource):
                     collection, identifier
                 )
                 if not item:
-                    abort(400, message=f"Item with {identifier} doesn't exist for {collection} in the uploaded csv.")
+                    abort(
+                        400,
+                        message=f"Item with {identifier} doesn't exist for {collection} in the uploaded csv.",
+                    )
                 item_identifiers = set(item.get("identifiers", []))
 
                 if not item_identifiers.intersection(seen_identifiers):
@@ -562,7 +579,8 @@ class BaseResource(Resource):
                 if mediafile_type in mediafile:
                     mediafile_filename = mediafile[mediafile_type]
                     mediafile_filename = mediafile_filename.split("/download/")[-1]
-                    ticket_id = self._create_ticket(mediafile_filename)
+                    ttl = self.get_downloadset_ttl(mediafile)
+                    ticket_id = self._create_ticket(mediafile_filename, exp=ttl)
                     mediafile[mediafile_type] = (
                         f"{self.storage_api_url_ext}/download-with-ticket/{mediafile_filename}?ticket_id={ticket_id}"
                     )
