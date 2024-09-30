@@ -25,6 +25,9 @@ general_excluded_fields = [
     "copyright_object",
     "bibliographic_citation",
     "dc_rights",
+    "language",
+    "relation",
+    "object_number",
     # All relation fields
     "has*",
     "is*",
@@ -143,6 +146,8 @@ def map_objects_to_csv(entities, fields=None, exclude_non_editable_fields=False)
             values[0][2] = entity.get("original_filename")
         for metadata in entity.get("metadata", []):
             key = metadata.get("key")
+            if is_uuid(key):
+                continue
             if not can_append_key(key, fields, excluded_fields):
                 continue
             if key not in keys:
