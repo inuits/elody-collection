@@ -285,11 +285,9 @@ class BaseResource(Resource):
             ticket["exp"] = exp
         else:
             ticket["exp"] = (
-                (
-                    datetime.now(tz=timezone.utc)
-                    + timedelta(seconds=int(getenv("TICKET_LIFESPAN", 3600)))
-                ).timestamp(),
-            )
+                datetime.now(tz=timezone.utc)
+                + timedelta(seconds=int(getenv("TICKET_LIFESPAN", 3600)))
+            ).timestamp()
         if mediafile_id:
             ticket["mediafile_id"] = mediafile_id
         return self.storage.save_item_to_collection(
@@ -473,13 +471,15 @@ class BaseResource(Resource):
 
     def _get_tenant_label(self, item):
         return get_item_metadata_value(item, "name")
-    
+
     def get_downloadset_ttl(self, mediafile):
         ttl = None
         if mediafile.get("mimetype") == "application/zip":
             for relation in mediafile.get("relations", []):
                 if "is_downloadset" in relation:
-                    asset = self.storage.get_item_from_collection_by_id("entities", relation.get("key"))
+                    asset = self.storage.get_item_from_collection_by_id(
+                        "entities", relation.get("key")
+                    )
                     ttl = get_item_metadata_value(asset, "ttl")
         return ttl
 
