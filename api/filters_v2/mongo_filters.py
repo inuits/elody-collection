@@ -237,6 +237,12 @@ class MongoFilters(MongoStorageManager):
                     else:
                         if option.get("value") is not None:
                             items["results"].append(option)
+                seen = set()
+                items["results"] = [
+                    option
+                    for option in items["results"]
+                    if option["value"] not in seen and not seen.add(option["value"])
+                ]
                 for option in items["results"]:
                     if key := options_requesting_filter.get("metadata_key_as_label"):
                         option["label"] = get_filter_option_label(
