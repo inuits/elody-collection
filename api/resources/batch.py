@@ -63,7 +63,9 @@ class Batch(BaseResource):
         except ColumnNotFoundException:
             message = "One or more required columns headers aren't defined"
             fail_job(self.main_job_id_with_dry_run, message, get_rabbit=self.get_rabbit)
-            fail_job(self.main_job_id_without_dry_run, message, get_rabbit=self.get_rabbit)
+            fail_job(
+                self.main_job_id_without_dry_run, message, get_rabbit=self.get_rabbit
+            )
             abort(422, message=message)
 
     def _parse_metadata_key_to_relation(
