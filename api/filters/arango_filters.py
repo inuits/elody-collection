@@ -1,16 +1,20 @@
 from filters.types.filter_types import get_filter
 from storage.arangostore import ArangoStorageManager
+from storage.storagemanager import StorageManager
 
 
-class ArangoFilters(ArangoStorageManager):
+class ArangoFilters():
+    def __init__(self):
+        self.storage = StorageManager().get_db_engine()
+
     def filter(self, body, skip, limit, collection="entities", order_by=None, asc=True):
-        if not self.db:
+        if not self.storage.db:
             raise ValueError("DB is not initialized")
 
         aql = self.__generate_aql_query(body, collection, order_by, asc)
         bind = {"skip": skip, "limit": limit}
 
-        results = self.db.aql.execute(aql, bind_vars=bind, full_count=True)
+        results = self.storage.db.aql.execute(aql, bind_vars=bind, full_count=True)
 
         ids_list = list(results)
 
@@ -18,7 +22,7 @@ class ArangoFilters(ArangoStorageManager):
 
         id_position_map = {str(doc): index for index, doc in enumerate(ids_list)}
 
-        items = self.get_items_from_collection(collection, 0, limit, None, filters)
+        items = self.storage.get_items_from_collection(collection, 0, limit, None, filters)
 
         items["results"] = sorted(
             items["results"], key=lambda x: id_position_map.get(x["_key"])

@@ -7,10 +7,13 @@ from filters_v2.helpers.arango_helper import (
 from filters_v2.helpers.base_helper import get_options_requesting_filter
 from filters_v2.mongo_filters import MongoFilters
 from logging_elody.log import log
-from storage.arangostore import ArangoStorageManager
+from storage.storagemanager import StorageManager
 
 
-class ArangoWrapper(ArangoStorageManager):
+class ArangoWrapper():
+    def __init__(self):
+        self.storage = StorageManager().get_db_engine()
+
     def filter(
         self,
         filter_request_body,
@@ -50,7 +53,7 @@ class ArangoWrapper(ArangoStorageManager):
 
     def __execute_query(self, aql, collection, skip, limit, options_requesting_filter):
         try:
-            documents = self.db.aql.execute(aql, full_count=True)  # pyright: ignore
+            documents = self.storage.db.aql.execute(aql, full_count=True)  # pyright: ignore
         except Exception as exception:
             log.exception(
                 f"{exception.__class__.__name__}: {exception}",
@@ -65,13 +68,13 @@ class ArangoWrapper(ArangoStorageManager):
             for option in items["results"]:
                 if key := options_requesting_filter.get("metadata_key_as_label"):
                     option["label"] = get_filter_option_label(
-                        self.get_item_from_collection_by_id, option["value"], key
+                        self.storage.get_item_from_collection_by_id, option["value"], key
                     )
             items["count"] = documents.statistics()["fullCount"]  # pyright: ignore
         else:
             items = {
                 "results": [
-                    self.get_item_from_collection_by_id(collection, document["_id"])
+                    self.storage.get_item_from_collection_by_id(collection, document["_id"])
                     for document in documents  # pyright: ignore
                 ]
             }
