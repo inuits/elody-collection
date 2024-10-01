@@ -254,7 +254,7 @@ class MongoFilters(MongoStorageManager):
             items["limit"] = limit
             items["count"] = self.db[BaseMatchers.collection].count_documents(
                 match["$match"]
-            )
+            ) or len(document["results"])
             for document in document["results"]:
                 items["results"].append(
                     self._prepare_mongo_document(
