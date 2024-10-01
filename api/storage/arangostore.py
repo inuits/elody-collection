@@ -4,6 +4,7 @@ from arango import (
     DocumentUpdateError,
 )
 from arango.client import ArangoClient
+from arango.http import DefaultHTTPClient
 from configuration import get_object_configuration_mapper
 from elody.exceptions import NonUniqueException
 from elody.util import (
@@ -23,6 +24,7 @@ from time import sleep
 
 class ArangoStorageManager(GenericStorageManager):
     def __init__(self):
+        self.http_client = DefaultHTTPClient(pool_maxsize=100)
         self.arango_db_name = getenv("ARANGO_DB_NAME")
         self.default_graph_name = getenv("DEFAULT_GRAPH", "assets")
         self.collections = [
@@ -65,7 +67,9 @@ class ArangoStorageManager(GenericStorageManager):
         ]
         self.edges = self.entity_relations
         self.client = ArangoClient(
-            hosts=getenv("ARANGO_DB_HOST"), serializer=custom_json_dumps
+            hosts=getenv("ARANGO_DB_HOST"),
+            serializer=custom_json_dumps,
+            http_client=self.http_client,
         )
         self.sys_db = self.client.db(
             "_system",
