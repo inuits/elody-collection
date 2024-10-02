@@ -150,7 +150,7 @@ class ArangoWrapper:
                 field_name = sort_field.split(".")[-1]
                 aql += f"\nLET {field_name} = document.{sort_field}"
             sort_aqls.append(
-                f"{field_name} {'ASC' if list(sort.values())[0] == 1 or (len(sort_fields) > 1 and field_name == 'status') else 'DESC'}"
+                f"{field_name} {'ASC' if list(sort.values())[0] == 1 or (sort_fields[0].find('status') == -1 and field_name == 'status') else 'DESC'}"
             )
         aql += f"\nSORT {', '.join(sort_aqls)}"
         return aql
