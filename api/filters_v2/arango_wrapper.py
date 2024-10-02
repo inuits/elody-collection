@@ -10,7 +10,7 @@ from logging_elody.log import log
 from storage.storagemanager import StorageManager
 
 
-class ArangoWrapper():
+class ArangoWrapper:
     def __init__(self):
         self.storage = StorageManager().get_db_engine()
 
@@ -40,7 +40,7 @@ class ArangoWrapper():
                 key = list(stage.keys())[0]
                 handle = getattr(self, f"_handle_{key[1:]}_stage")
                 aql = handle(
-                    stage[key], aql, mongo_pipeline=mongo_pipeline, sort_field=order_by
+                    stage[key], aql, mongo_pipeline=mongo_pipeline, sort_fields=order_by
                 )
             except AttributeError:
                 pass
@@ -53,7 +53,9 @@ class ArangoWrapper():
 
     def __execute_query(self, aql, collection, skip, limit, options_requesting_filter):
         try:
-            documents = self.storage.db.aql.execute(aql, full_count=True)  # pyright: ignore
+            documents = self.storage.db.aql.execute(
+                aql, full_count=True
+            )  # pyright: ignore
         except Exception as exception:
             log.exception(
                 f"{exception.__class__.__name__}: {exception}",
@@ -68,13 +70,17 @@ class ArangoWrapper():
             for option in items["results"]:
                 if key := options_requesting_filter.get("metadata_key_as_label"):
                     option["label"] = get_filter_option_label(
-                        self.storage.get_item_from_collection_by_id, option["value"], key
+                        self.storage.get_item_from_collection_by_id,
+                        option["value"],
+                        key,
                     )
             items["count"] = documents.statistics()["fullCount"]  # pyright: ignore
         else:
             items = {
                 "results": [
-                    self.storage.get_item_from_collection_by_id(collection, document["_id"])
+                    self.storage.get_item_from_collection_by_id(
+                        collection, document["_id"]
+                    )
                     for document in documents  # pyright: ignore
                 ]
             }
@@ -129,18 +135,24 @@ class ArangoWrapper():
 
         return aql
 
-    def _handle_sort_stage(self, sort, aql, sort_field, **_):
-        if sort_field.startswith("metadata."):
-            aql += "\nLET sortField = FIRST("
-            aql += (
-                "\nFOR metadata IN IS_ARRAY(document.metadata) ? document.metadata : []"
+    def _handle_sort_stage(self, sort, aql, sort_fields, **_):
+        sort_aqls = []
+        sort_fields = sort_fields.split(",")
+        for sort_field in sort_fields:
+            if sort_field.startswith("metadata."):
+                field_name = sort_field.split(".")[-2]
+                aql += f"\nLET {field_name} = FIRST("
+                aql += "\nFOR metadata IN IS_ARRAY(document.metadata) ? document.metadata : []"
+                aql += f"\nFILTER metadata.key == '{field_name}'"
+                aql += "\nRETURN metadata"
+                aql += "\n)"
+            else:
+                field_name = sort_field.split(".")[-1]
+                aql += f"\nLET {field_name} = document.{sort_field}"
+            sort_aqls.append(
+                f"{field_name} {'ASC' if list(sort.values())[0] == 1 or (len(sort_fields) > 1 and field_name == 'status') else 'DESC'}"
             )
-            aql += f"\nFILTER metadata.key == '{sort_field.split('.')}'"
-            aql += "\nRETURN metadata"
-            aql += "\n)"
-        else:
-            aql += f"\nLET sortField = document.{sort_field}"
-        aql += f"\nSORT sortField {'ASC' if list(sort.values())[0] == 1 else 'DESC'}"
+        aql += f"\nSORT {', '.join(sort_aqls)}"
         return aql
 
     def _handle_skip_stage(self, skip, aql, mongo_pipeline, **_):

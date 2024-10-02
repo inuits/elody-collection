@@ -1,9 +1,8 @@
 from filters.types.filter_types import get_filter
-from storage.arangostore import ArangoStorageManager
 from storage.storagemanager import StorageManager
 
 
-class ArangoFilters():
+class ArangoFilters:
     def __init__(self):
         self.storage = StorageManager().get_db_engine()
 
@@ -22,7 +21,9 @@ class ArangoFilters():
 
         id_position_map = {str(doc): index for index, doc in enumerate(ids_list)}
 
-        items = self.storage.get_items_from_collection(collection, 0, limit, None, filters)
+        items = self.storage.get_items_from_collection(
+            collection, 0, limit, None, filters
+        )
 
         items["results"] = sorted(
             items["results"], key=lambda x: id_position_map.get(x["_key"])
