@@ -74,7 +74,10 @@ class MongoStorageManager(GenericStorageManager):
                 f"{quote_plus(self.mongo_username)}:{quote_plus(self.mongo_password)}@"
             )
         for i in range(len(self.mongo_hosts)):
-            connection_string += f"{self.mongo_hosts[i]}:{self.mongo_port}"
+            if self.mongo_port:
+                connection_string += f"{self.mongo_hosts[i]}:{self.mongo_port}"
+            else:
+                connection_string += self.mongo_hosts[i]
             if i < len(self.mongo_hosts) - 1:
                 connection_string += ","
         if self.mongo_username and self.mongo_password:
