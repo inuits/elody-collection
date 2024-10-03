@@ -22,6 +22,7 @@ class MongoStorageManager(GenericStorageManager):
     def __init__(self):
         if getenv("DB_ENGINE", "mongo") != "mongo":
             return
+        self.mongo_direct = int(getenv("MONGODB_DIRECT", 0))
         self.mongo_db_name = getenv("MONGODB_DB_NAME", "dams")
         self.mongo_hosts = getenv("MONGODB_HOSTS", "mongo").split(",")
         self.mongo_port = int(getenv("MONGODB_PORT", 27017))
@@ -33,7 +34,10 @@ class MongoStorageManager(GenericStorageManager):
             "true",
             True,
         ]
-        self.client = MongoClient(self.__create_mongo_connection_string())
+        self.client = MongoClient(
+            self.__create_mongo_connection_string(),
+            directConnection=bool(self.mongo_direct),
+        )
         self.db = self.client[self.mongo_db_name].with_options(
             CodecOptions(tz_aware=True, tzinfo=timezone.utc)
         )
