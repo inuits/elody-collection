@@ -317,7 +317,10 @@ class BaseResource(Resource):
             "relations": [],
             "type": "user",
         }
-        user = self.storage.save_item_to_collection("entities", user)
+        user_collection = (
+            get_object_configuration_mapper().get("user").crud()["collection"]
+        )
+        user = self.storage.save_item_to_collection(user_collection, user)
         if assign_roles_from_idp:
             self._sync_roles_from_idp(
                 user,
@@ -645,13 +648,16 @@ class BaseResource(Resource):
         if get_raw_id(user) == anonymous_user_id:
             return user
         id = user["_id"]
+        user_collection = (
+            get_object_configuration_mapper().get("user").crud()["collection"]
+        )
 
         if len(new) > 0:
-            self.storage.add_relations_to_collection_item("entities", id, new)
+            self.storage.add_relations_to_collection_item(user_collection, id, new)
         if len(updated) > 0:
-            self.storage.patch_collection_item_relations("entities", id, updated)
+            self.storage.patch_collection_item_relations(user_collection, id, updated)
         if len(deleted) > 0:
-            self.storage.delete_collection_item_relations("entities", id, deleted)
+            self.storage.delete_collection_item_relations(user_collection, id, deleted)
         user["relations"] = [*new, *updated, *untouched]
         return user
 

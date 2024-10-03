@@ -1,3 +1,5 @@
+import re as regex
+
 from elody.util import flatten_dict
 from filters_v2.matchers.base_matchers import BaseMatchers
 from logging_elody.log import log
@@ -39,7 +41,7 @@ def get_comparison(key, value, element_name):
         elif value_key == "$regex":
             return f"LOWER({element_name}.{key}) LIKE '%{value[value_key].lower()}%'"
         elif value_key == "$exists":
-            key_parts = key.split(".")
+            key_parts = regex.findall(r"(?:`[^`]+`|[^.]+)", key)
             return f"{'' if value[value_key] else '!'}HAS({element_name}.{'.'.join(key_parts[:-1])}, '{key_parts[-1].replace('`', '')}')"
         else:
             comparison = ""

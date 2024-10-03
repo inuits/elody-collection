@@ -35,6 +35,7 @@ class ArangoStorageManager(GenericStorageManager):
             "jobs",
             "key_value_store",
             "mediafiles",
+            "users",
         ]
         self.entity_relations = [
             "box",
@@ -115,9 +116,11 @@ class ArangoStorageManager(GenericStorageManager):
                 "hasJob": ("entities", "jobs"),
                 "hasMediafile": ("entities", "mediafiles"),
                 "hasParentJob": ("jobs", "jobs"),
+                "hasTenant": ("user", "entities"),
                 "isJobOf": ("jobs", "entities"),
                 "isMediafileFor": ("mediafiles", "entities"),
                 "isParentJobOf": ("jobs", "jobs"),
+                "isTenantFor": ("entities", "user"),
                 "stories": ("box_visits", "entities"),
                 "story_box": ("box_visits", "entities"),
                 "story_box_visits": ("entities", "box_visits"),
@@ -298,7 +301,14 @@ class ArangoStorageManager(GenericStorageManager):
     def add_relations_to_collection_item(
         self, collection, id, relations, parent=True, dst_collection=None
     ):
-        if not (item_id := self.__get_id_for_collection_item(collection, id)):
+        aql = f"""
+            FOR item IN {collection}
+                FILTER '{id.split("/")[-1]}' IN item.identifiers
+                RETURN item
+        """
+        try:
+            item_id = next(self.db.aql.execute(aql))["_id"]
+        except StopIteration:
             return None
         for relation in relations:
             data = {}
@@ -503,17 +513,21 @@ class ArangoStorageManager(GenericStorageManager):
         return history if all_entries else history[0]
 
     def get_item_from_collection_by_id(self, collection, id):
-        if item_id := self.__get_id_for_collection_item(collection, id):
-            item = self.db.document(item_id)
-            if collection == "mediafiles":
-                item["type"] = "mediafile"
-            if item:
-                relations = self.get_collection_item_relations(
-                    collection, id, entity=item
-                )
-                item["relations"] = relations
-            return item
-        return None
+        aql = f"""
+            FOR item IN {collection}
+                FILTER '{id.split("/")[-1]}' IN item.identifiers
+                RETURN item
+        """
+        try:
+            item = next(self.db.aql.execute(aql))
+        except StopIteration:
+            return None
+        if collection == "mediafiles":
+            item["type"] = "mediafile"
+        if item:
+            relations = self.get_collection_item_relations(collection, id, entity=item)
+            item["relations"] = relations
+        return item
 
     def get_items_from_collection(
         self,
