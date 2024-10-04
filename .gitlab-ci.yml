@@ -6,7 +6,7 @@
 include:
   - project: 'inuits/gitlab-ci/pipeline-templates'
     file: 'pip-pipeline.yml'
-    ref: 'v1.7.0'
+    ref: 'v1.7.2'
 
 variables:
   CUSTOMER: 'inuits'
