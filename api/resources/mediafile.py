@@ -73,6 +73,8 @@ class Mediafile(GenericObject):
 
     @authenticate(RequestContext(request))
     def post(self):
+        if request.args.get("soft", 0, int):
+            return "good", 200
         accept_header = request.headers.get("Accept")
         return super().post("mediafiles", type="mediafile", accept_header=accept_header)
 

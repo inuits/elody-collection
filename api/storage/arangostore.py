@@ -67,14 +67,16 @@ class ArangoStorageManager(GenericStorageManager):
             "visited",
         ]
         self.definitions = {
-            "hasJob": ("entities", "jobs"),
+            "hasJob": (["entities", "mediafiles"], "jobs"),
             "hasMediafile": ("entities", "mediafiles"),
             "hasParentJob": ("jobs", "jobs"),
             "hasTenant": ("users", "entities"),
-            "isJobOf": ("jobs", "entities"),
+            "hasUser": ("entities", "users"),
+            "isJobOf": ("jobs", ["entities", "mediafiles"]),
             "isMediafileFor": ("mediafiles", "entities"),
             "isParentJobOf": ("jobs", "jobs"),
             "isTenantFor": ("entities", "users"),
+            "isUserFor": ("users", "entities"),
             "stories": ("box_visits", "entities"),
             "story_box": ("box_visits", "entities"),
             "story_box_visits": ("entities", "box_visits"),
@@ -128,8 +130,8 @@ class ArangoStorageManager(GenericStorageManager):
             fr, to = self.definitions.get(edge, ("entities", "entities"))
             graph.create_edge_definition(
                 edge_collection=edge,
-                from_vertex_collections=[fr],
-                to_vertex_collections=[to],
+                from_vertex_collections=[fr] if not isinstance(fr, list) else fr,
+                to_vertex_collections=[to] if not isinstance(to, list) else to,
             )
 
     def __get_collection_item_sub_item_aql(self, collection, id, sub_item):

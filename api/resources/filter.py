@@ -21,10 +21,10 @@ class FilterMatchers(BaseFilterResource):
 class FilterEntities(BaseFilterResource):
     @authenticate(RequestContext(request))
     def post(self, spec="elody"):
-        accept_header = request.headers.get("Accept")
-        query: list = request.get_json()
         if request.args.get("soft", 0, int):
             return "good", 200
+        accept_header = request.headers.get("Accept")
+        query: list = request.get_json()
         access_restricting_filters = get_user_context().access_restrictions.filters
         if access_restricting_filters:
             for filter in access_restricting_filters:
@@ -123,6 +123,8 @@ class FilterMediafilesV2(BaseFilterResource):
 class FilterEntitiesBySavedSearchId(BaseFilterResource):
     @authenticate(RequestContext(request))
     def post(self, id):
+        if request.args.get("soft", 0, int):
+            return "good", 200
         accept_header = request.headers.get("Accept")
         fields = [
             *request.args.getlist("field"),
@@ -147,11 +149,11 @@ class FilterEntitiesBySavedSearchId(BaseFilterResource):
 class FilterGenericObjects(BaseFilterResource):
     @apply_policies(RequestContext(request))
     def post(self, collection, spec="elody"):
+        if request.args.get("soft", 0, int):
+            return "good", 200
         self._check_if_collection_name_exists(collection)
         accept_header = request.headers.get("Accept")
         query: list = request.get_json()
-        if request.args.get("soft", 0, int):
-            return "good", 200
         access_restricting_filters = get_user_context().access_restrictions.filters
         if access_restricting_filters:
             for filter in access_restricting_filters:
@@ -215,6 +217,8 @@ class FilterGenericObjectsV2(BaseFilterResource):
 class FilterGenericObjectsBySavedSearchId(BaseFilterResource):
     @authenticate(RequestContext(request))
     def post(self, collection, id):
+        if request.args.get("soft", 0, int):
+            return "good", 200
         self._check_if_collection_name_exists(collection)
         accept_header = request.headers.get("Accept")
         fields = [
@@ -240,6 +244,8 @@ class FilterGenericObjectsBySavedSearchId(BaseFilterResource):
 class FilterMediafiles(BaseFilterResource):
     @authenticate(RequestContext(request))
     def post(self):
+        if request.args.get("soft", 0, int):
+            return "good", 200
         query = request.get_json()
         access_restricting_filters = get_user_context().access_restrictions.filters
         order_by = request.args.get("order_by", None)
@@ -255,4 +261,6 @@ class FilterMediafiles(BaseFilterResource):
 class FilterMediafilesBySavedSearchId(BaseFilterResource):
     @authenticate(RequestContext(request))
     def post(self, id):
+        if request.args.get("soft", 0, int):
+            return "good", 200
         return self._execute_advanced_search_with_saved_search(id, "mediafiles")
