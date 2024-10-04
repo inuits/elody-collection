@@ -66,6 +66,19 @@ class ArangoStorageManager(GenericStorageManager):
             "story_box_visits",
             "visited",
         ]
+        self.definitions = {
+            "hasJob": ("entities", "jobs"),
+            "hasMediafile": ("entities", "mediafiles"),
+            "hasParentJob": ("jobs", "jobs"),
+            "hasTenant": ("users", "entities"),
+            "isJobOf": ("jobs", "entities"),
+            "isMediafileFor": ("mediafiles", "entities"),
+            "isParentJobOf": ("jobs", "jobs"),
+            "isTenantFor": ("entities", "users"),
+            "stories": ("box_visits", "entities"),
+            "story_box": ("box_visits", "entities"),
+            "story_box_visits": ("entities", "box_visits"),
+        }
         self.edges = self.entity_relations
         self.client = ArangoClient(
             hosts=getenv("ARANGO_DB_HOST"),
@@ -112,20 +125,7 @@ class ArangoStorageManager(GenericStorageManager):
         for edge in self.edges:
             if graph.has_edge_definition(edge):
                 continue
-            definitions = {
-                "hasJob": ("entities", "jobs"),
-                "hasMediafile": ("entities", "mediafiles"),
-                "hasParentJob": ("jobs", "jobs"),
-                "hasTenant": ("user", "entities"),
-                "isJobOf": ("jobs", "entities"),
-                "isMediafileFor": ("mediafiles", "entities"),
-                "isParentJobOf": ("jobs", "jobs"),
-                "isTenantFor": ("entities", "user"),
-                "stories": ("box_visits", "entities"),
-                "story_box": ("box_visits", "entities"),
-                "story_box_visits": ("entities", "box_visits"),
-            }
-            fr, to = definitions.get(edge, ("entities", "entities"))
+            fr, to = self.definitions.get(edge, ("entities", "entities"))
             graph.create_edge_definition(
                 edge_collection=edge,
                 from_vertex_collections=[fr],
@@ -259,7 +259,7 @@ class ArangoStorageManager(GenericStorageManager):
                 return
 
     def add_mediafile_to_collection_item(
-        self, collection, id, mediafile_id, mediafile_public, relation_properties=None
+        self, collection, id, mediafile_id, mediafile_public, relation_properties=[]
     ):
         if not (item_id := self.__get_id_for_collection_item(collection, id)):
             return None
@@ -286,6 +286,15 @@ class ArangoStorageManager(GenericStorageManager):
                 "is_primary_thumbnail": data["is_primary_thumbnail"],
             }
         )
+        self.add_relations_to_collection_item(
+            collection,
+            id,
+            [
+                relation
+                for relation in relation_properties
+                if relation["type"] != "isMediafileFor"
+            ],
+        )
         return self.db.document(mediafile_id)
 
     def add_mediafile_to_parent(self, parent_id, mediafile_id):
@@ -304,6 +313,7 @@ class ArangoStorageManager(GenericStorageManager):
         aql = f"""
             FOR item IN {collection}
                 FILTER '{id.split("/")[-1]}' IN item.identifiers
+                OR item._key == '{id.split("/")[-1]}'
                 RETURN item
         """
         try:
@@ -312,8 +322,11 @@ class ArangoStorageManager(GenericStorageManager):
             return None
         for relation in relations:
             data = {}
-            if collection not in relation["key"]:
-                relation["key"] = collection + "/" + relation["key"]
+            if relation["key"].find("/") == -1:
+                if definition := self.definitions.get(relation["type"]):
+                    relation["key"] = definition[1] + "/" + relation["key"]
+                else:
+                    raise Exception(f"No definition for {relation['type']}")
             for key in [x for x in relation.keys() if x[0] != "_"]:
                 data[key] = relation[key]
             data["_from"] = item_id
@@ -516,6 +529,7 @@ class ArangoStorageManager(GenericStorageManager):
         aql = f"""
             FOR item IN {collection}
                 FILTER '{id.split("/")[-1]}' IN item.identifiers
+                OR item._key == '{id.split("/")[-1]}'
                 RETURN item
         """
         try:
