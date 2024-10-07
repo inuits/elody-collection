@@ -16,10 +16,13 @@ from filters_v2.matchers.base_matchers import BaseMatchers
 from filters_v2.types.filter_types import get_filter
 from logging_elody.log import log
 from pymongo import ASCENDING, DESCENDING
-from storage.mongostore import MongoStorageManager
+from storage.storagemanager import StorageManager
 
 
-class MongoFilters(MongoStorageManager):
+class MongoFilters:
+    def __init__(self):
+        self.storage = StorageManager().get_db_engine()
+
     def filter(
         self,
         filter_request_body,
@@ -82,8 +85,8 @@ class MongoFilters(MongoStorageManager):
         self, pipeline, match_stage, skip, limit, options_requesting_filter
     ):
         try:
-            documents = self.db[BaseMatchers.collection].aggregate(
-                pipeline, allowDiskUse=self.allow_disk_use
+            documents = self.storage.db[BaseMatchers.collection].aggregate(
+                pipeline, allowDiskUse=self.storage.allow_disk_use
             )
         except Exception as exception:
             log.exception(
@@ -201,7 +204,7 @@ class MongoFilters(MongoStorageManager):
             return [
                 {
                     "$sort": {
-                        self.get_sort_field(order_by): (
+                        self.storage.get_sort_field(order_by): (
                             ASCENDING if asc else DESCENDING
                         )
                     }
@@ -246,18 +249,18 @@ class MongoFilters(MongoStorageManager):
                 for option in items["results"]:
                     if key := options_requesting_filter.get("metadata_key_as_label"):
                         option["label"] = get_filter_option_label(
-                            self.db, option["value"], key
+                            self.storage.db, option["value"], key
                         )
             items["count"] = len(items["results"])
         else:
             items["skip"] = skip
             items["limit"] = limit
-            items["count"] = self.db[BaseMatchers.collection].count_documents(
+            items["count"] = self.storage.db[BaseMatchers.collection].count_documents(
                 match["$match"]
             ) or len(document["results"])
             for document in document["results"]:
                 items["results"].append(
-                    self._prepare_mongo_document(
+                    self.storage._prepare_mongo_document(
                         document, True, BaseMatchers.collection
                     )
                 )
