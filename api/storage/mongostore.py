@@ -593,13 +593,14 @@ class MongoStorageManager(GenericStorageManager):
                         sort_order = ""
                         if metadata["key"] == "order":
                             sort_order = metadata["value"]
-                        data = {"id": relation.get("key"), "sort_order": sort_order}
-                        mediafiles_sort.append(data)
+                        if isinstance(sort_order, (int, float)):
+                            data = {"id": relation.get("key"), "sort_order": sort_order}
+                            mediafiles_sort.append(data)
             sort_dict = {item["id"]: item["sort_order"] for item in mediafiles_sort}
             # Sort the results using the sort dictionary
             sorted_results = sorted(
                 mediafiles,
-                key=lambda x: sort_dict.get(x["_id"], len(mediafiles_sort) + 1),
+                key=lambda x: sort_dict.get(x["_id"], len(mediafiles) + 1),
             )
             return sorted_results
         return mediafiles
