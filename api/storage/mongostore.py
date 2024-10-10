@@ -1,3 +1,5 @@
+import re
+
 from bson.codec_options import CodecOptions
 from configuration import get_object_configuration_mapper
 from datetime import datetime, timezone
@@ -207,7 +209,7 @@ class MongoStorageManager(GenericStorageManager):
                 )
 
     def _map_entity_relation(self, relation):
-        return {
+        relations = {
             "authored": "authoredBy",
             "authoredBy": "authored",
             "belongsTo": "hasMediafile",
@@ -218,125 +220,21 @@ class MongoStorageManager(GenericStorageManager):
             "defines": "definedBy",
             "hasChild": "belongsToParent",
             "hasMediafile": "belongsTo",
-            "hasTenant": "isTenantFor",
-            "isIn": "contains",
-            "isTenantFor": "hasTenant",
-            "parent": "components",
-            "hasAsset": "isAssetFor",
-            "isAssetFor": "hasAsset",
-            "hasMedia": "isMediaFor",
-            "isMediaFor": "hasMedia",
-            "hasAssetCategory": "isAssetCategoryFor",
-            "isAssetCategoryFor": "hasAssetCategory",
-            "hasLocationType": "isLocationTypeFor",
-            "isLocationTypeFor": "hasLocationType",
-            "hasEvent": "isEventFor",
-            "isEventFor": "hasEvent",
-            "hasProject": "isProjectFor",
-            "isProjectFor": "hasProject",
-            "hasMarineRegion": "isMarineRegionFor",
-            "isMarineRegionFor": "hasMarineRegion",
-            "hasPartner": "isPartnerFor",
-            "isPartnerFor": "hasPartner",
-            "hasFormalDocumentType": "isFormalDocumentTypeFor",
-            "isFormalDocumentTypeFor": "hasFormalDocumentType",
-            "hasContentDocumentType": "isContentDocumentTypeFor",
-            "isContentDocumentTypeFor": "hasContentDocumentType",
-            "hasFormalMapType": "isFormalMapTypeFor",
-            "isFormalMapTypeFor": "hasFormalMapType",
-            "hasContentMapType": "isContentMapTypeFor",
-            "isContentMapTypeFor": "hasContentMapType",
-            "hasMarineInfo": "isMarineInfoFor",
-            "isMarineInfoFor": "hasMarineInfo",
-            "hasVocab": "isVocabFor",
-            "isVocabFor": "hasVocab",
-            "hasMap": "isMapFor",
-            "isMapFor": "hasMap",
-            "hasPublication": "isPublicationFor",
-            "isPublicationFor": "hasPublication",
-            "hasLocation": "isLocationFor",
-            "isLocationFor": "hasLocation",
-            "hasKeyword": "isKeywordFor",
-            "isKeywordFor": "hasKeyword",
-            "hasLanguage": "isLanguageFor",
-            "isLanguageFor": "hasLanguage",
-            "hasCollectionPart": "isCollectionPartFor",
-            "isCollectionPartFor": "hasCollectionPart",
-            "hasContext": "isContextFor",
-            "isContextFor": "hasContext",
-            "hasUser": "isUserFor",
-            "isUserFor": "hasUser",
-            "hasInstitution": "isInstitutionFor",
-            "isInstitutionFor": "hasInstitution",
-            "hasType": "isTypeFor",
-            "isTypeFor": "hasType",
-            "hasCollectionType": "isCollectionTypeFor",
-            "isCollectionTypeFor": "hasCollectionType",
-            "hasMuseum": "isMuseumFor",
-            "isMuseumFor": "hasMuseum",
-            "hasTag": "isTagFor",
-            "isTagFor": "hasTag",
-            "hasVerzameling": "isVerzamelingFor",
-            "isVerzamelingFor": "hasVerzameling",
-            "hasExternalRecord": "isExternalRecordFor",
-            "isExternalRecordFor": "hasExternalRecord",
-            "hasPerson": "isPersonFor",
-            "isPersonFor": "hasPerson",
-            "hasTriple": "isTripleFor",
-            "isTripleFor": "hasTriple",
-            "hasPublisher": "isPublisherFor",
-            "isPublisherFor": "hasPublisher",
-            "hasCreator": "isCreatorFor",
-            "isCreatorFor": "hasCreator",
-            "hasAfgeleide": "isAfgeleideFor",
-            "isAfgeleideFor": "hasAfgeleide",
-            "hasExif": "isExifFor",
-            "isExifFor": "hasExif",
-            "hasImageStatus": "isImageStatusFor",
-            "imageStatus": "hasImageStatus",
-            "hasDocument": "isDocumentFor",
-            "isDocumentFor": "hasDocument",
-            "hasDownload": "isDownloadFor",
-            "isDownloadFor": "hasDownload",
-            "hasConfidentiality": "isConfidentialityFor",
-            "isConfidentialityFor": "hasConfidentiality",
-            "hasManufacturer": "isManufacturerFor",
-            "isManufacturerFor": "hasManufacturer",
-            "hasPhotographer": "isPhotographerFor",
-            "isPhotographerFor": "hasPhotographer",
-            "hasLicense": "isLicenseFor",
-            "isLicenseFor": "hasLicense",
-            "hasOwner": "isOwnerFor",
-            "isOwnerFor": "hasOwner",
-            "hasAssetPart": "isAssetPartFor",
-            "isAssetPartFor": "hasAssetPart",
-            "hasShareLink": "isShareLinkFor",
-            "isShareLinkFor": "hasShareLink",
-            "hasWork": "isWorkFor",
-            "isWorkFor": "hasWork",
-            "hasTargetAudience": "isTargetAudienceFor",
-            "isTargetAudienceFor": "hasTargetAudience",
-            "hasAuthor": "isAuthorFor",
-            "isAuthorFor": "hasAuthor",
-            "hasFormat": "isFormatFor",
-            "isFormatFor": "hasFormat",
-            "hasExpression": "isExpressionFor",
-            "isExpressionFor": "hasExpression",
-            "hasGenre": "isGenreFor",
-            "isGenreFor": "hasGenre",
-            "hasTime": "isTimeFor",
-            "isTimeFor": "hasTime",
-            "hasLiteraryType": "isLiteraryTypeFor",
-            "isLiteraryTypeFor": "hasLiteraryType",
-            "hasPlace": "isPlaceFor",
-            "isPlaceFor": "hasPlace",
-            "hasNomen": "isNomen",
-            "isNomen": "hasNomen",
-            "hasArchesLink": "isArchesLinkFor",
-            "isArchesLinkFor": "hasArchesLink",
-            "hasAdlibLink": "isAdlibLinkFor",
-            "isAdlibLinkFor": "hasAdlibLink",
-        }.get(relation)
+        }
+
+        if mapped_relation := relations.get(relation):
+            return mapped_relation
+
+        match_is_for = re.match(r"^is(.*)For$", relation)
+        match_has = re.match(r"^has(.*)$", relation)
+
+        if match_is_for:
+            entity_type = match_is_for.group(1)
+            return f"has{entity_type}"
+
+        if match_has:
+            entity_type = match_has.group(1)
+            return f"is{entity_type}For"
 
     def _map_relation_to_collection(self, relation):
         return {
