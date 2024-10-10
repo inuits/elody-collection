@@ -221,17 +221,13 @@ class MongoStorageManager(GenericStorageManager):
             "hasChild": "belongsToParent",
             "hasMediafile": "belongsTo",
         }
-
         if mapped_relation := relations.get(relation):
             return mapped_relation
-
         match_is_for = re.match(r"^is(.*)For$", relation)
         match_has = re.match(r"^has(.*)$", relation)
-
         if match_is_for:
             entity_type = match_is_for.group(1)
             return f"has{entity_type}"
-
         if match_has:
             entity_type = match_has.group(1)
             return f"is{entity_type}For"
