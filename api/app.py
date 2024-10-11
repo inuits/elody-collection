@@ -3,7 +3,7 @@ from configuration import init_mappers
 from cron_jobs.ttl_checker import TtlChecker
 from elody.loader import load_apps, load_jobs
 from elody.util import CustomJSONEncoder
-from flask import Flask, jsonify
+from flask import Flask, make_response, jsonify, Response
 from flask_swagger_ui import get_swaggerui_blueprint
 from health import init_health_check
 from logging_elody.log import log
@@ -100,6 +100,21 @@ def exception(exception):
         return jsonify(message=exception.description), exception.code
     except:
         return jsonify(message=f"{exception.__class__.__name__}: {exception}"), 500
+
+
+@app.after_request
+def intercept_403(response: Response):
+    if response.status_code == 403:
+        restricted_keys = get_user_context().bag.get("restricted_keys", [])
+        if len(restricted_keys) > 0:
+            return make_response(
+                jsonify(
+                    message=f"You don't have the permission to create/update/delete the following fields: {restricted_keys}.",
+                    restricted_keys=restricted_keys,
+                ),
+                response.status_code,
+            )
+    return response
 
 
 if __name__ == "__main__":
