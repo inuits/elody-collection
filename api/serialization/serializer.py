@@ -1,4 +1,5 @@
 from configuration import get_object_configuration_mapper
+from copy import deepcopy
 from serialization.case_converter import camel_to_snake
 
 
@@ -42,7 +43,7 @@ class Serializer:
         config = get_object_configuration_mapper().get(type)
         serialize = config.serialization(from_format, to_format)
         return serialize(
-            item,
+            deepcopy(item),
             accept_header=(
                 accept_header if accept_header != "*/*" else "application/json"
             ),
