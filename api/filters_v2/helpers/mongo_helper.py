@@ -67,11 +67,39 @@ def get_filter_option_label(db, identifier, key):
         return identifier
 
 
-def get_options_mapper(key):
+def get_lookup_key(filter_key, lookup_stage):
+    for lookup in lookup_stage:
+        lookup_key = lookup["$lookup"]["as"]
+        if filter_key.startswith(lookup_key):
+            return lookup_key
+
+
+def get_options_mapper(filter_key, lookup_key):
     object_lists_config = BaseMatchers.get_object_lists()
-    keys_info = interpret_flat_key(key, object_lists_config)
+    keys_info = interpret_flat_key(filter_key, object_lists_config)
     if len(keys_info) != 2:
-        return {}
+        return {
+            "$map": {
+                "input": [f"${filter_key}"],
+                "as": "input",
+                "in": {
+                    "$cond": {
+                        "if": {"$isArray": f"$$input"},
+                        "then": {
+                            "$map": {
+                                "input": f"$$input",
+                                "as": "item",
+                                "in": {
+                                    "label": "$$item",
+                                    "value": "$$item",
+                                },
+                            }
+                        },
+                        "else": {"label": "$$input", "value": "$$input"},
+                    }
+                },
+            }
+        }
 
     return {
         "$map": {
@@ -103,7 +131,11 @@ def get_options_mapper(key):
                     },
                     "else": {
                         "label": f"$$object.{keys_info[1]['key']}",
-                        "value": f"$$object.{keys_info[1]['key']}",
+                        "value": (
+                            f"${lookup_key}.id"
+                            if lookup_key
+                            else f"$$object.{keys_info[1]['key']}"
+                        ),
                     },
                 }
             },

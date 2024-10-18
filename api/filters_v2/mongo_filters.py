@@ -9,6 +9,7 @@ from filters_v2.helpers.base_helper import (
 from filters_v2.helpers.mongo_helper import (
     append_matcher,
     get_filter_option_label,
+    get_lookup_key,
     get_options_mapper,
     unify_matchers_per_schema_into_one_match,
 )
@@ -69,12 +70,17 @@ class MongoFilters:
         tidy_up_match,
     ):
         pipeline = []
-        pipeline.extend(self.__lookup_stage(filter_request_body))
+
+        lookup_stage = self.__lookup_stage(filter_request_body)
+        pipeline.extend(lookup_stage)
         match_stage = self.__match_stage(filter_request_body, tidy_up_match)
         pipeline.append(match_stage)
 
         if options_requesting_filter_keys := options_requesting_filter.get("key"):
-            pipeline.extend(self.__project_stage(options_requesting_filter_keys))
+            project_stage = self.__project_stage(
+                options_requesting_filter_keys, lookup_stage
+            )
+            pipeline.extend(project_stage)
         else:
             if order_by:
                 pipeline.extend(self.__sort_stage(order_by, asc))
@@ -211,23 +217,34 @@ class MongoFilters:
                 }
             ]
 
-    def __project_stage(self, options_requesting_filter_keys):
+    def __project_stage(self, options_requesting_filter_keys, lookup_stage):
+        project = []
         mappers = []
+        lookup_key = None
 
         if isinstance(options_requesting_filter_keys, list):
+            key = ""
             for key in options_requesting_filter_keys:
                 _, key = key.split("|")
-                if options_mapper := get_options_mapper(key):
-                    mappers.append(options_mapper)
+                lookup_key = get_lookup_key(key, lookup_stage)
+                mappers.append(get_options_mapper(key, lookup_key))
         else:
-            if options_mapper := get_options_mapper(options_requesting_filter_keys):
-                mappers.append(options_mapper)
+            key = options_requesting_filter_keys
+            lookup_key = get_lookup_key(key, lookup_stage)
+            mappers.append(
+                get_options_mapper(options_requesting_filter_keys, lookup_key)
+            )
 
-        return [
-            {"$project": {"_id": 0, "options": {"$concatArrays": mappers}}},
-            {"$unwind": "$options"},
-            {"$group": {"_id": "options", "options": {"$addToSet": "$options"}}},
-        ]
+        if lookup_key:
+            project.append({"$unwind": f"${lookup_key}"})
+        project.extend(
+            [
+                {"$project": {"_id": 0, "options": {"$concatArrays": mappers}}},
+                {"$unwind": "$options"},
+                {"$group": {"_id": "options", "options": {"$addToSet": "$options"}}},
+            ]
+        )
+        return project
 
     def __get_items(self, document, match, skip, limit, options_requesting_filter=None):
         items = {"results": [], "count": 0}
