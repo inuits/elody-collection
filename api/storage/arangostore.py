@@ -551,6 +551,15 @@ class ArangoStorageManager(GenericStorageManager):
         if item:
             relations = self.get_collection_item_relations(collection, id, entity=item)
             item["relations"] = relations
+        if item["type"] == "asset":
+            iiif_presentation = getenv("IMAGE_API_URL_EXT", "")
+            if iiif_presentation.find("/iiif/image") > -1:
+                iiif_presentation = iiif_presentation.replace(
+                    "/iiif/image", f"/iiif/presentation/v2/manifest/{item['object_id']}"
+                )
+            item["metadata"].append(
+                {"key": "iiif_presentation", "value": iiif_presentation}
+            )
         return item
 
     def get_items_from_collection(
