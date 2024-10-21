@@ -495,7 +495,7 @@ class MongoStorageManager(GenericStorageManager):
             sorted_results = sorted(
                 mediafiles,
                 key=lambda x: sort_dict.get(x["_id"], len(mediafiles) + 1),
-                reverse=asc
+                reverse=asc,
             )
             return sorted_results
         return mediafiles

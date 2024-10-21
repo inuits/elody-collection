@@ -137,6 +137,7 @@ class Batch(BaseResource):
                 entity["date_updated"] = date_created
                 entity["version"] = 1
                 import logging
+
                 logging.warning(f"DIT IS DE ENTITY {entity}")
                 entity = self.storage.save_item_to_collection("entities", entity)
                 logging.warning(f"DIT IS DE OPGESLAGEN ENTITY {entity}")
