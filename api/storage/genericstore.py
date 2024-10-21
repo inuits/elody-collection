@@ -80,7 +80,7 @@ class GenericStorageManager:
         identifiers = set()
         if "identifiers" in item:
             identifiers.update(item["identifiers"])
-        for key in ["_id", "_key", "slug"]:
+        for key in ["_id", "_key", "slug", "md5sum"]:
             if key in item:
                 identifiers.add(item[key])
         return list(filter(None, identifiers))

@@ -11,6 +11,7 @@ from elody.util import (
     signal_mediafile_changed,
     signal_mediafile_deleted,
     signal_mediafiles_added_for_entity,
+    signal_relations_deleted_for_entity,
 )
 from flask import after_this_request, request
 from flask_restful import abort
@@ -470,7 +471,16 @@ class EntityRelations(GenericObjectDetail, GenericObjectRelations):
     @authenticate(RequestContext(request))
     def post(self, id, spec="elody"):
         entity = super().get("entities", id)
-        relations = super(GenericObjectDetail, self).post("entities", id)
+        relations = super(GenericObjectDetail, self).post("entities", id)[0]
+        mediafiles = []
+        for relation in relations:
+            if relation.get("type") == "hasMediafile":
+                mediafile = self.storage.get_item_from_collection_by_id(
+                    "mediafiles", id
+                )
+                mediafiles.append(mediafile)
+        if mediafiles:
+            signal_mediafiles_added_for_entity(get_rabbit(), entity, mediafiles)
         signal_entity_changed(get_rabbit(), entity)
         return relations, 201
 
@@ -494,9 +504,11 @@ class EntityRelations(GenericObjectDetail, GenericObjectRelations):
 
     @authenticate(RequestContext(request))
     def delete(self, id, spec="elody"):
+        relations = self._get_content_according_content_type(request, "relations")
         entity = super().get("entities", id)
         response = super(GenericObjectDetail, self).delete("entities", id)
         signal_entity_changed(get_rabbit(), entity)
+        signal_relations_deleted_for_entity(get_rabbit(), entity, relations)
         return response
 
 

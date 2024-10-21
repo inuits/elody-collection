@@ -267,7 +267,6 @@ class BaseResource(Resource):
             "bucket": self._get_upload_bucket(),
             "location": self._get_upload_location(filename),
             "type": "ticket",
-            "user": get_user_context().email or "default_uploader",
             "metadata": [
                 {
                     "key": "ttl",
@@ -281,6 +280,11 @@ class BaseResource(Resource):
                 }
             ],
         }
+        try:
+            user_context = get_user_context()
+            ticket["user"] = user_context.email if user_context else "default_uploader"
+        except NoUserContextException:
+            ticket["user"] = "default_uploader"
         if exp:
             ticket["exp"] = exp
         else:
@@ -576,7 +580,7 @@ class BaseResource(Resource):
                 )
         return entities
 
-    def _inject_api_urls_into_mediafiles(self, mediafiles):
+    def _inject_api_urls_into_mediafiles(self, mediafiles, internal=False):
         for mediafile in mediafiles:
             for mediafile_type in ["original_file_location", "transcode_file_location"]:
                 if mediafile_type in mediafile:
@@ -584,8 +588,11 @@ class BaseResource(Resource):
                     mediafile_filename = mediafile_filename.split("/download/")[-1]
                     ttl = self.get_downloadset_ttl(mediafile)
                     ticket_id = self._create_ticket(mediafile_filename, exp=ttl)
+                    base_url = (
+                        self.storage_api_url if internal else self.storage_api_url_ext
+                    )
                     mediafile[mediafile_type] = (
-                        f"{self.storage_api_url_ext}/download-with-ticket/{mediafile_filename}?ticket_id={ticket_id}"
+                        f"{base_url}/download-with-ticket/{mediafile_filename}?ticket_id={ticket_id}"
                     )
             if "thumbnail_file_location" in mediafile:
                 mediafile["thumbnail_file_location"] = (
