@@ -18,7 +18,7 @@ class Batch(BaseResource):
         self.main_job_id_without_dry_run = ""
         self.get_rabbit = lambda: get_rabbit()
 
-    def __add_matching_mediafiles_to_entity(
+    def _add_matching_mediafiles_to_entity(
         self, entity_matching_id, entity, mediafiles, dry_run=False
     ):
         output = list()
@@ -136,7 +136,10 @@ class Batch(BaseResource):
                 entity["date_created"] = date_created
                 entity["date_updated"] = date_created
                 entity["version"] = 1
+                import logging
+                logging.warning(f"DIT IS DE ENTITY {entity}")
                 entity = self.storage.save_item_to_collection("entities", entity)
+                logging.warning(f"DIT IS DE OPGESLAGEN ENTITY {entity}")
                 self.storage.add_relations_to_collection_item(
                     "entities", get_raw_id(entity), relations
                 )
