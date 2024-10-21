@@ -557,9 +557,10 @@ class ArangoStorageManager(GenericStorageManager):
                 iiif_presentation = iiif_presentation.replace(
                     "/iiif/image", f"/iiif/presentation/v2/manifest/{item['object_id']}"
                 )
-            item["metadata"].append(
-                {"key": "iiif_presentation", "value": iiif_presentation}
-            )
+            if item.get("metadata"):
+                item["metadata"].append(
+                    {"key": "iiif_presentation", "value": iiif_presentation}
+                )
         return item
 
     def get_items_from_collection(
