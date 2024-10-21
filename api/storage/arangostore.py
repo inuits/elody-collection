@@ -67,11 +67,13 @@ class ArangoStorageManager(GenericStorageManager):
             "visited",
         ]
         self.definitions = {
+            "hasAsset": ("entities", "entities"),
             "hasJob": (["entities", "mediafiles"], "jobs"),
             "hasMediafile": ("entities", "mediafiles"),
             "hasParentJob": ("jobs", "jobs"),
             "hasTenant": ("users", "entities"),
             "hasUser": ("entities", "users"),
+            "isAssetFor": ("entities", "entities"),
             "isJobOf": ("jobs", ["entities", "mediafiles"]),
             "isMediafileFor": ("mediafiles", "entities"),
             "isParentJobOf": ("jobs", "jobs"),
@@ -178,12 +180,13 @@ class ArangoStorageManager(GenericStorageManager):
     def __get_relevant_relations(self, type, exclude=None):
         relations = {
             "asset": [
-                "isIn",
                 "components",
-                "parent",
+                "hasMediafile",
                 "hasTenant",
                 "hasTestimony",
-                "hasMediafile",
+                "isAssetFor",
+                "isIn",
+                "parent",
             ],
             "box": ["box_stories"],
             "box_visit": ["stories", "visited", "story_box"],
@@ -238,7 +241,12 @@ class ArangoStorageManager(GenericStorageManager):
         for edge in self.db.aql.execute(
             f"FOR i IN {edge_collection} FILTER i._from == '{item_id}' OR i._to == '{item_id}' RETURN i"
         ):
-            if edge["_from"] == relation["key"] or edge["_to"] == relation["key"]:
+            if (
+                edge["_from"] == relation["key"]
+                or edge["_to"] == relation["key"]
+                or edge["_from"].split("/")[1] == relation["key"]
+                or edge["_to"].split("/")[1] == relation["key"]
+            ):
                 self.db.delete_document(edge)
 
     def __remove_relations(self, item_id, relations, parent=True):
