@@ -417,6 +417,8 @@ class BaseResource(Resource):
         try:
             return datetime.strptime(object_dict.get(date_field), "%Y-%m-%d %H:%M:%S")
         except ValueError:
+            if isinstance(object_dict.get(date_field), datetime):
+                return object_dict.get(date_field)
             return now
 
     def get_filters_from_query_parameters(self, request, **_):
