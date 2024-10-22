@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from elody.error_codes import ErrorCode, get_error_code, get_read, get_write
 from filters_v2.filter_matcher_mapping import FilterMatcherMapping
 from filters_v2.matchers.matchers import BaseMatcher
 from filters_v2.types.base_filter_type_query_generator import (
@@ -25,7 +26,9 @@ def get_filter(input_type: str):
     if input_type == "type":
         return TypeFilterType()
 
-    raise ValueError(f"No filter defined for input type '{input_type}'")
+    raise ValueError(
+        f"{get_error_code(ErrorCode.UNDEFINED_FILTER_FOR_INPUT_TYPE, get_read())} No filter defined for input type '{input_type}'"
+    )
 
 
 class BaseFilterType(ABC):

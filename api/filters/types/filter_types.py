@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from elody.error_codes import ErrorCode, get_error_code, get_read
 from filters.filter_matcher_mapping import FilterMatcherMapping
 from filters.matchers.matchers import BaseMatcher
 from filters.types.base_filter_type_query_generator import BaseFilterTypeQueryGenerator
@@ -34,7 +35,7 @@ def get_filter(input_type: str):
     if input_type == "selection-asset-engine":
         return AssetEngineSelectionFilterType()
 
-    raise ValueError(f"No filter defined for input type '{input_type}'")
+    raise ValueError(f"{get_error_code(ErrorCode.UNDEFINED_FILTER_FOR_INPUT_TYPE, get_read())} No filter defined for input type '{input_type}'")
 
 
 class BaseFilterType(ABC):

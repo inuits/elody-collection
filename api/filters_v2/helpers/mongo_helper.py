@@ -1,5 +1,6 @@
 from configuration import get_object_configuration_mapper
 from copy import deepcopy
+from elody.error_codes import ErrorCode, get_error_code, get_read
 from elody.util import flatten_dict, interpret_flat_key
 from filters_v2.matchers.base_matchers import BaseMatchers
 from logging_elody.log import log
@@ -33,7 +34,9 @@ def append_matcher(matcher, matchers, operator="and"):
                 return
         matcher = {"OR_MATCHER": matcher}
     else:
-        raise Exception(f"Operator '{operator}' not supported.")
+        raise Exception(
+            f"{get_error_code(ErrorCode.UNSUPPORTED_OPERATOR, get_read())} Operator '{operator}' not supported."
+        )
 
     if not did_append_matcher:
         matchers.append(matcher)

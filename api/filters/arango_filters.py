@@ -1,3 +1,4 @@
+from elody.error_codes import ErrorCode, get_error_code, get_read
 from filters.types.filter_types import get_filter
 from storage.storagemanager import StorageManager
 
@@ -8,7 +9,9 @@ class ArangoFilters:
 
     def filter(self, body, skip, limit, collection="entities", order_by=None, asc=True):
         if not self.storage.db:
-            raise ValueError("DB is not initialized")
+            raise ValueError(
+                f"{get_error_code(ErrorCode.DATABASE_NOT_INITIALIZED, get_read())} DB is not initialized"
+            )
 
         aql = self.__generate_aql_query(body, collection, order_by, asc)
         bind = {"skip": skip, "limit": limit}
@@ -60,7 +63,9 @@ class ArangoFilters:
             filter = get_filter(filter_criteria["type"])
             generated_query = filter.generate_query(filter_criteria)
             if generated_query == "":
-                raise ValueError("No matcher was able to handle filter request.")
+                raise ValueError(
+                    f"{get_error_code(ErrorCode.NO_MATCHER_FOR_FILTER_REQUEST, get_read())} No matcher was able to handle filter request."
+                )
 
             item_types = filter_criteria.get("item_types", [])
             result_set = f"results{counter}"

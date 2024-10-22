@@ -3,6 +3,7 @@ import mappers
 from configuration import get_object_configuration_mapper
 from configuration import get_storage_mapper
 from datetime import datetime, timezone
+from elody.error_codes import ErrorCode, get_error_code, get_write
 from elody.exceptions import NonUniqueException
 from elody.util import (
     get_raw_id,
@@ -517,7 +518,7 @@ class GenericObjectMetadata(BaseResource):
         self._update_date_updated_and_last_editor(collection, id)
         metadata = self.storage.patch_collection_item_metadata(collection, id, content)
         if not metadata:
-            abort(400, message=f"Item with id {id} has no metadata")
+            abort(400, message=f"{get_error_code(ErrorCode.NO_METADATA_AVAILABLE, get_write())} Item with id {id} has no metadata")
         return metadata, 201
 
 

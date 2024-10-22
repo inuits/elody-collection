@@ -1,5 +1,6 @@
 import re as regex
 
+from elody.error_codes import ErrorCode, get_error_code, get_read, get_write
 from filters.matchers.base_matchers import BaseMatchers
 
 
@@ -203,7 +204,7 @@ class MongoMatchers(BaseMatchers):
 
     def __get_datetime_query_value(self, value, range_match: bool) -> dict | str:
         if not regex.match(BaseMatchers.datetime_pattern, value):
-            raise ValueError(f"{value} is not a valid datetime")
+            raise ValueError(f"{get_error_code(ErrorCode.INVALID_DATETIME, get_read())} {value} is not a valid datetime")
 
         if range_match:
             return f"{value}"

@@ -1,5 +1,6 @@
 import mappers
 
+from elody.error_codes import ErrorCode, get_error_code, get_write
 from elody.exceptions import InvalidObjectException, NonUniqueException
 from elody.csv import CSVMultiObject, CSVSingleObject
 from elody.exceptions import ColumnNotFoundException
@@ -591,7 +592,7 @@ class EntityOrder(GenericObjectDetail):
     def post(self, id):
         entity = super().get("entities", id)
         if request.content_type != "text/csv":
-            raise Exception(f"Unsupported type {request.content_type}")
+            raise Exception(f"{get_error_code(ErrorCode.UNSUPPORTED_TYPE, get_write())} Unsupported type {request.content_type}")
         entity_type = self._determine_child_entity_type(entity)
         relation_type, relation_type_reverse = self._determine_relation_types(
             entity_type
@@ -646,7 +647,7 @@ class EntityOrder(GenericObjectDetail):
         try:
             return CSVMultiObject(csv, {entity_type: "identifier"})
         except ColumnNotFoundException:
-            abort(422, message="One or more required columns headers aren't defined")
+            abort(422, message=f"{get_error_code(ErrorCode.COLUMN_NOT_FOUND, get_write())} One or more required columns headers aren't defined")
 
     def update_relation_metadata(self, relation, key, value):
         existing_metadata = relation.get("metadata", [])

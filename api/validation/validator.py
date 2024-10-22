@@ -1,4 +1,5 @@
 from configuration import get_object_configuration_mapper
+from elody.error_codes import ErrorCode, get_error_code, get_write
 from elody.validator import validate_json
 from logging_elody.log import log
 from resources.base_resource import BaseResource
@@ -28,7 +29,7 @@ class Validator(BaseResource):
                     v2=True,
                 )
                 if not content:
-                    raise ValueError("Content is missing in the request.")
+                    raise ValueError(f"{get_error_code(ErrorCode.CONTENT_NOT_FOUND, get_write())} Content is missing in the request.")
 
                 strategy, validator = (
                     get_object_configuration_mapper().get(content["type"]).validation()
@@ -55,4 +56,4 @@ class Validator(BaseResource):
     def _apply_schema_strategy(self, validator, content, **_):
         validation_error = validate_json(content, validator)
         if validation_error:
-            raise BadRequest(f"{validation_error}")
+            raise BadRequest(f"{get_error_code(ErrorCode.VALIDATION_ERROR, get_write())} {validation_error}")
