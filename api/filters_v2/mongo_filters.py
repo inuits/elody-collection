@@ -143,7 +143,7 @@ class MongoFilters:
                         append_matcher(
                             matcher,
                             matchers,
-                            matchers_per_schema,
+                            {},
                             filter_criteria_for_schema.get("operator", "and"),
                         )
                     else:
@@ -171,7 +171,7 @@ class MongoFilters:
                         append_matcher(
                             matcher,
                             matchers,
-                            matchers_per_schema,
+                            {},
                             filter_criteria_for_schema.get("operator", "and"),
                         )
                         matchers_per_schema.update({schema: matchers})
