@@ -29,7 +29,9 @@ class Validator(BaseResource):
                     v2=True,
                 )
                 if not content:
-                    raise ValueError(f"{get_error_code(ErrorCode.CONTENT_NOT_FOUND, get_write())} Content is missing in the request.")
+                    raise ValueError(
+                        f"{get_error_code(ErrorCode.CONTENT_NOT_FOUND, get_write())} Content is missing in the request."
+                    )
 
                 strategy, validator = (
                     get_object_configuration_mapper().get(content["type"]).validation()
@@ -56,4 +58,6 @@ class Validator(BaseResource):
     def _apply_schema_strategy(self, validator, content, **_):
         validation_error = validate_json(content, validator)
         if validation_error:
-            raise BadRequest(f"{get_error_code(ErrorCode.VALIDATION_ERROR, get_write())} {validation_error}")
+            raise BadRequest(
+                f"{get_error_code(ErrorCode.VALIDATION_ERROR, get_write())} {validation_error}"
+            )

@@ -96,12 +96,16 @@ class BaseResource(Resource):
     def _abort_if_not_valid_json(self, type, json):
         if validation_error := validate_json(json, self.schemas_by_type.get(type)):
             abort(
-                400, message=f"{get_error_code(ErrorCode.INVALID_FORMAT, get_write())} {type} doesn't have a valid format. {validation_error}"
+                400,
+                message=f"{get_error_code(ErrorCode.INVALID_FORMAT, get_write())} {type} doesn't have a valid format. {validation_error}",
             )
 
     def _abort_if_not_valid_type(self, item, type):
         if type and "type" in item and item["type"] != type:
-            abort(400, message=f"{get_error_code(ErrorCode.INVALID_TYPE, get_write())} Item has the wrong type")
+            abort(
+                400,
+                message=f"{get_error_code(ErrorCode.INVALID_TYPE, get_write())} Item has the wrong type",
+            )
 
     def _add_relations_to_metadata(self, entity, collection="entities", sort_by=None):
         relations = self.storage.get_collection_item_relations(
@@ -155,7 +159,10 @@ class BaseResource(Resource):
                 if item := self.storage.get_item_from_collection_by_id(collection, id):
                     return item
             else:
-                abort(404, message=f"{get_error_code(ErrorCode.ITEM_NOT_FOUND, get_read())} Item with id {id} does not exist.")
+                abort(
+                    404,
+                    message=f"{get_error_code(ErrorCode.ITEM_NOT_FOUND, get_read())} Item with id {id} does not exist.",
+                )
 
     def _count_children_from_mediafile(self, parent_mediafile, count=0):
         relations = self.storage.get_collection_item_relations(

@@ -67,7 +67,10 @@ class Batch(BaseResource):
             fail_job(
                 self.main_job_id_without_dry_run, message, get_rabbit=self.get_rabbit
             )
-            abort(422, message=f"{get_error_code(ErrorCode.COLUMN_NOT_FOUND, get_write())} {message}")
+            abort(
+                422,
+                message=f"{get_error_code(ErrorCode.COLUMN_NOT_FOUND, get_write())} {message}",
+            )
 
     def _parse_metadata_key_to_relation(
         self, csv_multi_object, items_for_parsing, key_to_remove_in_metadata=[]
@@ -208,4 +211,7 @@ class Batch(BaseResource):
         message = f"Only content type text/csv is allowed, not {content_type}"
         fail_job(self.main_job_id_with_dry_run, message, get_rabbit=self.get_rabbit)
         fail_job(self.main_job_id_without_dry_run, message, get_rabbit=self.get_rabbit)
-        abort(415, message=f"{get_error_code(ErrorCode.ONLY_TYPE_CSV_ALLOWED, get_write())} {message}")
+        abort(
+            415,
+            message=f"{get_error_code(ErrorCode.ONLY_TYPE_CSV_ALLOWED, get_write())} {message}",
+        )

@@ -519,7 +519,10 @@ class GenericObjectMetadata(BaseResource):
         self._update_date_updated_and_last_editor(collection, id)
         metadata = self.storage.patch_collection_item_metadata(collection, id, content)
         if not metadata:
-            abort(400, message=f"{get_error_code(ErrorCode.NO_METADATA_AVAILABLE, get_write())} Item with id {id} has no metadata")
+            abort(
+                400,
+                message=f"{get_error_code(ErrorCode.NO_METADATA_AVAILABLE, get_write())} Item with id {id} has no metadata",
+            )
         return metadata, 201
 
 

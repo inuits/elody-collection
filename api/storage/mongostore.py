@@ -457,7 +457,9 @@ class MongoStorageManager(GenericStorageManager):
         except DuplicateKeyError as error:
             log.exception(f"{error.__class__.__name__}: {error}", item, exc_info=error)
             if error.code == 11000:
-                raise NonUniqueException(f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} {error.details}")
+                raise NonUniqueException(
+                    f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} {error.details}"
+                )
             raise error
         return self._prepare_mongo_document(item, False, collection, False)
 
@@ -771,7 +773,9 @@ class MongoStorageManager(GenericStorageManager):
             self.db[collection].update_one(self.__get_id_query(id), {"$set": content})
         except DuplicateKeyError as ex:
             if ex.code == 11000:
-                raise NonUniqueException(f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} {ex.details}")
+                raise NonUniqueException(
+                    f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} {ex.details}"
+                )
             raise ex
         return self.get_item_from_collection_by_id(collection, id)
 
@@ -835,7 +839,9 @@ class MongoStorageManager(GenericStorageManager):
         except DuplicateKeyError as error:
             log.exception(f"{error.__class__.__name__}: {error}", item, exc_info=error)
             if error.code == 11000:
-                raise NonUniqueException(f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} {error.details}")
+                raise NonUniqueException(
+                    f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} {error.details}"
+                )
             raise error
         log.info("Successfully patched item", item)
         return self._prepare_mongo_document(item, False, collection, False)
@@ -884,7 +890,9 @@ class MongoStorageManager(GenericStorageManager):
         except DuplicateKeyError as error:
             log.exception(f"{error.__class__.__name__}: {error}", item, exc_info=error)
             if error.code == 11000:
-                raise NonUniqueException(f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} {error.details}")
+                raise NonUniqueException(
+                    f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} {error.details}"
+                )
             raise error
         if scope:
             return self._prepare_mongo_document(item, False, collection, False)
@@ -915,7 +923,9 @@ class MongoStorageManager(GenericStorageManager):
             item_id = self.db[collection].insert_one(content).inserted_id
         except DuplicateKeyError as ex:
             if ex.code == 11000:
-                raise NonUniqueException(f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} {ex.details}")
+                raise NonUniqueException(
+                    f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} {ex.details}"
+                )
             raise ex
         return (
             item_id
@@ -953,7 +963,9 @@ class MongoStorageManager(GenericStorageManager):
         except DuplicateKeyError as error:
             log.exception(f"{error.__class__.__name__}: {error}", item, exc_info=error)
             if error.code == 11000:
-                raise NonUniqueException(f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} {error.details}")
+                raise NonUniqueException(
+                    f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} {error.details}"
+                )
             raise error
         return self.get_item_from_collection_by_id(collection, items[0]["_id"])
 
@@ -1015,7 +1027,9 @@ class MongoStorageManager(GenericStorageManager):
             self.db[collection].replace_one(self.__get_id_query(id), content)
         except DuplicateKeyError as ex:
             if ex.code == 11000:
-                raise NonUniqueException(f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} {ex.details}")
+                raise NonUniqueException(
+                    f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} {ex.details}"
+                )
             raise ex
         return self.get_item_from_collection_by_id(collection, id)
 

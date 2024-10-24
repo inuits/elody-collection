@@ -35,7 +35,9 @@ def get_filter(input_type: str):
     if input_type == "selection-asset-engine":
         return AssetEngineSelectionFilterType()
 
-    raise ValueError(f"{get_error_code(ErrorCode.UNDEFINED_FILTER_FOR_INPUT_TYPE, get_read())} No filter defined for input type '{input_type}'")
+    raise ValueError(
+        f"{get_error_code(ErrorCode.UNDEFINED_FILTER_FOR_INPUT_TYPE, get_read())} No filter defined for input type '{input_type}'"
+    )
 
 
 class BaseFilterType(ABC):
