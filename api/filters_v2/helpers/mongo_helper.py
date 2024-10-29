@@ -194,7 +194,11 @@ def __combine_matchers(matchers, matcher_type):
     matchers_deepcopy = deepcopy(matchers)
     for matcher in matchers_deepcopy:
         if list(matcher.keys())[0] == f"{matcher_type.upper()}_MATCHER":
-            expressions.append(matcher[f"{matcher_type.upper()}_MATCHER"])
+            expression = matcher[f"{matcher_type.upper()}_MATCHER"]
+            if isinstance(expression, list):
+                expressions.extend(expression)
+            else:
+                expressions.append(expression)
             matchers.remove(matcher)
     if len(expressions) > 0:
         matchers.append({f"${matcher_type}": expressions})
