@@ -132,7 +132,7 @@ class Entity(GenericObject):
             else:
                 response = entity
         except NonUniqueException as ex:
-            return ex.args[0]["errmsg"], 409
+            return ex.args[0], 409
         if create_mediafile:
             for mediafile_filename in mediafile_filenames:
                 mediafile = self._create_mediafile_for_entity(

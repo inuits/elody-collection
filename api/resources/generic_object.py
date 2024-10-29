@@ -129,7 +129,7 @@ class GenericObject(BaseResource):
                     collection, content
                 )
         except NonUniqueException as ex:
-            return ex.args[0]["errmsg"], 409
+            return ex.args[0], 409
         if accept_header == "text/uri-list":
             ticket_id = self._create_ticket(collection_item["filename"])
             response = f"{self.storage_api_url}/upload-with-ticket/{collection_item['filename'].strip()}?id={get_raw_id(collection_item)}&ticket_id={ticket_id}"
@@ -220,7 +220,7 @@ class GenericObjectV2(BaseFilterResource, BaseResource):
         try:
             item = self.storage.save_item_to_collection_v2(collection, item)
         except NonUniqueException as ex:
-            return ex.args[0]["errmsg"], 409
+            return ex.args[0], 409
         return self._create_response_according_accept_header(
             mappers.map_data_according_to_accept_header(
                 item,
