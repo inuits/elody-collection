@@ -2,6 +2,7 @@ import json
 import mappers
 import csv
 import io
+import re
 
 from configuration import get_object_configuration_mapper
 from copy import deepcopy
@@ -40,6 +41,8 @@ class BaseResource(Resource):
         "mediafile": mediafile_schema,
         "saved_search": saved_search_schema,
     }
+    map_name_to_relation = {}
+    map_name_to_db_value = {}
 
     def __init__(self):
         self.storage = StorageManager().get_db_engine()
@@ -510,7 +513,7 @@ class BaseResource(Resource):
         header = next(reader)
 
         items, updated_values = self.process_csv_rows(reader, header, collection)
-        self.update_metadata_of_items(items, updated_values)
+        self.update_items(items, updated_values)
         return items
 
     def process_csv_rows(self, reader, header, collection):
@@ -537,23 +540,51 @@ class BaseResource(Resource):
                     items.append(item)
                     seen_identifiers.update(item_identifiers)
                 updated_values[identifier] = row_data
-
         return items, updated_values
 
-    def update_metadata_of_items(self, items, updated_values):
+    def update_items(self, items, updated_values):
         for item in items:
             item_id = get_raw_id(item)
             if item_id in updated_values:
                 updates = updated_values[item_id]
                 item_metadata = item.get("metadata", [])
-
+                item_relations = item.get("relations", [])
                 self.update_metadata(item_metadata, updates)
-
+                self.update_relations(item_relations, updates)
                 item["metadata"] = item_metadata
+                item["relations"] = item_relations
+
+    def update_relations(self, item_relations, updates):
+        for key, value in updates.items():
+            if key == "identifier" or key == "identifiers":
+                continue
+            if key in self.map_name_to_relation:
+                key = self.map_name_to_relation.get(key)
+            if not re.match(r'^has\w+|^is\w+', key):
+                continue
+            relation_found = False
+            for relation in item_relations:
+                if relation.get("type") == key:
+                    db_key = self.map_name_to_db_value.get(key, {}).get("db_key")
+                    relation_item = self.storage.get_item_from_collection_by_metadata(
+                        "entities",
+                        db_key,
+                        value,
+                        self.map_name_to_db_value.get(key, {}).get("type"),
+                    )
+                    relation["key"] = get_raw_id(relation_item)
+                    relation_found = True
+                    break
+
+            if not relation_found:
+                new_relation = {"key": key, "value": parse_string_to_bool(value)}
+                item_relations.append(new_relation)
 
     def update_metadata(self, item_metadata, updates):
         for key, value in updates.items():
-            if key == "identifier":
+            if key == "identifier" or key == "identifiers":
+                continue
+            if key in self.map_name_to_relation:
                 continue
 
             metadata_found = False

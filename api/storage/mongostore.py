@@ -118,12 +118,15 @@ class MongoStorageManager(GenericStorageManager):
     def __get_id_query(self, id):
         return {"$or": [{"_id": id}, {"identifiers": id}]}
 
-    def __get_metatdata_query(self, key, value):
-        return {
+    def __get_metatdata_query(self, key, value, type=None):
+        query = {
             "metadata": {
                 "$elemMatch": {"key": key, "value": {"$regex": value, "$options": "i"}}
             }
         }
+        if type:
+            query["type"] = type
+        return query
 
     def __get_ids_query(self, ids):
         return {"$or": [{"_id": {"$in": ids}}, {"identifiers": {"$in": ids}}]}
@@ -610,9 +613,9 @@ class MongoStorageManager(GenericStorageManager):
             return self._prepare_mongo_document(document, True, collection)
         return None
 
-    def get_item_from_collection_by_metadata(self, collection, key, value):
+    def get_item_from_collection_by_metadata(self, collection, key, value, type=None):
         if document := self.db[collection].find_one(
-            self.__get_metatdata_query(key, value)
+            self.__get_metatdata_query(key, value, type)
         ):
             return self._prepare_mongo_document(document, True, collection)
         return None
@@ -1004,11 +1007,13 @@ class MongoStorageManager(GenericStorageManager):
         self.patch_item_from_collection(collection, id, {"relations": relations})
 
     def update_collection_item_relations(self, collection, id, content, parent=True):
+        collection_sub_item = None
         relations = self.get_collection_item_sub_item(collection, id, "relations")
         relations = relations if relations else []
         for item in relations:
+            collection_sub_item = self._map_relation_to_collection(item["type"])
             self.delete_collection_item_sub_item_key(
-                collection, item["key"], "relations", id
+                collection_sub_item, item["key"], "relations", id
             )
         self.update_collection_item_sub_item(collection, id, "relations", content)
         self.__add_child_relations(id, content)
@@ -1023,6 +1028,7 @@ class MongoStorageManager(GenericStorageManager):
             collection,
             create_sortable_metadata=create_sortable_metadata,
         )
+        self.update_collection_item_relations(collection, id, content.get("relations", []))
         try:
             self.db[collection].replace_one(self.__get_id_query(id), content)
         except DuplicateKeyError as ex:

@@ -4,10 +4,12 @@ import json
 import uuid
 import re
 
+from elody.util import get_item_metadata_value
 from rdflib import Graph
 from serialization.serialize import serialize
+from storage.storagemanager import StorageManager
 
-# TODO Move to client specifik codebase
+# TODO Move to client specific codebase
 general_excluded_fields = [
     "identifier",
     "type",
@@ -34,13 +36,25 @@ general_excluded_fields = [
     "belongsTo",
 ]
 
+map_relation_to_name = {
+    "hasPhotographer": "photographer",
+    "hasLicense": "license",
+}
+
+map_name_to_csv_value = {"photographer": "name", "license": "key"}
+
 
 def can_append_key(key, fields, excluded_fields=[]):
+    if key is None:
+        return False
+    allowed_keys = set(map_relation_to_name.keys())
     if key in excluded_fields:
         return False
-    for pattern in excluded_fields:
-        if pattern.endswith("*"):
-            if re.match(pattern.replace("*", ".*"), key):
+    for field in excluded_fields:
+        if field is None:
+            continue
+        if field.endswith("*") and key not in allowed_keys:
+            if re.match(field.replace("*", ".*"), key):
                 return False
     if not fields:
         return True
@@ -118,6 +132,7 @@ def map_data_to_ldjson(data, format):
 
 
 def map_objects_to_csv(entities, fields=None, exclude_non_editable_fields=False):
+    storage = StorageManager().get_db_engine()
     keys = list()
     root_values = list()
     excluded_fields = []
@@ -153,6 +168,26 @@ def map_objects_to_csv(entities, fields=None, exclude_non_editable_fields=False)
             if key not in keys:
                 keys.append(metadata.get("key"))
             values[0][keys.index(key)] = metadata.get("value")
+        for relation in entity.get("relations", []):
+            original_type = relation.get("type")
+            type = None
+            if not can_append_key(original_type, fields, excluded_fields):
+                continue
+            if original_type in map_relation_to_name:
+                type = map_relation_to_name.get(original_type)
+            else:
+                type = original_type
+            if type not in keys:
+                keys.append(type)  
+            if type in map_name_to_csv_value:
+                item = storage.get_item_from_collection_by_id(
+                    "entities", relation.get("key")
+                )
+                values[0][keys.index(type)] = get_item_metadata_value(
+                    item, map_name_to_csv_value.get(type)
+                )
+            else:
+                values[0][keys.index(type)] = relation.get("key")
         for i in range(len(keys)):
             if i not in values[0]:
                 values[0][i] = None

@@ -103,7 +103,10 @@ class Batch(BaseResource):
         for metadata_item in metadata_list:
             if metadata_item["key"] == parse_item["csv_key"]:
                 related_item = self.storage.get_item_from_collection_by_metadata(
-                    "entities", parse_item["db_key"], metadata_item["value"]
+                    "entities",
+                    parse_item["db_key"],
+                    metadata_item["value"],
+                    parse_item["type"],
                 )
                 if not related_item:
                     self._add_error_to_csv_multi_object(
