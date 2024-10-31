@@ -560,7 +560,7 @@ class BaseResource(Resource):
                 continue
             if key in self.map_name_to_relation:
                 key = self.map_name_to_relation.get(key)
-            if not re.match(r'^has\w+|^is\w+', key):
+            if not re.match(r"^has\w+|^is\w+", key):
                 continue
             relation_found = False
             for relation in item_relations:

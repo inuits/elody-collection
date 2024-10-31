@@ -178,7 +178,7 @@ def map_objects_to_csv(entities, fields=None, exclude_non_editable_fields=False)
             else:
                 type = original_type
             if type not in keys:
-                keys.append(type)  
+                keys.append(type)
             if type in map_name_to_csv_value:
                 item = storage.get_item_from_collection_by_id(
                     "entities", relation.get("key")

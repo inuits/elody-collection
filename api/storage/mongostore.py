@@ -1028,7 +1028,9 @@ class MongoStorageManager(GenericStorageManager):
             collection,
             create_sortable_metadata=create_sortable_metadata,
         )
-        self.update_collection_item_relations(collection, id, content.get("relations", []))
+        self.update_collection_item_relations(
+            collection, id, content.get("relations", [])
+        )
         try:
             self.db[collection].replace_one(self.__get_id_query(id), content)
         except DuplicateKeyError as ex:
