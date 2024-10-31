@@ -116,9 +116,9 @@ class MongoFilters:
                         {
                             "$filter": {
                                 "input": f"${object_list}",
-                                "as": primary_key,
+                                "as": object_list,
                                 "cond": {
-                                    "$eq": [f"$${primary_key}.{primary_key}", data_key]
+                                    "$eq": [f"$${object_list}.{primary_key}", data_key]
                                 },
                             }
                         },
@@ -239,7 +239,7 @@ class MongoFilters:
             key_order_map.update({key: ASCENDING if asc else DESCENDING})
         sorting = (
             get_object_configuration_mapper()
-            .get(BaseMatchers.collection)
+            .get(BaseMatchers.type or BaseMatchers.collection)
             .crud()
             .get("sorting", lambda *_: [])(key_order_map)
         )
