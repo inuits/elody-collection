@@ -72,9 +72,10 @@ def get_filter_option_label(db, identifier, key):
 
 def get_lookup_key(filter_key, lookup_stage):
     for lookup in lookup_stage:
-        lookup_key = lookup["$lookup"]["as"]
-        if filter_key.startswith(lookup_key):
-            return lookup_key
+        if lookup.get("$lookup"):
+            lookup_key = lookup["$lookup"]["as"]
+            if filter_key.startswith(lookup_key):
+                return lookup_key
 
 
 def get_options_mapper(filter_key, lookup_key):

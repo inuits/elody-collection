@@ -108,11 +108,48 @@ class MongoFilters:
             document, match_stage, skip, limit, options_requesting_filter
         )
 
+    def __add_fields_stage(self, object_list, primary_key, data_key):
+        return {
+            "$addFields": {
+                data_key: {
+                    "$arrayElemAt": [
+                        {
+                            "$filter": {
+                                "input": f"${object_list}",
+                                "as": primary_key,
+                                "cond": {
+                                    "$eq": [f"$${primary_key}.{primary_key}", data_key]
+                                },
+                            }
+                        },
+                        0,
+                    ]
+                }
+            }
+        }
+
     def __lookup_stage(self, filter_request_body):
         lookups = []
         for filter_criteria in filter_request_body:
             lookup = filter_criteria.get("lookup")
             if lookup:
+                object_lists = (
+                    get_object_configuration_mapper()
+                    .get(BaseMatchers.collection)
+                    .document_info()["object_lists"]
+                )
+                for object_list, primary_key in object_lists.items():
+                    if lookup["local_field"].startswith(object_list):
+                        data_key, data_value_key = (
+                            lookup["local_field"]
+                            .removeprefix(f"{object_list}.")
+                            .split(".", 1)
+                        )
+                        lookups.append(
+                            self.__add_fields_stage(object_list, primary_key, data_key)
+                        )
+                        lookup["local_field"] = f"{data_key}.{data_value_key}"
+
                 lookups.append(
                     {
                         "$lookup": {
