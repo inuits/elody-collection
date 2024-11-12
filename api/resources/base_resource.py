@@ -573,7 +573,7 @@ class BaseResource(Resource):
             if not relation_found:
                 relation_item =  self.get_relation_item_for_key_by_metadata(key, value)
                 if relation_item:
-                    new_relation = {"key": key, "type": get_raw_id(relation_item)}
+                    new_relation = {"key": get_raw_id(relation_item), "type": key}
                     item_relations.append(new_relation)
 
     def get_relation_item_for_key_by_metadata(self, key, value):
