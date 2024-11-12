@@ -1,6 +1,7 @@
 from apscheduler.schedulers.background import BackgroundScheduler
 from configuration import init_mappers
 from cron_jobs.ttl_checker import TtlChecker
+from elody.error_codes import ErrorCode, get_error_code, get_read
 from elody.loader import load_apps, load_jobs
 from elody.util import CustomJSONEncoder
 from flask import Flask, make_response, jsonify, Response
@@ -109,7 +110,7 @@ def intercept_403(response: Response):
         if len(restricted_keys) > 0:
             return make_response(
                 jsonify(
-                    message=f"You don't have the permission to create/update/delete the following fields: {restricted_keys}.",
+                    message=f"{get_error_code(ErrorCode.INSUFFICIENT_PERMISSIONS, get_read())} You don't have the permission to create/update/delete the following fields: {restricted_keys}.",
                     restricted_keys=restricted_keys,
                 ),
                 response.status_code,
