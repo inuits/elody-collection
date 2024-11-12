@@ -121,9 +121,7 @@ class MongoFilters:
                     "$filter": {
                         "input": f"${object_list}",
                         "as": object_list,
-                        "cond": {
-                            "$eq": [f"$${object_list}.{primary_key}", data_key]
-                        },
+                        "cond": {"$eq": [f"$${object_list}.{primary_key}", data_key]},
                     }
                 },
             }
