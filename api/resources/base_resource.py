@@ -565,20 +565,27 @@ class BaseResource(Resource):
             relation_found = False
             for relation in item_relations:
                 if relation.get("type") == key:
-                    db_key = self.map_name_to_db_value.get(key, {}).get("db_key")
-                    relation_item = self.storage.get_item_from_collection_by_metadata(
-                        "entities",
-                        db_key,
-                        value,
-                        self.map_name_to_db_value.get(key, {}).get("type"),
-                    )
+                    relation_item = self.get_relation_item_for_key_by_metadata(key, value)
                     relation["key"] = get_raw_id(relation_item)
                     relation_found = True
                     break
 
             if not relation_found:
-                new_relation = {"key": key, "value": parse_string_to_bool(value)}
-                item_relations.append(new_relation)
+                relation_item =  self.get_relation_item_for_key_by_metadata(key, value)
+                if relation_item:
+                    new_relation = {"key": key, "type": get_raw_id(relation_item)}
+                    item_relations.append(new_relation)
+
+    def get_relation_item_for_key_by_metadata(self, key, value):
+        db_key = self.map_name_to_db_value.get(key, {}).get("db_key")
+        relation_item = self.storage.get_item_from_collection_by_metadata(
+                        "entities",
+                        db_key,
+                        value,
+                        self.map_name_to_db_value.get(key, {}).get("type"),
+                    )
+        
+        return relation_item
 
     def update_metadata(self, item_metadata, updates):
         for key, value in updates.items():

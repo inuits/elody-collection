@@ -39,9 +39,10 @@ general_excluded_fields = [
 map_relation_to_name = {
     "hasPhotographer": "photographer",
     "hasLicense": "license",
+    "hasTag": "tag",
 }
 
-map_name_to_csv_value = {"photographer": "name", "license": "key"}
+map_name_to_csv_value = {"photographer": "name", "license": "key", "tag": "name"}
 
 
 def can_append_key(key, fields, excluded_fields=[]):
