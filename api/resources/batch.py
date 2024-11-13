@@ -148,7 +148,7 @@ class Batch(BaseResource):
                     "entities", get_raw_id(entity), relations
                 )
             if entity_matching_id:
-                mediafiles = self.__add_matching_mediafiles_to_entity(
+                mediafiles = self._add_matching_mediafiles_to_entity(
                     entity_matching_id,
                     entity,
                     parsed_csv.objects.get("mediafiles"),
