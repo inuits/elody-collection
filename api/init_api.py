@@ -328,3 +328,4 @@ def init_api(app):
         TicketDetail,
         get_route_mapper().get(TicketDetail.__name__, "/tickets/<string:id>"),
     )
+    return api
