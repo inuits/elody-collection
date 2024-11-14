@@ -113,7 +113,7 @@ def get_options_mapper(filter_key, lookup_key):
                     "as": "object",
                     "cond": {
                         "$eq": [
-                            f"$$object.{object_lists_config[keys_info[0]['key']]}",
+                            f"$$object.{object_lists_config[keys_info[0]['object_list']]}",
                             keys_info[0]["object_key"],
                         ]
                     },

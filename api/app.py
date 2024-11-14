@@ -116,7 +116,9 @@ def intercept_403(response: Response):
                 response.status_code,
             )
         if api.handle_error(Forbidden()).get_data() == response.get_data():
-            raise Forbidden(f"{get_error_code(ErrorCode.INSUFFICIENT_PERMISSIONS, get_read())} You don't have the permission to create/update/delete this resource.")
+            raise Forbidden(
+                f"{get_error_code(ErrorCode.INSUFFICIENT_PERMISSIONS, get_read())} You don't have the permission to create/update/delete this resource."
+            )
     return response
 
 

@@ -55,11 +55,11 @@ class FilterEntities(BaseFilterResource):
 # end goal is to replace this with FilterGenericObjectsV2
 class FilterEntitiesV2(BaseFilterResource):
     @apply_policies(RequestContext(request))
-    def post(self, spec="elody"):
+    def post(self, spec="elody", request_json=None):
         if request.args.get("soft", 0, int):
             return "good", 200
         accept_header = request.headers.get("Accept")
-        query: list = request.get_json()
+        query: list = request.get_json() if request_json is None else request_json
         access_restricting_filters = get_user_context().access_restrictions.filters
         if access_restricting_filters:
             for filter in access_restricting_filters:

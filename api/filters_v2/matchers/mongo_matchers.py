@@ -4,7 +4,7 @@ from filters_v2.matchers.base_matchers import BaseMatchers
 
 
 class MongoMatchers(BaseMatchers):
-    def exact(self, key, value, is_datetime_value, aggregation):
+    def exact(self, key, value, is_datetime_value=False, aggregation=""):
         if isinstance(value, list):
             value = {"$in": value}
         elif is_datetime_value:
@@ -22,7 +22,7 @@ class MongoMatchers(BaseMatchers):
         match_value = {"$regex": value, "$options": "i"}
         return self.__contains_range_match(key, match_value)
 
-    def min(self, key, value, is_datetime_value, aggregation):
+    def min(self, key, value, is_datetime_value=False, aggregation=""):
         if is_datetime_value:
             value = self.__get_datetime_query_value(value)
         elif aggregation:
@@ -30,7 +30,7 @@ class MongoMatchers(BaseMatchers):
 
         return self.__contains_range_match(key, {"$gt": value})
 
-    def max(self, key, value, is_datetime_value, aggregation):
+    def max(self, key, value, is_datetime_value=False, aggregation=""):
         if is_datetime_value:
             value = self.__get_datetime_query_value(value)
         elif aggregation:
@@ -38,7 +38,7 @@ class MongoMatchers(BaseMatchers):
 
         return self.__contains_range_match(key, {"$lt": value})
 
-    def min_included(self, key, value, is_datetime_value, aggregation):
+    def min_included(self, key, value, is_datetime_value=False, aggregation=""):
         if is_datetime_value:
             value = self.__get_datetime_query_value(value)
         elif aggregation:
@@ -46,7 +46,7 @@ class MongoMatchers(BaseMatchers):
 
         return self.__contains_range_match(key, {"$gte": value})
 
-    def max_included(self, key, value, is_datetime_value, aggregation):
+    def max_included(self, key, value, is_datetime_value=False, aggregation=""):
         if is_datetime_value:
             value = self.__get_datetime_query_value(value)
         elif aggregation:
@@ -54,7 +54,7 @@ class MongoMatchers(BaseMatchers):
 
         return self.__contains_range_match(key, {"$lte": value})
 
-    def in_between(self, key, min, max, is_datetime_value, aggregation):
+    def in_between(self, key, min, max, is_datetime_value=False, aggregation=""):
         if is_datetime_value:
             min = self.__get_datetime_query_value(min)
             max = self.__get_datetime_query_value(max)
