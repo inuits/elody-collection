@@ -184,9 +184,10 @@ def map_objects_to_csv(entities, fields=None, exclude_non_editable_fields=False)
                 item = storage.get_item_from_collection_by_id(
                     "entities", relation.get("key")
                 )
-                values[0][keys.index(type)] = get_item_metadata_value(
-                    item, map_name_to_csv_value.get(type)
-                )
+                if item:
+                    values[0][keys.index(type)] = get_item_metadata_value(
+                        item, map_name_to_csv_value.get(type)
+                    )
             else:
                 values[0][keys.index(type)] = relation.get("key")
         for i in range(len(keys)):
