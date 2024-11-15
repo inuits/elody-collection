@@ -148,6 +148,10 @@ class MongoFilters:
                             self.__add_fields_stage(object_list, primary_key, data_key)
                         )
                         lookup["local_field"] = f"{data_key}.{data_value_key}"
+                    if lookup["foreign_field"].startswith(object_list):
+                        raise Exception(
+                            "Mongo does not support foreignField referencing a virutal field."
+                        )
 
                 lookups.append(
                     {
