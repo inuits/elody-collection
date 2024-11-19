@@ -40,9 +40,40 @@ map_relation_to_name = {
     "hasPhotographer": "photographer",
     "hasLicense": "license",
     "hasTag": "tag",
+    "hasKeyword": "keyword",
+    "hasLanguage": "language",
+    "hasAssetCategory": "assetCategory",
+    "hasLocationType": "locationType",
+    "hasMarineRegion": "marineRegion",
+    "hasEvent": "event",
+    "hasProject": "project",
+    "hasPartner": "partner",
+    "hasCreator": "partner",
+    "hasOwner": "person",
+    "hasConfidentiality": "confidentiality",
+    "hasSubtitle": "subtitle",
+    "hasPerson": "person",
 }
 
-map_name_to_csv_value = {"photographer": "name", "license": "key", "tag": "name"}
+map_name_to_csv_value = {
+    "photographer": "name",
+    "license": "key",
+    "tag": "name",
+    "media_keyword": "title",
+    "language": "title",
+    "asset_category": "title",
+    "location_type": "title",
+    "marine_region": "title",
+    "event": "title",
+    "project": "title",
+    "partner": "title",
+    "mediafile_keyword": "title",
+    "owner": "name",
+    "person": "name",
+    "confidentiality": "title",
+    "subtitle": "title",
+    "creator": "title"
+}
 
 
 def can_append_key(key, fields, excluded_fields=[]):
