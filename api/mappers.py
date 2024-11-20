@@ -48,11 +48,15 @@ map_relation_to_name = {
     "hasEvent": "event",
     "hasProject": "project",
     "hasPartner": "partner",
-    "hasCreator": "partner",
+    "hasCreator": "person",
     "hasOwner": "person",
     "hasConfidentiality": "confidentiality",
     "hasSubtitle": "subtitle",
     "hasPerson": "person",
+    "hasContentMapType": "contentMapType",
+    "hasFormalMapType": "formalMapType",
+    "hasFormalDocumentType": "formalDocumentType",
+    "hasContentDocumentType": "contentDocumentType",
 }
 
 map_name_to_csv_value = {
@@ -72,7 +76,11 @@ map_name_to_csv_value = {
     "person": "name",
     "confidentiality": "title",
     "subtitle": "title",
-    "creator": "title"
+    "creator": "name",
+    "content_map_type": "title",
+    "formal_map_type": "title",
+    "formalDocumentType": "title",
+    "contentDocumentType": "title",
 }
 
 
