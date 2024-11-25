@@ -452,6 +452,7 @@ class MongoStorageManager(GenericStorageManager):
             post_crud_hook(
                 crud="update",
                 document=item,
+                request_body=content,
                 storage=self,
                 get_user_context=get_user_context,
                 get_rabbit=get_rabbit,
@@ -835,6 +836,7 @@ class MongoStorageManager(GenericStorageManager):
                 post_crud_hook(
                     crud="update",
                     document=item,
+                    request_body=content,
                     storage=self,
                     get_user_context=get_user_context,
                     get_rabbit=get_rabbit,
@@ -886,6 +888,7 @@ class MongoStorageManager(GenericStorageManager):
             post_crud_hook(
                 crud="update",
                 document=item,
+                request_body=content,
                 storage=self,
                 get_user_context=get_user_context,
                 get_rabbit=get_rabbit,
