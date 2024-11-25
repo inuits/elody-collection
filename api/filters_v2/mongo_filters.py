@@ -84,7 +84,10 @@ class MongoFilters:
         else:
             if order_by:
                 pipeline.extend(self.__sort_stage(order_by, asc))
-            pipeline.extend([{"$skip": skip}, {"$limit": limit}])
+            if skip:
+                pipeline.append({"$skip": skip})
+            if limit:
+                pipeline.append({"$limit": limit})
         return pipeline, lookup_stage, match_stage
 
     def __execute_aggregation_query(
