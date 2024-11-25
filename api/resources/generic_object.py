@@ -111,6 +111,7 @@ class GenericObject(BaseResource):
         content["date_created"] = date_created
         content["date_updated"] = date_created
         content["version"] = version
+        content["created_by"] = get_user_context().email or "default_uploader"
         try:
             item_relations = content.get("relations", [])
             if item_relations:

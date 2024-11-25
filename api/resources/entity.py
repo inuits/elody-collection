@@ -111,6 +111,7 @@ class Entity(GenericObject):
         entity = self._decorate_entity(content)
         entity["date_created"] = self._get_date_from_object(entity, "date_created")
         entity["date_updated"] = self._get_date_from_object(entity, "date_updated")
+        entity["created_by"] = get_user_context().email or "default_uploader"
         entity["version"] = 1
         if not linked_data_request:
             self._abort_if_not_valid_json("entity", entity)

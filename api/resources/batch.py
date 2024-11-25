@@ -142,6 +142,7 @@ class Batch(BaseResource):
                 date_created = datetime.now(timezone.utc)
                 entity["date_created"] = date_created
                 entity["date_updated"] = date_created
+                entity["created_by"] = get_user_context().email or "default_uploader"
                 entity["version"] = 1
                 entity = self.storage.save_item_to_collection("entities", entity)
                 self.storage.add_relations_to_collection_item(
