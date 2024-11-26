@@ -26,6 +26,7 @@ from resources.generic_object import (
     GenericObjectMetadataKey,
     GenericObjectRelations,
 )
+from urllib.parse import quote
 
 
 class Entity(GenericObject):
@@ -142,7 +143,7 @@ class Entity(GenericObject):
                 )
                 if accept_header == "text/uri-list":
                     ticket_id = self._create_ticket(mediafile_filename)
-                    response += f"{self.storage_api_url}/upload-with-ticket/{mediafile_filename}?id={get_raw_id(mediafile)}&ticket_id={ticket_id}\n"
+                    response += f"{self.storage_api_url}/upload-with-ticket/{quote(mediafile_filename)}?id={get_raw_id(mediafile)}&ticket_id={ticket_id}\n"
         self._create_tenant(entity)
         signal_entity_changed(get_rabbit(), entity)
         return self._create_response_according_accept_header(

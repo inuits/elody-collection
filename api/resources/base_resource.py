@@ -31,6 +31,7 @@ from policy_factory import get_user_context
 from rabbit import get_rabbit
 from serialization.serialize import serialize
 from storage.storagemanager import StorageManager
+from urllib.parse import quote
 
 
 class BaseResource(Resource):
@@ -626,7 +627,7 @@ class BaseResource(Resource):
                     mediafile_filename = mediafile_filename.split("/download/")[-1]
                     ticket_id = self._create_ticket(mediafile_filename)
                     entity[mediafile_type] = (
-                        f"{self.storage_api_url_ext}/download-with-ticket/{mediafile_filename}?ticket_id={ticket_id}"
+                        f"{self.storage_api_url_ext}/download-with-ticket/{quote(mediafile_filename)}?ticket_id={ticket_id}"
                     )
             if "primary_thumbnail_location" in entity:
                 entity["primary_thumbnail_location"] = (
@@ -646,7 +647,7 @@ class BaseResource(Resource):
                         self.storage_api_url if internal else self.storage_api_url_ext
                     )
                     mediafile[mediafile_type] = (
-                        f"{base_url}/download-with-ticket/{mediafile_filename}?ticket_id={ticket_id}"
+                        f"{base_url}/download-with-ticket/{quote(mediafile_filename)}?ticket_id={ticket_id}"
                     )
             if "thumbnail_file_location" in mediafile:
                 mediafile["thumbnail_file_location"] = (

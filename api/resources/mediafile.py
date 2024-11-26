@@ -17,6 +17,7 @@ from resources.generic_object import (
     GenericObjectDetail,
     GenericObjectMetadata,
 )
+from urllib.parse import quote
 
 
 class Mediafile(GenericObject):
@@ -296,7 +297,7 @@ class MediafileDownload(GenericObjectDetail):
         mediafile = super().get("mediafiles", id)
         filename = mediafile["filename"]
         ticket_id = self._create_ticket(filename, id)
-        return f"{self.storage_api_url_ext}/download-with-ticket/{filename}?ticket_id={ticket_id}"
+        return f"{self.storage_api_url_ext}/download-with-ticket/{quote(filename)}?ticket_id={ticket_id}"
 
 
 class MediafileParent(GenericObjectDetail):

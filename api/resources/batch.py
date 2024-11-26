@@ -10,6 +10,7 @@ from inuits_policy_based_auth import RequestContext
 from policy_factory import authenticate, get_user_context
 from rabbit import get_rabbit
 from resources.base_resource import BaseResource
+from urllib.parse import quote
 
 
 class Batch(BaseResource):
@@ -202,7 +203,7 @@ class Batch(BaseResource):
                 output = ""
                 for mediafile in entities_and_mediafiles.get("mediafiles", list()):
                     ticket_id = self._create_ticket(mediafile.get("filename"))
-                    output += f"{self.storage_api_url}/upload-with-ticket/{mediafile.get('filename')}?id={get_raw_id(mediafile)}&ticket_id={ticket_id}\n"
+                    output += f"{self.storage_api_url}/upload-with-ticket/{quote(mediafile.get('filename'))}?id={get_raw_id(mediafile)}&ticket_id={ticket_id}\n"
             finish_job(self.main_job_id_with_dry_run, get_rabbit=self.get_rabbit)
             finish_job(self.main_job_id_without_dry_run, get_rabbit=self.get_rabbit)
             return self._create_response_according_accept_header(
