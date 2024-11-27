@@ -79,27 +79,30 @@ class Logger:
     def _log(
         self, severity, message: str, item={}, *, frame_info, exc_info=None, **kwargs
     ):
-        if item is None:
-            item = {}
-        config = get_object_configuration_mapper().get(item.get("type", "_default"))
-        info = config.logging(
-            flatten_dict(
-                config.document_info()["object_lists"], item.get("storage_format", item)
-            ),
-            get_user_context=get_user_context,
-            **kwargs,
-        )
-        tags = info["loki_indexed_info_labels"]
-        extra_json_properties = info["info_labels"]
-        extra_json_properties.update(
-            {
-                "frame_info": f"Logged from file: {frame_info.filename}, line: {frame_info.lineno}, in function: {frame_info.function}"
-            }
-        )
-        if info_labels := kwargs.get("info_labels"):
-            extra_json_properties.update(info_labels)
-        if not getenv("LOKI_URL", None):
-            extra_json_properties.update(tags)
+        tags, extra_json_properties = None, None
+        if not kwargs.get("only_log_message", False):
+            if item is None:
+                item = {}
+            config = get_object_configuration_mapper().get(item.get("type", "_default"))
+            info = config.logging(
+                flatten_dict(
+                    config.document_info()["object_lists"],
+                    item.get("storage_format", item),
+                ),
+                get_user_context=get_user_context,
+                **kwargs,
+            )
+            tags = info["loki_indexed_info_labels"]
+            extra_json_properties = info["info_labels"]
+            extra_json_properties.update(
+                {
+                    "frame_info": f"Logged from file: {frame_info.filename}, line: {frame_info.lineno}, in function: {frame_info.function}"
+                }
+            )
+            if info_labels := kwargs.get("info_labels"):
+                extra_json_properties.update(info_labels)
+            if not getenv("LOKI_URL", None):
+                extra_json_properties.update(tags)
 
         log = getattr(self.logger, severity)
         if exc_info:
