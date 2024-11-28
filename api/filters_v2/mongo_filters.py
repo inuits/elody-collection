@@ -159,16 +159,52 @@ class MongoFilters:
                             "Mongo does not support foreignField referencing a virutal field."
                         )
 
-                lookups.append(
-                    {
-                        "$lookup": {
-                            "from": lookup["from"],
-                            "localField": lookup["local_field"],
-                            "foreignField": lookup["foreign_field"],
-                            "as": lookup["as"],
+                if filter_criteria.get("aggregation"):
+                    lookups.append(
+                        {
+                            "$lookup": {
+                                "from": lookup["from"],
+                                "let": {"localField": f"${lookup['local_field']}"},
+                                "pipeline": [
+                                    {
+                                        "$match": {
+                                            "$expr": {
+                                                "$or": [
+                                                    {
+                                                        "$in": [
+                                                            "$$localField",
+                                                            f"${lookup['foreign_field']}",
+                                                        ]
+                                                    },
+                                                    {
+                                                        "$eq": [
+                                                            "$$localField",
+                                                            f"${lookup['foreign_field']}",
+                                                        ]
+                                                    },
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    {"$project": {"_id": 1, "id": 1}},
+                                ],
+                                "as": lookup["as"],
+                            }
                         }
-                    }
-                )
+                    )
+                else:
+                    lookups.append(
+                        {
+                            "$lookup": {
+                                "from": lookup["from"],
+                                "localField": lookup["local_field"],
+                                "foreignField": lookup["foreign_field"],
+                                "as": lookup["as"],
+                            }
+                        }
+                    )
+                    lookups.append({"$unwind": f"${lookup['as']}"})
+
         return lookups
 
     def __match_stage(self, filter_request_body: list[dict], tidy_up_match):
