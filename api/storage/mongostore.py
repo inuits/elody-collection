@@ -5,7 +5,7 @@ from configuration import get_object_configuration_mapper
 from datetime import datetime, timezone
 from elody.error_codes import ErrorCode, get_error_code, get_write
 from elody.exceptions import NonUniqueException
-from elody.util import flatten_dict, mediafile_is_public, signal_entity_changed
+from elody.util import mediafile_is_public, signal_entity_changed
 from logging_elody.log import log
 from migration.migrate import migrate
 from os import getenv

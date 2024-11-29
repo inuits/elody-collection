@@ -1,3 +1,4 @@
+from gc import collect
 from importlib import import_module
 from inuits_policy_based_auth import PolicyFactory, RequestContext
 
@@ -29,3 +30,9 @@ def authenticate(request_context: RequestContext):
 def get_user_context():
     global _policy_factory
     return _policy_factory.get_user_context()
+
+
+def set_user_context(user_context):
+    global _policy_factory
+    collect()
+    _policy_factory._user_context = user_context
