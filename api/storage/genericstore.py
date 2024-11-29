@@ -141,10 +141,10 @@ class GenericStorageManager:
     ):
         pass
 
-    def get_collection_item_sub_item(self, collection, id, sub_item):
+    def get_collection_item_sub_item(self, collection, id, sub_item, fallback=None):
         if item := self.get_item_from_collection_by_id(collection, id):
-            return item.get(sub_item)
-        return None
+            return item.get(sub_item, fallback)
+        return fallback
 
     def get_collection_item_sub_item_key(self, collection, id, sub_item, key):
         if sub_items := self.get_collection_item_sub_item(collection, id, sub_item):

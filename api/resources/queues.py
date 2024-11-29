@@ -84,7 +84,7 @@ def add_scan_info_to_mediafile(routing_key, body, message_id):
     }
     if data["infected"]:
         metadata = storage.get_collection_item_sub_item(
-            "mediafiles", data["mediafile_id"], "metadata"
+            "mediafiles", data["mediafile_id"], "metadata", list()
         )
         for item in [x for x in metadata if x["key"] == "publication_status"]:
             item["value"] = "infected"
