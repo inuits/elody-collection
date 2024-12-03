@@ -44,7 +44,7 @@ class MongoFilters:
             or has_selection_filter_with_multiple_values(filter_request_body)
         )
 
-        pipeline, lookup_stage, match_stage = self.__generate_aggregation_query(
+        pipeline, match_stage = self.__generate_aggregation_query(
             filter_request_body,
             skip,
             limit,
@@ -56,7 +56,7 @@ class MongoFilters:
         if return_query_without_executing:
             return pipeline
         return self.__execute_aggregation_query(
-            pipeline, lookup_stage, match_stage, skip, limit, options_requesting_filter
+            pipeline, match_stage, skip, limit, options_requesting_filter
         )
 
     def __generate_aggregation_query(
@@ -88,16 +88,10 @@ class MongoFilters:
                 pipeline.append({"$skip": skip})
             if limit:
                 pipeline.append({"$limit": limit})
-        return pipeline, lookup_stage, match_stage
+        return pipeline, match_stage
 
     def __execute_aggregation_query(
-        self,
-        pipeline,
-        lookup_stage,
-        match_stage,
-        skip,
-        limit,
-        options_requesting_filter,
+        self, pipeline, match_stage, skip, limit, options_requesting_filter
     ):
         try:
             documents = self.storage.db[BaseMatchers.collection].aggregate(
@@ -114,7 +108,7 @@ class MongoFilters:
 
         document = {"results": list(documents)}
         return self.__get_items(
-            document, lookup_stage, match_stage, skip, limit, options_requesting_filter
+            document, match_stage, skip, limit, options_requesting_filter
         )
 
     def __add_fields_stage(self, object_list, primary_key, data_key):
@@ -331,15 +325,7 @@ class MongoFilters:
         )
         return project
 
-    def __get_items(
-        self,
-        document,
-        lookup_stage,
-        match_stage,
-        skip,
-        limit,
-        options_requesting_filter=None,
-    ):
+    def __get_items(self, document, match, skip, limit, options_requesting_filter=None):
         items = {"results": [], "count": 0}
 
         if options_requesting_filter:
@@ -365,11 +351,9 @@ class MongoFilters:
         else:
             items["skip"] = skip
             items["limit"] = limit
-            count = self.storage.db[BaseMatchers.collection].aggregate(
-                [*lookup_stage, match_stage, {"$count": "count"}],
-                allowDiskUse=self.storage.allow_disk_use,
-            )
-            items["count"] = next(count, {"count": len(document["results"])})["count"]
+            items["count"] = self.storage.db[BaseMatchers.collection].count_documents(
+                match["$match"]
+            ) or len(document["results"])
             for document in document["results"]:
                 items["results"].append(
                     self.storage._prepare_mongo_document(
