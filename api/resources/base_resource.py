@@ -25,7 +25,6 @@ from elody.util import (
 from elody.validator import validate_json
 from flask import Response
 from flask_restful import Resource, abort
-from inuits_policy_based_auth.exceptions import NoUserContextException
 from os import getenv
 from policy_factory import get_user_context
 from rabbit import get_rabbit
@@ -129,7 +128,7 @@ class BaseResource(Resource):
             else:
                 item = get_user_context().bag.pop("requested_item", None)
                 get_user_context().bag["item_being_processed"] = deepcopy(item)
-        except NoUserContextException:
+        except Exception:
             pass
         if collection in self.known_collections:
             return
@@ -149,7 +148,7 @@ class BaseResource(Resource):
             else:
                 item = item or get_user_context().bag.pop("requested_item", None)
                 get_user_context().bag["item_being_processed"] = deepcopy(item)
-        except NoUserContextException:
+        except Exception:
             pass
         if item:
             return item
@@ -299,7 +298,7 @@ class BaseResource(Resource):
         try:
             user_context = get_user_context()
             ticket["user"] = user_context.email if user_context else "default_uploader"
-        except NoUserContextException:
+        except Exception:
             ticket["user"] = "default_uploader"
         if exp:
             ticket["exp"] = exp

@@ -1,9 +1,7 @@
-from gc import collect
+from flask import g
 from importlib import import_module
 from inuits_policy_based_auth import PolicyFactory, RequestContext
-
-
-_policy_factory = PolicyFactory()
+from inuits_policy_based_auth.exceptions import NoUserContextException
 
 
 def init_policy_factory():
@@ -28,11 +26,18 @@ def authenticate(request_context: RequestContext):
 
 
 def get_user_context():
-    global _policy_factory
-    return _policy_factory.get_user_context()
+    try:
+        user_context = g.get("user_context")
+        if not user_context:
+            raise NoUserContextException()
+    except Exception as exception:
+        raise exception
+
+    return user_context
 
 
-def set_user_context(user_context):
-    global _policy_factory
-    collect()
-    _policy_factory._user_context = user_context
+def user_context_setter(user_context):
+    g.user_context = user_context
+
+
+_policy_factory = PolicyFactory(user_context_setter)
