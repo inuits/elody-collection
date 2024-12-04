@@ -6,6 +6,7 @@ from arango import (
 from arango.client import ArangoClient
 from arango.http import DefaultHTTPClient
 from configuration import get_object_configuration_mapper
+from copy import deepcopy
 from elody.exceptions import NonUniqueException
 from elody.util import (
     custom_json_dumps,
@@ -274,6 +275,8 @@ class ArangoStorageManager(GenericStorageManager):
     ):
         if not (item_id := self.__get_id_for_collection_item(collection, id)):
             return None
+        if relation_properties and not isinstance(relation_properties, list):
+            relation_properties = [relation_properties]
         data = {
             "_from": item_id,
             "_to": mediafile_id,
@@ -289,12 +292,18 @@ class ArangoStorageManager(GenericStorageManager):
         self.db.graph(self.default_graph_name).edge_collection("hasMediafile").insert(
             data
         )
+        relation_properties_copy = deepcopy(relation_properties)
+        for relation in relation_properties_copy:
+            if is_downloadset := relation.get("is_downloadset"):
+                data["is_downloadset"] = is_downloadset
+                relation_properties.remove(relation)
         self.db.graph(self.default_graph_name).edge_collection("isMediafileFor").insert(
             {
                 "_from": data["_to"],
                 "_to": data["_from"],
                 "is_primary": data["is_primary"],
                 "is_primary_thumbnail": data["is_primary_thumbnail"],
+                "is_downloadset": data.get("is_downloadset"),
             }
         )
         self.add_relations_to_collection_item(
