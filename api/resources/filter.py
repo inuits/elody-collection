@@ -4,13 +4,12 @@ from configuration import get_object_configuration_mapper
 from filters_v2.filter_matcher_mapping import FilterMatcherMapping
 from flask import request
 from inuits_policy_based_auth import RequestContext
-from policy_factory import apply_policies, authenticate, get_user_context
+from policy_factory import apply_policies, get_user_context
 from resources.base_filter_resource import BaseFilterResource
 from configuration import get_storage_mapper
 
 
 class FilterMatchers(BaseFilterResource):
-    @authenticate(RequestContext(request))
     def get(self, spec="elody"):
         return {
             key: [matcher.__name__ for _, matcher in value.items()]
@@ -19,7 +18,7 @@ class FilterMatchers(BaseFilterResource):
 
 
 class FilterEntities(BaseFilterResource):
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def post(self, spec="elody"):
         if request.args.get("soft", 0, int):
             return "good", 200
@@ -121,7 +120,7 @@ class FilterMediafilesV2(BaseFilterResource):
 
 
 class FilterEntitiesBySavedSearchId(BaseFilterResource):
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def post(self, id):
         if request.args.get("soft", 0, int):
             return "good", 200
@@ -215,7 +214,7 @@ class FilterGenericObjectsV2(BaseFilterResource):
 
 
 class FilterGenericObjectsBySavedSearchId(BaseFilterResource):
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def post(self, collection, id):
         if request.args.get("soft", 0, int):
             return "good", 200
@@ -242,7 +241,7 @@ class FilterGenericObjectsBySavedSearchId(BaseFilterResource):
 
 
 class FilterMediafiles(BaseFilterResource):
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def post(self):
         if request.args.get("soft", 0, int):
             return "good", 200
@@ -259,7 +258,7 @@ class FilterMediafiles(BaseFilterResource):
 
 
 class FilterMediafilesBySavedSearchId(BaseFilterResource):
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def post(self, id):
         if request.args.get("soft", 0, int):
             return "good", 200

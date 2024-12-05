@@ -7,7 +7,7 @@ from elody.job import start_job, finish_job, fail_job
 from flask import request
 from flask_restful import abort
 from inuits_policy_based_auth import RequestContext
-from policy_factory import authenticate, get_user_context
+from policy_factory import apply_policies, get_user_context
 from rabbit import get_rabbit
 from resources.base_resource import BaseResource
 from urllib.parse import quote
@@ -169,7 +169,7 @@ class Batch(BaseResource):
                 entities_and_mediafiles.get("entities", list()).append(entity)
         return entities_and_mediafiles
 
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def post(self):
         self.main_job_id_with_dry_run = start_job(
             "Start Import for CSV with a dry run",

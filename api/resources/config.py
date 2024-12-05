@@ -2,7 +2,7 @@ from elody.util import read_json_as_dict
 from flask import request
 from inuits_policy_based_auth import RequestContext
 from logging import Logger
-from policy_factory import authenticate, get_user_context
+from policy_factory import apply_policies, get_user_context
 from resources.base_resource import BaseResource
 
 
@@ -95,7 +95,7 @@ class Config(BaseResource):
                     allowed_filters[collection].append(filter)
         return allowed_filters
 
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def get(self):
         config = dict()
         for collection, keys in self.keys_for_config.items():

@@ -2,7 +2,7 @@ import mappers
 
 from elody.error_codes import ErrorCode, get_error_code, get_write
 from elody.exceptions import InvalidObjectException, NonUniqueException
-from elody.csv import CSVMultiObject, CSVSingleObject
+from elody.csv import CSVMultiObject
 from elody.exceptions import ColumnNotFoundException
 from elody.util import (
     get_raw_id,
@@ -17,7 +17,7 @@ from elody.util import (
 from flask import after_this_request, request
 from flask_restful import abort
 from inuits_policy_based_auth import RequestContext
-from policy_factory import apply_policies, authenticate, get_user_context
+from policy_factory import apply_policies, get_user_context
 from rabbit import get_rabbit
 from resources.generic_object import (
     GenericObject,
@@ -86,7 +86,7 @@ class Entity(GenericObject):
             accept_header,
         )
 
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def post(self, spec="elody"):
         if request.args.get("soft", 0, int):
             return "good", 200
@@ -150,7 +150,7 @@ class Entity(GenericObject):
             response, accept_header, 201
         )
 
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def put(self, spec="elody"):
         if request.args.get("soft", 0, int):
             return "good", 200
@@ -183,7 +183,7 @@ class EntityDetail(GenericObjectDetail):
             entity = self._add_relations_to_metadata(entity)
         return self._inject_api_urls_into_entities([entity])[0]
 
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def get(self, id, spec="elody"):
         exclude_non_editable_fields = request.args.get(
             "exclude_non_editable_fields", "false"
@@ -207,7 +207,7 @@ class EntityDetail(GenericObjectDetail):
             accept_header,
         )
 
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def put(self, id, spec="elody"):
         if request.args.get("soft", 0, int):
             return "good", 200
@@ -221,7 +221,7 @@ class EntityDetail(GenericObjectDetail):
         signal_entity_changed(get_rabbit(), updated_entity)
         return updated_entity, 201
 
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def patch(self, id, spec="elody"):
         if request.args.get("soft", 0, int):
             return "good", 200
@@ -231,7 +231,7 @@ class EntityDetail(GenericObjectDetail):
         signal_entity_changed(get_rabbit(), updated_entity)
         return updated_entity, 201
 
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def delete(self, id, spec="elody"):
         if request.args.get("soft", 0, int):
             return "good", 200
@@ -255,7 +255,7 @@ class EntityDetail(GenericObjectDetail):
 
 
 class EntityMediafiles(GenericObjectDetail, GenericObject):
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def get(self, id):
         exclude_non_editable_fields = request.args.get(
             "exclude_non_editable_fields", "false"
@@ -308,7 +308,7 @@ class EntityMediafiles(GenericObjectDetail, GenericObject):
         )
         return mediafiles
 
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def post(self, id):
         entity = self._check_if_collection_and_item_exists("entities", id)
         content = self._get_content_according_content_type(request, "mediafile")
@@ -350,7 +350,7 @@ class EntityMediafiles(GenericObjectDetail, GenericObject):
             response, accept_header, 201
         )
 
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def put(self, id):
         if request.args.get("soft", 0, int):
             return "good", 200
@@ -383,7 +383,7 @@ class EntityMediafiles(GenericObjectDetail, GenericObject):
 
 
 class EntityMediafilesCreate(GenericObjectDetail):
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def post(self, id):
         entity = super().get_object_detail("entities", id)
         content = request.get_json()
@@ -416,7 +416,7 @@ class EntityMediafilesCreate(GenericObjectDetail):
 
 # super is called using MRO (method resolution order)
 class EntityMetadata(GenericObjectDetail, GenericObjectMetadata):
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def get(self, id, spec="elody"):
         fields = [
             *request.args.getlist("field"),
@@ -424,14 +424,14 @@ class EntityMetadata(GenericObjectDetail, GenericObjectMetadata):
         ]
         return super(GenericObjectDetail, self).get("entities", id, fields=fields)
 
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def post(self, id, spec="elody"):
         entity = super().get("entities", id)
         metadata = super(GenericObjectDetail, self).post("entities", id)
         signal_entity_changed(get_rabbit(), entity)
         return metadata, 201
 
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def put(self, id, spec="elody"):
         if request.args.get("soft", 0, int):
             return "good", 200
@@ -441,7 +441,7 @@ class EntityMetadata(GenericObjectDetail, GenericObjectMetadata):
         signal_entity_changed(get_rabbit(), entity)
         return metadata, 201
 
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def patch(self, id, spec="elody"):
         if request.args.get("soft", 0, int):
             return "good", 200
@@ -453,12 +453,12 @@ class EntityMetadata(GenericObjectDetail, GenericObjectMetadata):
 
 
 class EntityMetadataKey(GenericObjectDetail, GenericObjectMetadataKey):
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def get(self, id, key):
         super().get("entities", id)
         return super(GenericObjectDetail, self).get("entities", id, key)
 
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def delete(self, id, key):
         if request.args.get("soft", 0, int):
             return "good", 200
@@ -469,11 +469,11 @@ class EntityMetadataKey(GenericObjectDetail, GenericObjectMetadataKey):
 
 
 class EntityRelations(GenericObjectDetail, GenericObjectRelations):
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def get(self, id, spec="elody"):
         return super(GenericObjectDetail, self).get("entities", id)
 
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def post(self, id, spec="elody"):
         entity = super().get("entities", id)
         relations = super(GenericObjectDetail, self).post("entities", id)[0]
@@ -489,7 +489,7 @@ class EntityRelations(GenericObjectDetail, GenericObjectRelations):
         signal_entity_changed(get_rabbit(), entity)
         return relations, 201
 
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def put(self, id, spec="elody"):
         if request.args.get("soft", 0, int):
             return "good", 200
@@ -498,7 +498,7 @@ class EntityRelations(GenericObjectDetail, GenericObjectRelations):
         signal_entity_changed(get_rabbit(), entity)
         return relations, 201
 
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def patch(self, id, spec="elody"):
         if request.args.get("soft", 0, int):
             return "good", 200
@@ -507,7 +507,7 @@ class EntityRelations(GenericObjectDetail, GenericObjectRelations):
         signal_entity_changed(get_rabbit(), entity)
         return relations, 201
 
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def delete(self, id, spec="elody"):
         relations = self._get_content_according_content_type(request, "relations")
         entity = super().get("entities", id)
@@ -518,7 +518,7 @@ class EntityRelations(GenericObjectDetail, GenericObjectRelations):
 
 
 class EntityRelationsAll(GenericObjectDetail):
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def get(self, id):
         entity = super().get("entities", id)
 
@@ -533,7 +533,7 @@ class EntityRelationsAll(GenericObjectDetail):
 
 
 class EntitySetPrimaryMediafile(GenericObjectDetail):
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def put(self, id, mediafile_id):
         entity = super().get("entities", id)
         self._abort_if_item_doesnt_exist("mediafiles", mediafile_id)
@@ -545,7 +545,7 @@ class EntitySetPrimaryMediafile(GenericObjectDetail):
 
 
 class EntitySetPrimaryThumbnail(GenericObjectDetail):
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def put(self, id, mediafile_id):
         entity = super().get("entities", id)
         self._abort_if_item_doesnt_exist("mediafiles", mediafile_id)
@@ -557,7 +557,7 @@ class EntitySetPrimaryThumbnail(GenericObjectDetail):
 
 
 class EntityOrder(GenericObjectDetail):
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def get(self, id):
         entity = super().get_object_detail("entities", id)
         raw_id = get_raw_id(entity)
@@ -592,7 +592,7 @@ class EntityOrder(GenericObjectDetail):
             "text/csv",
         )
 
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def post(self, id):
         entity = super().get("entities", id)
         if request.content_type != "text/csv":

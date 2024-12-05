@@ -1,6 +1,6 @@
 from flask import request
 from inuits_policy_based_auth import RequestContext
-from policy_factory import authenticate
+from policy_factory import apply_policies
 from resources.generic_object import (
     GenericObject,
     GenericObjectDetail,
@@ -8,7 +8,7 @@ from resources.generic_object import (
 
 
 class KeyValueStore(GenericObject):
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def post(self):
         content = request.get_json()
         return super().post(
@@ -19,24 +19,24 @@ class KeyValueStore(GenericObject):
 
 
 class KeyValueStoreDetail(GenericObjectDetail):
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def get(self, id):
         return super().get("key_value_store", id)
 
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def put(self, id):
         content = request.get_json()
         return super().put(
             "key_value_store", id, content=content, type="key_value_store"
         )
 
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def patch(self, id):
         content = request.get_json()
         return super().patch(
             "key_value_store", id, content=content, type="key_value_store"
         )
 
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def delete(self, id):
         return super().delete("key_value_store", id)

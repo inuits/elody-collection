@@ -10,7 +10,7 @@ from elody.util import (
 from flask import after_this_request, request
 from flask_restful import abort
 from inuits_policy_based_auth import RequestContext
-from policy_factory import authenticate, get_user_context
+from policy_factory import apply_policies, get_user_context
 from rabbit import get_rabbit
 from resources.generic_object import (
     GenericObject,
@@ -21,7 +21,7 @@ from urllib.parse import quote
 
 
 class Mediafile(GenericObject):
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def get(self, spec="elody"):
         accept_header = request.headers.get("Accept")
         exclude_non_editable_fields = request.args.get(
@@ -73,14 +73,14 @@ class Mediafile(GenericObject):
             accept_header,
         )
 
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def post(self):
         if request.args.get("soft", 0, int):
             return "good", 200
         accept_header = request.headers.get("Accept")
         return super().post("mediafiles", type="mediafile", accept_header=accept_header)
 
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def put(self):
         if request.args.get("soft", 0, int):
             return "good", 200
@@ -111,7 +111,7 @@ class Mediafile(GenericObject):
 
 
 class MediafileAssets(GenericObjectDetail):
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def get(self, id):
         mediafile = super().get("mediafiles", id)
         entities = []
@@ -126,7 +126,7 @@ class MediafileAssets(GenericObjectDetail):
 
 
 class MediafileCopyright(GenericObjectDetail):
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def get(self, id):
         mediafile = super().get("mediafiles", id)
         if not mediafile_is_public(mediafile):
@@ -138,7 +138,7 @@ class MediafileCopyright(GenericObjectDetail):
 
 
 class MediafileDetail(GenericObjectDetail):
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def get(self, id):
         mediafile = super().get_object_detail("mediafiles", id)
         exclude_non_editable_fields = request.args.get(
@@ -164,7 +164,7 @@ class MediafileDetail(GenericObjectDetail):
             accept_header,
         )
 
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def put(self, id):
         if request.args.get("soft", 0, int):
             return "good", 200
@@ -185,7 +185,7 @@ class MediafileDetail(GenericObjectDetail):
         signal_mediafile_changed(get_rabbit(), mediafile, updated_mediafile)
         return updated_mediafile, 201
 
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def patch(self, id):
         if request.args.get("soft", 0, int):
             return "good", 200
@@ -194,7 +194,7 @@ class MediafileDetail(GenericObjectDetail):
         signal_mediafile_changed(get_rabbit(), old_mediafile, mediafile)
         return mediafile, 201
 
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def delete(self, id):
         if request.args.get("soft", 0, int):
             return "good", 200
@@ -213,7 +213,7 @@ class MediafileDetail(GenericObjectDetail):
 
 
 class MediafileMetadata(GenericObjectDetail, GenericObjectMetadata):
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def patch(self, id):
         if request.args.get("soft", 0, int):
             return "good", 200
@@ -228,7 +228,7 @@ class MediafileMetadata(GenericObjectDetail, GenericObjectMetadata):
 
 
 class MediafileDerivatives(GenericObjectDetail):
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def get(self, id):
         parent_mediafile = super().get("mediafiles", id)
         mediafiles = dict()
@@ -242,7 +242,7 @@ class MediafileDerivatives(GenericObjectDetail):
 
         return mediafiles, 200
 
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def post(self, id):
         old_parent_mediafile = super().get("mediafiles", id)
         content = self._get_content_according_content_type(request, "mediafiles")
@@ -279,7 +279,7 @@ class MediafileDerivatives(GenericObjectDetail):
                 response, accept_header, 201
             )
 
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def delete(self, id):
         mediafile = super().get("mediafiles", id)
         parent = self.get_parent_mediafile(mediafile)
@@ -294,7 +294,7 @@ class MediafileDerivatives(GenericObjectDetail):
 
 
 class MediafileDownload(GenericObjectDetail):
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def get(self, id):
         mediafile = super().get("mediafiles", id)
         filename = mediafile["filename"]
@@ -303,7 +303,7 @@ class MediafileDownload(GenericObjectDetail):
 
 
 class MediafileParent(GenericObjectDetail):
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def get(self, id):
         mediafile = super().get("mediafiles", id)
         parent_mediafile = self.get_parent_mediafile(mediafile)

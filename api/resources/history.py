@@ -2,12 +2,12 @@ from elody.error_codes import ErrorCode, get_error_code, get_read
 from flask import request
 from flask_restful import abort
 from inuits_policy_based_auth import RequestContext
-from policy_factory import authenticate
+from policy_factory import apply_policies
 from resources.base_resource import BaseResource
 
 
 class History(BaseResource):
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def get(self, collection, id):
         timestamp = request.args.get("timestamp")
         all_entries = request.args.get("all", 0, int)

@@ -1,6 +1,6 @@
 from flask import request
 from inuits_policy_based_auth import RequestContext
-from policy_factory import authenticate, get_user_context
+from policy_factory import apply_policies, get_user_context
 from resources.generic_object import (
     GenericObject,
     GenericObjectDetail,
@@ -8,7 +8,7 @@ from resources.generic_object import (
 
 
 class SavedSearch(GenericObject):
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def get(self):
         skip = request.args.get("skip", 0, int)
         limit = request.args.get("limit", 20, int)
@@ -24,7 +24,7 @@ class SavedSearch(GenericObject):
             "abstracts", skip=skip, limit=limit, fields=fields, filters=filters
         )
 
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def post(self):
         content = request.get_json()
         user = get_user_context().email or "default_uploader"
@@ -34,13 +34,13 @@ class SavedSearch(GenericObject):
 
 
 class SavedSearchDetail(GenericObjectDetail):
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def get(self, id):
         saved_search = super().get("abstracts", id)
         self._abort_if_not_valid_type(saved_search, "saved_search")
         return saved_search
 
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def put(self, id):
         content = request.get_json()
         return super().put(
@@ -50,7 +50,7 @@ class SavedSearchDetail(GenericObjectDetail):
             content=content,
         )
 
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def patch(self, id):
         content = request.get_json()
         return super().patch(
@@ -60,6 +60,6 @@ class SavedSearchDetail(GenericObjectDetail):
             content=content,
         )
 
-    @authenticate(RequestContext(request))
+    @apply_policies(RequestContext(request))
     def delete(self, id):
         return super().delete("abstracts", id)
