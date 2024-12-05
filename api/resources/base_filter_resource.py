@@ -36,11 +36,13 @@ class BaseFilterResource(BaseResource):
         items["results"] = self._inject_api_urls_into_entities(items["results"])
         return items
 
-    def _execute_advanced_search_with_query_v2(self, query, collection="entities"):
+    def _execute_advanced_search_with_query_v2(
+        self, query, collection="entities", *, skip=None, limit=None
+    ):
         order_by = request.args.get("order_by", None)
         asc = bool(request.args.get("asc", 1, int))
-        skip = request.args.get("skip", 0, int)
-        limit = request.args.get("limit", 20, int)
+        skip = skip if skip is not None else request.args.get("skip", 0, int)
+        limit = limit if limit is not None else request.args.get("limit", 20, int)
 
         @after_this_request
         def add_header(response):
