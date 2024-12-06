@@ -202,7 +202,7 @@ class ArangoStorageManager(GenericStorageManager):
             "testimony": ["isTestimonyFor"],
             "thesaurus": [],
             "user": ["hasTenant"],
-            "download": ["hasAsset"],
+            "download": ["hasAsset", "hasMediafile"],
         }.get(type, ["components"])
         return [x for x in relations if not exclude or x not in exclude]
 
