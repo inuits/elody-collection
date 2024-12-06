@@ -283,6 +283,11 @@ class ArangoStorageManager(GenericStorageManager):
             "is_primary": mediafile_public,
             "is_primary_thumbnail": mediafile_public,
         }
+        relation_properties_copy = deepcopy(relation_properties)
+        for relation in relation_properties_copy:
+            if is_downloadset := relation.get("is_downloadset"):
+                data["is_downloadset"] = is_downloadset
+                relation_properties.remove(relation)
         if mediafile_public:
             for edge in self.db.collection("hasMediafile").find({"_from": item_id}):
                 if "is_primary" in edge and edge["is_primary"]:
@@ -292,11 +297,6 @@ class ArangoStorageManager(GenericStorageManager):
         self.db.graph(self.default_graph_name).edge_collection("hasMediafile").insert(
             data
         )
-        relation_properties_copy = deepcopy(relation_properties)
-        for relation in relation_properties_copy:
-            if is_downloadset := relation.get("is_downloadset"):
-                data["is_downloadset"] = is_downloadset
-                relation_properties.remove(relation)
         self.db.graph(self.default_graph_name).edge_collection("isMediafileFor").insert(
             {
                 "_from": data["_to"],
