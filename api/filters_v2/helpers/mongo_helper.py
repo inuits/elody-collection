@@ -35,7 +35,7 @@ def append_matcher(matcher, matchers, matchers_per_schema, operator="and"):
         matcher = {"OR_MATCHER": matcher}
     else:
         raise Exception(
-            f"{get_error_code(ErrorCode.UNSUPPORTED_OPERATOR, get_read())} Operator '{operator}' not supported."
+            f"{get_error_code(ErrorCode.UNSUPPORTED_OPERATOR, get_read())} | operator:{operator} - Operator '{operator}' not supported."
         )
 
     if not did_append_matcher and f"'{matcher_key}': " not in str(matchers_per_schema):

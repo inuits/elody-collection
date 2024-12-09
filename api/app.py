@@ -110,14 +110,14 @@ def intercept_403(response: Response):
         if len(restricted_keys) > 0:
             return make_response(
                 jsonify(
-                    message=f"{get_error_code(ErrorCode.INSUFFICIENT_PERMISSIONS, get_read())} You don't have the permission to create/update/delete the following fields: {restricted_keys}.",
+                    message=f"{get_error_code(ErrorCode.INSUFFICIENT_PERMISSIONS, get_read())} | restricted_keys:{restricted_keys} - You don't have the permission to create/update/delete the following fields: {restricted_keys}.",
                     restricted_keys=restricted_keys,
                 ),
                 response.status_code,
             )
         if api.handle_error(Forbidden()).get_data() == response.get_data():
             raise Forbidden(
-                f"{get_error_code(ErrorCode.INSUFFICIENT_PERMISSIONS, get_read())} You don't have the permission to create/update/delete this resource."
+                f"{get_error_code(ErrorCode.INSUFFICIENT_PERMISSIONS_WITHOUT_VARS, get_read())} - You don't have the permission to create/update/delete this resource."
             )
     return response
 

@@ -72,7 +72,7 @@ class LazyMigrator:
             if self.__get_item_schema(migrated_item) == item_schema:
                 self.__patch_exception_count(self.EXCEPTION_LIMIT)
                 raise Exception(
-                    f"{get_error_code(ErrorCode.UNABLE_TO_UPDATE_SCHEMA_VERSION, get_write())} Schema version is not being updated during the migration of item with id {migrated_item.get('id', migrated_item['_id'])}."
+                    f"{get_error_code(ErrorCode.UNABLE_TO_UPDATE_SCHEMA_VERSION, get_write())} | migrated_item:{migrated_item.get('id', migrated_item['_id'])} - Schema version is not being updated during the migration of item with id {migrated_item.get('id', migrated_item['_id'])}."
                 )
 
     def __get_schema_to_upgrade_to(self, item_schema, latest_schema):
@@ -81,7 +81,7 @@ class LazyMigrator:
         if item_schema_type != latest_schema_type:
             self.__patch_exception_count(self.EXCEPTION_LIMIT)
             raise Exception(
-                f"{get_error_code(ErrorCode.LAZY_MIGRATION_SCHEMA_TYPE_MISMATCH, get_write())} Cannot lazily migrate to different schema types."
+                f"{get_error_code(ErrorCode.LAZY_MIGRATION_SCHEMA_TYPE_MISMATCH, get_write())} - Cannot lazily migrate to different schema types."
             )
         schema_version = (
             int(item_schema_version) + 1

@@ -524,7 +524,7 @@ class GenericObjectMetadata(BaseResource):
         if not metadata:
             abort(
                 400,
-                message=f"{get_error_code(ErrorCode.NO_METADATA_AVAILABLE, get_write())} Item with id {id} has no metadata",
+                message=f"{get_error_code(ErrorCode.NO_METADATA_AVAILABLE_FOR_ITEM, get_write())} | id:{id} - Item with id {id} has no metadata",
             )
         return metadata, 201
 

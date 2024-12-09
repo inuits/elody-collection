@@ -10,7 +10,7 @@ class ArangoFilters:
     def filter(self, body, skip, limit, collection="entities", order_by=None, asc=True):
         if not self.storage.db:
             raise ValueError(
-                f"{get_error_code(ErrorCode.DATABASE_NOT_INITIALIZED, get_read())} DB is not initialized"
+                f"{get_error_code(ErrorCode.DATABASE_NOT_INITIALIZED, get_read())} - DB is not initialized"
             )
 
         aql = self.__generate_aql_query(body, collection, order_by, asc)
@@ -64,7 +64,7 @@ class ArangoFilters:
             generated_query = filter.generate_query(filter_criteria)
             if generated_query == "":
                 raise ValueError(
-                    f"{get_error_code(ErrorCode.NO_MATCHER_FOR_FILTER_REQUEST, get_read())} No matcher was able to handle filter request."
+                    f"{get_error_code(ErrorCode.NO_MATCHER_FOR_FILTER_REQUEST, get_read())} - No matcher was able to handle filter request."
                 )
 
             item_types = filter_criteria.get("item_types", [])

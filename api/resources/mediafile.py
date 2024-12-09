@@ -286,7 +286,7 @@ class MediafileDerivatives(GenericObjectDetail):
         if not parent:
             abort(
                 400,
-                message=f"{get_error_code(ErrorCode.ALREADY_PARENT, get_write())} Mediafile with id {get_raw_id(mediafile)} is already a parent",
+                message=f"{get_error_code(ErrorCode.ALREADY_PARENT, get_write())} | id:{get_raw_id(mediafile)} - Mediafile with id {get_raw_id(mediafile)} is already a parent",
             )
         relations = self.storage.get_collection_item_relations("mediafiles", id)
         self.storage._delete_impacted_relations("mediafiles", id)

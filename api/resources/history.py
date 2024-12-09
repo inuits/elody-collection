@@ -14,7 +14,7 @@ class History(BaseResource):
         if timestamp and all_entries:
             abort(
                 400,
-                message=f"{get_error_code(ErrorCode.CANNOT_SPECIFY_BOTH, get_read())} Can't specify both 'timestamp' and 'all'",
+                message=f"{get_error_code(ErrorCode.CANNOT_SPECIFY_BOTH, get_read())} - Can't specify both 'timestamp' and 'all'",
             )
         history_object = self.storage.get_history_for_item(
             collection, id, timestamp, all_entries
@@ -22,6 +22,6 @@ class History(BaseResource):
         if not history_object:
             abort(
                 404,
-                message=f"{get_error_code(ErrorCode.HISTORY_ITEM_NOT_FOUND, get_read())} Could not find history object",
+                message=f"{get_error_code(ErrorCode.HISTORY_ITEM_NOT_FOUND, get_read())} - Could not find history object",
             )
         return history_object

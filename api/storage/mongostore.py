@@ -209,7 +209,7 @@ class MongoStorageManager(GenericStorageManager):
                     item["identifiers"]
                 )
                 raise BadRequest(
-                    f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} Entity with following identifiers already exists: {', '.join(list(duplicate_keys))}"
+                    f"{get_error_code(ErrorCode.DUPLICATE_IDENTIFIERS, get_write())} | duplicate_keys:{', '.join(list(duplicate_keys))} - Entity with following identifiers already exists: {', '.join(list(duplicate_keys))}"
                 )
 
     def _map_entity_relation(self, relation):
@@ -462,7 +462,7 @@ class MongoStorageManager(GenericStorageManager):
             log.exception(f"{error.__class__.__name__}: {error}", item, exc_info=error)
             if error.code == 11000:
                 raise NonUniqueException(
-                    f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} {error.details.get('errmsg')}"
+                    f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} - {error.details.get('errmsg')}"
                 )
             raise error
         return self._prepare_mongo_document(item, False, collection, False)
@@ -778,7 +778,7 @@ class MongoStorageManager(GenericStorageManager):
         except DuplicateKeyError as ex:
             if ex.code == 11000:
                 raise NonUniqueException(
-                    f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} {ex.details.get('errmsg')}"
+                    f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} - {ex.details.get('errmsg')}"
                 )
             raise ex
         return self.get_item_from_collection_by_id(collection, id)
@@ -845,7 +845,7 @@ class MongoStorageManager(GenericStorageManager):
             log.exception(f"{error.__class__.__name__}: {error}", item, exc_info=error)
             if error.code == 11000:
                 raise NonUniqueException(
-                    f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} {error.details.get('errmsg')}"
+                    f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} - {error.details.get('errmsg')}"
                 )
             raise error
         log.info("Successfully patched item", item)
@@ -897,7 +897,7 @@ class MongoStorageManager(GenericStorageManager):
             log.exception(f"{error.__class__.__name__}: {error}", item, exc_info=error)
             if error.code == 11000:
                 raise NonUniqueException(
-                    f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} {error.details.get('errmsg')}"
+                    f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} - {error.details.get('errmsg')}"
                 )
             raise error
         if scope:
@@ -930,7 +930,7 @@ class MongoStorageManager(GenericStorageManager):
         except DuplicateKeyError as ex:
             if ex.code == 11000:
                 raise NonUniqueException(
-                    f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} {ex.details.get('errmsg')}"
+                    f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} - {ex.details.get('errmsg')}"
                 )
             raise ex
         return (
@@ -970,7 +970,7 @@ class MongoStorageManager(GenericStorageManager):
             log.exception(f"{error.__class__.__name__}: {error}", item, exc_info=error)
             if error.code == 11000:
                 raise NonUniqueException(
-                    f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} {error.details.get('errmsg')}"
+                    f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} - {error.details.get('errmsg')}"
                 )
             raise error
         return self.get_item_from_collection_by_id(collection, items[0]["_id"])
@@ -1039,7 +1039,7 @@ class MongoStorageManager(GenericStorageManager):
         except DuplicateKeyError as ex:
             if ex.code == 11000:
                 raise NonUniqueException(
-                    f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} {ex.details.get('errmsg')}"
+                    f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} - {ex.details.get('errmsg')}"
                 )
             raise ex
         return self.get_item_from_collection_by_id(collection, id)

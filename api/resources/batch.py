@@ -70,7 +70,7 @@ class Batch(BaseResource):
             )
             abort(
                 422,
-                message=f"{get_error_code(ErrorCode.COLUMN_NOT_FOUND, get_write())} {message}",
+                message=f"{get_error_code(ErrorCode.COLUMN_NOT_FOUND, get_write())} - {message}",
             )
 
     def _parse_metadata_key_to_relation(
@@ -214,5 +214,5 @@ class Batch(BaseResource):
         fail_job(self.main_job_id_without_dry_run, message, get_rabbit=self.get_rabbit)
         abort(
             415,
-            message=f"{get_error_code(ErrorCode.ONLY_TYPE_CSV_ALLOWED, get_write())} {message}",
+            message=f"{get_error_code(ErrorCode.ONLY_TYPE_CSV_ALLOWED, get_write())} - {message}",
         )

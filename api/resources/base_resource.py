@@ -93,21 +93,21 @@ class BaseResource(Resource):
             return item
         abort(
             404,
-            message=f"{get_error_code(ErrorCode.ITEM_NOT_FOUND, get_read())} Item with id {id} doesn't exist in collection {collection}",
+            message=f"{get_error_code(ErrorCode.ITEM_NOT_FOUND_IN_COLLECTION, get_read())} | id:{id} | collection:{collection} - Item with id {id} doesn't exist in collection {collection}",
         )
 
     def _abort_if_not_valid_json(self, type, json):
         if validation_error := validate_json(json, self.schemas_by_type.get(type)):
             abort(
                 400,
-                message=f"{get_error_code(ErrorCode.INVALID_FORMAT, get_write())} {type} doesn't have a valid format. {validation_error}",
+                message=f"{get_error_code(ErrorCode.INVALID_FORMAT_FOR_TYPE, get_write())} | type:{type} - {type} doesn't have a valid format. {validation_error}",
             )
 
     def _abort_if_not_valid_type(self, item, type):
         if type and "type" in item and item["type"] != type:
             abort(
                 400,
-                message=f"{get_error_code(ErrorCode.INVALID_TYPE, get_write())} Item has the wrong type",
+                message=f"{get_error_code(ErrorCode.INVALID_TYPE, get_write())} - Item has the wrong type",
             )
 
     def _add_relations_to_metadata(self, entity, collection="entities", sort_by=None):
@@ -135,7 +135,7 @@ class BaseResource(Resource):
         if collection not in self.storage.get_existing_collections():
             abort(
                 400,
-                message=f"{get_error_code(ErrorCode.COLLECTION_NOT_FOUND, get_read())} Collection {collection} does not exist.",
+                message=f"{get_error_code(ErrorCode.COLLECTION_NOT_FOUND, get_read())} | collection:{collection} - Collection {collection} does not exist.",
             )
         self.known_collections.append(collection)
 
@@ -164,7 +164,7 @@ class BaseResource(Resource):
             else:
                 abort(
                     404,
-                    message=f"{get_error_code(ErrorCode.ITEM_NOT_FOUND, get_read())} Item with id {id} does not exist.",
+                    message=f"{get_error_code(ErrorCode.ITEM_NOT_FOUND, get_read())} | id:{id} - Item with id {id} does not exist.",
                 )
 
     def _count_children_from_mediafile(self, parent_mediafile, count=0):

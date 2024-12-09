@@ -30,7 +30,7 @@ class Validator(BaseResource):
                 )
                 if not content:
                     raise ValueError(
-                        f"{get_error_code(ErrorCode.CONTENT_NOT_FOUND, get_write())} Content is missing in the request."
+                        f"{get_error_code(ErrorCode.CONTENT_NOT_FOUND, get_write())} - Content is missing in the request."
                     )
 
                 strategy, validator = (
@@ -59,5 +59,5 @@ class Validator(BaseResource):
         validation_error = validate_json(content, validator)
         if validation_error:
             raise BadRequest(
-                f"{get_error_code(ErrorCode.VALIDATION_ERROR, get_write())} {validation_error}"
+                f"{get_error_code(ErrorCode.VALIDATION_ERROR, get_write())} - {validation_error}"
             )

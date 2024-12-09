@@ -27,7 +27,7 @@ def get_filter(input_type: str):
         return TypeFilterType()
 
     raise ValueError(
-        f"{get_error_code(ErrorCode.UNDEFINED_FILTER_FOR_INPUT_TYPE, get_read())} No filter defined for input type '{input_type}'"
+        f"{get_error_code(ErrorCode.UNDEFINED_FILTER_FOR_INPUT_TYPE, get_read())} | input_type:{input_type} - No filter defined for input type '{input_type}'"
     )
 
 

@@ -192,7 +192,7 @@ class MongoFilters(MongoStorageManager):
     def __get_filter_option_label(self, collection, identifier, metadata_key_as_label):
         if not metadata_key_as_label:
             raise Exception(
-                f"{get_error_code(ErrorCode.METADATA_KEY_UNDEFINED, get_read())} Please provide 'metadata_key_as_label,' a metadata key whose value will be used as label for filter options."
+                f"{get_error_code(ErrorCode.METADATA_KEY_UNDEFINED, get_read())} - Please provide 'metadata_key_as_label,' a metadata key whose value will be used as label for filter options."
             )
         return list(
             self.db[collection].aggregate(
