@@ -266,7 +266,7 @@ class MediafileDerivatives(GenericObjectDetail):
                 )
                 if accept_header == "text/uri-list":
                     ticket_id = self._create_ticket(mediafile["filename"])
-                    response += f"{self.storage_api_url}/upload-with-ticket/{mediafile['filename']}?id={get_raw_id(mediafile)}&ticket_id={ticket_id}\n"
+                    response += f"{self.storage_api_url}/upload-with-ticket/{quote(mediafile['filename'])}?id={get_raw_id(mediafile)}&ticket_id={ticket_id}\n"
                 else:
                     response.append(mediafile)
                 parent_mediafile = self.storage.get_item_from_collection_by_id(

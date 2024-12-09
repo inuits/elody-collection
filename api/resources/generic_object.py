@@ -14,6 +14,7 @@ from inuits_policy_based_auth import RequestContext
 from policy_factory import apply_policies, get_user_context
 from resources.base_filter_resource import BaseFilterResource
 from resources.base_resource import BaseResource
+from urllib.parse import quote
 from validation.validate import validate
 
 
@@ -133,7 +134,7 @@ class GenericObject(BaseResource):
             return ex.args[0], 409
         if accept_header == "text/uri-list":
             ticket_id = self._create_ticket(collection_item["filename"])
-            response = f"{self.storage_api_url}/upload-with-ticket/{collection_item['filename'].strip()}?id={get_raw_id(collection_item)}&ticket_id={ticket_id}"
+            response = f"{self.storage_api_url}/upload-with-ticket/{quote(collection_item['filename'].strip())}?id={get_raw_id(collection_item)}&ticket_id={ticket_id}"
         else:
             response = collection_item
         return self._create_response_according_accept_header(

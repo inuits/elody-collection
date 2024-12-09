@@ -341,7 +341,7 @@ class EntityMediafiles(GenericObjectDetail, GenericObject):
             )
             if accept_header == "text/uri-list":
                 ticket_id = self._create_ticket(mediafile["filename"])
-                response += f"{self.storage_api_url}/upload-with-ticket/{mediafile['filename']}?id={get_raw_id(mediafile)}&ticket_id={ticket_id}\n"
+                response += f"{self.storage_api_url}/upload-with-ticket/{quote(mediafile['filename'])}?id={get_raw_id(mediafile)}&ticket_id={ticket_id}\n"
             else:
                 response.append(mediafile)
         signal_mediafiles_added_for_entity(get_rabbit(), entity, mediafiles)
