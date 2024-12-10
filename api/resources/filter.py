@@ -197,7 +197,11 @@ class FilterGenericObjectsV2(BaseFilterResource):
                 query.insert(0, filter)
         if storage_type == "http":
             http_storage = get_storage_mapper().get("http")
-            items = http_storage.get_items_from_collection(self, collection)
+            filter = config.serialization(
+                f"{spec}_filter", f"{config.SCHEMA_TYPE}_filter"
+            )
+            filters = filter(query)
+            items = http_storage.get_items_from_collection(self, collection, filters=filters)
         else:
             items = self._execute_advanced_search_with_query_v2(query, collection)
         return self._create_response_according_accept_header(
