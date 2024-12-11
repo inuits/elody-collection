@@ -62,8 +62,8 @@ class Batch(BaseResource):
                     },
                 },
             )
-        except ColumnNotFoundException:
-            message = "One or more required columns headers aren't defined"
+        except ColumnNotFoundException as missing_columns:
+            message = f"{get_error_code(ErrorCode.COLUMN_NOT_FOUND, get_write())} | missing_columns:{missing_columns} - Not all identifying columns are present in CSV: {missing_columns}"
             fail_job(self.main_job_id_with_dry_run, message, get_rabbit=self.get_rabbit)
             fail_job(
                 self.main_job_id_without_dry_run, message, get_rabbit=self.get_rabbit
