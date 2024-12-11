@@ -6,7 +6,7 @@ from filters_v2.matchers.base_matchers import BaseMatchers
 from logging_elody.log import log
 
 
-def append_matcher(matcher, matchers, matchers_per_schema, operator="and"):
+def append_matcher(matcher, matchers, operator="and"):
     matcher_key = list(matcher.keys())[0]
     did_append_matcher = False
 
@@ -38,7 +38,7 @@ def append_matcher(matcher, matchers, matchers_per_schema, operator="and"):
             f"{get_error_code(ErrorCode.UNSUPPORTED_OPERATOR, get_read())} | operator:{operator} - Operator '{operator}' not supported."
         )
 
-    if not did_append_matcher and f"'{matcher_key}': " not in str(matchers_per_schema):
+    if not did_append_matcher:
         matchers.append(matcher)
 
 

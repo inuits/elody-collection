@@ -32,3 +32,27 @@ def has_selection_filter_with_multiple_values(filter_request_body):
         if filter_criteria["type"] == "selection" and len(filter_criteria["value"]) > 1
     ]
     return len(selection_filter_with_multiple_values) > 0
+
+
+def parse_optional_filters(filter_criteria):
+    if not filter_criteria.get("key"):
+        return [filter_criteria]
+
+    filter_criterias = []
+    prefix = ""
+    key = filter_criteria["key"]
+    if key[0] == "!":
+        key = key[1:]
+        prefix += "!"
+    if key[0] == "?":
+        key = key[1:]
+        prefix += "?"
+
+    filter_criterias.append(
+        {**filter_criteria, "key": key, "operator": "or" if prefix == "?" else "and"}
+    )
+    if prefix == "?":
+        filter_criterias.append(
+            {**filter_criteria, "key": key, "value": "", "operator": "or"}
+        )
+    return filter_criterias

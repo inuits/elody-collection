@@ -39,6 +39,8 @@ class FilterMatcherMapping(ABC):
             "contains": ContainsMatcher,
         },
         "boolean": {
+            "any": AnyMatcher,
+            "none": NoneMatcher,
             "exact": ExactMatcher,
         },
         "type": {
