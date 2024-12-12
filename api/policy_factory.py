@@ -10,7 +10,12 @@ def init_policy_factory():
     global _policy_factory
     try:
         permissions_module = import_module("apps.permissions")
-        load_policies(_policy_factory, None, permissions_module.PERMISSIONS)
+        load_policies(
+            _policy_factory,
+            None,
+            permissions_module.PERMISSIONS,
+            permissions_module.PLACEHOLDERS,
+        )
     except (ModuleNotFoundError, AttributeError):
         load_policies(_policy_factory, None)
 

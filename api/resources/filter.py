@@ -201,7 +201,9 @@ class FilterGenericObjectsV2(BaseFilterResource):
                 f"{spec}_filter", f"{config.SCHEMA_TYPE}_filter"
             )
             filters = filter(query)
-            items = http_storage.get_items_from_collection(self, collection, filters=filters)
+            items = http_storage.get_items_from_collection(
+                self, collection, filters=filters
+            )
         else:
             items = self._execute_advanced_search_with_query_v2(query, collection)
         return self._create_response_according_accept_header(
