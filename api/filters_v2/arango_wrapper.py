@@ -155,12 +155,15 @@ class ArangoWrapper:
         aql += f"\nSORT {', '.join(sort_aqls)}"
         return aql
 
-    def _handle_skip_stage(self, skip, aql, mongo_pipeline, **_):
-        limit = [stage for stage in mongo_pipeline if stage.get("$limit") is not None][
-            0
-        ]["$limit"]
-        if skip is None or limit is None:
-            return aql
+    def _handle_limit_stage(self, limit, aql, mongo_pipeline, **_):
+        skip_stage = [
+            stage for stage in mongo_pipeline if stage.get("$skip") is not None
+        ]
+        skip = 0
+        if len(skip_stage) > 0:
+            skip = [
+                stage for stage in mongo_pipeline if stage.get("$skip") is not None
+            ][0]["$skip"]
 
         aql += f"\nLIMIT {skip}, {limit}"
         return aql
