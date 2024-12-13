@@ -467,6 +467,15 @@ class MongoStorageManager(GenericStorageManager):
             raise error
         return self._prepare_mongo_document(item, False, collection, False)
 
+    def delete_collection_item_relations(self, collection, id):
+        mediafiles = self.get_collection_item_mediafiles(collection, id)
+        for mediafile in mediafiles:
+            linked_entities = self.get_mediafile_linked_entities(mediafile)
+            self.delete_item_from_collection("mediafiles", get_raw_id(mediafile))
+            if tenant_id := get_user_context().x_tenant.id:
+                mediafile["filename"] = f"{tenant_id}/{mediafile['filename']}"
+            signal_mediafile_deleted(get_rabbit(), mediafile, linked_entities)
+
     def drop_all_collections(self):
         self.db.entities.drop()
         self.db.jobs.drop()

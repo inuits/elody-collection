@@ -237,17 +237,9 @@ class EntityDetail(GenericObjectDetail):
             return "good", 200
         entity = super().get("entities", id)
         if request.args.get("delete_mediafiles", 0, int):
-            mediafiles = self.storage.get_collection_item_mediafiles(
+            self.storage.delete_collection_item_mediafiles(
                 "entities", get_raw_id(entity)
             )
-            for mediafile in mediafiles:
-                linked_entities = self.storage.get_mediafile_linked_entities(mediafile)
-                self.storage.delete_item_from_collection(
-                    "mediafiles", get_raw_id(mediafile)
-                )
-                if tenant_id := get_user_context().x_tenant.id:
-                    mediafile["filename"] = f"{tenant_id}/{mediafile['filename']}"
-                signal_mediafile_deleted(get_rabbit(), mediafile, linked_entities)
         response = super().delete("entities", id)
         self._delete_tenant(entity)
         signal_entity_deleted(get_rabbit(), entity)
