@@ -83,14 +83,24 @@ class Batch(BaseResource):
                 if isinstance(parse_item, list):
                     for sub_item in parse_item:
                         for item in items:
-                            self._parse_key_to_item(csv_multi_object, sub_item, item)
+                            metadata_copy = item.get("metadata", [])[:]
+                            for metadata_item in metadata_copy:
+                                if metadata_item["key"] == sub_item["csv_key"]:
+                                    self._parse_key_to_item(
+                                        csv_multi_object, sub_item, item, metadata_item
+                                    )
                 else:
                     for item in items:
-                        self._parse_key_to_item(csv_multi_object, parse_item, item)
-                if key_to_remove_in_metadata:
-                    for key in key_to_remove_in_metadata:
-                        items = self.remove_metadata_by_key(items, key)
-                        setattr(csv_multi_object, f"set_{key}", items)
+                        metadata_copy = item.get("metadata", [])[:]
+                        for metadata_item in metadata_copy:
+                            if metadata_item["key"] == parse_item["csv_key"]:
+                                self._parse_key_to_item(
+                                    csv_multi_object, parse_item, item, metadata_item
+                                )
+            if key_to_remove_in_metadata:
+                for key in key_to_remove_in_metadata:
+                    items = self.remove_metadata_by_key(items, key)
+                setattr(csv_multi_object, f"set_{key}", items)
 
     def remove_metadata_by_key(self, data, key_to_remove):
         for item in data:
@@ -99,23 +109,21 @@ class Batch(BaseResource):
             ]
         return data
 
-    def _parse_key_to_item(self, csv_multi_object, parse_item, item):
-        metadata_list = item.get("metadata", [])
-        for metadata_item in metadata_list:
-            if metadata_item["key"] == parse_item["csv_key"]:
-                related_item = self.storage.get_item_from_collection_by_metadata(
-                    "entities",
-                    parse_item["db_key"],
-                    metadata_item["value"],
-                    parse_item["type"],
-                )
-                if not related_item:
-                    self._add_error_to_csv_multi_object(
-                        csv_multi_object, parse_item, metadata_item
-                    )
-                    break
-                metadata_list.remove(metadata_item)
-                self._add_relation_to_relation_list(parse_item, item, related_item)
+    def _parse_key_to_item(self, csv_multi_object, parse_item, item, metadata_item):
+        related_item = self.storage.get_item_from_collection_by_metadata(
+            "entities",
+            parse_item["db_key"],
+            metadata_item["value"],
+            parse_item["type"],
+        )
+        if not related_item:
+            self._add_error_to_csv_multi_object(
+                csv_multi_object, parse_item, metadata_item
+            )
+            return
+
+        item["metadata"].remove(metadata_item)
+        self._add_relation_to_relation_list(parse_item, item, related_item)
 
     def _add_relation_to_relation_list(self, parse_item, item, related_item):
         relation_list = item.get("relations", [])
