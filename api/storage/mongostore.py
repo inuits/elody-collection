@@ -5,7 +5,12 @@ from configuration import get_object_configuration_mapper
 from datetime import datetime, timezone
 from elody.error_codes import ErrorCode, get_error_code, get_write
 from elody.exceptions import NonUniqueException
-from elody.util import mediafile_is_public, signal_entity_changed
+from elody.util import (
+    get_raw_id,
+    mediafile_is_public,
+    signal_entity_changed,
+    signal_mediafile_deleted,
+)
 from logging_elody.log import log
 from migration.migrate import migrate
 from os import getenv
@@ -467,7 +472,7 @@ class MongoStorageManager(GenericStorageManager):
             raise error
         return self._prepare_mongo_document(item, False, collection, False)
 
-    def delete_collection_item_relations(self, collection, id):
+    def delete_collection_item_mediafiles(self, collection, id):
         mediafiles = self.get_collection_item_mediafiles(collection, id)
         for mediafile in mediafiles:
             linked_entities = self.get_mediafile_linked_entities(mediafile)
