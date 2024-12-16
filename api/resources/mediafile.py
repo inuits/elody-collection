@@ -207,7 +207,8 @@ class MediafileDetail(GenericObjectDetail):
             )
         response = super().delete("mediafiles", id, item=mediafile)
         if tenant_id := get_user_context().x_tenant.id:
-            mediafile["filename"] = f"{tenant_id}/{mediafile['filename']}"
+            if tenant_id != "tenant:super":
+                mediafile["filename"] = f"{tenant_id}/{mediafile['filename']}"
         signal_mediafile_deleted(get_rabbit(), mediafile, linked_entities)
         return response
 

@@ -478,7 +478,8 @@ class MongoStorageManager(GenericStorageManager):
             linked_entities = self.get_mediafile_linked_entities(mediafile)
             self.delete_item_from_collection("mediafiles", get_raw_id(mediafile))
             if tenant_id := get_user_context().x_tenant.id:
-                mediafile["filename"] = f"{tenant_id}/{mediafile['filename']}"
+                if tenant_id != "tenant:super":
+                    mediafile["filename"] = f"{tenant_id}/{mediafile['filename']}"
             signal_mediafile_deleted(get_rabbit(), mediafile, linked_entities)
 
     def drop_all_collections(self):
