@@ -173,6 +173,30 @@ class Entity(GenericObject):
                 signal_entity_changed(get_rabbit(), updated_entity)
         return updated_entities, 201
 
+    @apply_policies(RequestContext(request))
+    def delete(self, spec="elody"):
+        if request.args.get("soft", 0, int):
+            return "good", 200
+        if ids := request.args.get("ids"):
+            ids = ids.split(",")
+        else:
+            abort(
+                422,
+                message=f"{get_error_code(ErrorCode.INVALID_INPUT, get_write())} - No ids to delete given.",
+            )
+        entities = list()
+        for id in ids:
+            entities.append(self._check_if_collection_and_item_exists("entities", id))
+        for entity in entities:
+            if request.args.get("delete_mediafiles", 0, int):
+                self.storage.delete_collection_item_mediafiles(
+                    "entities", get_raw_id(entity)
+                )
+            self.storage.delete_item_from_collection("entities", get_raw_id(entity))
+            self._delete_tenant(entity)
+            signal_entity_deleted(get_rabbit(), entity)
+        return "", 204
+
 
 class EntityDetail(GenericObjectDetail):
     def get_entity_detail(self, id, spec="elody"):
