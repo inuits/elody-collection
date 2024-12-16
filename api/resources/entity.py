@@ -10,7 +10,6 @@ from elody.util import (
     signal_entity_changed,
     signal_entity_deleted,
     signal_mediafile_changed,
-    signal_mediafile_deleted,
     signal_mediafiles_added_for_entity,
     signal_relations_deleted_for_entity,
 )
