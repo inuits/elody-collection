@@ -529,8 +529,9 @@ class ArangoStorageManager(GenericStorageManager):
         order_by=None,
         ascending=True,
     ):
+        fields = filters
         return self.get_items_from_collection(
-            "entities", skip, limit, None, filters, order_by, ascending
+            "entities", skip, limit, fields, None, order_by, ascending
         )
 
     def get_history_for_item(self, collection, id, timestamp=None, all_entries=None):
