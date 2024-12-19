@@ -1,6 +1,7 @@
 from apscheduler.schedulers.background import BackgroundScheduler
 from configuration import init_mappers
 from cron_jobs.ttl_checker import TtlChecker
+from cron_jobs.mediafile_cleaner import MediafileCleaner
 from elody.error_codes import ErrorCode, get_error_code, get_read
 from elody.loader import load_apps, load_jobs
 from elody.util import CustomJSONEncoder
@@ -46,8 +47,10 @@ def init_scheduler():
     load_background_scheduler = getenv("LOAD_BACKGROUND_SCHEDULER", False)
     if load_background_scheduler:
         checker = TtlChecker()
+        mediafile_cleaner = MediafileCleaner()
         scheduler = BackgroundScheduler()
         scheduler.add_job(checker, "cron", hour=12, minute=10)
+        scheduler.add_job(mediafile_cleaner, "cron", hour=12, minute=20)
         scheduler.start()
         return scheduler
 

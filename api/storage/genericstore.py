@@ -128,6 +128,9 @@ class GenericStorageManager:
     def delete_item_from_collection(self, collection, id):
         pass
 
+    def get_empty_mediafiles_with_no_relations(self, time=24):
+        pass
+
     def drop_all_collections(self):
         pass
 

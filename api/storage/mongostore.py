@@ -2,7 +2,7 @@ import re
 
 from bson.codec_options import CodecOptions
 from configuration import get_object_configuration_mapper
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from elody.error_codes import ErrorCode, get_error_code, get_write
 from elody.exceptions import NonUniqueException
 from elody.util import (
@@ -546,6 +546,14 @@ class MongoStorageManager(GenericStorageManager):
             sort=order_by,
             asc=ascending,
         )
+        
+    def get_empty_mediafiles_with_no_relations(self, hours=24):
+        threshold_date = datetime.now(timezone.utc) - timedelta(hours=hours)
+        query = {
+            "original_filename": {"$exists": False}, 
+            "date_created": {"$lt": threshold_date}
+        }
+        return list(self.db["mediafiles"].find(query))
 
     def get_history_for_item(self, collection, id, timestamp=None, all_entries=None):
         query = {
