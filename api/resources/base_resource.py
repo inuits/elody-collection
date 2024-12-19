@@ -496,6 +496,24 @@ class BaseResource(Resource):
                     ttl = get_item_metadata_value(asset, "ttl")
         return ttl
 
+    def _get_objects_from_ids_in_body_or_query(self, collection, request):
+        if ids := request.args.get("ids"):
+            ids = ids.split(",")
+        if not ids:
+            try:
+                ids = request.get_json().get("identifiers")
+            except InvalidObjectException as ex:
+                return str(ex), 400
+        if not ids:
+            abort(
+                422,
+                message=f"{get_error_code(ErrorCode.INVALID_INPUT, get_write())} - No ids to delete given.",
+            )
+        objects = list()
+        for id in ids:
+            objects.append(self._check_if_collection_and_item_exists(collection, id))
+        return objects
+
     def update_object_values_from_csv(self, csv_data, collection="entities"):
         csv_file = io.StringIO(csv_data)
         reader = csv.reader(csv_file)

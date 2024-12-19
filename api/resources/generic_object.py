@@ -177,6 +177,18 @@ class GenericObject(BaseResource):
             collection_items.append(collection_item)
         return collection_items
 
+    @apply_policies(RequestContext(request))
+    def delete(self, collection, spec="elody"):
+        if request.args.get("soft", 0, int):
+            return "good", 200
+        for object in self._get_objects_from_ids_in_body_or_query(collection, request):
+            if request.args.get("delete_mediafiles", 0, int):
+                self.storage.delete_collection_item_mediafiles(
+                    collection, get_raw_id(object)
+                )
+            self.storage.delete_item_from_collection(collection, get_raw_id(object))
+        return "", 204
+
 
 # POC: currently only suitable when supporting multiples specs for a client
 class GenericObjectV2(BaseFilterResource, BaseResource):

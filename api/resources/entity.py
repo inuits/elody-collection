@@ -177,29 +177,10 @@ class Entity(GenericObject):
     def delete(self, spec="elody"):
         if request.args.get("soft", 0, int):
             return "good", 200
-        if ids := request.args.get("ids"):
-            ids = ids.split(",")
-        if not ids:
-            try:
-                ids = request.get_json().get("identifiers")
-            except InvalidObjectException as ex:
-                return str(ex), 400
-        if not ids:
-            abort(
-                422,
-                message=f"{get_error_code(ErrorCode.INVALID_INPUT, get_write())} - No ids to delete given.",
-            )
-        entities = list()
-        for id in ids:
-            entities.append(self._check_if_collection_and_item_exists("entities", id))
-        for entity in entities:
-            if request.args.get("delete_mediafiles", 0, int):
-                self.storage.delete_collection_item_mediafiles(
-                    "entities", get_raw_id(entity)
-                )
-            self.storage.delete_item_from_collection("entities", get_raw_id(entity))
+        for entity in self._get_objects_from_ids_in_body_or_query("entities", request):
             self._delete_tenant(entity)
             signal_entity_deleted(get_rabbit(), entity)
+        response = super().delete("entities")
         return "", 204
 
 

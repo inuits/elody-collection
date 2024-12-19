@@ -109,6 +109,21 @@ class Mediafile(GenericObject):
                 signal_mediafile_changed(get_rabbit(), old_mediafile, updated_mediafile)
         return updated_mediafiles, 201
 
+    @apply_policies(RequestContext(request))
+    def delete(self):
+        if request.args.get("soft", 0, int):
+            return "good", 200
+        for mediafile in self._get_objects_from_ids_in_body_or_query(
+            "mediafiles", request
+        ):
+            linked_entities = self.storage.get_mediafile_linked_entities(mediafile)
+            if tenant_id := get_user_context().x_tenant.id:
+                if tenant_id != "tenant:super":
+                    mediafile["filename"] = f"{tenant_id}/{mediafile['filename']}"
+            signal_mediafile_deleted(get_rabbit(), mediafile, linked_entities)
+        response = super().delete("mediafiles")
+        return response
+
 
 class MediafileAssets(GenericObjectDetail):
     @apply_policies(RequestContext(request))
