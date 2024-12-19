@@ -179,7 +179,12 @@ class Entity(GenericObject):
             return "good", 200
         if ids := request.args.get("ids"):
             ids = ids.split(",")
-        else:
+        if not ids:
+            try:
+                ids = request.get_json().get("identifiers")
+            except InvalidObjectException as ex:
+                return str(ex), 400
+        if not ids:
             abort(
                 422,
                 message=f"{get_error_code(ErrorCode.INVALID_INPUT, get_write())} - No ids to delete given.",
