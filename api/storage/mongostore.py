@@ -401,7 +401,7 @@ class MongoStorageManager(GenericStorageManager):
         post_crud_hook = config.crud()["post_crud_hook"]
         timestamp = datetime.now(timezone.utc)
         try:
-            pre_crud_hook(
+            item = pre_crud_hook(
                 crud="delete",
                 timestamp=timestamp,
                 document=item,
@@ -430,7 +430,7 @@ class MongoStorageManager(GenericStorageManager):
         item = item.get("storage_format", item)
         config = get_object_configuration_mapper().get(item["type"])
         scope = config.crud().get("spec_scope", {}).get(spec, None)
-        object_lists = config.document_info()["object_lists"]
+        object_lists = config.document_info().get("object_lists", {})
         pre_crud_hook = config.crud()["pre_crud_hook"]
         post_crud_hook = config.crud()["post_crud_hook"]
         timestamp = datetime.now(timezone.utc)
@@ -546,12 +546,12 @@ class MongoStorageManager(GenericStorageManager):
             sort=order_by,
             asc=ascending,
         )
-        
+
     def get_empty_mediafiles_with_no_relations(self, hours=24):
         threshold_date = datetime.now(timezone.utc) - timedelta(hours=hours)
         query = {
-            "original_filename": {"$exists": False}, 
-            "date_created": {"$lt": threshold_date}
+            "original_filename": {"$exists": False},
+            "date_created": {"$lt": threshold_date},
         }
         return list(self.db["mediafiles"].find(query))
 
@@ -810,45 +810,21 @@ class MongoStorageManager(GenericStorageManager):
         self, collection, item, content, spec, *, run_post_crud_hook=True
     ):
         item = item.get("storage_format", item)
-        config = get_object_configuration_mapper().get(item["type"])
-        if not collection:
-            collection = config.crud()["collection"]
-        scope = config.crud().get("spec_scope", {}).get(spec, None)
-        object_lists = config.document_info()["object_lists"]
-        pre_crud_hook = config.crud()["pre_crud_hook"]
-        post_crud_hook = config.crud()["post_crud_hook"]
         if not self._does_request_changes(item, content):
             return item
-        timestamp = datetime.now(timezone.utc)
-        for key, value in content.items():
-            if value == "[protected content]":
-                continue
-            if not scope or key in scope:
-                if key in object_lists:
-                    if key != "relations":
-                        for value_element in value:
-                            for item_element in item[key]:
-                                if (
-                                    item_element[object_lists[key]]
-                                    == value_element[object_lists[key]]
-                                ):
-                                    item[key].remove(item_element)
-                                    break
-                            else:
-                                item_element = None
-                            pre_crud_hook(
-                                crud="update",
-                                timestamp=timestamp,
-                                object_list_elements={
-                                    "item_element": item_element,
-                                    "value_element": value_element,
-                                },
-                            )
-                    item[key].extend(value)
-                else:
-                    item[key] = value
+
+        config = get_object_configuration_mapper().get(item["type"])
+        collection = collection or config.crud()["collection"]
+        patch_document_content = config.crud()["document_content_patcher"]
+        pre_crud_hook = config.crud()["pre_crud_hook"]
+        post_crud_hook = config.crud()["post_crud_hook"]
+
         try:
-            pre_crud_hook(
+            timestamp = datetime.now(timezone.utc)
+            item = patch_document_content(
+                document=item, content=content, crud="update", timestamp=timestamp
+            )
+            item = pre_crud_hook(
                 crud="update",
                 timestamp=timestamp,
                 document=item,
@@ -871,37 +847,31 @@ class MongoStorageManager(GenericStorageManager):
                     f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} - {error.details.get('errmsg')}"
                 )
             raise error
+
         log.info("Successfully patched item", item)
         return self._prepare_mongo_document(item, False, collection, False)
 
     def put_item_from_collection(self, collection, item, content, spec):
+        item = item.get("storage_format", item)
+        if not self._does_request_changes(item, content, True):
+            return item
+
         config = get_object_configuration_mapper().get(item["type"])
-        if not collection:
-            collection = config.crud()["collection"]
-        scope = config.crud().get("spec_scope", {}).get(spec, None)
-        object_lists = config.document_info()["object_lists"]
+        collection = collection or config.crud()["collection"]
+        patch_document_content = config.crud()["document_content_patcher"]
         pre_crud_hook = config.crud()["pre_crud_hook"]
         post_crud_hook = config.crud()["post_crud_hook"]
-        if not self._does_request_changes(item, content):
-            return item
-        timestamp = datetime.now(timezone.utc)
-        if scope:
-            for key, value in content.items():
-                if key in scope:
-                    if value == "[protected content]":
-                        continue
-                    if key in object_lists:
-                        for value_element in value[object_lists[key]]:
-                            pre_crud_hook(
-                                crud="update",
-                                timestamp=timestamp,
-                                object_list_elements={"value_element": value_element},
-                            )
-                    item[key] = value
-        else:
-            item = content
+
         try:
-            pre_crud_hook(
+            timestamp = datetime.now(timezone.utc)
+            item = patch_document_content(
+                document=item,
+                content=content,
+                crud="update",
+                timestamp=timestamp,
+                overwrite=True,
+            )
+            item = pre_crud_hook(
                 crud="update",
                 timestamp=timestamp,
                 document=item,
@@ -923,10 +893,9 @@ class MongoStorageManager(GenericStorageManager):
                     f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} - {error.details.get('errmsg')}"
                 )
             raise error
-        if scope:
-            return self._prepare_mongo_document(item, False, collection, False)
+
         log.info("Successfully put item", item)
-        return self.get_item_from_collection_by_id(collection, item["_id"])
+        return self._prepare_mongo_document(item, False, collection, False)
 
     def reindex_mediafile_parents(self, mediafile=None, parents=None):
         if mediafile:

@@ -32,6 +32,10 @@ class Validator(BaseResource):
                     raise ValueError(
                         f"{get_error_code(ErrorCode.CONTENT_NOT_FOUND, get_write())} - Content is missing in the request."
                     )
+                if not content.get("type"):
+                    raise BadRequest(
+                        f"{get_error_code(ErrorCode.VALIDATION_ERROR, get_write())} - 'type' is a required property"
+                    )
 
                 strategy, validator = (
                     get_object_configuration_mapper().get(content["type"]).validation()

@@ -11,10 +11,10 @@ class NoneConfiguration(BaseObjectConfiguration):
         return super().crud()
 
     def document_info(self):
-        return super().document_info()
+        return {"object_lists": {"metadata": "key", "relations": "type"}}
 
-    def logging(self, flat_item, **kwargs):
-        return super().logging(flat_item, **kwargs)
+    def logging(self, flat_document, **kwargs):
+        return super().logging(flat_document, **kwargs)
 
     def migration(self):
         return super().migration()

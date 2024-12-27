@@ -26,7 +26,7 @@ class BaseMatchers(ABC):
         config = get_object_configuration_mapper().get(
             BaseMatchers.type or BaseMatchers.collection
         )
-        return config.document_info()["object_lists"]
+        return config.document_info().get("object_lists", {})
 
     @abstractmethod
     def exact(

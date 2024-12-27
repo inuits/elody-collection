@@ -6,7 +6,7 @@ from serialization.serialize import serialize
 
 
 class GenericStorageManager:
-    def _does_request_changes(self, item, content):
+    def _does_request_changes(self, item, content, overwrite=False):
         def __is_changed(value, data={}, object_list_key="", is_relation=False):
             if isinstance(value, dict):
                 if object_list_key:
@@ -36,7 +36,8 @@ class GenericStorageManager:
         object_lists = (
             get_object_configuration_mapper()
             .get("none")
-            .document_info()["object_lists"]
+            .document_info()
+            .get("object_lists", {})
         )
         content = (
             serialize(
@@ -56,6 +57,8 @@ class GenericStorageManager:
             if content_key in ["_id", "_key", "id", "identifiers", "storage_format"]:
                 continue
             if content_key in object_lists:
+                if overwrite and len(content[content_key]) != len(item[content_key]):
+                    return True
                 for data in content_value:
                     for key, value in data.items():
                         if content_key == "metadata" and key == "key":
