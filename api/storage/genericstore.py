@@ -32,9 +32,12 @@ class GenericStorageManager:
                         return True
                 if item_value and item_value != value:
                     if is_relation:
-                        if item_value != flat_content.get(
+                        flat_content_value = flat_content.get(
                             f"{content_key}.{data[object_list_key]}.{key}"
-                        ):
+                        )
+                        if isinstance(flat_content_value, list):
+                            flat_content_value = sorted(flat_content_value)
+                        if item_value != flat_content_value:
                             return True
                     else:
                         return True
