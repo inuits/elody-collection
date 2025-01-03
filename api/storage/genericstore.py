@@ -23,7 +23,13 @@ class GenericStorageManager:
                 else:
                     item_value = flat_item.get(content_key)
                 if not item_value and value:
-                    return True
+                    if is_relation:
+                        if flat_content.get(
+                            f"{content_key}.{data[object_list_key]}.key"
+                        ):
+                            return True
+                    else:
+                        return True
                 if item_value and item_value != value:
                     if is_relation:
                         if item_value != flat_content.get(

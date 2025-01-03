@@ -69,7 +69,12 @@ class FilterEntitiesV2(BaseFilterResource):
                 type = dict.get("value")
         config = get_object_configuration_mapper().get(type)
         storage_type = config.crud()["storage_type"]
-        collection = get_object_configuration_mapper().get(type).crud().get("collection", "entities")
+        collection = (
+            get_object_configuration_mapper()
+            .get(type)
+            .crud()
+            .get("collection", "entities")
+        )
         if storage_type == "http":
             http_storage = get_storage_mapper().get("http")
             filter = config.serialization(
