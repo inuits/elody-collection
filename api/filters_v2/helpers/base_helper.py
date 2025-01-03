@@ -7,6 +7,15 @@ def get_options_requesting_filter(filter_request_body):
     return options_requesting_filter[0] if len(options_requesting_filter) > 0 else {}
 
 
+def get_selection_type_filter_value(filter_request_body):
+    selection_type_filter = [
+        filter_criteria
+        for filter_criteria in filter_request_body
+        if filter_criteria["type"] == "selection" and filter_criteria["key"] == "type"
+    ]
+    return selection_type_filter[0]["value"] if len(selection_type_filter) > 0 else []
+
+
 def get_type_filter_value(filter_request_body):
     type_filter = [
         filter_criteria

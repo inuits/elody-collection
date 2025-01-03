@@ -187,10 +187,14 @@ class FilterGenericObjects(BaseFilterResource):
 # currently only suitable when using generic policies
 class FilterGenericObjectsV2(BaseFilterResource):
     @apply_policies(RequestContext(request))
-    def post(self, collection, spec="elody"):
+    def post(self, collection, spec="elody", document_type=None):
         if request.args.get("soft", 0, int):
             return "good", 200
-        config = get_object_configuration_mapper().get(collection)
+        if document_type:
+            config = get_object_configuration_mapper().get(document_type)
+            collection = config.crud()["collection"]
+        else:
+            config = get_object_configuration_mapper().get(collection)
         storage_type = config.crud()["storage_type"]
         if storage_type != "http":
             self._check_if_collection_name_exists(collection)
