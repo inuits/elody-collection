@@ -80,23 +80,27 @@ class MongoStorageManager(GenericStorageManager):
         return sort
 
     def __create_mongo_connection_string(self):
-        connection_string = "mongodb://"
-        if self.mongo_username and self.mongo_password:
-            connection_string += (
-                f"{quote_plus(self.mongo_username)}:{quote_plus(self.mongo_password)}@"
-            )
-        for i in range(len(self.mongo_hosts)):
-            if self.mongo_port:
-                connection_string += f"{self.mongo_hosts[i]}:{self.mongo_port}"
-            else:
-                connection_string += self.mongo_hosts[i]
-            if i < len(self.mongo_hosts) - 1:
-                connection_string += ","
-        if self.mongo_username and self.mongo_password:
-            connection_string += f"/?authSource={self.mongo_db_name}"
-            if self.mongo_replica_set:
-                connection_string += f"&replicaSet={self.mongo_replica_set}"
-        return connection_string
+        existing_connection_string = getenv("MONGODB_CONNECTION_STRING")
+        if existing_connection_string:
+            return existing_connection_string
+        else: 
+            connection_string = "mongodb://"
+            if self.mongo_username and self.mongo_password:
+                connection_string += (
+                    f"{quote_plus(self.mongo_username)}:{quote_plus(self.mongo_password)}@"
+                )
+            for i in range(len(self.mongo_hosts)):
+                if self.mongo_port:
+                    connection_string += f"{self.mongo_hosts[i]}:{self.mongo_port}"
+                else:
+                    connection_string += self.mongo_hosts[i]
+                if i < len(self.mongo_hosts) - 1:
+                    connection_string += ","
+            if self.mongo_username and self.mongo_password:
+                connection_string += f"/?authSource={self.mongo_db_name}"
+                if self.mongo_replica_set:
+                    connection_string += f"&replicaSet={self.mongo_replica_set}"
+            return connection_string
 
     def _delete_impacted_relations(self, collection, id):
         relations = self.get_collection_item_sub_item(collection, id, "relations")
