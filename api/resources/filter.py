@@ -1,12 +1,17 @@
 import mappers
 
-from configuration import get_object_configuration_mapper
+from configuration import get_object_configuration_mapper, get_storage_mapper
 from filters_v2.filter_matcher_mapping import FilterMatcherMapping
+from filters_v2.helpers.base_helper import (
+    get_options_requesting_filter,
+    get_selection_type_filter_value,
+    get_type_filter_value,
+)
 from flask import request
 from inuits_policy_based_auth import RequestContext
 from policy_factory import apply_policies, get_user_context
 from resources.base_filter_resource import BaseFilterResource
-from configuration import get_storage_mapper
+from werkzeug.exceptions import BadRequest
 
 
 class FilterMatchers(BaseFilterResource):
@@ -39,7 +44,11 @@ class FilterEntities(BaseFilterResource):
         )
         return self._create_response_according_accept_header(
             mappers.map_data_according_to_accept_header(
-                get_user_context().access_restrictions.post_request_hook(entities),
+                (
+                    get_user_context().access_restrictions.post_request_hook(entities)
+                    if not get_options_requesting_filter(query)
+                    else entities
+                ),
                 accept_header,
                 "entities",
                 fields,
@@ -88,7 +97,11 @@ class FilterEntitiesV2(BaseFilterResource):
             entities = self._execute_advanced_search_with_query_v2(query, "entities")
         return self._create_response_according_accept_header(
             mappers.map_data_according_to_accept_header(
-                get_user_context().access_restrictions.post_request_hook(entities),
+                (
+                    get_user_context().access_restrictions.post_request_hook(entities)
+                    if not get_options_requesting_filter(query)
+                    else entities
+                ),
                 accept_header,
                 "entities",
                 [],
@@ -113,7 +126,11 @@ class FilterMediafilesV2(BaseFilterResource):
         entities = self._execute_advanced_search_with_query_v2(query, "mediafiles")
         return self._create_response_according_accept_header(
             mappers.map_data_according_to_accept_header(
-                get_user_context().access_restrictions.post_request_hook(entities),
+                (
+                    get_user_context().access_restrictions.post_request_hook(entities)
+                    if not get_options_requesting_filter(query)
+                    else entities
+                ),
                 accept_header,
                 "mediafiles",
                 [],
@@ -173,7 +190,11 @@ class FilterGenericObjects(BaseFilterResource):
         )
         return self._create_response_according_accept_header(
             mappers.map_data_according_to_accept_header(
-                get_user_context().access_restrictions.post_request_hook(items),
+                (
+                    get_user_context().access_restrictions.post_request_hook(items)
+                    if not get_options_requesting_filter(query)
+                    else items
+                ),
                 accept_header,
                 "entities",  # specific collection name not relevant for this method
                 fields,
@@ -187,10 +208,19 @@ class FilterGenericObjects(BaseFilterResource):
 # currently only suitable when using generic policies
 class FilterGenericObjectsV2(BaseFilterResource):
     @apply_policies(RequestContext(request))
-    def post(self, collection, spec="elody", document_type=None):
+    def post(self, collection, spec="elody", is_type_required=False):
         if request.args.get("soft", 0, int):
             return "good", 200
-        if document_type:
+        if is_type_required:
+            document_type = get_type_filter_value(request.json)
+            if not document_type:
+                document_type = get_selection_type_filter_value(request.json)
+                if len(document_type) > 0:
+                    document_type = document_type[0]
+                else:
+                    raise BadRequest(
+                        "Filter with type 'type', or a filter with type 'selection' and 'key' equal to 'type' is required"
+                    )
             config = get_object_configuration_mapper().get(document_type)
             collection = config.crud()["collection"]
         else:
@@ -217,7 +247,11 @@ class FilterGenericObjectsV2(BaseFilterResource):
             items = self._execute_advanced_search_with_query_v2(query, collection)
         return self._create_response_according_accept_header(
             mappers.map_data_according_to_accept_header(
-                get_user_context().access_restrictions.post_request_hook(items),
+                (
+                    get_user_context().access_restrictions.post_request_hook(items)
+                    if not get_options_requesting_filter(query)
+                    else items
+                ),
                 accept_header,
                 "entities",
                 [],

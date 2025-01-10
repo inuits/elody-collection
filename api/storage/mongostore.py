@@ -83,12 +83,10 @@ class MongoStorageManager(GenericStorageManager):
     def __create_mongo_connection_string(self):
         if self.mongo_existing_connection_string:
             return self.mongo_existing_connection_string
-        else: 
+        else:
             connection_string = "mongodb://"
             if self.mongo_username and self.mongo_password:
-                connection_string += (
-                    f"{quote_plus(self.mongo_username)}:{quote_plus(self.mongo_password)}@"
-                )
+                connection_string += f"{quote_plus(self.mongo_username)}:{quote_plus(self.mongo_password)}@"
             for i in range(len(self.mongo_hosts)):
                 if self.mongo_port:
                     connection_string += f"{self.mongo_hosts[i]}:{self.mongo_port}"

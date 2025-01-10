@@ -99,7 +99,10 @@ def get_options_mapper(filter_key, lookup_key):
                                 },
                             }
                         },
-                        "else": {"label": "$$input", "value": "$$input"},
+                        "else": {
+                            "label": f"$$input",
+                            "value": f"${lookup_key}.id" if lookup_key else f"$$input",
+                        },
                     }
                 },
             }

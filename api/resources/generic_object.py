@@ -16,6 +16,7 @@ from resources.base_filter_resource import BaseFilterResource
 from resources.base_resource import BaseResource
 from urllib.parse import quote
 from validation.validate import validate
+from werkzeug.exceptions import BadRequest
 
 
 class GenericObject(BaseResource):
@@ -193,7 +194,23 @@ class GenericObject(BaseResource):
 # POC: currently only suitable when supporting multiples specs for a client
 class GenericObjectV2(BaseFilterResource, BaseResource):
     @apply_policies(RequestContext(request))
-    def get(self, collection, filters=None, spec="elody", *, skip=None, limit=None):
+    def get(
+        self,
+        collection,
+        filters=None,
+        spec="elody",
+        *,
+        skip=None,
+        limit=None,
+        is_type_required=False,
+    ):
+        if request.args.get("soft", 0, int):
+            return "good", 200
+        if is_type_required:
+            if not (document_type := request.args.get("type")):
+                raise BadRequest("Query parameter 'type' is required")
+            config = get_object_configuration_mapper().get(document_type)
+            collection = config.crud()["collection"]
         self._check_if_collection_name_exists(collection)
         accept_header = request.headers.get("Accept")
         if filters is None:
@@ -224,6 +241,13 @@ class GenericObjectV2(BaseFilterResource, BaseResource):
     ):
         if request.args.get("soft", 0, int):
             return "good", 200
+        if not collection:
+            resolve_collections = get_user_context().bag["collection_resolver"]
+            collection = resolve_collections(content=request.json)
+            if len(collection) == 1:
+                collection = collection[0]
+            else:
+                collection = ""
         self._check_if_collection_name_exists(collection)
         accept_header = request.headers.get("Accept")
         content = self._get_content_according_content_type(
