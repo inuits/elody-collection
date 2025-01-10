@@ -81,7 +81,7 @@ class MongoStorageManager(GenericStorageManager):
         return sort
 
     def __create_mongo_connection_string(self):
-        if self.existing_connection_string:
+        if self.mongo_existing_connection_string:
             return existing_connection_string
         else: 
             connection_string = "mongodb://"
