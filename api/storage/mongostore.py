@@ -37,6 +37,7 @@ class MongoStorageManager(GenericStorageManager):
         self.mongo_replica_set = getenv("MONGODB_REPLICA_SET")
         self.mongo_username = getenv("MONGODB_USERNAME")
         self.mongo_password = getenv("MONGODB_PASSWORD")
+        self.mongo_existing_connection_string = getenv("MONGODB_CONNECTION_STRING")
         self.allow_disk_use = getenv("MONGODB_ALLOW_DISK_USE", False) in [
             "True",
             "true",
@@ -80,8 +81,7 @@ class MongoStorageManager(GenericStorageManager):
         return sort
 
     def __create_mongo_connection_string(self):
-        existing_connection_string = getenv("MONGODB_CONNECTION_STRING")
-        if existing_connection_string:
+        if self.existing_connection_string:
             return existing_connection_string
         else: 
             connection_string = "mongodb://"
