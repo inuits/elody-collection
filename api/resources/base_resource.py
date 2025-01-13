@@ -54,6 +54,7 @@ class BaseResource(Resource):
         self.tenant_defining_types = (
             self.tenant_defining_types.split(",") if self.tenant_defining_types else []
         )
+        self.auto_create_tenants = getenv("AUTO_CREATE_TENANTS", False)
 
     def __group_user_relations_by_idp_role_status(
         self, user_relations, roles_per_tenant
@@ -256,6 +257,8 @@ class BaseResource(Resource):
                 return response_data, status_code
 
     def _create_tenant(self, entity):
+        if not parse_string_to_bool(self.auto_create_tenants):
+            return
         if self.tenant_defining_types and entity["type"] in self.tenant_defining_types:
             tenant_id = f'tenant:{entity.get("_id", entity.get("id"))}'
             if not (tenant_label := self._get_tenant_label(entity)):
