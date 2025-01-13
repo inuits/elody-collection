@@ -447,7 +447,13 @@ class ArangoStorageManager(GenericStorageManager):
         return list(self.db.aql.execute(query, bind_vars=bind_vars))[0]
 
     def get_collection_item_relations(
-        self, collection, id, include_sub_relations=False, exclude=None, entity={}
+        self,
+        collection,
+        id,
+        include_sub_relations=False,
+        exclude=None,
+        entity={},
+        strip_relations=True,
     ):
         if not exclude:
             exclude = []
@@ -518,7 +524,7 @@ class ArangoStorageManager(GenericStorageManager):
                         elif relation_object["label"] != "vervaardiger.rol":
                             if relation_object not in relations:
                                 relations.append(relation_object)
-        return self.strip_relations(relations)
+        return self.strip_relations(relations) if strip_relations else relations
 
     def get_entities(
         self,
