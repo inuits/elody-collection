@@ -141,7 +141,7 @@ class Batch(BaseResource):
         fail_job(self.main_job_id_without_dry_run, message, get_rabbit=self.get_rabbit)
         csv_multi_object.errors.update({"related_item": [message]})
 
-    def _get_entities_and_mediafiles_from_csv(self, parsed_csv, dry_run=False):
+    def _get_entities_and_mediafiles_from_csv(self, parsed_csv, dry_run=False, extra_mediafile_type=None):
         entities_and_mediafiles = dict()
         entities_and_mediafiles.setdefault("entities", list())
         for entity in parsed_csv.objects.get("entities"):
@@ -187,6 +187,7 @@ class Batch(BaseResource):
         )
         content_type = request.content_type
         dry_run = request.args.get("dry_run", 0, int)
+        extra_mediafile_type = request.args.get("extra_mediafile_type")
         if not dry_run:
             self.main_job_id_without_dry_run = start_job(
                 "Start Import for CSV without a dry_run",
@@ -199,7 +200,7 @@ class Batch(BaseResource):
             accept_header = request.headers.get("Accept")
             parsed_csv = self._get_parsed_csv(request.get_data(as_text=True))
             entities_and_mediafiles = self._get_entities_and_mediafiles_from_csv(
-                parsed_csv, dry_run
+                parsed_csv, dry_run, extra_mediafile_type
             )
             if accept_header != "text/uri-list" or dry_run:
                 output = entities_and_mediafiles
