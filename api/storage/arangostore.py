@@ -421,11 +421,7 @@ class ArangoStorageManager(GenericStorageManager):
     ):
         item_id = self.__get_id_for_collection_item(collection, id)
         mediafiles = list()
-        edges = list(
-            self.db.collection("hasMediafile").find(
-                {"_from": item_id}, skip=skip, limit=limit
-            )
-        )
+        edges = list(self.db.collection("hasMediafile").find({"_from": item_id}))
         edges.sort(key=lambda x: x["order"] if "order" in x else len(edges) + 1)
         for edge in edges:
             mediafile = self.db.document(edge["_to"])
