@@ -141,10 +141,13 @@ class Batch(BaseResource):
         fail_job(self.main_job_id_without_dry_run, message, get_rabbit=self.get_rabbit)
         csv_multi_object.errors.update({"related_item": [message]})
 
-    def _get_entities_and_mediafiles_from_csv(self, parsed_csv, dry_run=False, extra_mediafile_type=None):
+    def _get_entities_and_mediafiles_from_csv(
+        self, parsed_csv, dry_run=False, extra_mediafile_type=None
+    ):
         entities_and_mediafiles = dict()
         entities_and_mediafiles.setdefault("entities", list())
         for entity in parsed_csv.objects.get("entities"):
+            self._check_if_user_has_rights_to_create_entity(entity)
             entity_matching_id = entity.pop("matching_id", None)
             if not dry_run:
                 relations = entity.pop("relations", list())
@@ -176,6 +179,9 @@ class Batch(BaseResource):
             else:
                 entities_and_mediafiles.get("entities", list()).append(entity)
         return entities_and_mediafiles
+
+    def _check_if_user_has_rights_to_create_entity(self, entity):
+        pass
 
     @apply_policies(RequestContext(request))
     def post(self):
