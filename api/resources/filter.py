@@ -118,11 +118,21 @@ class FilterMediafilesV2(BaseFilterResource):
         if request.args.get("soft", 0, int):
             return "good", 200
         accept_header = request.headers.get("Accept")
+        all_mediafiles = request.args.get("all_mediafiles", 0, int)
         query: list = request.get_json()
         access_restricting_filters = get_user_context().access_restrictions.filters
         if access_restricting_filters:
             for filter in access_restricting_filters:
                 query.insert(0, filter)
+        if not all_mediafiles:
+            filter_out_empty_mediafiles = [
+                {
+                    "type": "text",
+                    "key": ["elody:1|original_filename"],
+                    "value": "*",
+                }
+            ]
+            query = query + filter_out_empty_mediafiles
         entities = self._execute_advanced_search_with_query_v2(query, "mediafiles")
         return self._create_response_according_accept_header(
             mappers.map_data_according_to_accept_header(
