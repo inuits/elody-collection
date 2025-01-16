@@ -30,6 +30,12 @@ general_excluded_fields = [
     "language",
     "relation",
     "object_number",
+    "external_system",
+    "external_id",
+    "external_identifier",
+    "file_source",
+    "ocr_type",
+    "ocr_language",
     # All relation fields
     "has*",
     "is*",
