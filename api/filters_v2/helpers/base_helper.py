@@ -56,6 +56,8 @@ def parse_optional_filters(filter_criteria):
     if key[0] == "?":
         key = key[1:]
         prefix += "?"
+    if not prefix:
+        return [filter_criteria]
 
     filter_criterias.append(
         {**filter_criteria, "key": key, "operator": "or" if prefix == "?" else "and"}
