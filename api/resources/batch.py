@@ -187,7 +187,7 @@ class Batch(BaseResource):
     def post(self):
         self.main_job_id_with_dry_run = start_job(
             "Start Import for CSV with a dry run",
-            "Start Import",
+            "CSV Import",
             get_rabbit=self.get_rabbit,
             user_email=get_user_context().email,
         )
@@ -197,7 +197,7 @@ class Batch(BaseResource):
         if not dry_run:
             self.main_job_id_without_dry_run = start_job(
                 "Start Import for CSV without a dry_run",
-                "Start Import",
+                "CSV Import",
                 get_rabbit=self.get_rabbit,
                 user_email=get_user_context().email,
             )
@@ -208,12 +208,22 @@ class Batch(BaseResource):
             entities_and_mediafiles = self._get_entities_and_mediafiles_from_csv(
                 parsed_csv, dry_run, extra_mediafile_type
             )
-            if accept_header != "text/uri-list" or dry_run:
+            if accept_header != "text/uri-list" and dry_run:
                 output = entities_and_mediafiles
                 output["errors"] = parsed_csv.get_errors()
+                output["job_id_with_dry_run"] = self.main_job_id_with_dry_run
                 finish_job(self.main_job_id_with_dry_run, get_rabbit=self.get_rabbit)
-                finish_job(self.main_job_id_without_dry_run, get_rabbit=self.get_rabbit)
                 return output, 201
+            if accept_header == "application/json":
+                output = {
+                    "job_id_with_dry_run": self.main_job_id_with_dry_run,
+                    "links": [],
+                }
+                for mediafile in entities_and_mediafiles.get("mediafiles", list()):
+                    filename = mediafile.get("filename")
+                    ticket_id = self._create_ticket(mediafile.get("filename"))
+                    link = f"{self.storage_api_url}/upload-with-ticket/{quote(filename)}?id={get_raw_id(mediafile)}&ticket_id={ticket_id}"
+                    output["links"].append(link)
             else:
                 output = ""
                 for mediafile in entities_and_mediafiles.get("mediafiles", list()):
