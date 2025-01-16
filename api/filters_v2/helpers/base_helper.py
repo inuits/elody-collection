@@ -56,7 +56,10 @@ def parse_optional_filters(filter_criteria):
     if key[0] == "?":
         key = key[1:]
         prefix += "?"
-    if not prefix:
+
+    if filter_criteria["type"] == "boolean" and filter_criteria["value"] is False:
+        prefix = "?"
+    elif not prefix:
         return [filter_criteria]
 
     filter_criterias.append(
