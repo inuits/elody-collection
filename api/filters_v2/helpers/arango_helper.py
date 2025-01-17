@@ -42,7 +42,10 @@ def get_comparison(key, value, element_name):
             return f"LOWER({element_name}.{key}) LIKE '%{value[value_key].lower()}%'"
         elif value_key == "$exists":
             key_parts = regex.findall(r"(?:`[^`]+`|[^.]+)", key)
-            return f"{'' if value[value_key] else '!'}HAS({element_name}.{'.'.join(key_parts[:-1])}, '{key_parts[-1].replace('`', '')}')"
+            element_parts = ".".join(key_parts[:-1])
+            if element_parts.find(".") > -1:
+                element_parts = f".{element_parts}"
+            return f"{'' if value[value_key] else '!'}HAS({element_name}{element_parts}, '{key_parts[-1].replace('`', '')}')"
         else:
             comparison = ""
             operator = ""
