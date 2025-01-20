@@ -136,10 +136,10 @@ class Batch(BaseResource):
         item.update({"relations": relation_list})
 
     def _add_error_to_csv_multi_object(self, csv_multi_object, parse_item, list_item):
-        message = f"Item for key {parse_item['csv_key']} with value {list_item['value']} doesn't exist.\n"
-        fail_job(self.main_job_id_with_dry_run, message, get_rabbit=self.get_rabbit)
-        fail_job(self.main_job_id_without_dry_run, message, get_rabbit=self.get_rabbit)
-        csv_multi_object.errors.update({"related_item": [message]})
+        message = f"{get_error_code(ErrorCode.ITEM_WITH_VALUE_FOR_KEY_NOT_FOUND, get_write())} | key:{parse_item['csv_key']} | value:{list_item['value']} - Item for key {parse_item['csv_key']} with value {list_item['value']} doesn't exist.\n"
+        if "related_item" not in csv_multi_object.errors:
+            csv_multi_object.errors["related_item"] = []
+        csv_multi_object.errors["related_item"].append(message)
 
     def _get_entities_and_mediafiles_from_csv(
         self, parsed_csv, dry_run=False, extra_mediafile_type=None
@@ -147,7 +147,7 @@ class Batch(BaseResource):
         entities_and_mediafiles = dict()
         entities_and_mediafiles.setdefault("entities", list())
         for entity in parsed_csv.objects.get("entities"):
-            self._check_if_user_has_rights_to_create_entity(entity)
+            self._check_if_user_has_rights_to_create_entity(entity, parsed_csv)
             entity_matching_id = entity.pop("matching_id", None)
             if not dry_run:
                 relations = entity.pop("relations", list())
@@ -180,7 +180,7 @@ class Batch(BaseResource):
                 entities_and_mediafiles.get("entities", list()).append(entity)
         return entities_and_mediafiles
 
-    def _check_if_user_has_rights_to_create_entity(self, entity):
+    def _check_if_user_has_rights_to_create_entity(self, entity, csv_multi_object):
         pass
 
     @apply_policies(RequestContext(request))
@@ -210,9 +210,19 @@ class Batch(BaseResource):
             )
             if accept_header != "text/uri-list" and dry_run:
                 output = entities_and_mediafiles
-                output["errors"] = parsed_csv.get_errors()
+                errors = parsed_csv.get_errors()
+                output["errors"] = errors
                 output["job_id_with_dry_run"] = self.main_job_id_with_dry_run
-                finish_job(self.main_job_id_with_dry_run, get_rabbit=self.get_rabbit)
+                if errors:
+                    fail_job(
+                        self.main_job_id_with_dry_run,
+                        errors,
+                        get_rabbit=self.get_rabbit,
+                    )
+                else:
+                    finish_job(
+                        self.main_job_id_with_dry_run, get_rabbit=self.get_rabbit
+                    )
                 return output, 201
             if accept_header == "application/json":
                 output = {
