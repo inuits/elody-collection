@@ -1,4 +1,5 @@
 import re
+import time
 
 from bson.codec_options import CodecOptions
 from configuration import get_object_configuration_mapper
@@ -701,6 +702,15 @@ class MongoStorageManager(GenericStorageManager):
                 self._prepare_mongo_document(document, True, collection)
             )
         return items
+
+    def get_ttl_expired_items_from_collection(self, collection):
+        current_timestamp = time.time()
+        query = {
+            "metadata": {
+                "$elemMatch": {"key": "ttl", "value": {"$lt": current_timestamp}}
+            }
+        }
+        return list(self.db[collection].find(query))
 
     def get_metadata_values_for_collection_item_by_key(self, collection, key):
         if key in ["type"]:

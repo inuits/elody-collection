@@ -202,6 +202,9 @@ class GenericStorageManager:
         asc=True,
     ):
         pass
+    
+    def get_ttl_expired_items_from_collection(self, collection):
+        pass
 
     def get_mediafile_linked_entities(self, mediafile):
         pass
