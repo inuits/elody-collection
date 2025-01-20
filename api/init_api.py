@@ -2,6 +2,7 @@ from configuration import get_route_mapper
 from flask_restful import Api
 from resources.batch import Batch
 from resources.config import Config
+from resources.cron import Cron
 from resources.entity import (
     Entity,
     EntityDetail,
@@ -67,6 +68,7 @@ def init_api(app):
     )
     api.add_resource(Batch, get_route_mapper().get(Batch.__name__, "/batch"))
     api.add_resource(Config, get_route_mapper().get(Config.__name__, "/config"))
+    api.add_resource(Cron, get_route_mapper().get(Cron.__name__, "/cron"))
 
     api.add_resource(Entity, get_route_mapper().get(Entity.__name__, "/entities"))
     api.add_resource(
