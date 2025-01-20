@@ -39,15 +39,18 @@ class BaseFilterResource(BaseResource):
     def _execute_advanced_search_with_query_v2(
         self, query, collection="entities", *, skip=None, limit=None
     ):
-        order_by = request.args.get("order_by", None)
-        asc = bool(request.args.get("asc", 1, int))
-        skip = skip if skip is not None else request.args.get("skip", 0, int)
-        limit = limit if limit is not None else request.args.get("limit", 20, int)
+        order_by = request.args.get("order_by", None) if request else None
+        asc = bool(request.args.get("asc", 1, int)) if request else 1
+        skip = skip if skip else 0
+        skip = request.args.get("skip", 0, int) if request and not skip else skip
+        limit = limit if limit else 20
+        limit = request.args.get("limit", 20, int) if request and not limit else limit
 
-        @after_this_request
-        def add_header(response):
-            response.headers["Access-Control-Allow-Origin"] = "*"
-            return response
+        if request:
+            @after_this_request
+            def add_header(response):
+                response.headers["Access-Control-Allow-Origin"] = "*"
+                return response
 
         if not self.filter_engine:
             abort(500, message="Failed to init search engine")
