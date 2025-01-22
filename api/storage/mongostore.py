@@ -491,7 +491,7 @@ class MongoStorageManager(GenericStorageManager):
         self.db.mediafiles.drop()
 
     def get_collection_item_mediafiles(
-        self, collection, id, skip=0, limit=0, asc=1, sort="order"
+        self, collection, id, skip=0, limit=0, asc=0, sort="order"
     ):
         item = self.get_item_from_collection_by_id(collection, id)
         mediafiles = []
