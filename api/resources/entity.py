@@ -562,36 +562,48 @@ class EntityOrder(GenericObjectDetail):
     def get(self, id):
         entity = super().get_object_detail("entities", id)
         raw_id = get_raw_id(entity)
+        return_type = request.args.get("return_type", "mediafiles")
 
-        if entity.get("type") == "asset":
-            data_type = "mediafiles"
-            items = self.storage.get_collection_item_mediafiles("entities", raw_id)
-            fields = ["identifier", "type", "filename"]
-        else:
-            data_type = "entities"
-            relations = self.storage.get_collection_item_relations("entities", raw_id)
-            items = [
-                self.storage.get_item_from_collection_by_id(
-                    "entities", relation.get("key")
-                )
-                for relation in relations
-                if relation.get("type") == "hasAsset"
-            ]
-            fields = ["identifiers", "type"]
+        type_config = {
+            "mediafiles": {
+                "data_type": "mediafiles",
+                "get_items": lambda: self.__get_mediafiles(raw_id),
+                "fields": ["identifier", "type", "filename"],
+            },
+            "asset_parts": {
+                "data_type": "entities",
+                "get_items": lambda: self.__get_asset_parts(raw_id, entity),
+                "fields": ["identifier", "type", "title"],
+            },
+        }
 
-        data = {}
-        data["results"] = items
+        config = type_config.get(return_type, type_config["mediafiles"])
+        data = {"results": config["get_items"]()}
         return self._create_response_according_accept_header(
             mappers.map_data_according_to_accept_header(
                 get_user_context().access_restrictions.post_request_hook(data),
                 "text/csv",
-                data_type,
-                fields,
+                config["data_type"],
+                config["fields"],
                 "elody",
                 request.args,
             ),
             "text/csv",
         )
+
+    def __get_mediafiles(self, raw_id):
+        return self.storage.get_collection_item_mediafiles("entities", raw_id)
+
+    def __get_asset_parts(self, raw_id, entity):
+        relations = self.storage.get_collection_item_relations("entities", raw_id)
+        relation_type = (
+            "hasAssetPart" if entity.get("type") == "assetPart" else "isAssetFor"
+        )
+        return [
+            self.storage.get_item_from_collection_by_id("entities", relation["key"])
+            for relation in relations
+            if relation.get("type") == relation_type
+        ]
 
     @apply_policies(RequestContext(request))
     def post(self, id):
@@ -600,13 +612,22 @@ class EntityOrder(GenericObjectDetail):
             raise Exception(
                 f"{get_error_code(ErrorCode.UNSUPPORTED_TYPE, get_write())} | type:{request.content_type} - Unsupported type {request.content_type}"
             )
-        entity_type = self._determine_child_entity_type(entity)
+        updating_entity_type = entity.get("type")
+        parsed_csv = self._get_parsed_csv(request.get_data(as_text=True), "items")
+        items = self._get_items_from_csv(parsed_csv)
+        item_type = self._determine_item_type_from_csv(items)
+        item_collection = self._determine_item_collection_from_csv(items)
+        if not item_collection:
+            return (
+                f"{get_error_code(ErrorCode.UNSUPPORTED_TYPE, get_write())} | type:{item_type} - Unsupported type {item_type}",
+                400,
+            )
         relation_type, relation_type_reverse = self._determine_relation_types(
-            entity_type
+            updating_entity_type, item_type
         )
-        csv_type = {"mediafiles": "mediafiles", "entities": "entities"}.get(entity_type)
-        parsed_csv = self._get_parsed_csv(request.get_data(as_text=True), entity_type)
-        items = self._get_items_from_csv(entity_type, parsed_csv)
+        csv_type = {"mediafiles": "mediafiles", "entities": "entities"}.get(
+            item_collection
+        )
         items_dict = {item["matching_id"]: item for item in items}
         items_order = {
             item["matching_id"]: csv_order + 1 for csv_order, item in enumerate(items)
@@ -626,29 +647,39 @@ class EntityOrder(GenericObjectDetail):
         return super().get("entities", id)
 
     # Item with type asset will have mediafiles as children and other type e.g assetParts will have assets as children
-    def _determine_child_entity_type(self, entity):
-        if entity.get("type") == "asset":
-            entity_type = "mediafiles"
-        else:
-            entity_type = "entities"
-        return entity_type
+    def _determine_item_type_from_csv(self, items):
+        if not items or not items[0]:
+            return None
+        item = items[0]
+        return item.get("type")
 
-    def _determine_relation_types(self, entity_type):
-        relation_type = {"mediafiles": "hasMediafile", "entities": "hasAsset"}.get(
-            entity_type
-        )
-        relation_type_reverse = {
-            "mediafiles": "belongsTo",
-            "entities": "isAssetFor",
-        }.get(entity_type)
-        return relation_type, relation_type_reverse
+    def _determine_item_collection_from_csv(self, items):
+        if not items or not items[0]:
+            return None
+        item = items[0]
+        item_type_mapping = {
+            "assetPart": "entities",
+            "mediafile": "mediafiles",
+        }
+        return item_type_mapping.get(item.get("type"))
 
-    def _get_items_from_csv(self, entity_type, parsed_csv):
-        return (
-            parsed_csv.get_entities()
-            if entity_type == "entities"
-            else parsed_csv.get_mediafiles()
+    def _determine_relation_types(self, updating_entity_type, item_type):
+        relation_mapping = {
+            "asset": {
+                "mediafile": ("hasMediafile", "belongsTo"),
+                "assetPart": ("isAssetFor", "hasAsset"),
+            },
+            "assetPart": {
+                "mediafile": ("hasMediafile", "belongsTo"),
+                "assetPart": ("hasAssetPart", "isAssetPartFor"),
+            },
+        }
+        return relation_mapping.get(updating_entity_type, {}).get(
+            item_type, (None, None)
         )
+
+    def _get_items_from_csv(self, parsed_csv):
+        return parsed_csv.objects.get("items")
 
     def _get_parsed_csv(self, csv, entity_type):
         try:
