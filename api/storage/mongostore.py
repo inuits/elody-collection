@@ -526,10 +526,20 @@ class MongoStorageManager(GenericStorageManager):
         return mediafiles
 
     def get_collection_item_relations(
-        self, collection, id, include_sub_relations=False, exclude=None
+        self, collection, id, include_sub_relations=False, exclude=None, order=True
     ):
         relations = self.get_collection_item_sub_item(collection, id, "relations")
-        return relations if relations else []
+        if not relations:
+            return []
+
+        if order:
+            def get_order(relation):
+                for meta in relation.get('metadata', []):
+                    if meta['key'] == 'order':
+                        return meta['value']
+                return float('inf')
+            relations = sorted(relations, key=get_order)
+        return relations
 
     def get_entities(
         self,
