@@ -47,6 +47,7 @@ class BaseFilterResource(BaseResource):
         limit = request.args.get("limit", 20, int) if request and not limit else limit
 
         if request:
+
             @after_this_request
             def add_header(response):
                 response.headers["Access-Control-Allow-Origin"] = "*"

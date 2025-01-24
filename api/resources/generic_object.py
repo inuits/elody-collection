@@ -243,7 +243,7 @@ class GenericObjectV2(BaseFilterResource, BaseResource):
             return "good", 200
         if not collection:
             resolve_collections = get_user_context().bag["collection_resolver"]
-            collection = resolve_collections(content=request.json)
+            collection = resolve_collections(content=content or request.json)
             if len(collection) == 1:
                 collection = collection[0]
             else:

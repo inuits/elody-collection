@@ -118,7 +118,11 @@ class Batch(BaseResource):
         )
         if not related_item:
             self._add_error_to_csv_multi_object(
-                csv_multi_object, parse_item, metadata_item, item.get("matching_id"), item.get("filename")
+                csv_multi_object,
+                parse_item,
+                metadata_item,
+                item.get("matching_id"),
+                item.get("filename"),
             )
             return
 
@@ -135,7 +139,9 @@ class Batch(BaseResource):
         )
         item.update({"relations": relation_list})
 
-    def _add_error_to_csv_multi_object(self, csv_multi_object, parse_item, list_item, matching_id, filename):
+    def _add_error_to_csv_multi_object(
+        self, csv_multi_object, parse_item, list_item, matching_id, filename
+    ):
         line_number = csv_multi_object.get_line_number(matching_id, filename)
         message = f"{get_error_code(ErrorCode.ITEM_WITH_VALUE_FOR_KEY_NOT_FOUND, get_write())} | key:{parse_item['csv_key']} | value:{list_item['value']} | line_number:{line_number} - Item for key {parse_item['csv_key']} with value {list_item['value']} doesn't exist.\n"
         if "related_item" not in csv_multi_object.errors:

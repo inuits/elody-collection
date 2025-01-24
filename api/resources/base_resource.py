@@ -411,14 +411,10 @@ class BaseResource(Resource):
             return serialize(
                 deepcopy(content),
                 type=type,
-                from_format=serialize.get_format(spec, request.args),
-                to_format=(
-                    item.get("storage_format", item)
-                    .get("schema", {})
-                    .get("type", "elody")
-                    if item
-                    else schema_type
+                from_format=content.get("schema", {}).get(
+                    "type", serialize.get_format(spec, request.args)
                 ),
+                to_format=schema_type,
             )
         else:
             return content

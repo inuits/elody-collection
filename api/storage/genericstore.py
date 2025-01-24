@@ -202,7 +202,7 @@ class GenericStorageManager:
         asc=True,
     ):
         pass
-    
+
     def get_ttl_expired_items_from_collection(self, collection):
         pass
 
