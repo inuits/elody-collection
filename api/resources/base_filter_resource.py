@@ -41,10 +41,12 @@ class BaseFilterResource(BaseResource):
     ):
         order_by = request.args.get("order_by", None) if request else None
         asc = bool(request.args.get("asc", 1, int)) if request else 1
-        skip = skip if skip else 0
-        skip = request.args.get("skip", 0, int) if request and not skip else skip
-        limit = limit if limit else 20
-        limit = request.args.get("limit", 20, int) if request and not limit else limit
+        if request:
+            skip = skip if skip is not None else request.args.get("skip", 0, int)
+            limit = limit if limit is not None else request.args.get("limit", 20, int)
+        else:
+            skip = skip if skip else 0
+            limit = limit if limit else 20
 
         if request:
 
