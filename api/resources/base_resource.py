@@ -624,8 +624,6 @@ class BaseResource(Resource):
         return getenv("MINIO_BUCKET")
 
     def _get_upload_location(self, filename):
-        if tenant_id := get_user_context().x_tenant.id:
-            return f"{tenant_id}/{filename}"
         return filename
 
     def _inject_api_urls_into_entities(self, entities):
