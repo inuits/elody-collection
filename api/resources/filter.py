@@ -1,4 +1,5 @@
 import mappers
+import re
 
 from configuration import get_object_configuration_mapper, get_storage_mapper
 from filters_v2.filter_matcher_mapping import FilterMatcherMapping
@@ -95,6 +96,14 @@ class FilterEntitiesV2(BaseFilterResource):
             )
         else:
             entities = self._execute_advanced_search_with_query_v2(query, "entities")
+            sort_by_order = request.args.get("order_by", None)
+            ascending = request.args.get("asc", 1, int)
+            if sort_by_order == "order":
+                relationType = get_relation_type_from_body(query)
+                if relationType:
+                    entities["results"] = sort_items_by_relations(
+                        entities["results"], relationType, ascending=ascending
+                    )
         return self._create_response_according_accept_header(
             mappers.map_data_according_to_accept_header(
                 (
@@ -134,6 +143,14 @@ class FilterMediafilesV2(BaseFilterResource):
             ]
             query = query + filter_out_empty_mediafiles
         entities = self._execute_advanced_search_with_query_v2(query, "mediafiles")
+        sort_by_order = request.args.get("order_by", None)
+        ascending = request.args.get("asc", 1, int)
+        if sort_by_order == "order":
+            relationType = get_relation_type_from_body(query)
+            if relationType:
+                entities["results"] = sort_items_by_relations(
+                    entities["results"], relationType, ascending=ascending
+                )
         return self._create_response_according_accept_header(
             mappers.map_data_according_to_accept_header(
                 (
@@ -322,3 +339,37 @@ class FilterMediafilesBySavedSearchId(BaseFilterResource):
         if request.args.get("soft", 0, int):
             return "good", 200
         return self._execute_advanced_search_with_saved_search(id, "mediafiles")
+
+
+def sort_items_by_relations(data, relation_type=None, ascending=True):
+    def get_order_value(item):
+        order_values = []
+        for relation in item.get("relations", []):
+            if relation_type is None or relation.get("type") == relation_type:
+                for metadata in relation.get("metadata", []):
+                    if metadata.get("key") == "order":
+                        order_values.append(metadata.get("value", float("inf")))
+        if not order_values:
+            return float("inf")
+        return min(order_values)
+
+    return sorted(data, key=get_order_value, reverse=not ascending)
+
+
+def get_relation_type_from_body(query):
+    for query_item in query:
+        if query_item.get("type") == "selection":
+            key = query_item.get("key", [])[0]
+            if key:
+                return extract_value_from_key(key)
+
+    return None
+
+
+def extract_value_from_key(input_string, key="relations"):
+    pattern = re.compile(rf"{key}\.([^.|]+)")
+    match = pattern.search(input_string)
+    if match:
+        return match.group(1)
+
+    return None
