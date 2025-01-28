@@ -589,21 +589,29 @@ class ArangoStorageManager(GenericStorageManager):
         items = dict()
         extra_query = ""
         title_filter = ""
+        publication_status_filter = ""
         filter_conditions = []
         if not fields:
             fields = {}
         if not filters:
             filters = {}
         for name, value in fields.items():
-            if value is None:
-                extra_query += f"FILTER c.{name} == null\n"
-            else:
-                extra_query += f'FILTER c.{name} == "{value}"\n'
+            if name not in ["publication_status"]:
+                if value is None:
+                    extra_query += f"FILTER c.{name} == null\n"
+                else:
+                    extra_query += f'FILTER c.{name} == "{value}"\n'
         if "title" in filters:
             title_filter = f"""
                 FOR metadata IN c.metadata
                     FILTER metadata.key == "title"
                     FILTER LIKE(metadata.value, "%{filters["title"]}%", true)
+            """
+        if "publication_status" in fields:
+            publication_status_filter = f"""
+                FOR metadata IN c.metadata
+                    FILTER metadata.key == "publication_status"
+                    AND metadata.value == "{fields["publication_status"]}"
             """
 
         # QUICK FIX TO MATCH CERTAIN FILTER
@@ -623,6 +631,7 @@ class ArangoStorageManager(GenericStorageManager):
                 {filter_query}
                 {extra_query}
                 {title_filter}
+                {publication_status_filter}
                 {f'SORT c.{sort} {"ASC" if asc else "DESC"}' if sort else ""}
                 LIMIT @skip, @limit
                 RETURN c
