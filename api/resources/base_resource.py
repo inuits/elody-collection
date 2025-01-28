@@ -549,16 +549,23 @@ class BaseResource(Resource):
         return items, updated_values
 
     def update_items(self, items, updated_values):
+        ignore_keys = ["filename", "original_filename"]
         for item in items:
             item_id = get_raw_id(item)
             if item_id in updated_values:
                 updates = updated_values[item_id]
+                self.remove_ignored_keys(updates, ignore_keys)
                 item_metadata = item.get("metadata", [])
                 item_relations = item.get("relations", [])
                 self.update_metadata(item_metadata, updates)
                 self.update_relations(item_relations, updates)
                 item["metadata"] = item_metadata
                 item["relations"] = item_relations
+
+    def remove_ignored_keys(self, updates, ignore_keys):
+        for key in ignore_keys:
+            if key in updates:
+                del updates[key]
 
     def update_relations(self, item_relations, updates):
         for key, value in updates.items():

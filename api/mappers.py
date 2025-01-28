@@ -13,7 +13,6 @@ from storage.storagemanager import StorageManager
 general_excluded_fields = [
     "identifier",
     "type",
-    "filename",
     "bibliographic_citation_overwrite",
     "dc_rights_overwrite",
     "brocade_archief",
@@ -200,11 +199,11 @@ def map_objects_to_csv(entities, fields=None, exclude_non_editable_fields=False)
         if can_append_key("type", fields, excluded_fields):
             if "type" not in keys:
                 keys.append("type")
-            values[0][1] = entity.get("type")
+            values[0][keys.index("type")] = entity.get("type")
         if can_append_key("filename", fields, excluded_fields):
             if "filename" not in keys:
                 keys.append("filename")
-            values[0][2] = entity.get("original_filename")
+            values[0][keys.index("filename")] = entity.get("original_filename")
         for metadata in entity.get("metadata", []):
             key = metadata.get("key")
             if is_uuid(key):
