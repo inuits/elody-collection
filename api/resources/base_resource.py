@@ -538,7 +538,7 @@ class BaseResource(Resource):
                 if not item:
                     abort(
                         400,
-                        message=f"{get_error_code(ErrorCode.ITEM_NOT_FOUND_IN_COLLECTION, get_write())} Item with {identifier} doesn't exist for {collection} in the uploaded csv.",
+                        message=f"{get_error_code(ErrorCode.ITEM_NOT_FOUND_IN_COLLECTION, get_write())} - Item with {identifier} doesn't exist for {collection} in the uploaded csv.",
                     )
                 item_identifiers = set(item.get("identifiers", []))
 
