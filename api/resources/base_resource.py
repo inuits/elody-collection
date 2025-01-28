@@ -696,7 +696,7 @@ class BaseResource(Resource):
                 if "transcode_file_location" in mediafile:
                     entity["primary_transcode"] = mediafile["transcode_filename"]
                     entity["primary_transcode_location"] = mediafile[
-                        "transcountde_file_location"
+                        "transcode_file_location"
                     ]
                 if "img_width" in mediafile and "img_height" in mediafile:
                     entity["primary_width"] = mediafile["img_width"]
