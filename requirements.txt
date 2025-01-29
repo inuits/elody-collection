@@ -14,7 +14,7 @@ cryptography==44.0.0
 decorator==5.1.1
 deprecation==2.1.0
 dnspython==2.7.0
-elody[loader]==0.0.172
+elody[loader]==0.0.173
 Flask==3.1.0
 Flask-RESTful==0.3.10
 flask-swagger-ui==4.11.1
@@ -29,7 +29,6 @@ Jinja2==3.1.5
 jsonschema==4.23.0
 jsonschema-specifications==2024.10.1
 MarkupSafe==3.0.2
-nanoid==2.0.0
 packaging==24.2
 pamqp==2.3.0
 pika==1.3.2
