@@ -61,6 +61,8 @@ class Entity(GenericObject):
             order_by,
             ascending,
         )
+        for entity in entities.get("results", list()):
+            self._set_entity_mediafile_and_thumbnail(entity)
         type_filter = f"type={item_type}&" if item_type else ""
         entities["limit"] = limit
         if skip + limit < entities["count"]:
