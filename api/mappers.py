@@ -176,13 +176,19 @@ def map_data_to_ldjson(data, format):
     return graph.serialize(format="json-ld")
 
 
-def map_objects_to_csv(entities, fields=None, exclude_non_editable_fields=False):
+def map_objects_to_csv(entities, fields=None, exclude_non_editable_fields=False, object_type="entities"):
     storage = StorageManager().get_db_engine()
     keys = list()
     root_values = list()
     excluded_fields = []
     if exclude_non_editable_fields:
-        excluded_fields = general_excluded_fields
+        if object_type == "entities":
+            entities_excluded_fields = ["filename"]
+            excluded_fields = general_excluded_fields = entities_excluded_fields
+        elif object_type == "mediafiles":
+            excluded_fields = general_excluded_fields
+        else:
+            excluded_fields = general_excluded_fields
     for entity in entities:
         values = list()
         for id in entity.get("identifiers", []):
@@ -208,6 +214,11 @@ def map_objects_to_csv(entities, fields=None, exclude_non_editable_fields=False)
             key = metadata.get("key")
             if is_uuid(key):
                 continue
+            # The exernal_id is saved as identifier in the metadata (comes from adlib/arches)
+            if key == "identifier":
+                if "external_id" not in keys:
+                    keys.append("external_id")
+                values[0][keys.index("external_id")] = metadata.get("value")
             if not can_append_key(key, fields, excluded_fields):
                 continue
             if key not in keys:
@@ -313,13 +324,13 @@ def map_to_csv(data, data_type, fields=None, exclude_non_editable_fields=False):
             return map_metadata_to_csv(data, fields)
         case "entities":
             return map_objects_to_csv(
-                data["results"], fields, exclude_non_editable_fields
+                data["results"], fields, exclude_non_editable_fields, "entities"
             )
         case "entity":
             return map_object_to_csv(data, fields, exclude_non_editable_fields)
         case "mediafiles":
             return map_objects_to_csv(
-                data["results"], fields, exclude_non_editable_fields
+                data["results"], fields, exclude_non_editable_fields, "mediafiles"
             )
         case _:
             return data
