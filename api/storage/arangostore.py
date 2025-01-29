@@ -595,7 +595,8 @@ class ArangoStorageManager(GenericStorageManager):
             fields = {}
         if not filters:
             filters = {}
-        filters["ids"] = fields.pop("ids", list())
+        if "ids" in fields:
+            filters["ids"] = fields.pop("ids")
         for name, value in fields.items():
             if name not in ["publication_status"]:
                 if value is None:
