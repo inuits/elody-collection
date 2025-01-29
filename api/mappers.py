@@ -176,7 +176,9 @@ def map_data_to_ldjson(data, format):
     return graph.serialize(format="json-ld")
 
 
-def map_objects_to_csv(entities, fields=None, exclude_non_editable_fields=False, object_type="entities"):
+def map_objects_to_csv(
+    entities, fields=None, exclude_non_editable_fields=False, object_type="entities"
+):
     storage = StorageManager().get_db_engine()
     keys = list()
     root_values = list()

@@ -63,5 +63,5 @@ class Validator(BaseResource):
         validation_error = validate_json(content, validator)
         if validation_error:
             raise BadRequest(
-                f"{get_error_code(ErrorCode.VALIDATION_ERROR, get_write())} - {validation_error}"
+                f"{get_error_code(ErrorCode.VALIDATION_ERROR, get_write())} | message:{validation_error} - {validation_error}"
             )

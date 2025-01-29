@@ -259,7 +259,13 @@ class MongoStorageManager(GenericStorageManager):
         }.get(relation, "entities")
 
     def _prepare_mongo_document(
-        self, document, reversed, collection, create_sortable_metadata=True
+        self,
+        document,
+        reversed,
+        collection,
+        create_sortable_metadata=True,
+        *,
+        to_format="elody",
     ):
         if "data" in document:
             document["data"] = self.__replace_dictionary_keys(
@@ -272,7 +278,7 @@ class MongoStorageManager(GenericStorageManager):
         if not reversed and create_sortable_metadata:
             document["sort"] = self.__create_sortable_metadata(document["metadata"])
         return serialize(
-            migrate(document), type=document.get("type"), to_format="elody"
+            migrate(document), type=document.get("type"), to_format=to_format
         )
 
     def add_mediafile_to_collection_item(
@@ -469,8 +475,14 @@ class MongoStorageManager(GenericStorageManager):
         except DuplicateKeyError as error:
             log.exception(f"{error.__class__.__name__}: {error}", item, exc_info=error)
             if error.code == 11000:
+                try:
+                    duplicate_entry = (
+                        error.details.get("errmsg").split('"')[1].split(":")[-1]
+                    )
+                except Exception:
+                    duplicate_entry = error.details.get("errmsg")
                 raise NonUniqueException(
-                    f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} - {error.details.get('errmsg')}"
+                    f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} | duplicate_entry:{duplicate_entry} - Following entry must be unique: {duplicate_entry}"
                 )
             raise error
         return self._prepare_mongo_document(item, False, collection, False)
@@ -647,9 +659,11 @@ class MongoStorageManager(GenericStorageManager):
                 )
         return linked_entities
 
-    def get_item_from_collection_by_id(self, collection, id):
+    def get_item_from_collection_by_id(self, collection, id, *, to_format="elody"):
         if document := self.db[collection].find_one(self.__get_id_query(id)):
-            return self._prepare_mongo_document(document, True, collection)
+            return self._prepare_mongo_document(
+                document, True, collection, to_format=to_format
+            )
         return None
 
     def get_item_from_collection_by_metadata(self, collection, key, value, type=None):
@@ -867,8 +881,14 @@ class MongoStorageManager(GenericStorageManager):
         except DuplicateKeyError as error:
             log.exception(f"{error.__class__.__name__}: {error}", item, exc_info=error)
             if error.code == 11000:
+                try:
+                    duplicate_entry = (
+                        error.details.get("errmsg").split('"')[1].split(":")[-1]
+                    )
+                except Exception:
+                    duplicate_entry = error.details.get("errmsg")
                 raise NonUniqueException(
-                    f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} - {error.details.get('errmsg')}"
+                    f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} | duplicate_entry:{duplicate_entry} - Following entry must be unique: {duplicate_entry}"
                 )
             raise error
 
@@ -913,8 +933,14 @@ class MongoStorageManager(GenericStorageManager):
         except DuplicateKeyError as error:
             log.exception(f"{error.__class__.__name__}: {error}", item, exc_info=error)
             if error.code == 11000:
+                try:
+                    duplicate_entry = (
+                        error.details.get("errmsg").split('"')[1].split(":")[-1]
+                    )
+                except Exception:
+                    duplicate_entry = error.details.get("errmsg")
                 raise NonUniqueException(
-                    f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} - {error.details.get('errmsg')}"
+                    f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} | duplicate_entry:{duplicate_entry} - Following entry must be unique: {duplicate_entry}"
                 )
             raise error
 
@@ -985,8 +1011,14 @@ class MongoStorageManager(GenericStorageManager):
         except DuplicateKeyError as error:
             log.exception(f"{error.__class__.__name__}: {error}", item, exc_info=error)
             if error.code == 11000:
+                try:
+                    duplicate_entry = (
+                        error.details.get("errmsg").split('"')[1].split(":")[-1]
+                    )
+                except Exception:
+                    duplicate_entry = error.details.get("errmsg")
                 raise NonUniqueException(
-                    f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} - {error.details.get('errmsg')}"
+                    f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} | duplicate_entry:{duplicate_entry} - Following entry must be unique: {duplicate_entry}"
                 )
             raise error
         return self.get_item_from_collection_by_id(collection, items[0]["_id"])
