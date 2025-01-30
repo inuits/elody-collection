@@ -690,9 +690,9 @@ class BaseResource(Resource):
         for mediafile in mediafiles:
             if mediafile.get("is_primary", False):
                 entity["primary_mediafile"] = mediafile["filename"]
-                entity["primary_mediafile_location"] = mediafile[
-                    "original_file_location"
-                ]
+                entity["primary_mediafile_location"] = mediafile.get(
+                    "original_file_location", mediafile["filename"]
+                )
                 if "transcode_file_location" in mediafile:
                     entity["primary_transcode"] = mediafile["transcode_filename"]
                     entity["primary_transcode_location"] = mediafile[
