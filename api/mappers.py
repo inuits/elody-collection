@@ -186,7 +186,7 @@ def map_objects_to_csv(
     if exclude_non_editable_fields:
         if object_type == "entities":
             entities_excluded_fields = ["filename"]
-            excluded_fields = general_excluded_fields = entities_excluded_fields
+            excluded_fields = general_excluded_fields + entities_excluded_fields
         elif object_type == "mediafiles":
             excluded_fields = general_excluded_fields
         else:
