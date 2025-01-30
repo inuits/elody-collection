@@ -549,7 +549,7 @@ class BaseResource(Resource):
         return items, updated_values
 
     def update_items(self, items, updated_values):
-        ignore_keys = ["filename", "original_filename"]
+        ignore_keys = ["filename", "original_filename", "external_id"]
         for item in items:
             item_id = get_raw_id(item)
             if item_id in updated_values:
