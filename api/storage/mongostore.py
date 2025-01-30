@@ -549,7 +549,8 @@ class MongoStorageManager(GenericStorageManager):
             def get_order(relation):
                 for meta in relation.get("metadata", []):
                     if meta["key"] == "order":
-                        return meta["value"]
+                        if isinstance(meta["value"], (int, float)):
+                            return meta["value"]
                 return float("inf")
 
             relations = sorted(relations, key=get_order)
