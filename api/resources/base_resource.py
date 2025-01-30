@@ -702,9 +702,9 @@ class BaseResource(Resource):
                     entity["primary_width"] = mediafile["img_width"]
                     entity["primary_height"] = mediafile["img_height"]
             if mediafile.get("is_primary_thumbnail", False):
-                entity["primary_thumbnail_location"] = mediafile[
-                    "thumbnail_file_location"
-                ]
+                entity["primary_thumbnail_location"] = mediafile.get(
+                    "thumbnail_file_location", mediafile["filename"]
+                )
         return entity
 
     def _sync_roles_from_idp(self, user, roles_per_tenant):
