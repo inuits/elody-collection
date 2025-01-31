@@ -139,7 +139,8 @@ class MongoFilters:
                 object_lists = (
                     get_object_configuration_mapper()
                     .get(BaseMatchers.collection)
-                    .document_info()["object_lists"]
+                    .document_info()
+                    .get("object_lists", {})
                 )
                 for object_list, primary_key in object_lists.items():
                     if lookup["local_field"].startswith(object_list):

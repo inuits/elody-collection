@@ -26,7 +26,8 @@ def append_matcher(matcher, matchers, operator="and"):
         object_lists = (
             get_object_configuration_mapper()
             .get(BaseMatchers.collection)
-            .document_info()["object_lists"]
+            .document_info()
+            .get("object_lists", {})
         )
         for appended_matcher in matchers:
             key = list(matcher.keys())[0]

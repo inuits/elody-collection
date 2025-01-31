@@ -3,6 +3,7 @@ import time
 
 from bson.codec_options import CodecOptions
 from configuration import get_object_configuration_mapper
+from copy import deepcopy
 from datetime import datetime, timezone, timedelta
 from elody.error_codes import ErrorCode, get_error_code, get_write
 from elody.exceptions import NonUniqueException
@@ -466,7 +467,7 @@ class MongoStorageManager(GenericStorageManager):
             post_crud_hook(
                 crud="update",
                 document=item,
-                request_body=content,
+                content=content,
                 storage=self,
                 get_user_context=get_user_context,
                 get_rabbit=get_rabbit,
@@ -846,10 +847,17 @@ class MongoStorageManager(GenericStorageManager):
         return self.get_item_from_collection_by_id(collection, id)
 
     def patch_item_from_collection_v2(
-        self, collection, item, content, spec, *, run_post_crud_hook=True
+        self,
+        collection,
+        item,
+        content,
+        spec,
+        *,
+        run_post_crud_hook=True,
+        patched_item={},
     ):
         item = item.get("storage_format", item)
-        if not self._does_request_changes(item, content):
+        if not patched_item and not self._does_request_changes(item, content):
             return item
 
         config = get_object_configuration_mapper().get(item["type"])
@@ -857,10 +865,11 @@ class MongoStorageManager(GenericStorageManager):
         patch_document_content = config.crud()["document_content_patcher"]
         pre_crud_hook = config.crud()["pre_crud_hook"]
         post_crud_hook = config.crud()["post_crud_hook"]
+        unpatched_item = deepcopy(item)
 
         try:
             timestamp = datetime.now(timezone.utc)
-            item = patch_document_content(
+            item = patched_item or patch_document_content(
                 document=item, content=content, crud="update", timestamp=timestamp
             )
             item = pre_crud_hook(
@@ -874,7 +883,8 @@ class MongoStorageManager(GenericStorageManager):
                 post_crud_hook(
                     crud="update",
                     document=item,
-                    request_body=content,
+                    content=content,
+                    unpatched_document=unpatched_item,
                     storage=self,
                     get_user_context=get_user_context,
                     get_rabbit=get_rabbit,
@@ -896,9 +906,11 @@ class MongoStorageManager(GenericStorageManager):
         log.info("Successfully patched item", item)
         return self._prepare_mongo_document(item, False, collection, False)
 
-    def put_item_from_collection(self, collection, item, content, spec):
+    def put_item_from_collection(
+        self, collection, item, content, spec, *, patched_item={}
+    ):
         item = item.get("storage_format", item)
-        if not self._does_request_changes(item, content, True):
+        if not patched_item and not self._does_request_changes(item, content, True):
             return item
 
         config = get_object_configuration_mapper().get(item["type"])
@@ -906,10 +918,11 @@ class MongoStorageManager(GenericStorageManager):
         patch_document_content = config.crud()["document_content_patcher"]
         pre_crud_hook = config.crud()["pre_crud_hook"]
         post_crud_hook = config.crud()["post_crud_hook"]
+        unpatched_item = deepcopy(item)
 
         try:
             timestamp = datetime.now(timezone.utc)
-            item = patch_document_content(
+            item = patched_item or patch_document_content(
                 document=item,
                 content=content,
                 crud="update",
@@ -926,7 +939,8 @@ class MongoStorageManager(GenericStorageManager):
             post_crud_hook(
                 crud="update",
                 document=item,
-                request_body=content,
+                content=content,
+                unpatched_document=unpatched_item,
                 storage=self,
                 get_user_context=get_user_context,
                 get_rabbit=get_rabbit,
