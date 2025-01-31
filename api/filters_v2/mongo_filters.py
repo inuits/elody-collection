@@ -174,8 +174,8 @@ class MongoFilters:
                                                 "$or": [
                                                     {
                                                         "$in": [
-                                                            "$$localField",
                                                             f"${lookup['foreign_field']}",
+                                                            "$$localField",
                                                         ]
                                                     },
                                                     {
