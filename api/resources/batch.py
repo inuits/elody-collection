@@ -3,7 +3,7 @@ from elody.error_codes import ErrorCode, get_error_code, get_write
 from elody.csv import CSVMultiObject
 from elody.exceptions import ColumnNotFoundException
 from elody.util import get_raw_id
-from elody.job import start_job, finish_job, fail_job
+from elody.job import start_job, finish_job, fail_job, add_document_to_job
 from flask import request
 from flask_restful import abort
 from inuits_policy_based_auth import RequestContext
@@ -16,8 +16,8 @@ from urllib.parse import quote
 class Batch(BaseResource):
     def __init__(self):
         super().__init__()
-        self.main_job_id_with_dry_run = ""
-        self.main_job_id_without_dry_run = ""
+        self.job_id_with_validation = ""
+        self.main_csv_job_id = ""
         self.get_rabbit = lambda: get_rabbit()
 
     def _add_matching_mediafiles_to_entity(
@@ -64,10 +64,8 @@ class Batch(BaseResource):
             )
         except ColumnNotFoundException as missing_columns:
             message = f"{get_error_code(ErrorCode.COLUMN_NOT_FOUND, get_write())} | missing_columns:{missing_columns} - Not all identifying columns are present in CSV: {missing_columns}"
-            fail_job(self.main_job_id_with_dry_run, message, get_rabbit=self.get_rabbit)
-            fail_job(
-                self.main_job_id_without_dry_run, message, get_rabbit=self.get_rabbit
-            )
+            fail_job(self.job_id_with_validation, message, get_rabbit=self.get_rabbit)
+            fail_job(self.main_csv_job_id, message, get_rabbit=self.get_rabbit)
             abort(
                 422,
                 message=f"{get_error_code(ErrorCode.COLUMN_NOT_FOUND, get_write())} - {message}",
@@ -167,6 +165,12 @@ class Batch(BaseResource):
                 self.storage.add_relations_to_collection_item(
                     "entities", get_raw_id(entity), relations
                 )
+                add_document_to_job(
+                    self.main_csv_job_id,
+                    get_raw_id(entity),
+                    "asset",
+                    get_rabbit=self.get_rabbit,
+                )
             if entity_matching_id:
                 mediafiles = self._add_matching_mediafiles_to_entity(
                     entity_matching_id,
@@ -192,22 +196,26 @@ class Batch(BaseResource):
 
     @apply_policies(RequestContext(request))
     def post(self):
-        self.main_job_id_with_dry_run = start_job(
-            "Start Import for CSV with a dry run",
-            "CSV Import",
-            get_rabbit=self.get_rabbit,
-            user_email=get_user_context().email,
-        )
-        content_type = request.content_type
+        main_job_id = request.args.get("main_job_id", None, str)
         dry_run = request.args.get("dry_run", 0, int)
-        extra_mediafile_type = request.args.get("extra_mediafile_type")
-        if not dry_run:
-            self.main_job_id_without_dry_run = start_job(
-                "Start Import for CSV without a dry_run",
+        if not main_job_id and dry_run:
+            self.main_csv_job_id = start_job(
+                "Start CSV Import",
                 "CSV Import",
                 get_rabbit=self.get_rabbit,
                 user_email=get_user_context().email,
             )
+            self.job_id_with_validation = start_job(
+                "Validation of CSV",
+                "CSV Import",
+                get_rabbit=self.get_rabbit,
+                user_email=get_user_context().email,
+                parent_id=self.main_csv_job_id,
+            )
+        else: 
+            self.main_csv_job_id = main_job_id
+        content_type = request.content_type
+        extra_mediafile_type = request.args.get("extra_mediafile_type")
         if content_type == "text/csv":
             output = dict()
             accept_header = request.headers.get("Accept")
@@ -219,21 +227,19 @@ class Batch(BaseResource):
                 output = entities_and_mediafiles
                 errors = parsed_csv.get_errors()
                 output["errors"] = errors
-                output["job_id_with_dry_run"] = self.main_job_id_with_dry_run
+                output["parent_job_id"] = self.main_csv_job_id
                 if errors:
                     fail_job(
-                        self.main_job_id_with_dry_run,
+                        self.job_id_with_validation,
                         errors,
                         get_rabbit=self.get_rabbit,
                     )
                 else:
-                    finish_job(
-                        self.main_job_id_with_dry_run, get_rabbit=self.get_rabbit
-                    )
+                    finish_job(self.job_id_with_validation, get_rabbit=self.get_rabbit)
                 return output, 201
             if accept_header == "application/json":
                 output = {
-                    "job_id_with_dry_run": self.main_job_id_with_dry_run,
+                    "parent_job_id": self.main_csv_job_id,
                     "links": [],
                 }
                 for mediafile in entities_and_mediafiles.get("mediafiles", list()):
@@ -246,14 +252,14 @@ class Batch(BaseResource):
                 for mediafile in entities_and_mediafiles.get("mediafiles", list()):
                     ticket_id = self._create_ticket(mediafile.get("filename"))
                     output += f"{self.storage_api_url}/upload-with-ticket/{quote(mediafile.get('filename'))}?id={get_raw_id(mediafile)}&ticket_id={ticket_id}\n"
-            finish_job(self.main_job_id_with_dry_run, get_rabbit=self.get_rabbit)
-            finish_job(self.main_job_id_without_dry_run, get_rabbit=self.get_rabbit)
+            finish_job(self.job_id_with_validation, get_rabbit=self.get_rabbit)
+            finish_job(self.main_csv_job_id, get_rabbit=self.get_rabbit)
             return self._create_response_according_accept_header(
                 output, accept_header, 201
             )
         message = f"Only content type text/csv is allowed, not {content_type}"
-        fail_job(self.main_job_id_with_dry_run, message, get_rabbit=self.get_rabbit)
-        fail_job(self.main_job_id_without_dry_run, message, get_rabbit=self.get_rabbit)
+        fail_job(self.job_id_with_validation, message, get_rabbit=self.get_rabbit)
+        fail_job(self.main_csv_job_id, message, get_rabbit=self.get_rabbit)
         abort(
             415,
             message=f"{get_error_code(ErrorCode.ONLY_TYPE_CSV_ALLOWED, get_write())} - {message}",
