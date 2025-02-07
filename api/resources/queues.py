@@ -270,13 +270,17 @@ def handle_mediafile_deleted(routing_key, body, message_id):
     if __is_malformed_message(data, ["linked_entities", "mediafile"]):
         return
     storage = StorageManager().get_db_engine()
-
     ocr_keys = []
     for relation in deleted_mediafile.get("relations", []):
         if relation.get("is_ocr"):
-            id = relation.get("key")
-            ocr_keys.append(id)
-            storage.delete_item_from_collection("mediafiles", id)
+            mediafile_id = relation.get("key")
+            mediafile = storage.get_item_from_collection_by_id(
+                "mediafiles", mediafile_id
+            )
+
+            if mediafile and mediafile.get("technical_origin") != "original":
+                ocr_keys.append(mediafile_id)
+                storage.delete_item_from_collection("mediafiles", mediafile_id)
 
     for relation in deleted_mediafile.get("relations", []):
         if relation.get("type") == "belongsTo" and "is_ocr" not in relation:
