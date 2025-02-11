@@ -280,7 +280,7 @@ class BaseResource(Resource):
                 except Exception as ex:
                     abort(400, message=str(ex))
 
-    def _create_ticket(self, filename, mediafile_id=None, exp=None):
+    def _create_ticket(self, filename, mediafile_id=None, exp=None, **kwargs):
         ticket = {
             "bucket": self._get_upload_bucket(),
             "location": self._get_upload_location(filename),
@@ -312,6 +312,8 @@ class BaseResource(Resource):
             ).timestamp()
         if mediafile_id:
             ticket["mediafile_id"] = mediafile_id
+        for key, value in kwargs.items():
+            ticket[key] = value
         return self.storage.save_item_to_collection(
             "abstracts", ticket, only_return_id=True, create_sortable_metadata=False
         )
