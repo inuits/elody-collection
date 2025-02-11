@@ -212,7 +212,7 @@ class Batch(BaseResource):
                 user_email=get_user_context().email,
                 parent_id=self.main_csv_job_id,
             )
-        else: 
+        else:
             self.main_csv_job_id = main_job_id
         content_type = request.content_type
         extra_mediafile_type = request.args.get("extra_mediafile_type")
