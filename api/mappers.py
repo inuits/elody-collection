@@ -13,6 +13,7 @@ from storage.storagemanager import StorageManager
 general_excluded_fields = [
     "identifier",
     "type",
+    "original_filename",
     "bibliographic_citation_overwrite",
     "dc_rights_overwrite",
     "brocade_archief",
@@ -35,10 +36,12 @@ general_excluded_fields = [
     "file_source",
     "ocr_type",
     "ocr_language",
+    "text_from_ocr",
     # All relation fields
     "has*",
     "is*",
     "belongsTo",
+    "belongsTo*",
 ]
 
 map_relation_to_name = {
