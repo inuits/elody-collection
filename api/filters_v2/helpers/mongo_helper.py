@@ -82,7 +82,7 @@ def get_lookup_key(filter_key, lookup_stage):
 def get_options_mapper(filter_key, lookup_key):
     object_lists_config = BaseMatchers.get_object_lists()
     keys_info = interpret_flat_key(filter_key, object_lists_config)
-    if len(keys_info) != 2:
+    if not keys_info[0]["object_list"]:
         return {
             "$map": {
                 "input": [f"${filter_key}"],
