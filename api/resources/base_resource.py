@@ -195,7 +195,14 @@ class BaseResource(Resource):
         return {"data": rdf_data}
 
     def _create_mediafile_for_entity(
-        self, entity, filename, metadata=None, relations=None, dry_run=False
+        self,
+        entity,
+        filename,
+        metadata=None,
+        relations=None,
+        dry_run=False,
+        relation_properties=None,
+        technical_origin=None,
     ):
         content = {
             "filename": filename,
@@ -206,6 +213,8 @@ class BaseResource(Resource):
         }
         if metadata:
             content["metadata"] = metadata
+        if technical_origin:
+            content["technical_origin"] = technical_origin
         if dry_run:
             return content
         mediafile = self.storage.save_item_to_collection("mediafiles", content)
@@ -214,6 +223,7 @@ class BaseResource(Resource):
             get_raw_id(entity),
             mediafile["_id"],
             mediafile_is_public(mediafile),
+            relation_properties,
         )
         if relations:
             self.storage.add_relations_to_collection_item(
