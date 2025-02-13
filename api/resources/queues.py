@@ -48,11 +48,12 @@ def update_parent_relation_values(routing_key, body, message_id):
     )
 )
 def add_entity_to_history(routing_key, body, message_id):
+    storage = StorageManager().get_db_engine()
     data = body["data"]
+    unchanged_entity = data.get("unchanged_entity")
     if __is_malformed_message(data, ["location", "type"]):
         return
     entity_id = data["location"].removeprefix("/entities/")
-    storage = StorageManager().get_db_engine()
     entity = storage.get_item_from_collection_by_id("entities", entity_id)
     relations = storage.get_collection_item_relations("entities", entity_id, True)
     content = {
@@ -61,7 +62,20 @@ def add_entity_to_history(routing_key, body, message_id):
         "collection": "entities",
         "relations": relations,
     }
-    storage.save_item_to_collection("history", content)
+    
+    if unchanged_entity:
+        unchanged_date_updated = unchanged_entity.pop("date_updated", None)
+        unchanged_date_created = unchanged_entity.pop("date_created", None)
+        
+        entity_date_updated = entity.pop("date_updated", None)
+        entity_date_created = entity.pop("date_created", None)
+        if unchanged_entity != entity:
+            entity["date_updated"] = entity_date_updated
+            entity["date_created"] = entity_date_created
+            content["entity"] = entity
+            storage.save_item_to_collection("history", content)
+    else:
+        storage.save_item_to_collection("history", content)
 
 
 @get_rabbit().queue(

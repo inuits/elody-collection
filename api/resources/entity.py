@@ -441,7 +441,7 @@ class EntityMetadata(GenericObjectDetail, GenericObjectMetadata):
         entity = super().get("entities", id)
         metadata = super(GenericObjectDetail, self).put("entities", id)[0]
         self._update_tenant(entity, {"metadata": metadata})
-        signal_entity_changed(get_rabbit(), entity)
+        signal_entity_changed(get_rabbit(), entity, unchanged_entity=entity)
         return metadata, 201
 
     @apply_policies(RequestContext(request))
@@ -451,7 +451,7 @@ class EntityMetadata(GenericObjectDetail, GenericObjectMetadata):
         entity = super().get("entities", id)
         metadata = super(GenericObjectDetail, self).patch("entities", id)[0]
         self._update_tenant(entity, {"metadata": metadata})
-        signal_entity_changed(get_rabbit(), entity)
+        signal_entity_changed(get_rabbit(), entity, unchanged_entity=entity)
         return metadata, 201
 
 
@@ -498,7 +498,7 @@ class EntityRelations(GenericObjectDetail, GenericObjectRelations):
             return "good", 200
         entity = super().get("entities", id)
         relations = super(GenericObjectDetail, self).put("entities", id)[0]
-        signal_entity_changed(get_rabbit(), entity)
+        signal_entity_changed(get_rabbit(), entity, unchanged_entity=entity)
         return relations, 201
 
     @apply_policies(RequestContext(request))
@@ -507,7 +507,7 @@ class EntityRelations(GenericObjectDetail, GenericObjectRelations):
             return "good", 200
         entity = super().get("entities", id)
         relations = super(GenericObjectDetail, self).patch("entities", id)[0]
-        signal_entity_changed(get_rabbit(), entity)
+        signal_entity_changed(get_rabbit(), entity, unchanged_entity=entity)
         return relations, 201
 
     @apply_policies(RequestContext(request))
@@ -543,7 +543,7 @@ class EntitySetPrimaryMediafile(GenericObjectDetail):
         self.storage.set_primary_field_collection_item(
             "entities", get_raw_id(entity), mediafile_id, "is_primary"
         )
-        signal_entity_changed(get_rabbit(), entity)
+        signal_entity_changed(get_rabbit(), entity, unchanged_entity=entity)
         return "", 204
 
 
@@ -555,7 +555,7 @@ class EntitySetPrimaryThumbnail(GenericObjectDetail):
         self.storage.set_primary_field_collection_item(
             "entities", get_raw_id(entity), mediafile_id, "is_primary_thumbnail"
         )
-        signal_entity_changed(get_rabbit(), entity)
+        signal_entity_changed(get_rabbit(), entity, unchanged_entity=entity)
         return "", 204
 
 
