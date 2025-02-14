@@ -24,4 +24,3 @@ class NoneConfiguration(BaseObjectConfiguration):
 
     def validation(self):
         return super().validation()
-
