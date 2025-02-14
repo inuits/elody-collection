@@ -4,7 +4,14 @@ from filters_v2.matchers.base_matchers import BaseMatchers
 
 
 class MongoMatchers(BaseMatchers):
-    def exact(self, key, value, is_datetime_value=False, aggregation=""):
+    def exact(
+        self,
+        key,
+        value,
+        is_datetime_value=False,
+        aggregation="",
+        inner_exact_matches={},
+    ):
         if isinstance(value, list):
             value = {"$in": value}
         elif is_datetime_value:
@@ -16,11 +23,13 @@ class MongoMatchers(BaseMatchers):
         object_lists = BaseMatchers.get_object_lists()
         keys_info = interpret_flat_key(key, object_lists)
         build_nested_matcher = BaseMatchers.get_custom_nested_matcher_builder()
-        return build_nested_matcher(object_lists, keys_info, value)
+        return build_nested_matcher(
+            object_lists, keys_info, value, inner_exact_matches=inner_exact_matches
+        )
 
-    def contains(self, key, value):
+    def contains(self, key, value, inner_exact_matches={}):
         match_value = {"$regex": value, "$options": "i"}
-        return self.__contains_range_match(key, match_value)
+        return self.__contains_range_match(key, match_value, inner_exact_matches)
 
     def min(self, key, value, is_datetime_value=False, aggregation=""):
         if is_datetime_value:
@@ -65,8 +74,8 @@ class MongoMatchers(BaseMatchers):
 
         return self.__contains_range_match(key, {"$gte": min, "$lte": max})
 
-    def any(self, key):
-        return self.__any_none_match(key, "ANY_MATCH")
+    def any(self, key, inner_exact_matches={}):
+        return self.__any_none_match(key, "ANY_MATCH", inner_exact_matches)
 
     def none(self, key):
         return self.__any_none_match(key, "NONE_MATCH")
@@ -86,17 +95,21 @@ class MongoMatchers(BaseMatchers):
             }
         }
 
-    def __contains_range_match(self, key: str, value):
+    def __contains_range_match(self, key: str, value, inner_exact_matches={}):
         object_lists = BaseMatchers.get_object_lists()
         keys_info = interpret_flat_key(key, object_lists)
         build_nested_matcher = BaseMatchers.get_base_nested_matcher_builder()
-        return build_nested_matcher(object_lists, keys_info, value)
+        return build_nested_matcher(
+            object_lists, keys_info, value, inner_exact_matches=inner_exact_matches
+        )
 
-    def __any_none_match(self, key: str, value: str):
+    def __any_none_match(self, key: str, value: str, inner_exact_matches={}):
         object_lists = BaseMatchers.get_object_lists()
         keys_info = interpret_flat_key(key, object_lists)
         build_nested_matcher = BaseMatchers.get_base_nested_matcher_builder()
-        return build_nested_matcher(object_lists, keys_info, value)
+        return build_nested_matcher(
+            object_lists, keys_info, value, inner_exact_matches=inner_exact_matches
+        )
 
     def __get_datetime_query_value(self, value) -> datetime:
         return datetime.fromisoformat(value)

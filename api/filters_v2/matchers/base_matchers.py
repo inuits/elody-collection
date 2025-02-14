@@ -35,11 +35,12 @@ class BaseMatchers(ABC):
         value: str | int | float | bool | list[str],
         is_datetime_value: bool = False,
         aggregation: str = "",
+        inner_exact_matches: dict = {},
     ) -> dict:
         pass
 
     @abstractmethod
-    def contains(self, key: str, value: str) -> dict:
+    def contains(self, key: str, value: str, inner_exact_matches: dict = {}) -> dict:
         pass
 
     @abstractmethod
@@ -94,7 +95,7 @@ class BaseMatchers(ABC):
         pass
 
     @abstractmethod
-    def any(self, key: str) -> dict:
+    def any(self, key: str, inner_exact_matches: dict = {}) -> dict:
         pass
 
     @abstractmethod

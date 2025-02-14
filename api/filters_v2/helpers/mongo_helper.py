@@ -79,7 +79,7 @@ def get_lookup_key(filter_key, lookup_stage):
                 return lookup_key
 
 
-def get_options_mapper(filter_key, lookup_key):
+def get_options_mapper(filter_key, lookup_key, inner_exact_matches={}):
     object_lists_config = BaseMatchers.get_object_lists()
     keys_info = interpret_flat_key(filter_key, object_lists_config)
     if not keys_info[0]["object_list"]:
@@ -116,9 +116,17 @@ def get_options_mapper(filter_key, lookup_key):
                     "input": f"${keys_info[0]['key']}",
                     "as": "object",
                     "cond": {
-                        "$eq": [
-                            f"$$object.{object_lists_config[keys_info[0]['object_list']]}",
-                            keys_info[0]["object_key"],
+                        "$and": [
+                            {
+                                "$eq": [
+                                    f"$$object.{object_lists_config[keys_info[0]['object_list']]}",
+                                    keys_info[0]["object_key"],
+                                ]
+                            },
+                            *[
+                                {"$eq": [f"$$object.{key}", value]}
+                                for key, value in inner_exact_matches.items()
+                            ],
                         ]
                     },
                 }

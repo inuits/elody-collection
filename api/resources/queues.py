@@ -62,11 +62,11 @@ def add_entity_to_history(routing_key, body, message_id):
         "collection": "entities",
         "relations": relations,
     }
-    
+
     if unchanged_entity:
         unchanged_date_updated = unchanged_entity.pop("date_updated", None)
         unchanged_date_created = unchanged_entity.pop("date_created", None)
-        
+
         entity_date_updated = entity.pop("date_updated", None)
         entity_date_created = entity.pop("date_created", None)
         if unchanged_entity != entity:

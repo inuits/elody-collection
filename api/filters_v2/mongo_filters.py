@@ -77,9 +77,9 @@ class MongoFilters:
         match_stage = self.__match_stage(filter_request_body, tidy_up_match)
         pipeline.append(match_stage)
 
-        if options_requesting_filter_keys := options_requesting_filter.get("key"):
+        if options_requesting_filter:
             project_stage = self.__project_stage(
-                options_requesting_filter_keys, lookup_stage
+                options_requesting_filter, lookup_stage
             )
             pipeline.extend(project_stage)
         else:
@@ -322,23 +322,23 @@ class MongoFilters:
                 }
             ]
 
-    def __project_stage(self, options_requesting_filter_keys, lookup_stage):
+    def __project_stage(self, options_requesting_filter, lookup_stage):
         project = []
         mappers = []
         lookup_key = None
+        keys = options_requesting_filter.get("key")
+        inner_exact_matches = options_requesting_filter.get("inner_exact_matches", {})
 
-        if isinstance(options_requesting_filter_keys, list):
+        if isinstance(keys, list):
             key = ""
-            for key in options_requesting_filter_keys:
+            for key in keys:
                 _, key = key.split("|")
                 lookup_key = get_lookup_key(key, lookup_stage)
-                mappers.append(get_options_mapper(key, lookup_key))
+                mappers.append(get_options_mapper(key, lookup_key, inner_exact_matches))
         else:
-            key = options_requesting_filter_keys
+            key = keys
             lookup_key = get_lookup_key(key, lookup_stage)
-            mappers.append(
-                get_options_mapper(options_requesting_filter_keys, lookup_key)
-            )
+            mappers.append(get_options_mapper(key, lookup_key, inner_exact_matches))
 
         if lookup_key:
             project.append({"$unwind": f"${lookup_key}"})

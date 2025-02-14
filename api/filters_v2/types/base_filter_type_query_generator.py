@@ -13,6 +13,7 @@ class BaseFilterTypeQueryGenerator(ABC):
             filter_criteria["key"],
             filter_criteria["value"],
             match_exact=filter_criteria.get("match_exact"),
+            inner_exact_matches=filter_criteria.get("inner_exact_matches", {}),
         )
 
     @abstractmethod
@@ -48,6 +49,7 @@ class BaseFilterTypeQueryGenerator(ABC):
             filter_criteria["key"],
             filter_criteria["value"],
             match_exact=filter_criteria.get("match_exact"),
+            inner_exact_matches=filter_criteria.get("inner_exact_matches", {}),
         )
 
     @abstractmethod
