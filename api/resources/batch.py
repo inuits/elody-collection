@@ -3,7 +3,7 @@ from elody.error_codes import ErrorCode, get_error_code, get_write
 from elody.csv import CSVMultiObject
 from elody.exceptions import ColumnNotFoundException
 from elody.util import get_raw_id
-from elody.job import start_job, finish_job, fail_job, add_document_to_job
+from elody.job import init_job, start_job, finish_job, fail_job, add_document_to_job
 from flask import request
 from flask_restful import abort
 from inuits_policy_based_auth import RequestContext
@@ -199,19 +199,21 @@ class Batch(BaseResource):
         main_job_id = request.args.get("main_job_id", None, str)
         dry_run = request.args.get("dry_run", 0, int)
         if not main_job_id and dry_run:
-            self.main_csv_job_id = start_job(
+            self.main_csv_job_id = init_job(
                 "Start CSV Import",
                 "CSV Import",
                 get_rabbit=self.get_rabbit,
                 user_email=get_user_context().email,
             )
-            self.job_id_with_validation = start_job(
+            self.job_id_with_validation = init_job(
                 "Validation of CSV",
                 "CSV Import",
                 get_rabbit=self.get_rabbit,
                 user_email=get_user_context().email,
                 parent_id=self.main_csv_job_id,
             )
+            start_job(self.job_id_with_validation, get_rabbit=self.get_rabbit)
+            start_job(self.main_csv_job_id, get_rabbit=self.get_rabbit)
         else:
             self.main_csv_job_id = main_job_id
         content_type = request.content_type
