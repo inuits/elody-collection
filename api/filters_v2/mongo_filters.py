@@ -73,6 +73,7 @@ class MongoFilters:
         tidy_up_match,
         exact_id_order: bool = False,
     ):
+
         pipeline = []
 
         lookup_stage = self.__lookup_stage(filter_request_body)
@@ -88,8 +89,7 @@ class MongoFilters:
         else:
             if order_by:
                 pipeline.extend(self.__sort_stage(order_by, asc))
-            # NOTE: This means this always overwrites the sort stage. 
-            # Might not be the best behaviour
+            # NOTE: This means this always overwrites the sort stage if exact id is set. 
             if exact_id_order:
                 pipeline.extend(self.__id_sort_stage(filter_request_body))
             if skip:

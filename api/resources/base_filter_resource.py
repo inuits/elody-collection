@@ -37,7 +37,7 @@ class BaseFilterResource(BaseResource):
         return items
 
     def _execute_advanced_search_with_query_v2(
-        self, query, collection="entities", *, skip=None, limit=None
+        self, query, collection="entities", *, skip=None, limit=None,
     ):
         order_by = request.args.get("order_by", None) if request else None
         asc = bool(request.args.get("asc", 1, int)) if request else 1
@@ -59,9 +59,15 @@ class BaseFilterResource(BaseResource):
         if not self.filter_engine:
             abort(500, message="Failed to init search engine")
 
-        items = self.filter_engine_v2.filter(
-            query, skip, limit, collection, order_by, asc, exact_id_order = exact_id_order
-        )
+        # NOTE: The Arangowrapper doesn't handle exact_id_order, so this is a workaround for that.
+        if exact_id_order:
+            items = self.filter_engine_v2.filter(
+                query, skip, limit, collection, order_by, asc, exact_id_order = exact_id_order
+            )
+        else:
+            items = self.filter_engine_v2.filter(
+                query, skip, limit, collection, order_by, asc
+            )
         if skip + limit < items["count"]:
             items["next"] = f"/{collection}/filter?skip={skip + limit}&limit={limit}"
         if skip > 0:
