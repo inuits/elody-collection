@@ -41,6 +41,7 @@ class BaseFilterResource(BaseResource):
     ):
         order_by = request.args.get("order_by", None) if request else None
         asc = bool(request.args.get("asc", 1, int)) if request else 1
+        exact_id_order = bool(request.args.get("exact_id_order", False)) if request else False
         if request:
             skip = skip if skip is not None else request.args.get("skip", 0, int)
             limit = limit if limit is not None else request.args.get("limit", 20, int)
@@ -59,7 +60,7 @@ class BaseFilterResource(BaseResource):
             abort(500, message="Failed to init search engine")
 
         items = self.filter_engine_v2.filter(
-            query, skip, limit, collection, order_by, asc
+            query, skip, limit, collection, order_by, asc, exact_id_order = exact_id_order
         )
         if skip + limit < items["count"]:
             items["next"] = f"/{collection}/filter?skip={skip + limit}&limit={limit}"

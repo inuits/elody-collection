@@ -35,6 +35,7 @@ class MongoFilters:
         asc=True,
         return_query_without_executing=False,
         tidy_up_match=True,
+        exact_id_order: bool = False
     ):
         BaseMatchers.collection = collection
         BaseMatchers.type = get_type_filter_value(filter_request_body)
@@ -53,6 +54,7 @@ class MongoFilters:
             asc,
             options_requesting_filter,
             tidy_up_match,
+            exact_id_order,
         )
         if return_query_without_executing:
             return pipeline
@@ -69,6 +71,7 @@ class MongoFilters:
         asc,
         options_requesting_filter,
         tidy_up_match,
+        exact_id_order: bool = False,
     ):
         pipeline = []
 
@@ -85,11 +88,35 @@ class MongoFilters:
         else:
             if order_by:
                 pipeline.extend(self.__sort_stage(order_by, asc))
+            # NOTE: This means this always overwrites the sort stage. 
+            # Might not be the best behaviour
+            if exact_id_order:
+                pipeline.extend(self.__id_sort_stage(filter_request_body))
             if skip:
                 pipeline.append({"$skip": skip})
             if limit:
                 pipeline.append({"$limit": limit})
         return pipeline, lookup_stage, match_stage
+
+    def __id_sort_stage(self, filter_request_body):
+        for filter in filter_request_body:
+            if filter["type"] == "selection" and filter["key"] == "_id":
+                ids = filter["value"]
+        id_sort_stage = None
+        if ids:
+            id_sort_stage = [
+                {
+                    "$addFields": {"id_index": {"$indexOfArray": [ids, "$_id"]}},
+                },
+                {
+                    "$sort": {"id_index": 1},
+                },
+                {
+                    "$project": {"id_index": 0},
+                },
+            ]
+        return id_sort_stage
+
 
     def __execute_aggregation_query(
         self,
