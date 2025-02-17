@@ -141,6 +141,42 @@ class MongoStorageManager(GenericStorageManager):
     def __get_ids_query(self, ids):
         return {"$or": [{"_id": {"$in": ids}}, {"identifiers": {"$in": ids}}]}
 
+    def __get_items_from_collection_by_ids_aggregation(self, collection, ids, asc=True):
+
+        """This always returns in the exact order the ids were supplied (or the opposite order is asc is False)"""
+        items = dict()
+        pipeline = []
+
+        match_stage = {
+            "$match": {"_id": {"$in": ids}},
+        }
+        pipeline.append(match_stage)
+        add_stage = {
+            "$addFields": {"id_index": {"$indexOfArray": [ids, "$_id"]}},
+        }
+        pipeline.append(add_stage)
+        sort_stage = {
+            "$sort": {"id_index": int(asc)},
+        }
+        pipeline.append(sort_stage)
+        project_stage = {
+                "$project": {"id_index": 0}
+                }
+        pipeline.append(project_stage)
+
+
+        documents = self.db[collection].aggregate(pipeline)
+        items["count"] = self.db[collection].count_documents(self.__get_ids_query(ids))
+        items["results"] = list()
+        for document in documents:
+            items["results"].append(
+                    self._prepare_mongo_document(document, True, collection)
+                    )
+        
+        return items
+
+
+
     def __get_items_from_collection_by_ids(self, collection, ids, sort=None, asc=True):
         items = dict()
         documents = self.db[collection].find(self.__get_ids_query(ids))
@@ -709,6 +745,10 @@ class MongoStorageManager(GenericStorageManager):
             return self.__get_items_from_collection_by_ids(
                 collection, filters["ids"], sort, asc
             )
+        if "ids_exact" in filters:
+            return self.__get_items_from_collection_by_ids_aggregation(
+                    collection, filters["ids_exact"], True
+                    )
         items = dict()
         if fields or filters:
             query = {
