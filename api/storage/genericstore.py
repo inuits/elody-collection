@@ -227,14 +227,21 @@ class GenericStorageManager:
         if not metadata and ignore_empty_metadata:
             metadata = list()
         for item in content:
-            if existing := next(
-                (
-                    x
-                    for x in metadata
-                    if x["key"] == item["key"] and x.get("lang") == item.get("lang")
-                ),
-                None,
-            ):
+            if "lang" in item:
+                existing = next(
+                    (
+                        x
+                        for x in metadata
+                        if x["key"] == item["key"] and x.get("lang") == item["lang"]
+                    ),
+                    None,
+                )
+            else:
+                existing = next(
+                    (x for x in metadata if x["key"] == item["key"]),
+                    None,
+                )
+            if existing:
                 metadata.remove(existing)
             metadata.append(item)
         return self.patch_item_from_collection(collection, id, {"metadata": metadata})[
