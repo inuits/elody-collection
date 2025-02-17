@@ -91,31 +91,13 @@ class MongoFilters:
                 pipeline.extend(self.__sort_stage(order_by, asc))
             # NOTE: This means this always overwrites the sort stage if exact id is set. 
             if exact_id_order:
-                pipeline.extend(self.__id_sort_stage(filter_request_body))
+                pipeline.extend(self.__id_exact_sort(filter_request_body))
             if skip:
                 pipeline.append({"$skip": skip})
             if limit:
                 pipeline.append({"$limit": limit})
         return pipeline, lookup_stage, match_stage
 
-    def __id_sort_stage(self, filter_request_body):
-        for filter in filter_request_body:
-            if filter["type"] == "selection" and filter["key"] == "_id":
-                ids = filter["value"]
-        id_sort_stage = None
-        if ids:
-            id_sort_stage = [
-                {
-                    "$addFields": {"id_index": {"$indexOfArray": [ids, "$_id"]}},
-                },
-                {
-                    "$sort": {"id_index": 1},
-                },
-                {
-                    "$project": {"id_index": 0},
-                },
-            ]
-        return id_sort_stage
 
 
     def __execute_aggregation_query(
@@ -348,6 +330,25 @@ class MongoFilters:
                     }
                 }
             ]
+
+    def __id_exact_sort(self, filter_request_body):
+        for filter in filter_request_body:
+            if filter["type"] == "selection" and filter["key"] == "_id":
+                ids = filter["value"]
+        id_sort_stage = None
+        if ids:
+            id_sort_stage = [
+                {
+                    "$addFields": {"id_index": {"$indexOfArray": [ids, "$_id"]}},
+                },
+                {
+                    "$sort": {"id_index": 1},
+                },
+                {
+                    "$project": {"id_index": 0},
+                },
+            ]
+        return id_sort_stage
 
     def __project_stage(self, options_requesting_filter, lookup_stage):
         project = []
