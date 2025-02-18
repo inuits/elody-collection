@@ -48,31 +48,61 @@ def update_parent_relation_values(routing_key, body, message_id):
     )
 )
 def add_entity_to_history(routing_key, body, message_id):
-    storage = StorageManager().get_db_engine()
     data = body["data"]
-    unchanged_entity = data.get("unchanged_entity")
-    if __is_malformed_message(data, ["location", "type"]):
-        return
     entity_id = data["location"].removeprefix("/entities/")
-    entity = storage.get_item_from_collection_by_id("entities", entity_id)
-    relations = storage.get_collection_item_relations("entities", entity_id, True)
+    unchanged_entity = data.get("unchanged_entity")
+    return add_item_to_history(entity_id, data, unchanged_entity)
+
+
+@get_rabbit().queue(
+    **__argument_wrapper(
+        queue_name=f"{queue_prefix}-add_mediafile_to_history",
+        routing_key=f"{routing_key_prefix}.mediafile_changed",
+    )
+)
+def add_mediafile_to_history(routing_key, body, message_id):
+    data = body["data"]
+    mediafile_id = get_raw_id(data.get("mediafile"))
+    unchanged_mediafile = data.get("old_mediafile")
+    return add_item_to_history(
+        mediafile_id,
+        data,
+        unchanged_mediafile,
+        "mediafiles",
+        ["mediafile", "old_mediafile"],
+    )
+
+
+def add_item_to_history(
+    id,
+    data,
+    unchanged_item=None,
+    collection="entities",
+    required_fields=["location", "type"],
+):
+    storage = StorageManager().get_db_engine()
+    if __is_malformed_message(data, required_fields):
+        return
+
+    item = storage.get_item_from_collection_by_id(collection, id)
+    relations = storage.get_collection_item_relations(collection, id, True)
     content = {
-        "object": entity,
+        "object": item,
         "timestamp": datetime.now(timezone.utc),
-        "collection": "entities",
+        "collection": collection,
         "relations": relations,
     }
 
-    if unchanged_entity:
-        unchanged_date_updated = unchanged_entity.pop("date_updated", None)
-        unchanged_date_created = unchanged_entity.pop("date_created", None)
+    if unchanged_item:
+        unchanged_item.pop("date_updated", None)
+        unchanged_item.pop("date_created", None)
 
-        entity_date_updated = entity.pop("date_updated", None)
-        entity_date_created = entity.pop("date_created", None)
-        if unchanged_entity != entity:
-            entity["date_updated"] = entity_date_updated
-            entity["date_created"] = entity_date_created
-            content["entity"] = entity
+        item_date_updated = item.pop("date_updated", None)
+        item_date_created = item.pop("date_created", None)
+        if unchanged_item != item:
+            item["date_updated"] = item_date_updated
+            item["date_created"] = item_date_created
+            content["entity"] = item
             storage.save_item_to_collection("history", content)
     else:
         storage.save_item_to_collection("history", content)
