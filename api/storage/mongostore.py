@@ -279,7 +279,7 @@ class MongoStorageManager(GenericStorageManager):
             if isinstance(metadata_dict, dict):
                 for key, value in metadata_dict.items():
                     try:
-                        parsed = parser.parse(value)
+                        parsed = parser.isoparse(value)
                         metadata_dict["value"] = parsed
                     except (ValueError, TypeError):
                         pass
