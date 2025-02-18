@@ -335,7 +335,7 @@ class MongoFilters:
         for filter in filter_request_body:
             if filter["type"] == "selection" and filter["key"] == "_id":
                 ids = filter["value"]
-        id_sort_stage = None
+        id_sort_stage = []
         if ids:
             id_sort_stage = [
                 {
