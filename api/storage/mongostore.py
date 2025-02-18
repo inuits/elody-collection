@@ -276,12 +276,13 @@ class MongoStorageManager(GenericStorageManager):
         if "metadata" not in document:
             return document
         for metadata_dict in document.get("metadata", []):
-            for key, value in metadata_dict.items():
-                try:
-                    parsed = parser.parse(value)
-                    metadata_dict["value"] = parsed
-                except (ValueError, TypeError):
-                    pass
+            if isinstance(metadata_dict, dict):
+                for key, value in metadata_dict.items():
+                    try:
+                        parsed = parser.parse(value)
+                        metadata_dict["value"] = parsed
+                    except (ValueError, TypeError):
+                        pass
         if collection == "mediafiles":
             document["type"] = "mediafile"
         if not reversed and create_sortable_metadata:

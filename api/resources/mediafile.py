@@ -242,7 +242,8 @@ class MediafileMetadata(GenericObjectDetail, GenericObjectMetadata):
         new_mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
         signal_mediafile_changed(get_rabbit(), old_mediafile, new_mediafile)
         return metadata, 201
-    
+
+
 class MediafileRelations(GenericObjectDetail, GenericObjectRelations):
     @apply_policies(RequestContext(request))
     def put(self, id):
