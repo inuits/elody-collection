@@ -84,7 +84,7 @@ class MongoFilters:
             pipeline.extend(project_stage)
         else:
             if order_by:
-                pipeline.extend(self.__sort_stage(order_by, asc))
+                pipeline.extend(self.__sort_stage(order_by, asc, filter_request_body))
             if skip:
                 pipeline.append({"$skip": skip})
             if limit:
@@ -297,7 +297,7 @@ class MongoFilters:
             )
         }
 
-    def __sort_stage(self, order_by, asc):
+    def __sort_stage(self, order_by, asc, filter_request_body):
         key_order_map = {}
         keys = order_by.split(",")
         for key in keys:
@@ -306,11 +306,11 @@ class MongoFilters:
             get_object_configuration_mapper()
             .get(BaseMatchers.type or BaseMatchers.collection)
             .crud()
-            .get("sorting", lambda *_: [])(key_order_map)
+            .get("sorting")
         )
 
-        if len(sorting) > 0:
-            return sorting
+        if sorting:
+            return sorting(key_order_map, filter_request_body=filter_request_body)
         else:
             return [
                 {

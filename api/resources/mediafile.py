@@ -257,7 +257,7 @@ class MediafileRelations(GenericObjectDetail, GenericObjectRelations):
         new_mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
         signal_mediafile_changed(get_rabbit(), old_mediafile, new_mediafile)
         return relations, 201
-    
+
     @apply_policies(RequestContext(request))
     def patch(self, id):
         if request.args.get("soft", 0, int):
