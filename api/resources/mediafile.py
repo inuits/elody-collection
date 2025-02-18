@@ -16,6 +16,7 @@ from resources.generic_object import (
     GenericObject,
     GenericObjectDetail,
     GenericObjectMetadata,
+    GenericObjectRelations,
 )
 from urllib.parse import quote
 
@@ -241,6 +242,20 @@ class MediafileMetadata(GenericObjectDetail, GenericObjectMetadata):
         new_mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
         signal_mediafile_changed(get_rabbit(), old_mediafile, new_mediafile)
         return metadata, 201
+    
+class MediafileRelations(GenericObjectDetail, GenericObjectRelations):
+    @apply_policies(RequestContext(request))
+    def put(self, id):
+        if request.args.get("soft", 0, int):
+            return "good", 200
+        old_mediafile = super().get("mediafiles", id)
+        relations = super(GenericObjectDetail, self).put(
+            "mediafiles",
+            id,
+        )[0]
+        new_mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
+        signal_mediafile_changed(get_rabbit(), old_mediafile, new_mediafile)
+        return relations, 201
 
 
 class MediafileDerivatives(GenericObjectDetail):

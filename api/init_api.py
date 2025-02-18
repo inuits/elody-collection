@@ -47,6 +47,7 @@ from resources.mediafile import (
     MediafileDownload,
     MediafileMetadata,
     MediafileParent,
+    MediafileRelations,
 )
 from resources.job import StartJob, FinishJob, FailJob
 from resources.saved_search import SavedSearch, SavedSearchDetail
@@ -283,6 +284,12 @@ def init_api(app):
         MediafileParent,
         get_route_mapper().get(
             MediafileParent.__name__, "/mediafiles/<string:id>/parent"
+        ),
+    )
+    api.add_resource(
+        MediafileRelations,
+        get_route_mapper().get(
+            MediafileRelations.__name__, "/mediafiles/<string:id>/relations"
         ),
     )
 
