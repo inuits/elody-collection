@@ -7,7 +7,7 @@ include:
   - project: 'inuits/gitlab-ci/pipeline-templates'
     ref: 'v4.0.0'
     file: 
-      - 'pipelines/docker-build-no-uat.yml'
+      - 'pipelines/customers/deploy.yml'
       - 'jobs/docker/build-pip.yml'
 
 
@@ -19,14 +19,22 @@ variables:
   PROJECT: dams
   APPLICATION: collection
 
+  SKIP_DEPLOY: 'true'
+
   HARBOR_PROJECT_DEV: elody-dams-dev
+  TARGET_CLUSTER_DEV: inuits-prod
 
 
 # --------------------------------------------------------------
 # Template overrides
 # --------------------------------------------------------------
 
+# Disable uat, not needed
+uat:
+  rules:
+    - when: never
+
 # Disable prod, not needed
-deliver-prod:
+prod:
   rules:
     - when: never
