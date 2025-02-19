@@ -1,15 +1,30 @@
 ---
-###############################################################################
-# PYTHON APPLICATION PIPELINE
-###############################################################################
 
+# --------------------------------------------------------------
+# Includes
+# --------------------------------------------------------------
 include:
   - project: 'inuits/gitlab-ci/pipeline-templates'
-    file: 'pip-pipeline.yml'
-    ref: 'v1.7.0'
+    file: 'pipelines/docker-build-no-uat.yml'
+    ref: 'v4.0.0'
 
+
+# --------------------------------------------------------------
+# Variables
+# --------------------------------------------------------------
 variables:
-  CUSTOMER: 'inuits'
-  APPLICATION: 'dams-collection'
-  SKIP_DEPLOY: 'true'
-  
+  CUSTOMER: inuits
+  PROJECT: dams
+  APPLICATION: collection
+
+  HARBOR_PROJECT_DEV: elody-dams-dev
+
+
+# --------------------------------------------------------------
+# Template overrides
+# --------------------------------------------------------------
+
+# Disable prod, not needed
+deliver-prod:
+  rules:
+    - when: never
