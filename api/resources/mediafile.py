@@ -246,6 +246,14 @@ class MediafileMetadata(GenericObjectDetail, GenericObjectMetadata):
 
 class MediafileRelations(GenericObjectDetail, GenericObjectRelations):
     @apply_policies(RequestContext(request))
+    def get(self, id):
+        return super().get("mediafiles", id)
+
+    @apply_policies(RequestContext(request))
+    def post(self, id):
+        return super().post("mediafiles", id)
+
+    @apply_policies(RequestContext(request))
     def put(self, id):
         if request.args.get("soft", 0, int):
             return "good", 200
@@ -270,6 +278,10 @@ class MediafileRelations(GenericObjectDetail, GenericObjectRelations):
         new_mediafile = self._abort_if_item_doesnt_exist("mediafiles", id)
         signal_mediafile_changed(get_rabbit(), old_mediafile, new_mediafile)
         return relations, 201
+
+    @apply_policies(RequestContext(request))
+    def delete(self, id):
+        return super().delete("mediafiles", id)
 
 
 class MediafileDerivatives(GenericObjectDetail):
