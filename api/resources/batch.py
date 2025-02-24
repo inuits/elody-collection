@@ -103,7 +103,9 @@ class Batch(BaseResource):
     def remove_metadata_by_key(self, data, key_to_remove):
         for item in data:
             item["metadata"] = [
-                meta for meta in item.get("metadata", []) if meta["key"] != key_to_remove
+                meta
+                for meta in item.get("metadata", [])
+                if meta["key"] != key_to_remove
             ]
         return data
 

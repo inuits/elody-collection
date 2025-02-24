@@ -1,13 +1,14 @@
 from apscheduler.schedulers.background import BackgroundScheduler
 from configuration import init_mappers
-from cron_jobs.ttl_checker import TtlChecker
 from cron_jobs.mediafile_cleaner import MediafileCleaner
+from cron_jobs.ttl_checker import TtlChecker
 from elody.error_codes import ErrorCode, get_error_code, get_read
 from elody.loader import load_apps, load_jobs
 from elody.util import CustomJSONEncoder
 from flask import Flask, make_response, jsonify, Response
 from flask_swagger_ui import get_swaggerui_blueprint
 from health import init_health_check
+from importlib import import_module
 from logging_elody.log import log
 from os import getenv
 from policy_factory import init_policy_factory, get_user_context
@@ -85,6 +86,12 @@ api = init_api(app)
 init_rabbit(app)
 init_health_check(app, database_available, rabbit_available)
 init_policy_factory()
+
+try:
+    client_app = import_module("apps.client_app")
+    client_app.init(app, api)
+except ModuleNotFoundError:
+    pass
 
 
 @app.errorhandler(HTTPException)
