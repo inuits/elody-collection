@@ -528,7 +528,9 @@ class BaseResource(Resource):
 
     def update_object_values_from_csv(self, csv_data, collection="entities"):
         csv_file = io.StringIO(csv_data)
-        reader = csv.reader(csv_file)
+        csv_dialect = csv.Sniffer().sniff(csv_file.read())
+        csv_file.seek(0)
+        reader = csv.reader(csv_file, dialect=csv_dialect)
         header = next(reader)
 
         items, updated_values = self.process_csv_rows(reader, header, collection)
