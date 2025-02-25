@@ -90,7 +90,7 @@ init_policy_factory()
 try:
     client_app = import_module("apps.client_app")
     client_app.init(app, api)
-except ModuleNotFoundError:
+except (ModuleNotFoundError, AttributeError):
     pass
 
 
