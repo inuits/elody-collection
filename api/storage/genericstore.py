@@ -66,7 +66,9 @@ class GenericStorageManager:
             if content_key in ["_id", "_key", "id", "identifiers", "storage_format"]:
                 continue
             if content_key in object_lists:
-                if overwrite and len(content[content_key]) != len(item.get(content_key, [])):
+                if overwrite and len(content[content_key]) != len(
+                    item.get(content_key, [])
+                ):
                     return True
                 for data in content_value:
                     for key, value in data.items():
