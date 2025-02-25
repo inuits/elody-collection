@@ -376,11 +376,19 @@ class MongoFilters:
                     for option in items["results"]
                     if option["value"] not in seen and not seen.add(option["value"])
                 ]
+                extra_options = []
                 for option in items["results"]:
                     if key := options_requesting_filter.get("metadata_key_as_label"):
-                        option["label"] = get_filter_option_label(
+                        labels = get_filter_option_label(
                             self.storage.db, option["value"], key
                         )
+                        if isinstance(labels, list):
+                            option["label"] = labels.pop()
+                            for label in labels:
+                                extra_options.append({**option, "label": label})
+                        else:
+                            option["label"] = labels
+                items["results"].extend(extra_options)
             items["count"] = len(items["results"])
         else:
             items["skip"] = skip
