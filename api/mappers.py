@@ -255,6 +255,11 @@ def map_objects_to_csv(
                 values[0][i] = None
         values[0] = dict(sorted(values[0].items()))
         root_values += [list(row.values()) for row in values]
+    for field in fields:
+        if field not in keys:
+            keys.append(field)
+            root_values = [value + [None] for value in root_values]
+
     return csv_writer(keys, root_values)
 
 
