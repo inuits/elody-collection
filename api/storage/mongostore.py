@@ -275,14 +275,16 @@ class MongoStorageManager(GenericStorageManager):
             )
         if "metadata" not in document:
             return document
-        # for metadata_dict in document.get("metadata", []):
-        #     if isinstance(metadata_dict, dict):
-        #         for key, value in metadata_dict.items():
-        #             try:
-        #                 parsed = parser.isoparse(value)
-        #                 metadata_dict["value"] = parsed
-        #             except (ValueError, TypeError):
-        #                 pass
+        for metadata_dict in document.get("metadata", []):
+            if isinstance(metadata_dict, dict):
+                key = metadata_dict.get("key")
+                value = metadata_dict.get("value")
+                if "date" in key.lower():
+                    try:
+                        parsed = parser.isoparse(value)
+                        metadata_dict["value"] = parsed
+                    except (ValueError, TypeError):
+                        pass
         if collection == "mediafiles":
             document["type"] = "mediafile"
         if not reversed and create_sortable_metadata:
