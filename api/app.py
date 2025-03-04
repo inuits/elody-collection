@@ -14,7 +14,7 @@ from os import getenv
 from policy_factory import init_policy_factory, get_user_context
 from rabbit import init_rabbit, get_rabbit
 from secrets import token_hex
-from werkzeug.exceptions import Forbidden, HTTPException
+from werkzeug.exceptions import Forbidden, HTTPException, Unauthorized
 
 
 SWAGGER_URL = "/api/docs"  # URL for exposing Swagger UI (without trailing '/')
@@ -129,6 +129,14 @@ def intercept_403(response: Response):
             raise Forbidden(
                 f"{get_error_code(ErrorCode.INSUFFICIENT_PERMISSIONS_WITHOUT_VARS, get_read())} - You don't have the permission to create/update/delete this resource."
             )
+    return response
+
+@app.after_request
+def intercept_401(response: Response):
+    if response.status_code == 401:
+        raise Unauthorized(
+            f"{get_error_code(ErrorCode.INVALID_TOKEN, get_read())} - The access token provided is expired, revoked, malformed, or invalid for other reasons."
+        )
     return response
 
 
