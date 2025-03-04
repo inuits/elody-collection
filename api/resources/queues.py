@@ -192,7 +192,7 @@ def update_job(routing_key, body, message_id):
 def create_job(routing_key, body, message_id):
     try:
         job = body["data"]
-        job["computed_values"].update({"created_at": datetime.now(timezone.utc)})
+        job.update({"created_at": datetime.now(timezone.utc)})
         collection = get_object_configuration_mapper().get("job").crud()["collection"]
         StorageManager().get_db_engine().save_item_to_collection_v2(
             collection, job, run_post_crud_hook=False
