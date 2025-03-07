@@ -23,7 +23,7 @@ from elody.util import (
     signal_entity_changed,
 )
 from elody.validator import validate_json
-from flask import Response
+from flask import Response, g
 from flask_restful import Resource, abort
 from os import getenv
 from policy_factory import get_user_context
@@ -261,9 +261,12 @@ class BaseResource(Resource):
                     response_data, status=status_code, mimetype="text/turtle"
                 )
             case "text/uri-list":
-                return Response(
-                    response_data, status=status_code, mimetype="text/uri-list"
-                )
+                if not g.get("text_uri_list"):
+                    return Response(
+                        response_data, status=status_code, mimetype="text/uri-list"
+                    )
+                else:
+                    return g.get("text_uri_list", ""), status_code
             case _:
                 return response_data, status_code
 

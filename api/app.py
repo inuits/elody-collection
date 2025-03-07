@@ -131,6 +131,7 @@ def intercept_403(response: Response):
             )
     return response
 
+
 @app.after_request
 def intercept_401(response: Response):
     if response.status_code == 401:
