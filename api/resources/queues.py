@@ -168,13 +168,15 @@ def update_job(routing_key, body, message_id):
             if not document:
                 sleep(5)
                 document = storage.get_item_from_collection_by_id(collection, id)
-            storage.patch_item_from_collection_v2(
-                collection,
-                document,
-                body["data"]["patch"],
-                "elody",
-                run_post_crud_hook=False,
-            )
+            status = get_item_metadata_value(document, "status")
+            if status != "failed":
+                storage.patch_item_from_collection_v2(
+                    collection,
+                    document,
+                    body["data"]["patch"],
+                    "elody",
+                    run_post_crud_hook=False,
+                )
     except Exception as exception:
         log.exception(
             f"{exception.__class__.__name__}: {exception}",
