@@ -183,7 +183,7 @@ class Entity(GenericObject):
             self._delete_tenant(entity)
             signal_entity_deleted(get_rabbit(), entity)
         response = super().delete("entities")
-        return "", 204
+        return response
 
 
 class EntityDetail(GenericObjectDetail):

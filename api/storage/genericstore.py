@@ -121,6 +121,9 @@ class GenericStorageManager:
 
     def check_health(self):
         return True
+    
+    def collection_item_has_relation(self, collection, id, relation_type):
+        pass
 
     def count_relation_items(self, collection, id):
         relations = self.get_collection_item_sub_item(collection, id, "relations")

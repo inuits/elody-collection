@@ -5,6 +5,7 @@ from configuration import get_storage_mapper
 from datetime import datetime, timezone
 from elody.error_codes import ErrorCode, get_error_code, get_write
 from elody.exceptions import NonUniqueException
+from elody.job import init_job, start_job, finish_job, fail_job
 from elody.util import (
     get_raw_id,
 )
@@ -12,6 +13,7 @@ from flask import after_this_request, request
 from flask_restful import abort
 from inuits_policy_based_auth import RequestContext
 from policy_factory import apply_policies, get_user_context
+from rabbit import get_rabbit
 from resources.base_filter_resource import BaseFilterResource
 from resources.base_resource import BaseResource
 from urllib.parse import quote
@@ -182,13 +184,61 @@ class GenericObject(BaseResource):
     def delete(self, collection, spec="elody"):
         if request.args.get("soft", 0, int):
             return "good", 200
-        for object in self._get_objects_from_ids_in_body_or_query(collection, request):
+        skip_items_with_relation = request.args.get(
+            "skip_items_with_relation", None, str
+        )
+        ids = self._get_ids_from_body_or_query(request)
+        parent_delete_job_id = init_job(
+            f"Bulk delete {ids}",
+            "Bulk delete",
+            get_rabbit=lambda: get_rabbit(),
+            user_email=get_user_context().email,
+        )
+        start_job(parent_delete_job_id, get_rabbit=lambda: get_rabbit())
+        for object in self._get_objects_from_ids_in_body_or_query(
+            collection, request, ids
+        ):
+            delete_object_job_id = init_job(
+                f"Delete {get_raw_id(object)}",
+                "Delete item",
+                get_rabbit=lambda: get_rabbit(),
+                user_email=get_user_context().email,
+                parent_id=parent_delete_job_id,
+                id_of_document_job_was_initiated_for=get_raw_id(object),
+                type_of_document_job_was_initiated_for=object.get("type"),
+            )
+            start_job(
+                delete_object_job_id,
+                get_rabbit=lambda: get_rabbit(),
+                id_of_document_job_was_initiated_for=get_raw_id(object),
+                type_of_document_job_was_initiated_for=object.get("type"),
+            )
+            if skip_items_with_relation and self.storage.collection_item_has_relation(
+                collection, get_raw_id(object), skip_items_with_relation
+            ):
+                fail_job(
+                    delete_object_job_id,
+                    f"Item {get_raw_id(object)} has a BLOCKED relation: {skip_items_with_relation}",
+                    get_rabbit=lambda: get_rabbit(),
+                )
+                continue
             if request.args.get("delete_mediafiles", 0, int):
                 self.storage.delete_collection_item_mediafiles(
                     collection, get_raw_id(object)
                 )
             self.storage.delete_item_from_collection(collection, get_raw_id(object))
-        return "", 204
+            finish_job(
+                delete_object_job_id,
+                id_of_document_job_was_initiated_for=get_raw_id(object),
+                type_of_document_job_was_initiated_for=object.get("type"),
+                get_rabbit=lambda: get_rabbit(),
+            )
+        finish_job(
+            parent_delete_job_id,
+            get_rabbit=lambda: get_rabbit(),
+        )
+        response = {"parent_job_id": parent_delete_job_id}
+        return self._create_response_according_accept_header(response)
 
 
 # POC: currently only suitable when supporting multiples specs for a client

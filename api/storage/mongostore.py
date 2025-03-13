@@ -392,6 +392,16 @@ class MongoStorageManager(GenericStorageManager):
         self.db.command("ping")
         return True
 
+    def collection_item_has_relation(self, collection, id, relation_type) -> bool:
+        relations = self.get_collection_item_sub_item(collection, id, "relations")
+
+        if not relations:
+            return False
+
+        return any(
+            relation.get("type") == relation_type for relation in relations
+        )
+
     def delete_collection_item_relations(self, collection, id, relations, parent=True):
         for relation in relations:
             impacted_ids = [id, relation["key"]]

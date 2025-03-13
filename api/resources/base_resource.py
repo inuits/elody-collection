@@ -511,7 +511,7 @@ class BaseResource(Resource):
                     ttl = get_item_metadata_value(asset, "ttl")
         return ttl
 
-    def _get_objects_from_ids_in_body_or_query(self, collection, request):
+    def _get_ids_from_body_or_query(self, request):
         if ids := request.args.get("ids"):
             ids = ids.split(",")
         if not ids:
@@ -524,6 +524,10 @@ class BaseResource(Resource):
                 422,
                 message=f"{get_error_code(ErrorCode.INVALID_INPUT, get_write())} - No ids to delete given.",
             )
+        return ids
+    def _get_objects_from_ids_in_body_or_query(self, collection, request, ids=None):
+        if not ids:
+            ids = self._get_ids_from_body_or_query(request)
         objects = list()
         for id in ids:
             objects.append(self._check_if_collection_and_item_exists(collection, id))
