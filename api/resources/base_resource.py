@@ -161,6 +161,7 @@ class BaseResource(Resource):
             collections = resolve_collections(collection=collection, id=id)
             for collection in collections:
                 if item := self.storage.get_item_from_collection_by_id(collection, id):
+                    get_user_context().bag["item_being_processed"] = deepcopy(item)
                     return item
             else:
                 abort(
@@ -525,6 +526,7 @@ class BaseResource(Resource):
                 message=f"{get_error_code(ErrorCode.INVALID_INPUT, get_write())} - No ids to delete given.",
             )
         return ids
+
     def _get_objects_from_ids_in_body_or_query(self, collection, request, ids=None):
         if not ids:
             ids = self._get_ids_from_body_or_query(request)

@@ -398,9 +398,7 @@ class MongoStorageManager(GenericStorageManager):
         if not relations:
             return False
 
-        return any(
-            relation.get("type") == relation_type for relation in relations
-        )
+        return any(relation.get("type") == relation_type for relation in relations)
 
     def delete_collection_item_relations(self, collection, id, relations, parent=True):
         for relation in relations:

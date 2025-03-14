@@ -121,7 +121,7 @@ class GenericStorageManager:
 
     def check_health(self):
         return True
-    
+
     def collection_item_has_relation(self, collection, id, relation_type):
         pass
 
