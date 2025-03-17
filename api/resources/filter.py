@@ -235,13 +235,14 @@ class FilterGenericObjects(BaseFilterResource):
 # currently only suitable when using generic policies
 class FilterGenericObjectsV2(BaseFilterResource):
     @apply_policies(RequestContext(request))
-    def post(self, collection, spec="elody", is_type_required=False):
+    def post(self, collection, spec="elody", is_type_required=False, content=[]):
         if request.args.get("soft", 0, int):
             return "good", 200
+        query: list = content or request.get_json()
         if is_type_required:
-            document_type = get_type_filter_value(request.json)
+            document_type = get_type_filter_value(query)
             if not document_type:
-                document_type = get_selection_type_filter_value(request.json)
+                document_type = get_selection_type_filter_value(query)
                 if len(document_type) > 0:
                     document_type = document_type[0]
                 else:
@@ -256,7 +257,6 @@ class FilterGenericObjectsV2(BaseFilterResource):
         if storage_type != "http":
             self._check_if_collection_name_exists(collection)
         accept_header = request.headers.get("Accept")
-        query: list = request.get_json()
         access_restricting_filters = get_user_context().access_restrictions.filters
         if access_restricting_filters:
             for filter in access_restricting_filters:
