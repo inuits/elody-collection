@@ -168,8 +168,9 @@ def update_job(routing_key, body, message_id):
             if not document:
                 sleep(5)
                 document = storage.get_item_from_collection_by_id(collection, id)
-            status = get_item_metadata_value(document, "status")
-            if status != "failed":
+            current_status = get_item_metadata_value(document, "status")
+            new_status = get_item_metadata_value(body["data"]["patch"], "status")
+            if current_status != "failed" or new_status == "failed":
                 storage.patch_item_from_collection_v2(
                     collection,
                     document,
