@@ -564,7 +564,7 @@ class ArangoStorageManager(GenericStorageManager):
         if item:
             relations = self.get_collection_item_relations(collection, id, entity=item)
             item["relations"] = relations
-        if item["type"] == "asset":
+        if item.get("type") == "asset":
             iiif_presentation = getenv("IMAGE_API_URL_EXT", "")
             if iiif_presentation.find("/iiif/image") > -1 and item.get("object_id"):
                 iiif_presentation = iiif_presentation.replace(
