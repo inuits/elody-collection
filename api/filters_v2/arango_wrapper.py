@@ -171,9 +171,14 @@ class ArangoWrapper:
     def _handle_project_stage(self, project, aql, **_):
         map = project["options"]["$concatArrays"][0]["$map"]
         object_list = map["input"]["$filter"]["input"][1:]
-        item_key = map["input"]["$filter"]["cond"]["$eq"][0].split(".")[1]
+        filter_cond = map["input"]["$filter"]["cond"]
+        if "$eq" in filter_cond:
+            eq_condition = filter_cond["$eq"]
+        else:
+            eq_condition = filter_cond["$and"][0]["$eq"]
+        item_key = eq_condition[0].split(".")[1]
         item_value = map["in"]["$cond"]["if"]["$isArray"].split(".")[1]
-        value = map["input"]["$filter"]["cond"]["$eq"][1]
+        value = eq_condition[1]
 
         aql += "\nLET options = ("
         if object_list == "relations":
