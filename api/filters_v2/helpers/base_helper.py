@@ -1,4 +1,13 @@
-def get_options_requesting_filter(filter_request_body):
+def get_facets(filter_request_body: dict) -> list:
+    facets_request = [
+        filter_criteria["facets"]
+        for filter_criteria in filter_request_body
+        if filter_criteria.get("facets")
+    ]
+    return facets_request[0] if len(facets_request) > 0 else []
+
+
+def get_options_requesting_filter(filter_request_body: dict) -> dict:
     options_requesting_filter = [
         filter_criteria
         for filter_criteria in filter_request_body
@@ -7,7 +16,7 @@ def get_options_requesting_filter(filter_request_body):
     return options_requesting_filter[0] if len(options_requesting_filter) > 0 else {}
 
 
-def get_selection_type_filter_value(filter_request_body):
+def get_selection_type_filter_value(filter_request_body: dict) -> list:
     selection_type_filter = [
         filter_criteria
         for filter_criteria in filter_request_body
@@ -16,7 +25,7 @@ def get_selection_type_filter_value(filter_request_body):
     return selection_type_filter[0]["value"] if len(selection_type_filter) > 0 else []
 
 
-def get_type_filter_value(filter_request_body):
+def get_type_filter_value(filter_request_body: dict) -> str:
     type_filter = [
         filter_criteria
         for filter_criteria in filter_request_body
@@ -25,7 +34,7 @@ def get_type_filter_value(filter_request_body):
     return type_filter[0]["value"] if len(type_filter) > 0 else ""
 
 
-def has_non_exact_match_filter(filter_request_body):
+def has_non_exact_match_filter(filter_request_body: dict) -> bool:
     non_exact_match_filter = [
         filter_criteria
         for filter_criteria in filter_request_body
@@ -34,7 +43,7 @@ def has_non_exact_match_filter(filter_request_body):
     return len(non_exact_match_filter) > 0
 
 
-def has_selection_filter_with_multiple_values(filter_request_body):
+def has_selection_filter_with_multiple_values(filter_request_body: dict) -> bool:
     selection_filter_with_multiple_values = [
         filter_criteria
         for filter_criteria in filter_request_body
@@ -43,7 +52,7 @@ def has_selection_filter_with_multiple_values(filter_request_body):
     return len(selection_filter_with_multiple_values) > 0
 
 
-def parse_optional_filters(filter_criteria):
+def parse_optional_filters(filter_criteria: dict) -> list[dict]:
     if not filter_criteria.get("key"):
         return [filter_criteria]
 

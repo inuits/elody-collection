@@ -6,7 +6,7 @@ from filters_v2.matchers.base_matchers import BaseMatchers
 from logging_elody.log import log
 
 
-def append_matcher(matcher, matchers, operator="and"):
+def append_matcher(matcher: dict, matchers: list[dict], operator="and"):
     matcher_key = list(matcher.keys())[0]
     did_append_matcher = False
 
@@ -71,15 +71,18 @@ def get_filter_option_label(db, identifier, key):
         return identifier
 
 
-def get_lookup_key(filter_key, lookup_stage):
+def get_lookup_key(filter_key, lookup_stage) -> str:
     for lookup in lookup_stage:
         if lookup.get("$lookup"):
             lookup_key = lookup["$lookup"]["as"]
             if filter_key.startswith(lookup_key):
                 return lookup_key
+    return ""
 
 
-def get_options_mapper(filter_key, lookup_key, inner_exact_matches={}):
+def get_options_mapper(
+    filter_key: str, lookup_key: str, inner_exact_matches={}
+) -> dict:
     object_lists_config = BaseMatchers.get_object_lists()
     keys_info = interpret_flat_key(filter_key, object_lists_config)
     if not keys_info[0]["object_list"]:
@@ -159,7 +162,9 @@ def get_options_mapper(filter_key, lookup_key, inner_exact_matches={}):
     }
 
 
-def unify_matchers_per_schema_into_one_match(matchers_per_schema, tidy_up_match):
+def unify_matchers_per_schema_into_one_match(
+    matchers_per_schema: dict, tidy_up_match: bool
+) -> dict:
     match = {}
     general_matchers = matchers_per_schema.pop("general")
     __combine_matchers(general_matchers, "or")
