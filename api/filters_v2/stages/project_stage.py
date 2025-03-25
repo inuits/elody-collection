@@ -13,8 +13,7 @@ def build(*, options_requesting_filter={}, facet={}, lookup_stage=[]) -> list[di
 def __project_options(
     options_requesting_filter: dict, lookup_stage: list[dict]
 ) -> list[dict]:
-    project = []
-    mappers = []
+    project, mappers = [], []
     lookup_key = None
     keys: list | str = options_requesting_filter.get("key", [])
     inner_exact_matches = options_requesting_filter.get("inner_exact_matches", {})

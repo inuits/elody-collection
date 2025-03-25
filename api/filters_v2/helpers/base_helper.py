@@ -1,4 +1,4 @@
-def get_facets(filter_request_body: dict) -> list:
+def get_facets(filter_request_body: list[dict]) -> list:
     facets_request = [
         filter_criteria["facets"]
         for filter_criteria in filter_request_body
@@ -7,7 +7,7 @@ def get_facets(filter_request_body: dict) -> list:
     return facets_request[0] if len(facets_request) > 0 else []
 
 
-def get_options_requesting_filter(filter_request_body: dict) -> dict:
+def get_options_requesting_filter(filter_request_body: list[dict]) -> dict:
     options_requesting_filter = [
         filter_criteria
         for filter_criteria in filter_request_body
@@ -16,7 +16,7 @@ def get_options_requesting_filter(filter_request_body: dict) -> dict:
     return options_requesting_filter[0] if len(options_requesting_filter) > 0 else {}
 
 
-def get_selection_type_filter_value(filter_request_body: dict) -> list:
+def get_selection_type_filter_value(filter_request_body: list[dict]) -> list:
     selection_type_filter = [
         filter_criteria
         for filter_criteria in filter_request_body
@@ -25,7 +25,7 @@ def get_selection_type_filter_value(filter_request_body: dict) -> list:
     return selection_type_filter[0]["value"] if len(selection_type_filter) > 0 else []
 
 
-def get_type_filter_value(filter_request_body: dict) -> str:
+def get_type_filter_value(filter_request_body: list[dict]) -> str:
     type_filter = [
         filter_criteria
         for filter_criteria in filter_request_body
@@ -34,7 +34,7 @@ def get_type_filter_value(filter_request_body: dict) -> str:
     return type_filter[0]["value"] if len(type_filter) > 0 else ""
 
 
-def has_non_exact_match_filter(filter_request_body: dict) -> bool:
+def has_non_exact_match_filter(filter_request_body: list[dict]) -> bool:
     non_exact_match_filter = [
         filter_criteria
         for filter_criteria in filter_request_body
@@ -43,7 +43,7 @@ def has_non_exact_match_filter(filter_request_body: dict) -> bool:
     return len(non_exact_match_filter) > 0
 
 
-def has_selection_filter_with_multiple_values(filter_request_body: dict) -> bool:
+def has_selection_filter_with_multiple_values(filter_request_body: list[dict]) -> bool:
     selection_filter_with_multiple_values = [
         filter_criteria
         for filter_criteria in filter_request_body

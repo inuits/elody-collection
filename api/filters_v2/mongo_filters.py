@@ -79,7 +79,7 @@ class MongoFilters:
         facets_request: list[dict],
         tidy_up_match: bool,
     ):
-        lookup = lookup_stage.build(filter_request_body)
+        lookup = lookup_stage.build(filter_request_body=filter_request_body)
         match = match_stage.build(filter_request_body, tidy_up_match)
         if options_requesting_filter:
             project = project_stage.build(
@@ -91,6 +91,7 @@ class MongoFilters:
             skip = skip_stage.build(skip)
             limit = limit_stage.build(limit)
             if facets_request:
+                lookup = lookup_stage.build(facets=facets_request, lookups=lookup)
                 facet = facet_stage.build(facets_request, sort, skip, limit)
                 project = project_stage.build(facet=facet["$facet"])
                 pipeline = [*lookup, match, facet, *project]

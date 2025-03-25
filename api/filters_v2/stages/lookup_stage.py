@@ -1,28 +1,15 @@
 from configuration import get_object_configuration_mapper
+from copy import deepcopy
 from filters_v2.matchers.base_matchers import BaseMatchers
 
 
-def build(filter_request_body: list[dict]) -> list[dict]:
-    object_lists = (
-        get_object_configuration_mapper()
-        .get(BaseMatchers.type or BaseMatchers.collection)
-        .document_info()
-        .get("object_lists", {})
-    )
-    lookups = []
+def build(*, filter_request_body=[], facets=[], lookups=[]) -> list[dict]:
+    if filter_request_body:
+        lookups = __build_filter_lookups(filter_request_body, lookups)
+    elif facets:
+        lookups = __build_facet_lookups(facets, lookups)
 
-    for filter_criteria in filter_request_body:
-        lookup = filter_criteria.get("lookup")
-        if not lookup:
-            continue
-
-        lookup, lookups = __determine_lookup_fields(lookup, lookups, object_lists)
-        if filter_criteria.get("aggregation"):
-            lookups.append(__handle_aggregation_lookup(lookup))
-        else:
-            lookups.extend(__handle_match_lookup(lookup))
-
-    return lookups
+    return deepcopy(lookups)
 
 
 def __add_fields_stage(object_list, primary_key, data_key):
@@ -37,6 +24,72 @@ def __add_fields_stage(object_list, primary_key, data_key):
             },
         }
     }
+
+
+def __build_facet_lookups(facets: list[dict], lookups: list[dict]):
+    for facet in facets:
+        facet_lookups = facet.get("lookups", [])
+        range_stop = len(facet_lookups) + 1
+
+        for i in range(1, range_stop):
+            lookup = facet_lookups[i - 1]
+            project_field = facet["key"].removeprefix(f"{lookup['as']}.")
+            if i < (range_stop - 1) and facet_lookups[i]["local_field"].startswith(
+                "lookup.virtual_relations"
+            ):
+                project_field = facet_lookups[i]["local_field"].removeprefix(
+                    f"{lookup['as']}."
+                )
+
+            lookups.extend(
+                [
+                    {
+                        "$lookup": {
+                            "from": lookup["from"],
+                            "let": {"local_field": f"${lookup['local_field']}"},
+                            "pipeline": [
+                                {
+                                    "$match": {
+                                        "$expr": {
+                                            "$eq": [
+                                                f"${lookup['foreign_field']}",
+                                                "$$local_field",
+                                            ]
+                                        }
+                                    }
+                                },
+                                {"$project": {"_id": 0, project_field: 1}},
+                            ],
+                            "as": lookup["as"],
+                        }
+                    },
+                    {"$unwind": f"${lookup['as']}"},
+                ]
+            )
+
+    return lookups
+
+
+def __build_filter_lookups(filter_request_body: list[dict], lookups: list[dict]):
+    object_lists = (
+        get_object_configuration_mapper()
+        .get(BaseMatchers.type or BaseMatchers.collection)
+        .document_info()
+        .get("object_lists", {})
+    )
+
+    for filter_criteria in filter_request_body:
+        lookup = filter_criteria.get("lookup")
+        if not lookup:
+            continue
+
+        lookup, lookups = __determine_lookup_fields(lookup, lookups, object_lists)
+        if filter_criteria.get("aggregation"):
+            lookups.append(__handle_aggregation_lookup(lookup))
+        else:
+            lookups.extend(__handle_match_lookup(lookup))
+
+    return lookups
 
 
 def __determine_lookup_fields(
