@@ -9,3 +9,6 @@ class ObjectConfigurationMapper:
         if schema:
             key = f"{schema}|{key}"
         return self._mapper.get(key, NoneConfiguration)()
+
+    def get_all(self):
+        return self._mapper
