@@ -4,12 +4,13 @@ from filters_v2.matchers.base_matchers import BaseMatchers
 
 
 def build(*, filter_request_body=[], facets=[], lookups=[]) -> list[dict]:
+    lookups = deepcopy(lookups)
     if filter_request_body:
         lookups = __build_filter_lookups(filter_request_body, lookups)
     elif facets:
         lookups = __build_facet_lookups(facets, lookups)
 
-    return deepcopy(lookups)
+    return lookups
 
 
 def __add_fields_stage(object_list, primary_key, data_key):
