@@ -67,8 +67,9 @@ class BaseFilterResource(BaseResource):
             items["previous"] = (
                 f"/{collection}/filter?skip={max(0, skip - limit)}&limit={limit}"
             )
-        # items["results"] = self._inject_api_urls_into_entities(items["results"])
-        # this should be done when serializing ^
+        if collection in ["entities", "mediafiles"]:
+            items["results"] = self._inject_api_urls_into_entities(items["results"])
+            # this should be done when serializing ^
         return items
 
     def _execute_advanced_search_with_saved_search(
