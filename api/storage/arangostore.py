@@ -553,6 +553,7 @@ class ArangoStorageManager(GenericStorageManager):
             FOR item IN {collection}
                 FILTER '{id.split("/")[-1]}' IN item.identifiers
                 OR item._key == '{id.split("/")[-1]}'
+                OR item.object_id == '{id.split("/")[-1]}'
                 RETURN item
         """
         try:
