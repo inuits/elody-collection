@@ -30,7 +30,7 @@ from werkzeug.exceptions import BadRequest
 class MongoStorageManager(GenericStorageManager):
     character_replace_map = {".": "="}
 
-    def __init__(self):
+    def __init__(self, *, apply_default_entities_index=True):
         if getenv("DB_ENGINE", "mongo") != "mongo":
             return
         self.mongo_direct = int(getenv("MONGODB_DIRECT", 0))
@@ -53,8 +53,9 @@ class MongoStorageManager(GenericStorageManager):
         self.db = self.client[self.mongo_db_name].with_options(
             CodecOptions(tz_aware=True, tzinfo=timezone.utc)
         )
-        self.db.entities.create_index("identifiers", unique=True)
-        self.db.entities.create_index("object_id", unique=True, sparse=True)
+        if apply_default_entities_index:
+            self.db.entities.create_index("identifiers", unique=True)
+            self.db.entities.create_index("object_id", unique=True, sparse=True)
 
     def __add_child_relations(self, id, relations, collection=None):
         for relation in relations:
