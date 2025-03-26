@@ -125,7 +125,7 @@ class MongoStorageManager(GenericStorageManager):
                 filter_fields[name] = value
         return filter_fields
 
-    def __get_id_query(self, id):
+    def _get_id_query(self, id):
         return {"$or": [{"_id": id}, {"identifiers": id}]}
 
     def __get_metatdata_query(self, key, value, type=None):
@@ -339,7 +339,7 @@ class MongoStorageManager(GenericStorageManager):
             True,
             "mediafiles",
         )
-        return self.db["mediafiles"].find_one(self.__get_id_query(mediafile_id))
+        return self.db["mediafiles"].find_one(self._get_id_query(mediafile_id))
 
     def add_mediafile_to_parent(
         self,
@@ -384,7 +384,7 @@ class MongoStorageManager(GenericStorageManager):
 
     def add_sub_item_to_collection_item(self, collection, id, sub_item, content):
         result = self.db[collection].update_one(
-            self.__get_id_query(id), {"$addToSet": {sub_item: {"$each": content}}}
+            self._get_id_query(id), {"$addToSet": {sub_item: {"$each": content}}}
         )
         return content if result.modified_count else None
 
@@ -437,7 +437,7 @@ class MongoStorageManager(GenericStorageManager):
                 get_user_context=get_user_context,
             )
             self.db[config.crud()["collection"]].delete_one(
-                self.__get_id_query(item["_id"])
+                self._get_id_query(item["_id"])
             )
             post_crud_hook(
                 crud="delete",
@@ -453,7 +453,7 @@ class MongoStorageManager(GenericStorageManager):
 
     def delete_item_from_collection(self, collection, id):
         self._delete_impacted_relations(collection, id)
-        self.db[collection].delete_one(self.__get_id_query(id))
+        self.db[collection].delete_one(self._get_id_query(id))
 
     def delete_data_from_collection_item(self, collection, item, content, spec):
         item = item.get("storage_format", item)
@@ -482,7 +482,7 @@ class MongoStorageManager(GenericStorageManager):
                 document=item,
                 get_user_context=get_user_context,
             )
-            self.db[collection].replace_one(self.__get_id_query(item["_id"]), item)
+            self.db[collection].replace_one(self._get_id_query(item["_id"]), item)
             post_crud_hook(
                 crud="update",
                 document=item,
@@ -681,7 +681,7 @@ class MongoStorageManager(GenericStorageManager):
         return linked_entities
 
     def get_item_from_collection_by_id(self, collection, id, *, to_format="elody"):
-        if document := self.db[collection].find_one(self.__get_id_query(id)):
+        if document := self.db[collection].find_one(self._get_id_query(id)):
             return self._prepare_mongo_document(
                 document, True, collection, to_format=to_format
             )
@@ -856,7 +856,7 @@ class MongoStorageManager(GenericStorageManager):
             create_sortable_metadata=create_sortable_metadata,
         )
         try:
-            self.db[collection].update_one(self.__get_id_query(id), {"$set": content})
+            self.db[collection].update_one(self._get_id_query(id), {"$set": content})
         except DuplicateKeyError as ex:
             if ex.code == 11000:
                 raise NonUniqueException(
@@ -897,7 +897,7 @@ class MongoStorageManager(GenericStorageManager):
                 document=item,
                 get_user_context=get_user_context,
             )
-            self.db[collection].replace_one(self.__get_id_query(item["_id"]), item)
+            self.db[collection].replace_one(self._get_id_query(item["_id"]), item)
             if run_post_crud_hook:
                 post_crud_hook(
                     crud="update",
@@ -954,7 +954,7 @@ class MongoStorageManager(GenericStorageManager):
                 document=item,
                 get_user_context=get_user_context,
             )
-            self.db[collection].replace_one(self.__get_id_query(item["_id"]), item)
+            self.db[collection].replace_one(self._get_id_query(item["_id"]), item)
             post_crud_hook(
                 crud="update",
                 document=item,
@@ -1117,7 +1117,7 @@ class MongoStorageManager(GenericStorageManager):
             collection, id, content.get("relations", [])
         )
         try:
-            self.db[collection].replace_one(self.__get_id_query(id), content)
+            self.db[collection].replace_one(self._get_id_query(id), content)
         except DuplicateKeyError as ex:
             if ex.code == 11000:
                 raise NonUniqueException(
