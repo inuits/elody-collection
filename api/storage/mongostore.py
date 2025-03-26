@@ -796,8 +796,7 @@ class MongoStorageManager(GenericStorageManager):
             "filename",
             "original_filename",
         ]:
-            # raise Exception(f"{'relations.hasMediafile.' if relation_sort else ''}metadata.{field}.value")
-            return f"{'relations.' if relation_sort else ''}metadata.{field}.value"
+            return f"{'relations.' if relation_sort else ''}sort.{field}.value"
         return field
 
     def handle_mediafile_deleted(self, parents):
