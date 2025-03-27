@@ -71,10 +71,10 @@ def get_filter_option_label(db, identifier, key):
         return identifier
 
 
-def get_lookup_key(filter_key, lookup_stage) -> str:
-    for lookup in lookup_stage:
-        if lookup.get("$lookup"):
-            lookup_key = lookup["$lookup"]["as"]
+def get_lookup_key(filter_key, match) -> str:
+    for stage in match:
+        if stage.get("$lookup"):
+            lookup_key = stage["$lookup"]["as"]
             if filter_key.startswith(lookup_key):
                 return lookup_key
     return ""
@@ -162,11 +162,27 @@ def get_options_mapper(
     }
 
 
+def merge_same_lookups_in_match(lookup: list[dict], match: list[dict]):
+    match = deepcopy(match)
+    for stage in match:
+        if list(stage.keys())[0] == "$lookup":
+            if (
+                stage["$lookup"]["from"] == lookup[0]["$lookup"]["from"]
+                and stage["$lookup"]["pipeline"][0]
+                == lookup[0]["$lookup"]["pipeline"][0]
+            ):
+                stage["$lookup"]["pipeline"][1]["$project"] = {
+                    **stage["$lookup"]["pipeline"][1]["$project"],
+                    **lookup[0]["$lookup"]["pipeline"][1]["$project"],
+                }
+    return match
+
+
 def unify_matchers_per_schema_into_one_match(
     matchers_per_schema: dict, tidy_up_match: bool
 ) -> dict:
     match = {}
-    general_matchers = matchers_per_schema.pop("general")
+    general_matchers = matchers_per_schema.pop("general", [])
     __combine_matchers(general_matchers, "or")
     __combine_matchers(general_matchers, "nor")
 

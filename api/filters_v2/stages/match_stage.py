@@ -1,18 +1,78 @@
 from copy import deepcopy
-from filters_v2.helpers.base_helper import parse_optional_filters
+from filters_v2.helpers.base_helper import (
+    has_or_filter,
+    parse_optional_filters,
+    split_document_and_virtual_field_filters,
+)
 from filters_v2.helpers.mongo_helper import (
     append_matcher,
+    merge_same_lookups_in_match,
     unify_matchers_per_schema_into_one_match,
 )
+from filters_v2.stages import lookup_stage
 from filters_v2.types.filter_types import get_filter
 
 
-def build(filter_request_body: list[dict], tidy_up_match: bool) -> dict:
-    restricted_keys = []
-    matchers_per_schema = {"general": []}
+def build(filter_request_body: list[dict], tidy_up_match: bool) -> list[dict]:
+    match, restricted_keys = [], []
+    if has_or_filter(filter_request_body):
+        document_field_filters = filter_request_body
+        virtual_field_filters = []
+    else:
+        document_field_filters, virtual_field_filters = (
+            split_document_and_virtual_field_filters(filter_request_body)
+        )
 
+    if document_field_filters:
+        matchers_per_schema, lookup = {"general": []}, []
+        for matchers_per_schema, filter_criteria in __construct_matchers_per_schema(
+            document_field_filters, restricted_keys, matchers_per_schema
+        ):
+            lookup = lookup_stage.build(filter_criteria=filter_criteria, lookups=lookup)
+        match.extend(
+            [
+                *lookup,
+                {
+                    "$match": unify_matchers_per_schema_into_one_match(
+                        matchers_per_schema, tidy_up_match
+                    )
+                },
+            ]
+        )
+    if virtual_field_filters:
+        for matchers_per_schema, filter_criteria in __construct_matchers_per_schema(
+            virtual_field_filters, restricted_keys
+        ):
+            lookup = lookup_stage.build(filter_criteria=filter_criteria)
+            if match != (merged_match := merge_same_lookups_in_match(lookup, match)):
+                match = merged_match
+                lookup = []
+
+            match.extend(
+                [
+                    *lookup,
+                    {
+                        "$match": unify_matchers_per_schema_into_one_match(
+                            matchers_per_schema, tidy_up_match
+                        )
+                    },
+                ]
+            )
+
+    return match
+
+
+def __construct_matchers_per_schema(
+    filter_request_body: list[dict],
+    restricted_keys: list,
+    initial_matchers_per_schema: dict = {},
+):
+    matchers_per_schema = initial_matchers_per_schema
     for filter_criteria in filter_request_body:
         filter = get_filter(filter_criteria["type"])
+        if not initial_matchers_per_schema:
+            matchers_per_schema = {"general": []}
+
         if isinstance(filter_criteria.get("key"), list):
             matchers_per_schema = __handle_schema_specific_filter(
                 filter, filter_criteria, restricted_keys, matchers_per_schema
@@ -26,11 +86,7 @@ def build(filter_request_body: list[dict], tidy_up_match: bool) -> dict:
         if len(item_types) > 0:
             matchers_per_schema["general"].append({"type": {"$in": item_types}})
 
-    return {
-        "$match": unify_matchers_per_schema_into_one_match(
-            matchers_per_schema, tidy_up_match
-        )
-    }
+        yield matchers_per_schema, filter_criteria
 
 
 def __handle_schema_agnostic_filter(

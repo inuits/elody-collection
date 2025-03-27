@@ -3,10 +3,12 @@ from copy import deepcopy
 from filters_v2.matchers.base_matchers import BaseMatchers
 
 
-def build(*, filter_request_body=[], facets=[], lookups=[]) -> list[dict]:
+def build(
+    *, filter_criteria: dict = {}, facets: list[dict] = [], lookups: list[dict] = []
+) -> list[dict]:
     lookups = deepcopy(lookups)
-    if filter_request_body:
-        lookups = __build_filter_lookups(filter_request_body, lookups)
+    if filter_criteria:
+        lookups = __build_filter_lookups(filter_criteria, lookups)
     elif facets:
         lookups = __build_facet_lookups(facets, lookups)
 
@@ -71,24 +73,22 @@ def __build_facet_lookups(facets: list[dict], lookups: list[dict]):
     return lookups
 
 
-def __build_filter_lookups(filter_request_body: list[dict], lookups: list[dict]):
+def __build_filter_lookups(filter_criteria: dict, lookups: list[dict]):
     object_lists = (
         get_object_configuration_mapper()
         .get(BaseMatchers.type or BaseMatchers.collection)
         .document_info()
         .get("object_lists", {})
     )
+    lookup = filter_criteria.get("lookup")
+    if not lookup:
+        return lookups
 
-    for filter_criteria in filter_request_body:
-        lookup = filter_criteria.get("lookup")
-        if not lookup:
-            continue
-
-        lookup, lookups = __determine_lookup_fields(lookup, lookups, object_lists)
-        if filter_criteria.get("aggregation"):
-            lookups.append(__handle_aggregation_lookup(lookup))
-        else:
-            lookups.extend(__handle_match_lookup(lookup))
+    lookup, lookups = __determine_lookup_fields(lookup, lookups, object_lists)
+    if filter_criteria.get("aggregation"):
+        lookups.append(__handle_aggregation_lookup(lookup))
+    else:
+        lookups.extend(__handle_match_lookup(filter_criteria, lookup))
 
     return lookups
 
@@ -118,22 +118,44 @@ def __handle_aggregation_lookup(lookup: dict) -> dict:
     return {
         "$lookup": {
             "from": lookup["from"],
-            "let": {"localField": f"${lookup['local_field']}"},
+            "let": {"local_field": f"${lookup['local_field']}"},
             "pipeline": [
                 {
                     "$match": {
                         "$expr": {
                             "$or": [
                                 {
-                                    "$in": [
+                                    "$eq": [
                                         f"${lookup['foreign_field']}",
-                                        "$$localField",
+                                        "$$local_field",
                                     ]
                                 },
                                 {
-                                    "$eq": [
-                                        "$$localField",
-                                        f"${lookup['foreign_field']}",
+                                    "$and": [
+                                        {"$isArray": f"${lookup['foreign_field']}"},
+                                        {"$not": {"$isArray": "$$local_field"}},
+                                        {
+                                            "$in": [
+                                                "$$local_field",
+                                                f"${lookup['foreign_field']}",
+                                            ]
+                                        },
+                                    ]
+                                },
+                                {
+                                    "$and": [
+                                        {"$isArray": "$$local_field"},
+                                        {
+                                            "$not": {
+                                                "$isArray": f"${lookup['foreign_field']}"
+                                            }
+                                        },
+                                        {
+                                            "$in": [
+                                                f"${lookup['foreign_field']}",
+                                                "$$local_field",
+                                            ]
+                                        },
                                     ]
                                 },
                             ]
@@ -147,15 +169,70 @@ def __handle_aggregation_lookup(lookup: dict) -> dict:
     }
 
 
-def __handle_match_lookup(lookup: dict) -> list:
+def __handle_match_lookup(filter_criteria: dict, lookup: dict) -> list:
+    key = filter_criteria["key"]
+    if isinstance(filter_criteria["key"], list):
+        key = filter_criteria["key"][0]
+    project_field = key.split("|")[-1].removeprefix(f"{lookup['as']}.")
+
     return [
         {
             "$lookup": {
                 "from": lookup["from"],
-                "localField": lookup["local_field"],
-                "foreignField": lookup["foreign_field"],
+                "let": {"local_field": f"${lookup['local_field']}"},
+                "pipeline": [
+                    {
+                        "$match": {
+                            "$expr": {
+                                "$or": [
+                                    {
+                                        "$eq": [
+                                            f"${lookup['foreign_field']}",
+                                            "$$local_field",
+                                        ]
+                                    },
+                                    {
+                                        "$and": [
+                                            {"$isArray": f"${lookup['foreign_field']}"},
+                                            {"$not": {"$isArray": "$$local_field"}},
+                                            {
+                                                "$in": [
+                                                    "$$local_field",
+                                                    f"${lookup['foreign_field']}",
+                                                ]
+                                            },
+                                        ]
+                                    },
+                                    {
+                                        "$and": [
+                                            {"$isArray": "$$local_field"},
+                                            {
+                                                "$not": {
+                                                    "$isArray": f"${lookup['foreign_field']}"
+                                                }
+                                            },
+                                            {
+                                                "$in": [
+                                                    f"${lookup['foreign_field']}",
+                                                    "$$local_field",
+                                                ]
+                                            },
+                                        ]
+                                    },
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        "$project": {
+                            "_id": 1,
+                            "id": 1,
+                            project_field: 1,
+                            lookup["foreign_field"].rsplit(".", 1)[0]: 1,
+                        }
+                    },
+                ],
                 "as": lookup["as"],
             }
-        },
-        {"$unwind": f"${lookup['as']}"},
+        }
     ]

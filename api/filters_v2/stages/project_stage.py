@@ -1,18 +1,16 @@
 from filters_v2.helpers.mongo_helper import get_lookup_key, get_options_mapper
 
 
-def build(*, options_requesting_filter={}, facet={}, lookup_stage=[]) -> list[dict]:
+def build(*, options_requesting_filter={}, facet={}, match=[]) -> list[dict]:
     if options_requesting_filter:
-        return __project_options(options_requesting_filter, lookup_stage)
+        return __project_options(options_requesting_filter, match)
     elif facet:
-        return __project_facets(facet, lookup_stage)
+        return __project_facets(facet, match)
 
     return []
 
 
-def __project_options(
-    options_requesting_filter: dict, lookup_stage: list[dict]
-) -> list[dict]:
+def __project_options(options_requesting_filter: dict, match: list[dict]) -> list[dict]:
     project, mappers = [], []
     lookup_key = None
     keys: list | str = options_requesting_filter.get("key", [])
@@ -22,11 +20,11 @@ def __project_options(
         key = ""
         for key in keys:
             _, key = key.split("|")
-            lookup_key = get_lookup_key(key, lookup_stage)
+            lookup_key = get_lookup_key(key, match)
             mappers.append(get_options_mapper(key, lookup_key, inner_exact_matches))
     else:
         key = keys
-        lookup_key = get_lookup_key(key, lookup_stage)
+        lookup_key = get_lookup_key(key, match)
         mappers.append(get_options_mapper(key, lookup_key, inner_exact_matches))
 
     if lookup_key:

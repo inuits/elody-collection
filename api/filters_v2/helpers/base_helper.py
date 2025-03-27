@@ -35,21 +35,30 @@ def get_type_filter_value(filter_request_body: list[dict]) -> str:
 
 
 def has_non_exact_match_filter(filter_request_body: list[dict]) -> bool:
-    non_exact_match_filter = [
+    non_exact_match_filters = [
         filter_criteria
         for filter_criteria in filter_request_body
         if not filter_criteria.get("match_exact") and filter_criteria["type"] != "type"
     ]
-    return len(non_exact_match_filter) > 0
+    return len(non_exact_match_filters) > 0
+
+
+def has_or_filter(filter_request_body: list[dict]) -> bool:
+    or_filters = [
+        filter_criteria
+        for filter_criteria in filter_request_body
+        if filter_criteria.get("operator") == "or"
+    ]
+    return len(or_filters) > 0
 
 
 def has_selection_filter_with_multiple_values(filter_request_body: list[dict]) -> bool:
-    selection_filter_with_multiple_values = [
+    selection_filters_with_multiple_values = [
         filter_criteria
         for filter_criteria in filter_request_body
         if filter_criteria["type"] == "selection" and len(filter_criteria["value"]) > 1
     ]
-    return len(selection_filter_with_multiple_values) > 0
+    return len(selection_filters_with_multiple_values) > 0
 
 
 def parse_optional_filters(filter_criteria: dict) -> list[dict]:
@@ -79,3 +88,13 @@ def parse_optional_filters(filter_criteria: dict) -> list[dict]:
             {**filter_criteria, "key": key, "value": "", "operator": "or"}
         )
     return filter_criterias
+
+
+def split_document_and_virtual_field_filters(filter_request_body: list[dict]):
+    document_field_filters, virtual_field_filters = [], []
+    for filter_criteria in filter_request_body:
+        if filter_criteria.get("lookup"):
+            virtual_field_filters.append(filter_criteria)
+        else:
+            document_field_filters.append(filter_criteria)
+    return document_field_filters, virtual_field_filters

@@ -45,7 +45,7 @@ class MongoFilters:
         )
         facets_request = get_facets(filter_request_body)
 
-        pipeline, lookup, match = self.__build_aggregation_query(
+        pipeline, match = self.__build_aggregation_query(
             filter_request_body,
             skip,
             limit,
@@ -60,7 +60,6 @@ class MongoFilters:
 
         return self.__execute_aggregation_query(
             pipeline,
-            lookup,
             match,
             skip,
             limit,
@@ -79,31 +78,29 @@ class MongoFilters:
         facets_request: list[dict],
         tidy_up_match: bool,
     ):
-        lookup = lookup_stage.build(filter_request_body=filter_request_body)
         match = match_stage.build(filter_request_body, tidy_up_match)
         if options_requesting_filter:
             project = project_stage.build(
-                options_requesting_filter=options_requesting_filter, lookup_stage=lookup
+                options_requesting_filter=options_requesting_filter, match=match
             )
-            pipeline = [*lookup, match, *project]
+            pipeline = [*match, *project]
         else:
             sort = sort_stage.build(order_by, asc, filter_request_body, self.storage)
             skip = skip_stage.build(skip)
             limit = limit_stage.build(limit)
             if facets_request:
-                lookup = lookup_stage.build(facets=facets_request, lookups=lookup)
+                lookup = lookup_stage.build(facets=facets_request)
                 facet = facet_stage.build(facets_request, sort, skip, limit)
                 project = project_stage.build(facet=facet["$facet"])
-                pipeline = [*lookup, match, facet, *project]
+                pipeline = [*match, *lookup, facet, *project]
             else:
-                pipeline = [*lookup, match, *sort, *skip, *limit]
+                pipeline = [*match, *sort, *skip, *limit]
 
-        return pipeline, lookup, match
+        return pipeline, match
 
     def __execute_aggregation_query(
         self,
         pipeline,
-        lookup,
         match,
         skip,
         limit,
@@ -129,14 +126,11 @@ class MongoFilters:
         else:
             output = {"results": list(cursor)}
 
-        return self.__get_items(
-            output, lookup, match, skip, limit, options_requesting_filter
-        )
+        return self.__get_items(output, match, skip, limit, options_requesting_filter)
 
     def __get_items(
         self,
         output,
-        lookup,
         match,
         skip,
         limit,
@@ -176,7 +170,7 @@ class MongoFilters:
             items["skip"] = skip
             items["limit"] = limit
             count = self.storage.db[BaseMatchers.collection].aggregate(
-                [*lookup, match, {"$count": "count"}],
+                [*match, {"$count": "count"}],
                 allowDiskUse=self.storage.allow_disk_use,
             )
             items["count"] = next(count, {"count": len(output["results"])})["count"]
