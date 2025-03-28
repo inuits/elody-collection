@@ -48,10 +48,8 @@ def __build_facet_lookups(facets: list[dict], lookups: list[dict]):
                 },
                 {"$unwind": f"${facet_lookup['as']}"},
             ]
-            if lookup_already_exists_in_pipeline(lookup, lookups):
-                lookup = []
-
-            lookups.extend(lookup)
+            if not lookup_already_exists_in_pipeline(lookup, lookups):
+                lookups.extend(lookup)
 
     return lookups
 
