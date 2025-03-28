@@ -570,7 +570,7 @@ class GenericObjectMetadata(BaseResource):
         item = self._check_if_collection_and_item_exists(collection, id)
         if fields is None:
             fields = {}
-        metadata = item["metadata"]
+        metadata = item.get("metadata", list())
         accept_header = request.headers.get("Accept")
         return self._create_response_according_accept_header(
             mappers.map_data_according_to_accept_header(
@@ -607,7 +607,9 @@ class GenericObjectMetadata(BaseResource):
         if content is None:
             content = self._get_content_according_content_type(request, "metadata")
         self._update_date_updated_and_last_editor(collection, id)
-        metadata = self.storage.patch_collection_item_metadata(collection, id, content)
+        metadata = self.storage.patch_collection_item_metadata(
+            collection, id, content, True
+        )
         if not metadata:
             abort(
                 400,
