@@ -162,20 +162,12 @@ def get_options_mapper(
     }
 
 
-def merge_same_lookups_in_match(lookup: list[dict], match: list[dict]):
-    match = deepcopy(match)
-    for stage in match:
+def lookup_already_exists_in_pipeline(lookup: list[dict], pipeline: list[dict]) -> bool:
+    for stage in pipeline:
         if list(stage.keys())[0] == "$lookup":
-            if (
-                stage["$lookup"]["from"] == lookup[0]["$lookup"]["from"]
-                and stage["$lookup"]["pipeline"][0]
-                == lookup[0]["$lookup"]["pipeline"][0]
-            ):
-                stage["$lookup"]["pipeline"][1]["$project"] = {
-                    **stage["$lookup"]["pipeline"][1]["$project"],
-                    **lookup[0]["$lookup"]["pipeline"][1]["$project"],
-                }
-    return match
+            if stage["$lookup"] == lookup[0]["$lookup"]:
+                return True
+    return False
 
 
 def unify_matchers_per_schema_into_one_match(

@@ -1,5 +1,6 @@
 from configuration import get_object_configuration_mapper
 from copy import deepcopy
+from filters_v2.helpers.mongo_helper import lookup_already_exists_in_pipeline
 from filters_v2.matchers.base_matchers import BaseMatchers
 
 
@@ -35,20 +36,22 @@ def __build_facet_lookups(facets: list[dict], lookups: list[dict]):
         range_stop = len(facet_lookups) + 1
 
         for i in range(1, range_stop):
-            lookup = facet_lookups[i - 1]
-            lookups.extend(
-                [
-                    {
-                        "$lookup": {
-                            "from": lookup["from"],
-                            "localField": lookup["local_field"],
-                            "foreignField": lookup["foreign_field"],
-                            "as": lookup["as"],
-                        }
-                    },
-                    {"$unwind": f"${lookup['as']}"},
-                ]
-            )
+            facet_lookup = facet_lookups[i - 1]
+            lookup = [
+                {
+                    "$lookup": {
+                        "from": facet_lookup["from"],
+                        "localField": facet_lookup["local_field"],
+                        "foreignField": facet_lookup["foreign_field"],
+                        "as": facet_lookup["as"],
+                    }
+                },
+                {"$unwind": f"${facet_lookup['as']}"},
+            ]
+            if lookup_already_exists_in_pipeline(lookup, lookups):
+                lookup = []
+
+            lookups.extend(lookup)
 
     return lookups
 

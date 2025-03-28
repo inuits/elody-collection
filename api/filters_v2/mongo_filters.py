@@ -10,7 +10,6 @@ from filters_v2.matchers.base_matchers import BaseMatchers
 from filters_v2.stages import (
     facet_stage,
     limit_stage,
-    lookup_stage,
     match_stage,
     project_stage,
     skip_stage,
@@ -89,10 +88,9 @@ class MongoFilters:
             skip = skip_stage.build(skip)
             limit = limit_stage.build(limit)
             if facets_request:
-                lookup = lookup_stage.build(facets=facets_request)
                 facet = facet_stage.build(facets_request, sort, skip, limit)
-                project = project_stage.build(facet=facet["$facet"])
-                pipeline = [*match, *lookup, facet, *project]
+                project = project_stage.build(facet=facet[-1]["$facet"])
+                pipeline = [*match, *facet, *project]
             else:
                 pipeline = [*match, *sort, *skip, *limit]
 

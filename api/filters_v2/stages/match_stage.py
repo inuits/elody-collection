@@ -6,7 +6,7 @@ from filters_v2.helpers.base_helper import (
 )
 from filters_v2.helpers.mongo_helper import (
     append_matcher,
-    merge_same_lookups_in_match,
+    lookup_already_exists_in_pipeline,
     unify_matchers_per_schema_into_one_match,
 )
 from filters_v2.stages import lookup_stage
@@ -44,8 +44,7 @@ def build(filter_request_body: list[dict], tidy_up_match: bool) -> list[dict]:
             virtual_field_filters, restricted_keys
         ):
             lookup = lookup_stage.build(filter_criteria=filter_criteria)
-            if match != (merged_match := merge_same_lookups_in_match(lookup, match)):
-                match = merged_match
+            if lookup_already_exists_in_pipeline(lookup, match):
                 lookup = []
 
             match.extend(
