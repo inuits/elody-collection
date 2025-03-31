@@ -381,7 +381,11 @@ class GenericObjectDetail(BaseResource):
         if not date_updated:
             date_updated = datetime.now(timezone.utc)
         content["date_updated"] = date_updated
-        content["date_created"] = self._get_date_from_object(content, "date_created")
+        content["date_created"] = (
+            self._get_date_from_object(content, "date_created")
+            if "date_created" in content
+            else collection_item.get("date_created")
+        )
         content["version"] = collection_item.get("version", 0) + 1
         content["last_editor"] = get_user_context().email or "default_uploader"
         try:
