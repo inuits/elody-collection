@@ -56,6 +56,13 @@ def init_scheduler():
         return scheduler
 
 
+def register_exporter(app, api):
+    from prometheus_flask_exporter import PrometheusMetrics
+    from prometheus_flask_exporter import RESTfulPrometheusMetrics
+    metrics = RESTfulPrometheusMetrics(app, api)
+    metrics.info('collection_api_info', 'Metrics for collection-api', version='0.0.1')
+
+
 def register_swaggerui(app):
     swaggerui_blueprint = get_swaggerui_blueprint(SWAGGER_URL, API_URL)
     app.register_blueprint(swaggerui_blueprint)
@@ -86,6 +93,8 @@ api = init_api(app)
 init_rabbit(app)
 init_health_check(app, database_available, rabbit_available)
 init_policy_factory()
+if getenv("ENABLE_METRICS", False) in ["True", "true", True]:
+    register_exporter(app, api)
 
 try:
     client_app = import_module("apps.client_app")
