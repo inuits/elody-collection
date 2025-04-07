@@ -57,10 +57,10 @@ def init_scheduler():
 
 
 def register_exporter(app, api):
-    from prometheus_flask_exporter import PrometheusMetrics
     from prometheus_flask_exporter import RESTfulPrometheusMetrics
-    metrics = RESTfulPrometheusMetrics(app, api, group_by='url_rule')
-    metrics.info('collection_api_info', 'Metrics for collection-api', version='0.0.1')
+
+    metrics = RESTfulPrometheusMetrics(app, api, group_by="url_rule")
+    metrics.info("collection_api_info", "Metrics for collection-api", version="0.0.1")
 
 
 def register_swaggerui(app):

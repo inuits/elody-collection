@@ -23,10 +23,11 @@ def init_mappers():
         _collection_mapper = mapper_module.COLLECTION_MAPPER
         _storage_mapper = mapper_module.STORAGE_MAPPER
     except ModuleNotFoundError:
+        from logging_elody.log import log
         from storage.arangostore import ArangoStorageManager
+        from storage.httpstore import HttpStorageManager
         from storage.memorystore import MemoryStorageManager
         from storage.mongostore import MongoStorageManager
-        from storage.httpstore import HttpStorageManager
 
         _object_configuration_mapper = ObjectConfigurationMapper()
         _route_mapper = {}
@@ -37,6 +38,10 @@ def init_mappers():
             "mongo": MongoStorageManager,
             "http": HttpStorageManager,
         }
+
+        log.warning(
+            "Configuration: apps.mappers not found, falling back to default config."
+        )
 
 
 def get_object_configuration_mapper():
