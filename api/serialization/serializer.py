@@ -11,11 +11,14 @@ class Serializer:
         type,
         to_format,
         from_format=None,
+        original_item={},
         accept_header="application/json",
         hide_storage_format=False,
     ):
         if from_format == "query_parameter" and to_format == "filter_key":
-            return self.__serialize(item, from_format, to_format, type, accept_header)
+            return self.__serialize(
+                item, from_format, to_format, type, original_item, accept_header
+            )
         if not isinstance(item, dict) or not type:
             return item
 
@@ -26,7 +29,9 @@ class Serializer:
         if from_format == to_format:
             return item
 
-        item = self.__serialize(item, from_format, to_format, type, accept_header)
+        item = self.__serialize(
+            item, from_format, to_format, type, original_item, accept_header
+        )
         if hide_storage_format and item.get("storage_format"):
             del item["storage_format"]
         return item
@@ -39,11 +44,14 @@ class Serializer:
             return f"{spec.replace('-', '_')}_{camel_to_snake(options)}"
         return spec
 
-    def __serialize(self, item, from_format, to_format, type, accept_header):
+    def __serialize(
+        self, item, from_format, to_format, type, original_item, accept_header
+    ):
         config = get_object_configuration_mapper().get(type)
         serialize = config.serialization(from_format, to_format)
         return serialize(
             deepcopy(item),
+            original_document=original_item,
             accept_header=(
                 accept_header if accept_header != "*/*" else "application/json"
             ),

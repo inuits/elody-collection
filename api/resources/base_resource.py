@@ -432,6 +432,7 @@ class BaseResource(Resource):
                     "type", serialize.get_format(spec, request.args)
                 ),
                 to_format=schema_type,
+                original_item=deepcopy(item),
             )
         else:
             return content
