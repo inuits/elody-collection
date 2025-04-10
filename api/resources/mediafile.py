@@ -290,7 +290,9 @@ class MediafileDerivatives(GenericObjectDetail):
         parent_mediafile = super().get("mediafiles", id)
         mediafiles = dict()
         mediafiles["count"] = self._count_children_from_mediafile(parent_mediafile)
-        mediafiles["results"] = self._get_children_from_mediafile(parent_mediafile)
+        mediafiles["results"] = self._inject_api_urls_into_mediafiles(
+            self._get_children_from_mediafile(parent_mediafile)
+        )
 
         @after_this_request
         def add_header(response):
