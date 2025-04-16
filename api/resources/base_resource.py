@@ -383,7 +383,9 @@ class BaseResource(Resource):
                 "entities", f'tenant:{entity["_id"]}'
             )
 
-    def _get_children_from_mediafile(self, parent_mediafile, linked_mediafiles=[]):
+    def _get_children_from_mediafile(self, parent_mediafile, linked_mediafiles=None):
+        if not linked_mediafiles:
+            linked_mediafiles = list()
         relations = self.storage.get_collection_item_relations(
             "mediafiles", parent_mediafile["_id"]
         )
