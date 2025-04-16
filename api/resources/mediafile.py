@@ -118,6 +118,12 @@ class Mediafile(GenericObject):
             "mediafiles", request
         ):
             linked_entities = self.storage.get_mediafile_linked_entities(mediafile)
+            mediafile_derivatives = self._get_children_from_mediafile(mediafile)
+            for mediafile_derivative in mediafile_derivatives:
+                self.storage.delete_item_from_collection(
+                    "mediafiles", get_raw_id(mediafile_derivative)
+                )
+                signal_mediafile_deleted(get_rabbit(), mediafile_derivative, list())
             if tenant_id := get_user_context().x_tenant.id:
                 if tenant_id != "tenant:super":
                     mediafile["filename"] = f"{tenant_id}/{mediafile['filename']}"
