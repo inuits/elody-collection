@@ -221,6 +221,7 @@ class MediafileDetail(GenericObjectDetail):
             super().delete(
                 "mediafiles", get_raw_id(mediafile_derivative), mediafile_derivative
             )
+            signal_mediafile_deleted(get_rabbit(), mediafile_derivative, list())
         response = super().delete("mediafiles", id, item=mediafile)
         if tenant_id := get_user_context().x_tenant.id:
             if tenant_id != "tenant:super":
