@@ -1055,7 +1055,7 @@ class MongoStorageManager(GenericStorageManager):
                     f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} | duplicate_entry:{duplicate_entry} - Following entry must be unique: {duplicate_entry}"
                 )
             raise error
-        return self.get_item_from_collection_by_id(collection, items[0]["_id"])
+        return self._prepare_mongo_document(item, True, collection, to_format="elody")
 
     def set_primary_field_collection_item(self, collection, id, mediafile_id, field):
         for src_id, dst_id in [
