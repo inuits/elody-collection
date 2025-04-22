@@ -483,7 +483,7 @@ class MongoStorageManager(GenericStorageManager):
                 document=item,
                 get_user_context=get_user_context,
             )
-            self.db[collection].replace_one(self._get_id_query(item["_id"]), item)
+            self.db[collection].replace_one({"_id": item["_id"]}, item)
             post_crud_hook(
                 crud="update",
                 document=item,
@@ -897,7 +897,7 @@ class MongoStorageManager(GenericStorageManager):
                 document=item,
                 get_user_context=get_user_context,
             )
-            self.db[collection].replace_one(self._get_id_query(item["_id"]), item)
+            self.db[collection].replace_one({"_id": item["_id"]}, item)
             if run_post_crud_hook:
                 post_crud_hook(
                     crud="update",
@@ -954,7 +954,7 @@ class MongoStorageManager(GenericStorageManager):
                 document=item,
                 get_user_context=get_user_context,
             )
-            self.db[collection].replace_one(self._get_id_query(item["_id"]), item)
+            self.db[collection].replace_one({"_id": item["_id"]}, item)
             post_crud_hook(
                 crud="update",
                 document=item,
