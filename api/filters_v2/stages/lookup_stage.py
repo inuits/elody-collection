@@ -99,22 +99,44 @@ def __handle_aggregation_lookup(lookup: dict) -> dict:
     return {
         "$lookup": {
             "from": lookup["from"],
-            "let": {"localField": f"${lookup['local_field']}"},
+            "let": {"local_field": f"${lookup['local_field']}"},
             "pipeline": [
                 {
                     "$match": {
                         "$expr": {
                             "$or": [
                                 {
-                                    "$in": [
+                                    "$eq": [
                                         f"${lookup['foreign_field']}",
-                                        "$$localField",
+                                        "$$local_field",
                                     ]
                                 },
                                 {
-                                    "$eq": [
-                                        "$$localField",
-                                        f"${lookup['foreign_field']}",
+                                    "$and": [
+                                        {"$isArray": f"${lookup['foreign_field']}"},
+                                        {"$not": {"$isArray": "$$local_field"}},
+                                        {
+                                            "$in": [
+                                                "$$local_field",
+                                                f"${lookup['foreign_field']}",
+                                            ]
+                                        },
+                                    ]
+                                },
+                                {
+                                    "$and": [
+                                        {"$isArray": "$$local_field"},
+                                        {
+                                            "$not": {
+                                                "$isArray": f"${lookup['foreign_field']}"
+                                            }
+                                        },
+                                        {
+                                            "$in": [
+                                                f"${lookup['foreign_field']}",
+                                                "$$local_field",
+                                            ]
+                                        },
                                     ]
                                 },
                             ]
