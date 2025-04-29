@@ -1,7 +1,6 @@
-from configuration import get_object_configuration_mapper
 from copy import deepcopy
 from filters_v2.helpers.mongo_helper import lookup_already_exists_in_pipeline
-from filters_v2.matchers.base_matchers import BaseMatchers
+from filters_v2.stages import add_fields_stage
 
 
 def build(
@@ -14,20 +13,6 @@ def build(
         lookups = __build_facet_lookups(facets, lookups)
 
     return lookups
-
-
-def __add_fields_stage(object_list, primary_key, data_key):
-    return {
-        "$addFields": {
-            data_key: {
-                "$filter": {
-                    "input": f"${object_list}",
-                    "as": object_list,
-                    "cond": {"$eq": [f"$${object_list}.{primary_key}", data_key]},
-                }
-            },
-        }
-    }
 
 
 def __build_facet_lookups(facets: list[dict], lookups: list[dict]):
@@ -55,17 +40,11 @@ def __build_facet_lookups(facets: list[dict], lookups: list[dict]):
 
 
 def __build_filter_lookups(filter_criteria: dict, lookups: list[dict]):
-    object_lists = (
-        get_object_configuration_mapper()
-        .get(BaseMatchers.type or BaseMatchers.collection)
-        .document_info()
-        .get("object_lists", {})
-    )
     lookup = filter_criteria.get("lookup")
     if not lookup:
         return lookups
 
-    lookup, lookups = __determine_lookup_fields(lookup, lookups, object_lists)
+    lookup, lookups = __determine_lookup_fields(lookup, lookups)
     if filter_criteria.get("aggregation"):
         lookups.append(__handle_aggregation_lookup(lookup))
     else:
@@ -75,22 +54,19 @@ def __build_filter_lookups(filter_criteria: dict, lookups: list[dict]):
 
 
 def __determine_lookup_fields(
-    lookup: dict, lookups: list[dict], object_lists: dict
+    lookup: dict, lookups: list[dict]
 ) -> tuple[dict, list[dict]]:
-    for object_list, primary_key in object_lists.items():
-        if lookup["local_field"].startswith(object_list):
-            data_key, data_value_key = (
-                lookup["local_field"].removeprefix(f"{object_list}.").split(".", 1)
-            )
-            lookups.append(__add_fields_stage(object_list, primary_key, data_key))
-            lookup["local_field"] = f"{data_key}.{data_value_key}"
-        if (
-            lookup["foreign_field"].startswith(object_list)
-            and len(lookup["foreign_field"].split(".")) > 2
-        ):
-            raise Exception(
-                "Mongo does not support foreignField referencing a virutal field."
-            )
+    if add_fields := add_fields_stage.build(lookup["local_field"]):
+        lookups.extend(add_fields)
+        lookup["local_field"] = add_fields_stage.compose_key_for_value(
+            lookup["local_field"], add_fields
+        )
+    if (add_fields := add_fields_stage.build(lookup["foreign_field"])) and len(
+        lookup["foreign_field"].split(".")
+    ) > 2:
+        raise Exception(
+            "Mongo does not support foreignField referencing a virutal field."
+        )
 
     return lookup, lookups
 

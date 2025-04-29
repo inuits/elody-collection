@@ -1,3 +1,12 @@
+def get_distinct_by(filter_request_body: list[dict]) -> str:
+    distinct_by = [
+        filter_criteria["distinct_by"]
+        for filter_criteria in filter_request_body
+        if filter_criteria.get("distinct_by")
+    ]
+    return distinct_by[0] if len(distinct_by) > 0 else ""
+
+
 def get_facets(filter_request_body: list[dict]) -> list:
     facets_request = [
         filter_criteria["facets"]

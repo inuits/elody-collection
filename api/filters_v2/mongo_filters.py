@@ -1,4 +1,5 @@
 from filters_v2.helpers.base_helper import (
+    get_distinct_by,
     get_facets,
     get_options_requesting_filter,
     get_type_filter_value,
@@ -9,6 +10,7 @@ from filters_v2.helpers.mongo_helper import get_filter_option_label
 from filters_v2.matchers.base_matchers import BaseMatchers
 from filters_v2.stages import (
     facet_stage,
+    group_stage,
     limit_stage,
     match_stage,
     project_stage,
@@ -44,7 +46,7 @@ class MongoFilters:
         )
         facets_request = get_facets(filter_request_body)
 
-        pipeline, match = self.__build_aggregation_query(
+        pipeline, match, group = self.__build_aggregation_query(
             filter_request_body,
             skip,
             limit,
@@ -60,6 +62,7 @@ class MongoFilters:
         return self.__execute_aggregation_query(
             pipeline,
             match,
+            group,
             skip,
             limit,
             options_requesting_filter,
@@ -78,6 +81,7 @@ class MongoFilters:
         tidy_up_match: bool,
     ):
         match = match_stage.build(filter_request_body, tidy_up_match)
+        group = group_stage.build(get_distinct_by(filter_request_body))
         if options_requesting_filter:
             project = project_stage.build(
                 options_requesting_filter=options_requesting_filter, match=match
@@ -92,14 +96,15 @@ class MongoFilters:
                 project = project_stage.build(facet=facet[-1]["$facet"])
                 pipeline = [*match, *facet, *project]
             else:
-                pipeline = [*match, *sort, *skip, *limit]
+                pipeline = [*match, *group, *sort, *skip, *limit]
 
-        return pipeline, match
+        return pipeline, match, group
 
     def __execute_aggregation_query(
         self,
         pipeline,
         match,
+        group,
         skip,
         limit,
         options_requesting_filter,
@@ -124,12 +129,15 @@ class MongoFilters:
         else:
             output = {"results": list(cursor)}
 
-        return self.__get_items(output, match, skip, limit, options_requesting_filter)
+        return self.__get_items(
+            output, match, group, skip, limit, options_requesting_filter
+        )
 
     def __get_items(
         self,
         output,
         match,
+        group,
         skip,
         limit,
         options_requesting_filter=None,
@@ -168,7 +176,7 @@ class MongoFilters:
             items["skip"] = skip
             items["limit"] = limit
             count = self.storage.db[BaseMatchers.collection].aggregate(
-                [*match, {"$count": "count"}],
+                [*match, *group, {"$count": "count"}],
                 allowDiskUse=self.storage.allow_disk_use,
             )
             items["count"] = next(count, {"count": len(output["results"])})["count"]
