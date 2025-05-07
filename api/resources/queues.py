@@ -9,6 +9,7 @@ from time import sleep
 
 
 queue_prefix = getenv("QUEUE_PREFIX", "dams")
+queue_type = getenv("QUEUE_TYPE")
 routing_key_prefix = getenv("ROUTING_KEY_PREFIX", "dams")
 
 
@@ -16,6 +17,8 @@ def __argument_wrapper(*, queue_name, routing_key):
     arguments = {"routing_key": routing_key}
     if getenv("AMQP_MANAGER", "amqpstorm_flask") == "amqpstorm_flask":
         arguments["queue_name"] = queue_name
+        if queue_type:
+            arguments["queue_arguments"] = {"x-queue-type": queue_type}
     return arguments
 
 
