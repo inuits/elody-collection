@@ -101,3 +101,7 @@ class BaseMatchers(ABC):
     @abstractmethod
     def none(self, key: str) -> dict:
         pass
+
+    @abstractmethod
+    def geo(self, key: str, value: dict) -> dict:
+        pass

@@ -64,6 +64,16 @@ class BaseFilterTypeQueryGenerator(ABC):
         )
 
     @abstractmethod
+    def generate_query_for_geo_filter_type(
+        self, matchers: dict[str, Type[BaseMatcher]], filter_criteria: dict
+    ):
+        return self._apply_matchers(
+            matchers,
+            filter_criteria["key"],
+            filter_criteria["value"],
+        )
+
+    @abstractmethod
     def generate_query_for_type_filter_type(
         self, matchers: dict[str, Type[BaseMatcher]], filter_criteria: dict
     ):

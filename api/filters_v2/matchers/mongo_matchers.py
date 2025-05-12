@@ -80,6 +80,9 @@ class MongoMatchers(BaseMatchers):
     def none(self, key):
         return self.__any_none_match(key, "NONE_MATCH")
 
+    def geo(self, key, value):
+        return {key: {"$geoWithin": {"$geometry": value}}}
+
     def __aggregation_match(self, key: str, value, aggregation: str):
         return {
             "$expr": {

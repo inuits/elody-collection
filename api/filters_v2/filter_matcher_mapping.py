@@ -1,11 +1,12 @@
 from abc import ABC
 from filters_v2.matchers.matchers import (
-    ExactMatcher,
-    ContainsMatcher,
-    MinIncludedMatcher,
-    MaxIncludedMatcher,
-    InBetweenMatcher,
     AnyMatcher,
+    ContainsMatcher,
+    ExactMatcher,
+    GeoMatcher,
+    InBetweenMatcher,
+    MaxIncludedMatcher,
+    MinIncludedMatcher,
     NoneMatcher,
 )
 
@@ -43,6 +44,7 @@ class FilterMatcherMapping(ABC):
             "none": NoneMatcher,
             "exact": ExactMatcher,
         },
+        "geo": {"geo": GeoMatcher},
         "type": {
             "any": AnyMatcher,
             "none": NoneMatcher,

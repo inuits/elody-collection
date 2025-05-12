@@ -164,3 +164,12 @@ class NoneMatcher(BaseMatcher):
     def match(self, key, value, **_):
         if isinstance(key, str) and value == "":
             return self.matcher_engine.none(key)
+
+
+class GeoMatcher(BaseMatcher):
+    def __init__(self):
+        super().__init__()
+
+    def match(self, key, value, **_):
+        if isinstance(key, str) and isinstance(value, dict):
+            return self.matcher_engine.geo(key, value)

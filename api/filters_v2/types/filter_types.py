@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from elody.error_codes import ErrorCode, get_error_code, get_read, get_write
+from elody.error_codes import ErrorCode, get_error_code, get_read
 from filters_v2.filter_matcher_mapping import FilterMatcherMapping
 from filters_v2.matchers.matchers import BaseMatcher
 from filters_v2.types.base_filter_type_query_generator import (
@@ -9,7 +9,7 @@ from filters_v2.types.mongo_filter_type_query_generator import (
     MongoFilterTypeQueryGenerator,
 )
 from os import getenv
-from typing import Type
+from typing import Any, Type
 
 
 def get_filter(input_type: str):
@@ -23,6 +23,8 @@ def get_filter(input_type: str):
         return SelectionFilterType()
     if input_type == "boolean":
         return BooleanFilterType()
+    if input_type == "geo":
+        return GeoFilterType()
     if input_type == "type":
         return TypeFilterType()
 
@@ -42,7 +44,7 @@ class BaseFilterType(ABC):
         self.matchers: dict[str, Type[BaseMatcher]] = {}
 
     @abstractmethod
-    def generate_query(self, filter_criteria: dict) -> dict:
+    def generate_query(self, filter_criteria: dict) -> Any:
         pass
 
 
@@ -97,6 +99,17 @@ class BooleanFilterType(BaseFilterType):
 
     def generate_query(self, filter_criteria: dict):
         return self.filter_type_engine.generate_query_for_boolean_filter_type(
+            self.matchers, filter_criteria
+        )
+
+
+class GeoFilterType(BaseFilterType):
+    def __init__(self):
+        super().__init__()
+        self.matchers.update(FilterMatcherMapping.mapping["geo"])
+
+    def generate_query(self, filter_criteria: dict):
+        return self.filter_type_engine.generate_query_for_geo_filter_type(
             self.matchers, filter_criteria
         )
 
