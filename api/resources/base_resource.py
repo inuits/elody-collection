@@ -334,34 +334,12 @@ class BaseResource(Resource):
         )
 
     def _create_user_from_idp(self, assign_roles_from_idp=True, roles_per_tenant=None):
-        metadata = [{"key": "idp_user_id", "value": get_user_context().id}]
-        if get_user_context().email:
-            metadata.append({"key": "email", "value": get_user_context().email})
-        if get_user_context().preferred_username:
-            metadata.append(
-                {
-                    "key": "preferred_username",
-                    "value": get_user_context().preferred_username,
-                }
-            )
-        user = {
-            "identifiers": list(
-                {
-                    get_user_context().id,
-                    get_user_context().email,
-                    get_user_context().preferred_username,
-                }
-            ),
-            "metadata": metadata,
-            "relations": [],
-            "type": "user",
-        }
-        user_collection = (
-            get_object_configuration_mapper().get("user").crud()["collection"]
-        )
-        user = self.storage.save_item_to_collection(user_collection, user)
+        collection = get_object_configuration_mapper().get("user").crud()["collection"]
+        create = get_object_configuration_mapper().get("user").crud()["creator"]
+        user = create(get_user_context())
+        user = self.storage.save_item_to_collection_v2(collection, user)
         if assign_roles_from_idp:
-            self._sync_roles_from_idp(
+            user = self._sync_roles_from_idp(
                 user,
                 (
                     roles_per_tenant
@@ -706,9 +684,13 @@ class BaseResource(Resource):
         self.storage.add_relations_to_collection_item("entities", entity_id, [relation])
 
     def _resolve_collections(self, **kwargs):
-        if not kwargs.get("collection"):
-            return ["entities", "mediafiles"]
-        return [kwargs.get("collection")]
+        if collection := kwargs.get("collection"):
+            return [collection]
+        return (
+            [get_object_configuration_mapper().get(document_type).crud()["collection"]]
+            if (document_type := kwargs.get("content", {}).get("type"))
+            else ["entities", "mediafiles"]
+        )
 
     def _set_entity_mediafile_and_thumbnail(self, entity):
         mediafiles = self.storage.get_collection_item_mediafiles(
@@ -735,30 +717,12 @@ class BaseResource(Resource):
         return entity
 
     def _sync_roles_from_idp(self, user, roles_per_tenant):
-        (
-            new,
-            updated,
-            deleted,
-            untouched,
-        ) = self.__group_user_relations_by_idp_role_status(
-            user["relations"], roles_per_tenant
+        new, updated, _, untouched = self.__group_user_relations_by_idp_role_status(
+            user.get("relations", []), roles_per_tenant
         )
-        anonymous_user_id = getenv("ANONYMOUS_USER_ID", "anonymous_user")
-        if get_raw_id(user) == anonymous_user_id:
-            return user
-        id = user["_id"]
-        user_collection = (
-            get_object_configuration_mapper().get("user").crud()["collection"]
-        )
-
-        if len(new) > 0:
-            self.storage.add_relations_to_collection_item(user_collection, id, new)
-        if len(updated) > 0:
-            self.storage.patch_collection_item_relations(user_collection, id, updated)
-        if len(deleted) > 0:
-            self.storage.delete_collection_item_relations(user_collection, id, deleted)
-        user["relations"] = [*new, *updated, *untouched]
-        return user
+        synced_user = deepcopy(user)
+        synced_user["relations"] = [*untouched, *updated, *new]
+        return self.storage.put_item_from_collection(None, user, synced_user, "elody")
 
     def _update_tenant(self, entity, new_data):
         if (
