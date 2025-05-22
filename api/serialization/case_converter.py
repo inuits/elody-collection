@@ -2,7 +2,7 @@ import re as regex
 
 
 def snake_to_camel(snake_case_str):
-    components = snake_case_str.split("_")
+    components = snake_case_str.lower().split("_")
     camel_case_str = components[0] + "".join(
         component.title() for component in components[1:]
     )
@@ -11,4 +11,4 @@ def snake_to_camel(snake_case_str):
 
 def camel_to_snake(camel_case_str):
     snake_case_str = regex.sub(r"(?<!^)(?=[A-Z])", "_", camel_case_str).lower()
-    return snake_case_str
+    return snake_case_str.replace("__", "_")
