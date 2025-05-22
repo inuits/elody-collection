@@ -232,7 +232,7 @@ class Batch(BaseResource):
                 errors = parsed_csv.get_errors()
                 output["errors"] = errors
                 output["parent_job_id"] = self.main_csv_job_id
-                if errors:
+                if errors.get("entities", None) or errors.get("mediafiles", None):
                     fail_job(
                         self.job_id_with_validation,
                         errors,
