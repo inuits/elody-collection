@@ -256,11 +256,11 @@ class GenericObjectV2(BaseFilterResource, BaseResource):
     ):
         if request.args.get("soft", 0, int):
             return "good", 200
-        if is_type_required:
-            if not (document_type := request.args.get("type")):
-                raise BadRequest("Query parameter 'type' is required")
+        if document_type := request.args.get("type"):
             config = get_object_configuration_mapper().get(document_type)
             collection = config.crud()["collection"]
+        elif is_type_required:
+            raise BadRequest("Query parameter 'type' is required")
         self._check_if_collection_name_exists(collection)
         accept_header = request.headers.get("Accept")
         if filters is None:
@@ -306,7 +306,7 @@ class GenericObjectV2(BaseFilterResource, BaseResource):
         create = (
             get_object_configuration_mapper().get(content["type"]).crud()["creator"]
         )
-        item = create(content, get_user_context=get_user_context)
+        item = create(content)
         try:
             item = self.storage.save_item_to_collection_v2(collection, item)
         except NonUniqueException as ex:

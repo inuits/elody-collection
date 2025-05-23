@@ -21,7 +21,6 @@ from policy_factory import get_user_context
 from pymongo import ASCENDING, DESCENDING, MongoClient
 from pymongo.errors import DuplicateKeyError
 from rabbit import get_rabbit
-from serialization.serialize import serialize
 from storage.genericstore import GenericStorageManager
 from urllib.parse import quote_plus
 from werkzeug.exceptions import BadRequest
@@ -290,9 +289,7 @@ class MongoStorageManager(GenericStorageManager):
             document["type"] = "mediafile"
         if not reversed and create_sortable_metadata:
             document["sort"] = self.__create_sortable_metadata(document["metadata"])
-        return serialize(
-            migrate(document), type=document.get("type"), to_format=to_format
-        )
+        return migrate(document)
 
     def add_mediafile_to_collection_item(
         self, collection, id, mediafile_id, mediafile_public, relation_properties=None
