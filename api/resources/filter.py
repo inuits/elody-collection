@@ -239,20 +239,17 @@ class FilterGenericObjectsV2(BaseFilterResource):
         if request.args.get("soft", 0, int):
             return "good", 200
         query: list = content or request.get_json()
-        if is_type_required:
-            document_type = get_type_filter_value(query)
-            if not document_type:
-                document_type = get_selection_type_filter_value(query)
-                if len(document_type) > 0:
-                    document_type = document_type[0]
-                else:
-                    raise BadRequest(
-                        "Filter with type 'type', or a filter with type 'selection' and 'key' equal to 'type' is required"
-                    )
-            config = get_object_configuration_mapper().get(document_type)
-            collection = config.crud().get("collection")
-        else:
-            config = get_object_configuration_mapper().get(collection)
+        document_type = get_type_filter_value(query)
+        if not document_type:
+            document_type = get_selection_type_filter_value(query)
+            if len(document_type) > 0:
+                document_type = document_type[0]
+            elif is_type_required:
+                raise BadRequest(
+                    "Filter with type 'type', or a filter with type 'selection' and 'key' equal to 'type' is required"
+                )
+        config = get_object_configuration_mapper().get(document_type or collection)
+        collection = config.crud().get("collection")
         storage_type = config.crud()["storage_type"]
         if storage_type != "http":
             self._check_if_collection_name_exists(collection)
