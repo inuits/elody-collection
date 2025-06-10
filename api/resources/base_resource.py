@@ -61,7 +61,7 @@ class BaseResource(Resource):
     ):
         new, updated, deleted, untouched = [], [], [], []
         for relation in user_relations:
-            if relation["type"] == "hasTenant":
+            if relation["type"] == get_user_context().bag["user_tenant_relation_type"]:
                 key = relation["key"]
                 if key in roles_per_tenant.keys():
                     if roles_per_tenant[key] != relation["roles"]:
@@ -69,7 +69,9 @@ class BaseResource(Resource):
                             {
                                 "key": key,
                                 "roles": roles_per_tenant[key],
-                                "type": "hasTenant",
+                                "type": get_user_context().bag[
+                                    "user_tenant_relation_type"
+                                ],
                             }
                         )
                     else:
@@ -80,7 +82,13 @@ class BaseResource(Resource):
             else:
                 untouched.append(relation)
         for key, roles in roles_per_tenant.items():
-            new.append({"key": key, "roles": roles, "type": "hasTenant"})
+            new.append(
+                {
+                    "key": key,
+                    "roles": roles,
+                    "type": get_user_context().bag["user_tenant_relation_type"],
+                }
+            )
         return new, updated, deleted, untouched
 
     def __link_tenant_to_defining_entity(self, tenant_id, entity_id):
@@ -344,7 +352,7 @@ class BaseResource(Resource):
                 (
                     roles_per_tenant
                     if roles_per_tenant
-                    else {"tenant:super": get_user_context().x_tenant.roles}
+                    else {"global": get_user_context().bag["roles_from_idp"]}
                 ),
             )
         return user
@@ -689,7 +697,7 @@ class BaseResource(Resource):
         return (
             [get_object_configuration_mapper().get(document_type).crud()["collection"]]
             if (document_type := kwargs.get("content", {}).get("type"))
-            else ["entities", "mediafiles"]
+            else ["entities", "mediafiles", "abstracts", "jobs"]
         )
 
     def _set_entity_mediafile_and_thumbnail(self, entity):
@@ -717,12 +725,40 @@ class BaseResource(Resource):
         return entity
 
     def _sync_roles_from_idp(self, user, roles_per_tenant):
+        serialized_user = serialize(user, type="user", to_format="elody")
         new, updated, _, untouched = self.__group_user_relations_by_idp_role_status(
-            user.get("relations", []), roles_per_tenant
+            serialized_user.get("relations", []), roles_per_tenant
         )
-        synced_user = deepcopy(user)
-        synced_user["relations"] = [*untouched, *updated, *new]
-        return self.storage.put_item_from_collection(None, user, synced_user, "elody")
+
+        synced_relations = [*untouched, *updated, *new]
+        synced_user = deepcopy(serialized_user)
+        synced_user["metadata"] = [
+            metadata
+            for metadata in serialized_user.get("metadata", [])
+            if metadata["key"]
+            != get_user_context().bag["user_metadata_key_for_global_roles"]
+        ]
+        synced_user["metadata"].extend(
+            [
+                {
+                    "key": get_user_context().bag["user_metadata_key_for_global_roles"],
+                    "value": relation["roles"],
+                }
+                for relation in synced_relations
+                if relation["key"] == "global"
+            ]
+        )
+        synced_user["relations"] = [
+            relation for relation in synced_relations if relation["key"] != "global"
+        ]
+
+        schema_type = get_object_configuration_mapper().get("user").SCHEMA_TYPE
+        return self.storage.put_item_from_collection(
+            None,
+            serialize(user, type="user", to_format=schema_type),
+            serialize(synced_user, type="user", to_format=schema_type),
+            "elody",
+        )
 
     def _update_tenant(self, entity, new_data):
         if (

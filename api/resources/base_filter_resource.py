@@ -1,4 +1,3 @@
-from filters.filter_manager import FilterManager
 from filters_v2.filter_manager import FilterManager as FilterManagerV2
 from flask import after_this_request, request
 from flask_restful import abort
@@ -8,12 +7,15 @@ from resources.base_resource import BaseResource
 class BaseFilterResource(BaseResource):
     def __init__(self):
         super().__init__()
-        self.filter_engine = FilterManager().get_filter_engine()
         self.filter_engine_v2 = FilterManagerV2().get_filter_engine()
 
     def _execute_advanced_search_with_query(
         self, query, collection="entities", order_by=None, asc=True
     ):
+        from filters.filter_manager import FilterManager
+
+        self.filter_engine = FilterManager().get_filter_engine()
+
         skip = request.args.get("skip", 0, int)
         limit = request.args.get("limit", 20, int)
 
@@ -55,7 +57,7 @@ class BaseFilterResource(BaseResource):
                 response.headers["Access-Control-Allow-Origin"] = "*"
                 return response
 
-        if not self.filter_engine:
+        if not self.filter_engine_v2:
             abort(500, message="Failed to init search engine")
 
         items = self.filter_engine_v2.filter(
