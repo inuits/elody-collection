@@ -15,7 +15,7 @@ def build(flat_key: str) -> list[dict]:
             return [
                 {
                     "$addFields": {
-                        key: {
+                        f"__{key}": {
                             "$filter": {
                                 "input": f"${object_list}",
                                 "as": object_list,
@@ -36,4 +36,4 @@ def compose_key_for_value(flat_key: str, add_fields: list[dict]) -> str:
 
     key = list(add_fields[0]["$addFields"].keys())[0]
     object_list = add_fields[0]["$addFields"][key]["$filter"]["as"]
-    return f"{key}.{flat_key.removeprefix(f'{object_list}.{key}.')}"
+    return f"{key}.{flat_key.removeprefix(f'{object_list}.{key.removeprefix('__')}.')}"
