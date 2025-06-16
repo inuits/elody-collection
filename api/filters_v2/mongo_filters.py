@@ -90,7 +90,7 @@ class MongoFilters:
         else:
             sort = sort_stage.build(order_by, asc, filter_request_body, self.storage)
             skip = skip_stage.build(skip)
-            limit = limit_stage.build(limit)
+            limit = limit_stage.build(limit) if limit != -1 else []
             if facets_request:
                 facet = facet_stage.build(facets_request, sort, skip, limit)
                 project = project_stage.build(facet=facet[-1]["$facet"])
