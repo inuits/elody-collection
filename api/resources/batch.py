@@ -7,7 +7,7 @@ from elody.job import init_job, start_job, finish_job, fail_job, add_document_to
 from flask import request
 from flask_restful import abort
 from inuits_policy_based_auth import RequestContext
-from policy_factory import apply_policies, get_user_context
+from policy_factory import authenticate, get_user_context
 from rabbit import get_rabbit
 from resources.base_resource import BaseResource
 from urllib.parse import quote
@@ -196,7 +196,7 @@ class Batch(BaseResource):
     def _check_if_user_has_rights_to_create_entity(self, entity, csv_multi_object):
         pass
 
-    @apply_policies(RequestContext(request))
+    @authenticate(RequestContext(request))
     def post(self):
         main_job_id = request.args.get("main_job_id", None, str)
         dry_run = request.args.get("dry_run", 0, int)

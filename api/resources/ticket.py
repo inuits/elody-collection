@@ -1,9 +1,9 @@
-from elody.error_codes import ErrorCode, get_error_code, get_read, get_write
+from elody.error_codes import ErrorCode, get_error_code, get_write
 from datetime import datetime, timezone
 from flask import request
 from flask_restful import abort
 from inuits_policy_based_auth import RequestContext
-from policy_factory import apply_policies
+from policy_factory import authenticate, apply_policies
 from resources.generic_object import (
     GenericObject,
     GenericObjectDetail,
@@ -11,9 +11,10 @@ from resources.generic_object import (
 
 
 class Ticket(GenericObject):
-    @apply_policies(RequestContext(request))
+    @authenticate(RequestContext(request))
     def post(self):
         content = request.get_json()
+        content["type"] = "ticket"
         if "filename" not in content:
             abort(
                 400,

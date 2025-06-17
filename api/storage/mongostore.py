@@ -434,9 +434,10 @@ class MongoStorageManager(GenericStorageManager):
                 document=item,
                 get_user_context=get_user_context,
             )
-            self.db[config.crud()["collection"]].delete_one(
-                self._get_id_query(item["_id"])
-            )
+            if not self.is_dry_run():
+                self.db[config.crud()["collection"]].delete_one(
+                    self._get_id_query(item["_id"])
+                )
             post_crud_hook(
                 crud="delete",
                 document=item,
@@ -444,7 +445,8 @@ class MongoStorageManager(GenericStorageManager):
                 get_user_context=get_user_context,
                 get_rabbit=get_rabbit,
             )
-            log.info("Successfully deleted item", item)
+            if not self.is_dry_run():
+                log.info("Successfully deleted item", item)
         except Exception as error:
             log.exception(f"{error.__class__.__name__}: {error}", item, exc_info=error)
             raise error
@@ -894,7 +896,8 @@ class MongoStorageManager(GenericStorageManager):
                 document=item,
                 get_user_context=get_user_context,
             )
-            self.db[collection].replace_one({"_id": item["_id"]}, item)
+            if not self.is_dry_run():
+                self.db[collection].replace_one({"_id": item["_id"]}, item)
             if run_post_crud_hook:
                 post_crud_hook(
                     crud="update",
@@ -919,7 +922,8 @@ class MongoStorageManager(GenericStorageManager):
                 )
             raise error
 
-        log.info("Successfully patched item", item)
+        if not self.is_dry_run():
+            log.info("Successfully patched item", item)
         return self._prepare_mongo_document(item, False, collection, False)
 
     def put_item_from_collection(
@@ -951,7 +955,8 @@ class MongoStorageManager(GenericStorageManager):
                 document=item,
                 get_user_context=get_user_context,
             )
-            self.db[collection].replace_one({"_id": item["_id"]}, item)
+            if not self.is_dry_run():
+                self.db[collection].replace_one({"_id": item["_id"]}, item)
             post_crud_hook(
                 crud="update",
                 document=item,
@@ -975,7 +980,8 @@ class MongoStorageManager(GenericStorageManager):
                 )
             raise error
 
-        log.info("Successfully put item", item)
+        if not self.is_dry_run():
+            log.info("Successfully put item", item)
         return self._prepare_mongo_document(item, False, collection, False)
 
     def reindex_mediafile_parents(self, mediafile=None, parents=None):
@@ -1024,11 +1030,12 @@ class MongoStorageManager(GenericStorageManager):
                 if not is_history:
                     self.__verify_uniqueness(item)
                 config = get_object_configuration_mapper().get(item["type"])
-                self.db[
-                    config.crud()[
-                        "collection" if not is_history else "collection_history"
-                    ]
-                ].insert_one(item)
+                if not self.is_dry_run():
+                    self.db[
+                        config.crud()[
+                            "collection" if not is_history else "collection_history"
+                        ]
+                    ].insert_one(item)
                 if not is_history and run_post_crud_hook:
                     post_crud_hook = config.crud()["post_crud_hook"]
                     post_crud_hook(
@@ -1038,7 +1045,8 @@ class MongoStorageManager(GenericStorageManager):
                         get_user_context=get_user_context,
                         get_rabbit=get_rabbit,
                     )
-                log.info("Successfully saved item", item)
+                if not self.is_dry_run():
+                    log.info("Successfully saved item", item)
         except DuplicateKeyError as error:
             log.exception(f"{error.__class__.__name__}: {error}", item, exc_info=error)
             if error.code == 11000:

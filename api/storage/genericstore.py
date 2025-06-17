@@ -223,6 +223,14 @@ class GenericStorageManager:
     def handle_mediafile_status_change(self, mediafile):
         pass
 
+    def is_dry_run(self):
+        try:
+            from flask import g
+
+            return g.get("dry_run")
+        except Exception:
+            return False
+
     def patch_collection_item_metadata(
         self, collection, id, content, ignore_empty_metadata=False
     ):
