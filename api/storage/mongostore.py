@@ -218,7 +218,7 @@ class MongoStorageManager(GenericStorageManager):
                 duplicate_keys = set(documents[0]["identifiers"]) & set(
                     item["identifiers"]
                 )
-                raise BadRequest(
+                raise NonUniqueException(
                     f"{get_error_code(ErrorCode.DUPLICATE_IDENTIFIERS, get_write())} | duplicate_keys:{', '.join(list(duplicate_keys))} - Entity with following identifiers already exists: {', '.join(list(duplicate_keys))}"
                 )
 
