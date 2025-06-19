@@ -321,6 +321,7 @@ class GenericObjectV2(BaseFilterResource, BaseResource):
                 request.args,
             ),
             accept_header,
+            status_code=201,
             spec=spec,
         )[0]
 
