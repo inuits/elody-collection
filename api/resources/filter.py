@@ -264,8 +264,14 @@ class FilterGenericObjectsV2(BaseFilterResource):
                 f"{spec}_filter", f"{config.SCHEMA_TYPE}_filter"
             )
             filters = filter(query)
+            skip = request.args.get("skip", 0, int)
+            limit = request.args.get("limit", 20, int)
             items = http_storage.get_items_from_collection(
-                self, collection, filters=filters
+                self,
+                collection,
+                filters=filters,
+                skip=skip,
+                limit=limit,
             )
         else:
             items = self._execute_advanced_search_with_query_v2(query, collection)
