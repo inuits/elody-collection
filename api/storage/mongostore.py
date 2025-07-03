@@ -294,10 +294,11 @@ class MongoStorageManager(GenericStorageManager):
     def add_mediafile_to_collection_item(
         self, collection, id, mediafile_id, mediafile_public, relation_properties=None
     ):
+        count = self.get_collection_item_mediafiles_count(id)
         if not relation_properties:
             relation_properties = dict()
-        primary_mediafile = mediafile_public
-        primary_thumbnail = mediafile_public
+        primary_mediafile = mediafile_public or count == 0
+        primary_thumbnail = mediafile_public or count == 0
         if mediafile_public:
             relations = self.get_collection_item_relations(collection, id)
             for relation in relations:
@@ -305,7 +306,6 @@ class MongoStorageManager(GenericStorageManager):
                     primary_mediafile = False
                 if relation.get("is_primary_thumbnail", False):
                     primary_thumbnail = False
-        count = self.get_collection_item_mediafiles_count(id)
         self.add_relations_to_collection_item(
             collection,
             id,
