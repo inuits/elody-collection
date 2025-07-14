@@ -752,7 +752,6 @@ class ArangoStorageManager(GenericStorageManager):
     def patch_item_from_collection_v2(
         self, collection, item, content, spec, *, run_post_crud_hook=True
     ):
-        item = item.get("storage_format", item)
         config = get_object_configuration_mapper().get(item["type"])
         if not collection:
             collection = config.crud()["collection"]
@@ -843,7 +842,6 @@ class ArangoStorageManager(GenericStorageManager):
         self, collection, items, *, is_history=False, run_post_crud_hook=True
     ):
         if not isinstance(items, list):
-            items = items.get("storage_format", items)
             items = [items]
         item = {}
         try:

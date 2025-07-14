@@ -422,7 +422,6 @@ class MongoStorageManager(GenericStorageManager):
                 )
 
     def delete_item(self, item):
-        item = item.get("storage_format", item)
         config = get_object_configuration_mapper().get(item["type"])
         pre_crud_hook = config.crud()["pre_crud_hook"]
         post_crud_hook = config.crud()["post_crud_hook"]
@@ -456,7 +455,6 @@ class MongoStorageManager(GenericStorageManager):
         self.db[collection].delete_one(self._get_id_query(id))
 
     def delete_data_from_collection_item(self, collection, item, content, spec):
-        item = item.get("storage_format", item)
         config = get_object_configuration_mapper().get(item["type"])
         scope = config.crud().get("spec_scope", {}).get(spec, None)
         object_lists = config.document_info().get("object_lists", {})
@@ -874,7 +872,6 @@ class MongoStorageManager(GenericStorageManager):
         run_post_crud_hook=True,
         patched_item={},
     ):
-        item = item.get("storage_format", item)
         if not patched_item and not self._does_request_changes(item, content):
             return item
 
@@ -929,7 +926,6 @@ class MongoStorageManager(GenericStorageManager):
     def put_item_from_collection(
         self, collection, item, content, spec, *, patched_item={}
     ):
-        item = item.get("storage_format", item)
         if not patched_item and not self._does_request_changes(item, content, True):
             return item
 
@@ -1022,7 +1018,6 @@ class MongoStorageManager(GenericStorageManager):
         self, collection, items, *, is_history=False, run_post_crud_hook=True
     ):
         if not isinstance(items, list):
-            items = items.get("storage_format", items)
             items = [items]
         item = {}
         try:

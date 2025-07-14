@@ -366,7 +366,6 @@ def __serialize_data_according_to_accept_header(
                     type=result.get("type"),
                     to_format=to_format,
                     accept_header=accept_header,
-                    hide_storage_format=True,
                 )
             )
         data["results"] = results
@@ -376,5 +375,4 @@ def __serialize_data_according_to_accept_header(
         type=data.get("type") if data_type == "entity" else None,
         to_format=to_format,
         accept_header=accept_header,
-        hide_storage_format=True,
     )

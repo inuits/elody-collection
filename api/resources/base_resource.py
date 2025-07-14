@@ -56,7 +56,7 @@ class BaseResource(Resource):
         )
         self.auto_create_tenants = getenv("AUTO_CREATE_TENANTS", False)
 
-    def __group_user_relations_by_idp_role_status(
+    def _group_user_relations_by_idp_role_status(
         self, user_relations, roles_per_tenant
     ):
         new, updated, deleted, untouched = [], [], [], []
@@ -726,7 +726,7 @@ class BaseResource(Resource):
 
     def _sync_roles_from_idp(self, user, roles_per_tenant):
         serialized_user = serialize(user, type="user", to_format="elody")
-        new, updated, _, untouched = self.__group_user_relations_by_idp_role_status(
+        new, updated, _, untouched = self._group_user_relations_by_idp_role_status(
             serialized_user.get("relations", []), roles_per_tenant
         )
 

@@ -13,7 +13,6 @@ class Serializer:
         from_format=None,
         original_item={},
         accept_header="application/json",
-        hide_storage_format=False,
     ):
         if from_format == "query_parameter" and to_format == "filter_key":
             return self.__serialize(
@@ -22,7 +21,6 @@ class Serializer:
         if not isinstance(item, dict) or not type:
             return item
 
-        item = item.get("storage_format", item)
         item["type"] = item.get("type", type)
         if from_format is None:
             from_format = item.get("schema", {}).get("type", "elody")
@@ -32,8 +30,6 @@ class Serializer:
         item = self.__serialize(
             item, from_format, to_format, type, original_item, accept_header
         )
-        if hide_storage_format and item.get("storage_format"):
-            del item["storage_format"]
         return item
 
     def get_format(self, spec: str, request_parameters):

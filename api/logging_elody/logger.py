@@ -86,7 +86,7 @@ class Logger:
             info = config.logging(
                 flatten_dict(
                     config.document_info().get("object_lists", {}),
-                    item.get("storage_format", item),
+                    item,
                 ),
                 **kwargs,
             )
