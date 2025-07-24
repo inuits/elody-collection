@@ -1,6 +1,6 @@
 from configuration import get_object_configuration_mapper
 from elody.error_codes import ErrorCode, get_error_code, get_write
-from elody.validator import validate_json
+from jsonschema import ValidationError, validate as validate_json
 from logging_elody.log import log
 from resources.base_resource import BaseResource
 from werkzeug.exceptions import BadRequest
@@ -60,8 +60,12 @@ class Validator(BaseResource):
             raise bad_request
 
     def _apply_schema_strategy(self, validator, content, **_):
-        validation_error = validate_json(content, validator)
-        if validation_error:
+        try:
+            validate_json(content, validator)
+        except ValidationError as error:
+            details = ""
+            for sub_error in error.context or []:
+                details += sub_error.message
             raise BadRequest(
-                f"{get_error_code(ErrorCode.VALIDATION_ERROR, get_write())} | message:{validation_error} - {validation_error}"
+                f"{get_error_code(ErrorCode.VALIDATION_ERROR, get_write())} | message:{error.message} - {error.message}{details}"
             )
