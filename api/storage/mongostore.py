@@ -924,7 +924,14 @@ class MongoStorageManager(GenericStorageManager):
         return self._prepare_mongo_document(item, False, collection, False)
 
     def put_item_from_collection(
-        self, collection, item, content, spec, *, patched_item={}
+        self,
+        collection,
+        item,
+        content,
+        spec,
+        *,
+        run_post_crud_hook=True,
+        patched_item={},
     ):
         if not patched_item and not self._does_request_changes(item, content, True):
             return item
@@ -953,15 +960,16 @@ class MongoStorageManager(GenericStorageManager):
             )
             if not self.is_dry_run():
                 self.db[collection].replace_one({"_id": item["_id"]}, item)
-            post_crud_hook(
-                crud="update",
-                document=item,
-                content=content,
-                unpatched_document=unpatched_item,
-                storage=self,
-                get_user_context=get_user_context,
-                get_rabbit=get_rabbit,
-            )
+            if run_post_crud_hook:
+                post_crud_hook(
+                    crud="update",
+                    document=item,
+                    content=content,
+                    unpatched_document=unpatched_item,
+                    storage=self,
+                    get_user_context=get_user_context,
+                    get_rabbit=get_rabbit,
+                )
         except DuplicateKeyError as error:
             log.exception(f"{error.__class__.__name__}: {error}", item, exc_info=error)
             if error.code == 11000:

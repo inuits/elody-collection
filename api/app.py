@@ -3,7 +3,7 @@ from configuration import init_mappers
 from elody.error_codes import ErrorCode, get_error_code, get_read
 from elody.loader import load_apps, load_jobs
 from elody.util import CustomJSONEncoder
-from flask import Flask, make_response, jsonify, Response
+from flask import Flask, g, make_response, jsonify, Response, request
 from flask_swagger_ui import get_swaggerui_blueprint
 from health import init_health_check
 from importlib import import_module
@@ -95,6 +95,11 @@ try:
     client_app.init(app, api)
 except (ModuleNotFoundError, AttributeError):
     pass
+
+
+@app.before_request
+def set_dry_run():
+    g.dry_run = bool(request.args.get("dry_run", 0, int) or request.args.get("soft"))
 
 
 @app.errorhandler(HTTPException)
