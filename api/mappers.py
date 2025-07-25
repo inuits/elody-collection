@@ -155,7 +155,12 @@ def map_data_according_to_accept_header(
         case "application/rdf+xml":
             return map_to_rdf_data(data, data_type, format="pretty-xml")
         case "text/csv":
-            return map_to_csv(data, data_type, fields, exclude_non_editable_fields)
+            try:
+                return __serialize_data_according_to_accept_header(
+                    data, data_type, "textcsv", accept_header
+                )
+            except AttributeError:
+                return map_to_csv(data, data_type, fields, exclude_non_editable_fields)
         case "text/turtle":
             return map_to_rdf_data(data, data_type, format="turtle")
         case _:
