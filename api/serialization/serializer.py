@@ -18,6 +18,15 @@ class Serializer:
             return self.__serialize(
                 item, from_format, to_format, type, original_item, accept_header
             )
+        if isinstance(item, list) and item and type:
+            return self.__serialize(
+                item,
+                from_format if from_format else item[0]["schema"]["type"],
+                to_format,
+                type,
+                original_item,
+                accept_header,
+            )
         if not isinstance(item, dict) or not type:
             return item
 
@@ -47,6 +56,7 @@ class Serializer:
         serialize = config.serialization(from_format, to_format)
         return serialize(
             deepcopy(item),
+            document_type=type,
             original_document=original_item,
             accept_header=(
                 accept_header if accept_header != "*/*" else "application/json"

@@ -155,9 +155,15 @@ def map_data_according_to_accept_header(
         case "application/rdf+xml":
             return map_to_rdf_data(data, data_type, format="pretty-xml")
         case "text/csv":
+            if not data["results"]:
+                return ""
             try:
                 return __serialize_data_according_to_accept_header(
-                    data, data_type, "textcsv", accept_header
+                    data["results"],
+                    "csv",
+                    "textcsv",
+                    accept_header,
+                    data["results"][0]["type"],
                 )
             except AttributeError:
                 return map_to_csv(data, data_type, fields, exclude_non_editable_fields)
@@ -360,7 +366,7 @@ def map_to_rdf_data(data, data_type, format):
 
 
 def __serialize_data_according_to_accept_header(
-    data, data_type, to_format, accept_header
+    data, data_type, to_format, accept_header, entity_type=None
 ):
     if data_type == "entities":
         results = []
@@ -377,7 +383,7 @@ def __serialize_data_according_to_accept_header(
         return data
     return serialize(
         data,
-        type=data.get("type") if data_type == "entity" else None,
+        type=data.get("type") if data_type == "entity" else entity_type,
         to_format=to_format,
         accept_header=accept_header,
     )

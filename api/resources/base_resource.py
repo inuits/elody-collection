@@ -444,6 +444,16 @@ class BaseResource(Resource):
                 filters.append(filter)
         if type := request.args.get("type"):
             filters.append({"type": "type", "value": type})
+        if (ids := request.args.get("id", "")) or (ids := request.args.get("ids", "")):
+            if ids:
+                filters.append(
+                    {
+                        "type": "selection",
+                        "key": "identifiers",
+                        "value": ids.split(","),
+                        "match_exact": True,
+                    }
+                )
         return filters
 
     def get_original_items_from_csv(self, csv_data, collection="entities"):
