@@ -1,6 +1,7 @@
 from configuration import get_object_configuration_mapper
 from copy import deepcopy
 from serialization.case_converter import camel_to_snake
+from typing import Any
 
 
 class Serializer:
@@ -13,7 +14,7 @@ class Serializer:
         from_format=None,
         original_item={},
         accept_header="application/json",
-    ):
+    ) -> Any:
         if from_format == "query_parameter" and to_format == "filter_key":
             return self.__serialize(
                 item, from_format, to_format, type, original_item, accept_header
