@@ -159,7 +159,7 @@ class BaseResource(Resource):
                 get_user_context().bag["item_being_processed"] = deepcopy(item)
         except Exception:
             pass
-        if item:
+        if item and id in item.get("identifiers", []):
             return item
         elif collection:
             self._check_if_collection_name_exists(collection, is_validating_content)

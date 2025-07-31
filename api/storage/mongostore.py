@@ -891,6 +891,7 @@ class MongoStorageManager(GenericStorageManager):
                 crud="update",
                 timestamp=timestamp,
                 document=item,
+                unpatched_document=unpatched_item,
                 get_user_context=get_user_context,
             )
             if not self.is_dry_run():
@@ -956,6 +957,7 @@ class MongoStorageManager(GenericStorageManager):
                 crud="update",
                 timestamp=timestamp,
                 document=item,
+                unpatched_document=unpatched_item,
                 get_user_context=get_user_context,
             )
             if not self.is_dry_run():
