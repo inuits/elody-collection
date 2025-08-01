@@ -707,7 +707,7 @@ class BaseResource(Resource):
         return (
             [get_object_configuration_mapper().get(document_type).crud()["collection"]]
             if (document_type := kwargs.get("content", {}).get("type"))
-            else ["entities", "mediafiles", "abstracts", "jobs"]
+            else ["entities", "mediafiles", "abstracts", "jobs", "saved_searches"]
         )
 
     def _set_entity_mediafile_and_thumbnail(self, entity):
