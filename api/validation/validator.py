@@ -63,9 +63,22 @@ class Validator(BaseResource):
         try:
             validate_json(content, validator)
         except ValidationError as error:
-            details = ""
-            for sub_error in error.context or []:
-                details += sub_error.message
+            schema = validator
+            error_type = error.schema_path.pop()
+            if error_type == "oneOf":
+                property = error.instance.get(  # pyright: ignore
+                    "key", error.instance.get("type")  # pyright: ignore
+                )
+                for context in error.context:  # pyright: ignore
+                    if context.schema.get("_property") == property:  # pyright: ignore
+                        schema = context.schema
+                        error_type = context.schema_path.pop()  # pyright: ignore
+                        break
+            else:
+                for path in error.schema_path:
+                    schema = schema[path]
             raise BadRequest(
-                f"{get_error_code(ErrorCode.VALIDATION_ERROR, get_write())} | message:{error.message} - {error.message}{details}"
+                schema.get("_customAttributes", {})  # pyright: ignore
+                .get("errorMessages", {})
+                .get(error_type, error.message)
             )
