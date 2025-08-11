@@ -454,6 +454,23 @@ class BaseResource(Resource):
                         "match_exact": True,
                     }
                 )
+        if fields := request.args.getlist("q"):
+            for field in fields:
+                key, value = field.split("==")
+                if key and value:
+                    filters.append(
+                        {
+                            "type": "text",
+                            "key": serialize(
+                                key,
+                                type=type,
+                                from_format="query_parameter",
+                                to_format="filter_key",
+                            ),
+                            "value": f"^{value}$",  # changing this regex will break pza
+                            "match_exact": False,
+                        }
+                    )
         return filters
 
     def get_original_items_from_csv(self, csv_data, collection="entities"):
