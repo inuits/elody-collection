@@ -32,7 +32,7 @@ EXPOSE 5000
 FROM base-stage AS build-stage
 
 COPY docker/pip.conf /etc
-COPY api ./api
+COPY --chown=app:app api ./api
 
 RUN pip install --no-cache-dir -r requirements.txt
 
