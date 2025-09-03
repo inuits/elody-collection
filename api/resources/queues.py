@@ -147,23 +147,8 @@ def add_scan_info_to_mediafile(routing_key, body, message_id):
 )
 def update_job(routing_key, body, message_id):
     try:
-        id, collection = None, None
-        if document_info_job_was_initiated_for := body["data"].get(
-            "document_info_job_was_initiated_for"
-        ):
-            if document_info_job_was_initiated_for.get(
-                "id"
-            ) and document_info_job_was_initiated_for.get("type"):
-                id = document_info_job_was_initiated_for["id"]
-                type = document_info_job_was_initiated_for["type"]
-                collection = (
-                    get_object_configuration_mapper().get(type).crud()["collection"]
-                )
-        else:
-            id = body["data"]["id"]
-            collection = (
-                get_object_configuration_mapper().get("job").crud()["collection"]
-            )
+        id = body["data"]["id"]
+        collection = get_object_configuration_mapper().get("job").crud()["collection"]
 
         if id and collection:
             storage = StorageManager().get_db_engine()
