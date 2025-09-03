@@ -65,7 +65,7 @@ def __determine_lookup_fields(
         lookup["foreign_field"].split(".")
     ) > 2:
         raise Exception(
-            "Mongo does not support foreignField referencing a virutal field."
+            "Mongo does not support foreignField referencing a virtual field."
         )
 
     return lookup, lookups
