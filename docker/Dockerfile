@@ -24,6 +24,10 @@ ENV APP_ENV=dev
 
 COPY docker/pip.conf /etc
 
+USER root
+RUN apk add --no-cache git
+USER app
+
 RUN pip install --no-cache-dir -r requirements.txt -r requirements_dev.txt
 
 EXPOSE 5000
