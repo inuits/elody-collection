@@ -1,6 +1,14 @@
 from configuration import get_object_configuration_mapper
 from datetime import datetime, timezone
-from elody.util import get_item_metadata_value, mediafile_is_public, get_raw_id
+from elody.util import (
+    get_item_metadata_value,
+    get_item_relation_key,
+    mediafile_is_public,
+    get_raw_id,
+    flatten_dict,
+    send_cloudevent,
+)
+from elody.job import handle_parent_job_finished
 from logging_elody.log import log
 from os import getenv
 from rabbit import get_rabbit
@@ -148,7 +156,8 @@ def add_scan_info_to_mediafile(routing_key, body, message_id):
 def update_job(routing_key, body, message_id):
     try:
         id = body["data"]["id"]
-        collection = get_object_configuration_mapper().get("job").crud()["collection"]
+        config = get_object_configuration_mapper().get("job")
+        collection = config.crud()["collection"]
 
         if id and collection:
             storage = StorageManager().get_db_engine()
@@ -168,6 +177,94 @@ def update_job(routing_key, body, message_id):
                     "elody",
                     run_post_crud_hook=False,
                 )
+                # TODO: Move into util function?
+                parent_job_id = get_item_relation_key(document, "hasParentJob")
+                if parent_job_id and current_status != new_status:
+                    # TODO: Propagate errors
+                    parent_job_doc = {
+                        "id": parent_job_id,
+                        "current_status": current_status,
+                        "new_status": new_status,
+                    }
+                    send_cloudevent(
+                        get_rabbit(),
+                        getenv("MQ_EXCHANGE", "dams"),
+                        "dams.job_status_report",
+                        parent_job_doc,
+                    )
+
+    except Exception as exception:
+        log.exception(
+            f"{exception.__class__.__name__}: {exception}",
+            info_labels={"mq_message": body},
+            exc_info=exception,
+        )
+
+
+@get_rabbit().queue(
+    **__argument_wrapper(
+        queue_name=f"{queue_prefix}-job_report_status",
+        routing_key=f"{routing_key_prefix}.job_status_report",
+    )
+)
+def handle_status_report(routing_key, body, message_id):
+    try:
+        id = body["data"]["id"]
+        config = get_object_configuration_mapper().get("job")
+        collection = config.crud()["collection"]
+
+        if id and collection:
+            storage = StorageManager().get_db_engine()
+            document = storage.get_item_from_collection_by_id(collection, id)
+            if not document:
+                sleep(5)
+                document = storage.get_item_from_collection_by_id(collection, id)
+            if not document:
+                return
+            if not get_item_metadata_value(document, "child_jobs"):
+                return
+
+            current_status = body["data"]["current_status"]
+            new_status = body["data"]["new_status"]
+
+            if current_status and new_status and current_status != new_status:
+                parent_job = storage.increment_metadata_values(
+                    id,
+                    collection,
+                    "child_jobs",
+                    {
+                        current_status: -1,
+                        new_status: 1,
+                    },
+                )
+
+                parent_child_status = next(
+                    (
+                        metadata_entry
+                        if metadata_entry.get("key") == "child_jobs"
+                        else None
+                    )
+                    for metadata_entry in parent_job.get("metadata", [])
+                )
+
+                if parent_child_status is not None:
+                    child_jobs_initiated = parent_child_status["initiated"]
+                    child_jobs_queued = parent_child_status["queued"]
+                    child_jobs_running = parent_child_status["running"]
+                    child_jobs_failed = parent_child_status["failed"]
+                    child_jobs_finished = parent_child_status["finished"]
+
+                    if (
+                        child_jobs_queued == 0
+                        and child_jobs_running == 0
+                        and (child_jobs_failed + child_jobs_finished)
+                        == child_jobs_initiated
+                    ):
+                        handle_parent_job_finished(
+                            id, parent_child_status, get_rabbit=get_rabbit
+                        )
+                        pass
+
     except Exception as exception:
         log.exception(
             f"{exception.__class__.__name__}: {exception}",
@@ -185,10 +282,56 @@ def update_job(routing_key, body, message_id):
 def create_job(routing_key, body, message_id):
     try:
         job = body["data"]
-        collection = get_object_configuration_mapper().get("job").crud()["collection"]
+        config = get_object_configuration_mapper().get("job")
+        collection = config.crud()["collection"]
         StorageManager().get_db_engine().save_item_to_collection_v2(
             collection, job, run_post_crud_hook=False
         )
+
+        parent_job_id = get_item_relation_key(job, "hasParentJob")
+        print("parent job id", parent_job_id, flush=True)
+        if parent_job_id:
+            # TODO: Propagate errors
+            parent_job_doc = {
+                "id": parent_job_id,
+            }
+            print("parent_job_doc", parent_job_doc, flush=True)
+            send_cloudevent(
+                get_rabbit(),
+                getenv("MQ_EXCHANGE", "dams"),
+                "dams.job_status_init",
+                parent_job_doc,
+            )
+
+    except Exception as exception:
+        log.exception(
+            f"{exception.__class__.__name__}: {exception}",
+            body["data"],
+            exc_info=exception,
+        )
+
+
+@get_rabbit().queue(
+    **__argument_wrapper(
+        queue_name=f"{queue_prefix}-attach_child",
+        routing_key=f"{routing_key_prefix}.job_status_init",
+    )
+)
+def attach_child(routing_key, body, message_id):
+    print("in attach child\n\n", flush=True)
+    try:
+        job_id = body["data"]["id"]
+        config = get_object_configuration_mapper().get("job")
+        collection = config.crud()["collection"]
+        storage = StorageManager().get_db_engine()
+        parent_job = storage.get_item_from_collection_by_id(
+            collection=collection, id=job_id
+        )
+        if parent_job and get_item_metadata_value(parent_job, "child_jobs"):
+            storage.increment_metadata_values(
+                job_id, collection, "child_jobs", {"initiated": 1, "queued": 1}
+            )
+
     except Exception as exception:
         log.exception(
             f"{exception.__class__.__name__}: {exception}",
