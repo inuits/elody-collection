@@ -39,6 +39,8 @@ class MongoStorageManager(GenericStorageManager):
         self.mongo_replica_set = getenv("MONGODB_REPLICA_SET")
         self.mongo_username = getenv("MONGODB_USERNAME")
         self.mongo_password = getenv("MONGODB_PASSWORD")
+        self.mongo_tls = getenv("MONGODB_TLS", False) in [True, "true", "True"]
+        self.mongo_auth_source = getenv("MONGODB_AUTH_SOURCE", None)
         self.mongo_existing_connection_string = getenv("MONGODB_CONNECTION_STRING")
         self.allow_disk_use = getenv("MONGODB_ALLOW_DISK_USE", False) in [
             "True",
@@ -98,9 +100,14 @@ class MongoStorageManager(GenericStorageManager):
                 if i < len(self.mongo_hosts) - 1:
                     connection_string += ","
             if self.mongo_username and self.mongo_password:
-                connection_string += f"/?authSource={self.mongo_db_name}"
+                if not self.mongo_auth_source:
+                    connection_string += f"/?authSource={self.mongo_db_name}"
+                else:
+                    connection_string += f"/?authSource={self.mongo_auth_source}"
                 if self.mongo_replica_set:
                     connection_string += f"&replicaSet={self.mongo_replica_set}"
+                if self.mongo_tls:
+                    connection_string += "&tls=true"
             return connection_string
 
     def _delete_impacted_relations(self, collection, id):
