@@ -1148,7 +1148,8 @@ class MongoStorageManager(GenericStorageManager):
             return
 
         increment_dict = {
-            f"metadata.$[elem].{key}": value for key, value in increment_fields.items()
+            f"metadata.$[elem].value.{key}": value
+            for key, value in increment_fields.items()
         }
 
         print("Increment dict", increment_dict, flush=True)

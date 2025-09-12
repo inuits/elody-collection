@@ -8,6 +8,7 @@ from elody.util import (
     flatten_dict,
     send_cloudevent,
 )
+
 from elody.job import handle_parent_job_finished
 from logging_elody.log import log
 from os import getenv
@@ -177,7 +178,6 @@ def update_job(routing_key, body, message_id):
                     "elody",
                     run_post_crud_hook=False,
                 )
-                # TODO: Move into util function?
                 parent_job_id = get_item_relation_key(document, "hasParentJob")
                 if parent_job_id and current_status != new_status:
                     # TODO: Propagate errors
@@ -248,22 +248,25 @@ def handle_status_report(routing_key, body, message_id):
                 )
 
                 if parent_child_status is not None:
-                    child_jobs_initiated = parent_child_status["initiated"]
-                    child_jobs_queued = parent_child_status["queued"]
-                    child_jobs_running = parent_child_status["running"]
-                    child_jobs_failed = parent_child_status["failed"]
-                    child_jobs_finished = parent_child_status["finished"]
+                    parent_child_status_value = parent_child_status["value"]
+                    child_jobs_initiated = parent_child_status_value["initiated"]
+                    child_jobs_queued = parent_child_status_value["queued"]
+                    child_jobs_running = parent_child_status_value["running"]
+                    child_jobs_failed = parent_child_status_value["failed"]
+                    child_jobs_finished = parent_child_status_value["finished"]
+                    child_jobs_warning = parent_child_status_value["warning"]
 
                     if (
                         child_jobs_queued == 0
                         and child_jobs_running == 0
-                        and (child_jobs_failed + child_jobs_finished)
+                        and (
+                            child_jobs_failed + child_jobs_finished + child_jobs_warning
+                        )
                         == child_jobs_initiated
                     ):
                         handle_parent_job_finished(
-                            id, parent_child_status, get_rabbit=get_rabbit
+                            id, parent_child_status_value, get_rabbit=get_rabbit
                         )
-                        pass
 
     except Exception as exception:
         log.exception(
@@ -289,7 +292,6 @@ def create_job(routing_key, body, message_id):
         )
 
         parent_job_id = get_item_relation_key(job, "hasParentJob")
-        print("parent job id", parent_job_id, flush=True)
         if parent_job_id:
             # TODO: Propagate errors
             parent_job_doc = {
