@@ -180,7 +180,7 @@ def update_job(routing_key, body, message_id):
                 )
                 parent_job_id = get_item_relation_key(document, "hasParentJob")
                 if parent_job_id and current_status != new_status:
-                    # TODO: Propagate errors
+                    # TODO: Propagate errors properly
                     parent_job_doc = {
                         "id": parent_job_id,
                         "current_status": current_status,
@@ -293,11 +293,9 @@ def create_job(routing_key, body, message_id):
 
         parent_job_id = get_item_relation_key(job, "hasParentJob")
         if parent_job_id:
-            # TODO: Propagate errors
             parent_job_doc = {
                 "id": parent_job_id,
             }
-            print("parent_job_doc", parent_job_doc, flush=True)
             send_cloudevent(
                 get_rabbit(),
                 getenv("MQ_EXCHANGE", "dams"),
@@ -320,7 +318,6 @@ def create_job(routing_key, body, message_id):
     )
 )
 def attach_child(routing_key, body, message_id):
-    print("in attach child\n\n", flush=True)
     try:
         job_id = body["data"]["id"]
         config = get_object_configuration_mapper().get("job")
