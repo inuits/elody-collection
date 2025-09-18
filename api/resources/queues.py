@@ -185,6 +185,8 @@ def update_job(routing_key, body, message_id):
 def create_job(routing_key, body, message_id):
     try:
         job = body["data"]
+        if not job.get("last_editor") and job.get("created_by"):
+            job["last_editor"] = job["created_by"]
         collection = get_object_configuration_mapper().get("job").crud()["collection"]
         StorageManager().get_db_engine().save_item_to_collection_v2(
             collection, job, run_post_crud_hook=False
@@ -284,14 +286,22 @@ def has_ocr_operation(relations, operation):
     return ""
 
 
-def create_ocr_body(mediafiles_data, relation):
+def create_ocr_body(mediafiles_data, relation, *, main_job_id=None, user_email=None, auth_header=None):
     operation = relation.get("operation", "pdf")
     lang = relation.get("lang", "eng")
-    return {
+    user_email = user_email or mediafiles_data[0].get("created_by") or mediafiles_data[0].get("last_editor")
+    body = {
         "operation": operation,
         "lang": lang,
         "mediafile_image_data": mediafiles_data,
+        "user_email": user_email,
     }
+    if main_job_id:
+        body["main_job_id"] = main_job_id
+    if auth_header:
+        body["auth_header"] = auth_header
+    return body
+    
 
 
 @get_rabbit().queue(

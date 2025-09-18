@@ -2,12 +2,23 @@ from flask import g
 from importlib import import_module
 from inuits_policy_based_auth import PolicyFactory, RequestContext
 from inuits_policy_based_auth.exceptions import NoUserContextException
+import os
+import sys
+
+
+def _ensure_global_policies_path():
+    policies_dir = os.path.join(os.path.dirname(__file__), "policies")
+    if os.path.isdir(policies_dir) and policies_dir not in sys.path:
+        sys.path.insert(0, policies_dir)
 
 
 def init_policy_factory():
     from elody.loader import load_policies
 
     global _policy_factory
+
+    _ensure_global_policies_path()
+
     try:
         permissions_module = import_module("apps.permissions")
         load_policies(

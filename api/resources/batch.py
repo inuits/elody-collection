@@ -248,13 +248,13 @@ class Batch(BaseResource):
                 }
                 for mediafile in entities_and_mediafiles.get("mediafiles", list()):
                     filename = mediafile.get("filename")
-                    ticket_id = self._create_ticket(mediafile.get("filename"))
+                    ticket_id = self._create_ticket(mediafile.get("filename"), extra_headers=get_user_context().get_x_headers())
                     link = f"{self.storage_api_url}/upload-with-ticket/{quote(filename)}?id={get_raw_id(mediafile)}&ticket_id={ticket_id}"
                     output["links"].append(link)
             else:
                 output = ""
                 for mediafile in entities_and_mediafiles.get("mediafiles", list()):
-                    ticket_id = self._create_ticket(mediafile.get("filename"))
+                    ticket_id = self._create_ticket(mediafile.get("filename"), extra_headers=get_user_context().get_x_headers())
                     output += f"{self.storage_api_url}/upload-with-ticket/{quote(mediafile.get('filename'))}?id={get_raw_id(mediafile)}&ticket_id={ticket_id}\n"
             finish_job(self.job_id_with_validation, get_rabbit=self.get_rabbit)
             finish_job(self.main_csv_job_id, get_rabbit=self.get_rabbit)
