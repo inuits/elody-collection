@@ -1152,12 +1152,9 @@ class MongoStorageManager(GenericStorageManager):
             for key, value in increment_fields.items()
         }
 
-        print("Increment dict", increment_dict, flush=True)
-
         self.db[collection].update_one(
             {"_id": id},
             {"$inc": increment_dict},
             array_filters=[{"elem.key": metadata_key}],
         )
-        # NOTE: Should this be serialized?
         return self.get_item_from_collection_by_id(collection, id)

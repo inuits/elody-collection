@@ -1,21 +1,19 @@
-from configuration import get_object_configuration_mapper
 from datetime import datetime, timezone
+from os import getenv
+from time import sleep
+
+from configuration import get_object_configuration_mapper
+from elody.job import handle_parent_job_finished
 from elody.util import (
     get_item_metadata_value,
     get_item_relation_key,
-    mediafile_is_public,
     get_raw_id,
-    flatten_dict,
+    mediafile_is_public,
     send_cloudevent,
 )
-
-from elody.job import handle_parent_job_finished
 from logging_elody.log import log
-from os import getenv
 from rabbit import get_rabbit
 from storage.storagemanager import StorageManager
-from time import sleep
-
 
 queue_prefix = getenv("QUEUE_PREFIX", "dams")
 queue_type = getenv("QUEUE_TYPE")
