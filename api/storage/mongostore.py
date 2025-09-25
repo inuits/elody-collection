@@ -292,7 +292,7 @@ class MongoStorageManager(GenericStorageManager):
                         metadata_dict["value"] = parsed
                     except (ValueError, TypeError):
                         pass
-        if collection == "mediafiles":
+        if collection == "mediafiles" and not document.get("type"):
             document["type"] = "mediafile"
         if not reversed and create_sortable_metadata:
             document["sort"] = self.__create_sortable_metadata(document["metadata"])
