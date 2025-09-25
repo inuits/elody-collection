@@ -182,9 +182,7 @@ class MongoFilters:
             items["count"] = next(count, {"count": len(output["results"])})["count"]
             for document in output["results"]:
                 items["results"].append(
-                    self.storage._prepare_mongo_document(
-                        document, True, BaseMatchers.collection
-                    )
+                    self.storage._prepare_mongo_document(document, True)
                 )
 
         return items
