@@ -520,10 +520,11 @@ class BaseResource(Resource):
     def get_downloadset_ttl(self, mediafile):
         ttl = None
         if mediafile.get("mimetype") == "application/zip":
+            config = get_object_configuration_mapper().get("download")
             for relation in mediafile.get("relations", []):
                 if "is_downloadset" in relation:
                     asset = self.storage.get_item_from_collection_by_id(
-                        "entities", relation.get("key")
+                        config.crud()["collection"], relation.get("key")
                     )
                     ttl = get_item_metadata_value(asset, "ttl")
         return ttl

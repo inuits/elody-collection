@@ -259,7 +259,9 @@ class FilterGenericObjectsV2(BaseFilterResource):
             for filter in access_restricting_filters:
                 query.insert(0, filter)
         if storage_type == "http":
-            http_storage = get_storage_mapper().get("http")() # pyright: ignore[reportOptionalCall]
+            http_storage = get_storage_mapper().get(
+                "http"
+            )()  # pyright: ignore[reportOptionalCall]
             filter = config.serialization(
                 f"{spec}_filter", f"{config.SCHEMA_TYPE}_filter"
             )
