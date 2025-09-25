@@ -55,7 +55,7 @@ from resources.share_link import ShareLink, ShareLinkDetail
 from resources.spec import AsyncAPISpec, OpenAPISpec
 from resources.tenant import Tenant
 from resources.ticket import Ticket, TicketDetail
-
+from resources.jelly_stream import  JellyStreamingResource
 
 def init_api(app):
     api = Api(app)
@@ -335,4 +335,7 @@ def init_api(app):
         TicketDetail,
         get_route_mapper().get(TicketDetail.__name__, "/tickets/<string:id>"),
     )
+
+    api.add_resource(JellyStreamingResource, get_route_mapper().get(JellyStreamingResource.__name__, "/jelly/stream"))
+
     return api
