@@ -43,6 +43,7 @@ class ContainsMatcher(BaseMatcher):
 
     def match(self, key, value, **kwargs):
         if isinstance(key, str) and not kwargs.get("match_exact", False):
+            value = value.replace(".", "\\.").replace("?", "\\?").replace("*", ".*")
             return self.matcher_engine.contains(
                 key, value, kwargs.get("inner_exact_matches", {})
             )
