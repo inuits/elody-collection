@@ -207,13 +207,10 @@ class GenericObject(BaseResource):
                 user_email=get_user_context().email,
                 parent_id=parent_delete_job_id,
                 id_of_document_job_was_initiated_for=get_raw_id(object),
-                type_of_document_job_was_initiated_for=object.get("type"),
             )
             start_job(
                 delete_object_job_id,
                 get_rabbit=lambda: get_rabbit(),
-                id_of_document_job_was_initiated_for=get_raw_id(object),
-                type_of_document_job_was_initiated_for=object.get("type"),
             )
             if skip_items_with_relation and self.storage.collection_item_has_relation(
                 collection, get_raw_id(object), skip_items_with_relation
@@ -231,8 +228,6 @@ class GenericObject(BaseResource):
             self.storage.delete_item_from_collection(collection, get_raw_id(object))
             finish_job(
                 delete_object_job_id,
-                id_of_document_job_was_initiated_for=get_raw_id(object),
-                type_of_document_job_was_initiated_for=object.get("type"),
                 get_rabbit=lambda: get_rabbit(),
             )
         finish_job(

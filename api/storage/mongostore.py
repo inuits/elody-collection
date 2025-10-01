@@ -1137,3 +1137,21 @@ class MongoStorageManager(GenericStorageManager):
 
     def get_existing_collections(self):
         return self.db.list_collection_names()
+
+    def increment_metadata_values(
+        self, id, collection, metadata_key, increment_fields: dict[str, int]
+    ):
+        if not self.get_item_from_collection_by_id(collection, id):
+            return
+
+        increment_dict = {
+            f"metadata.$[elem].value.{key}": value
+            for key, value in increment_fields.items()
+        }
+
+        self.db[collection].update_one(
+            {"_id": id},
+            {"$inc": increment_dict},
+            array_filters=[{"elem.key": metadata_key}],
+        )
+        return self.get_item_from_collection_by_id(collection, id)
