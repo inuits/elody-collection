@@ -1141,10 +1141,7 @@ class MongoStorageManager(GenericStorageManager):
     def increment_metadata_values(
         self, id, collection, metadata_key, increment_fields: dict[str, int]
     ):
-        # NOTE: Currently the only place this is used is after we're sure this
-        # already exists I believe
         if not self.get_item_from_collection_by_id(collection, id):
-            # NOTE: I think this already throws something
             return
 
         increment_dict = {
