@@ -9,7 +9,6 @@ from elody.util import (
     get_item_relation_key,
     get_raw_id,
     mediafile_is_public,
-    send_cloudevent,
 )
 from logging_elody.log import log
 from rabbit import get_rabbit
@@ -178,8 +177,9 @@ def update_job(routing_key, body, message_id):
                 )
                 parent_job_id = get_item_relation_key(document, "hasParentJob")
                 if parent_job_id and current_status != new_status:
-                    _handle_status_update(parent_job_id, collection, current_status, new_status)
-
+                    _handle_status_update(
+                        parent_job_id, collection, current_status, new_status
+                    )
 
     except Exception as exception:
         log.exception(
@@ -187,6 +187,7 @@ def update_job(routing_key, body, message_id):
             info_labels={"mq_message": body},
             exc_info=exception,
         )
+
 
 def _handle_status_update(id, collection, current_status, new_status):
     if current_status == new_status:
@@ -213,11 +214,7 @@ def _handle_status_update(id, collection, current_status, new_status):
     )
 
     parent_child_status = next(
-        (
-            metadata_entry
-            if metadata_entry.get("key") == "child_jobs"
-            else None
-        )
+        (metadata_entry if metadata_entry.get("key") == "child_jobs" else None)
         for metadata_entry in parent_job.get("metadata", [])
     )
 
@@ -233,17 +230,12 @@ def _handle_status_update(id, collection, current_status, new_status):
         if (
             child_jobs_queued == 0
             and child_jobs_running == 0
-            and (
-                child_jobs_failed + child_jobs_finished + child_jobs_warning
-            )
+            and (child_jobs_failed + child_jobs_finished + child_jobs_warning)
             == child_jobs_initiated
         ):
             handle_parent_job_finished(
                 id, parent_child_status_value, get_rabbit=get_rabbit
             )
-
-
-
 
 
 def _attach_child(parent_job_id, collection):
@@ -264,7 +256,6 @@ def _attach_child(parent_job_id, collection):
         )
 
 
-
 @get_rabbit().queue(
     **__argument_wrapper(
         queue_name=f"{queue_prefix}-create_job",
@@ -277,9 +268,7 @@ def create_job(routing_key, body, message_id):
         config = get_object_configuration_mapper().get("job")
         collection = config.crud()["collection"]
         storage = StorageManager().get_db_engine()
-        storage.save_item_to_collection_v2(
-            collection, job, run_post_crud_hook=False
-        )
+        storage.save_item_to_collection_v2(collection, job, run_post_crud_hook=False)
 
         parent_job_id = get_item_relation_key(job, "hasParentJob")
         if parent_job_id:
@@ -291,8 +280,6 @@ def create_job(routing_key, body, message_id):
             body["data"],
             exc_info=exception,
         )
-
-
 
 
 @get_rabbit().queue(
