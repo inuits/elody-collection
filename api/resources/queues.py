@@ -178,18 +178,8 @@ def update_job(routing_key, body, message_id):
                 )
                 parent_job_id = get_item_relation_key(document, "hasParentJob")
                 if parent_job_id and current_status != new_status:
-                    # TODO: Propagate errors properly
-                    parent_job_doc = {
-                        "id": parent_job_id,
-                        "current_status": current_status,
-                        "new_status": new_status,
-                    }
-                    send_cloudevent(
-                        get_rabbit(),
-                        getenv("MQ_EXCHANGE", "dams"),
-                        "dams.job_status_report",
-                        parent_job_doc,
-                    )
+                    _handle_status_update(parent_job_id, collection, current_status, new_status)
+
 
     except Exception as exception:
         log.exception(
@@ -198,80 +188,81 @@ def update_job(routing_key, body, message_id):
             exc_info=exception,
         )
 
+def _handle_status_update(id, collection, current_status, new_status):
+    if current_status == new_status:
+        return
 
-@get_rabbit().queue(
-    **__argument_wrapper(
-        queue_name=f"{queue_prefix}-job_report_status",
-        routing_key=f"{routing_key_prefix}.job_status_report",
+    storage = StorageManager().get_db_engine()
+    parent_job = storage.get_item_from_collection_by_id(collection, id)
+    if not parent_job:
+        sleep(5)
+        parent_job = storage.get_item_from_collection_by_id(collection, id)
+    if not parent_job:
+        return
+    if not get_item_metadata_value(parent_job, "child_jobs"):
+        return
+
+    parent_job = storage.increment_metadata_values(
+        id,
+        collection,
+        "child_jobs",
+        {
+            current_status: -1,
+            new_status: 1,
+        },
     )
-)
-def handle_status_report(routing_key, body, message_id):
-    try:
-        id = body["data"]["id"]
-        config = get_object_configuration_mapper().get("job")
-        collection = config.crud()["collection"]
 
-        if id and collection:
-            storage = StorageManager().get_db_engine()
-            document = storage.get_item_from_collection_by_id(collection, id)
-            if not document:
-                sleep(5)
-                document = storage.get_item_from_collection_by_id(collection, id)
-            if not document:
-                return
-            if not get_item_metadata_value(document, "child_jobs"):
-                return
-
-            current_status = body["data"]["current_status"]
-            new_status = body["data"]["new_status"]
-
-            if current_status and new_status and current_status != new_status:
-                parent_job = storage.increment_metadata_values(
-                    id,
-                    collection,
-                    "child_jobs",
-                    {
-                        current_status: -1,
-                        new_status: 1,
-                    },
-                )
-
-                parent_child_status = next(
-                    (
-                        metadata_entry
-                        if metadata_entry.get("key") == "child_jobs"
-                        else None
-                    )
-                    for metadata_entry in parent_job.get("metadata", [])
-                )
-
-                if parent_child_status is not None:
-                    parent_child_status_value = parent_child_status["value"]
-                    child_jobs_initiated = parent_child_status_value["initiated"]
-                    child_jobs_queued = parent_child_status_value["queued"]
-                    child_jobs_running = parent_child_status_value["running"]
-                    child_jobs_failed = parent_child_status_value["failed"]
-                    child_jobs_finished = parent_child_status_value["finished"]
-                    child_jobs_warning = parent_child_status_value["warning"]
-
-                    if (
-                        child_jobs_queued == 0
-                        and child_jobs_running == 0
-                        and (
-                            child_jobs_failed + child_jobs_finished + child_jobs_warning
-                        )
-                        == child_jobs_initiated
-                    ):
-                        handle_parent_job_finished(
-                            id, parent_child_status_value, get_rabbit=get_rabbit
-                        )
-
-    except Exception as exception:
-        log.exception(
-            f"{exception.__class__.__name__}: {exception}",
-            info_labels={"mq_message": body},
-            exc_info=exception,
+    parent_child_status = next(
+        (
+            metadata_entry
+            if metadata_entry.get("key") == "child_jobs"
+            else None
         )
+        for metadata_entry in parent_job.get("metadata", [])
+    )
+
+    if parent_child_status is not None:
+        parent_child_status_value = parent_child_status["value"]
+        child_jobs_initiated = parent_child_status_value["initiated"]
+        child_jobs_queued = parent_child_status_value["queued"]
+        child_jobs_running = parent_child_status_value["running"]
+        child_jobs_failed = parent_child_status_value["failed"]
+        child_jobs_finished = parent_child_status_value["finished"]
+        child_jobs_warning = parent_child_status_value["warning"]
+
+        if (
+            child_jobs_queued == 0
+            and child_jobs_running == 0
+            and (
+                child_jobs_failed + child_jobs_finished + child_jobs_warning
+            )
+            == child_jobs_initiated
+        ):
+            handle_parent_job_finished(
+                id, parent_child_status_value, get_rabbit=get_rabbit
+            )
+
+
+
+
+
+def _attach_child(parent_job_id, collection):
+    storage = StorageManager().get_db_engine()
+    config = get_object_configuration_mapper().get("job")
+    collection = config.crud()["collection"]
+    parent_job = storage.get_item_from_collection_by_id(
+        collection=collection, id=parent_job_id
+    )
+    if not parent_job:
+        sleep(5)
+        parent_job = storage.get_item_from_collection_by_id(collection, id)
+    if not parent_job:
+        return
+    if parent_job and get_item_metadata_value(parent_job, "child_jobs"):
+        parent_job = storage.increment_metadata_values(
+            parent_job_id, collection, "child_jobs", {"initiated": 1, "queued": 1}
+        )
+
 
 
 @get_rabbit().queue(
@@ -285,21 +276,14 @@ def create_job(routing_key, body, message_id):
         job = body["data"]
         config = get_object_configuration_mapper().get("job")
         collection = config.crud()["collection"]
-        StorageManager().get_db_engine().save_item_to_collection_v2(
+        storage = StorageManager().get_db_engine()
+        storage.save_item_to_collection_v2(
             collection, job, run_post_crud_hook=False
         )
 
         parent_job_id = get_item_relation_key(job, "hasParentJob")
         if parent_job_id:
-            parent_job_doc = {
-                "id": parent_job_id,
-            }
-            send_cloudevent(
-                get_rabbit(),
-                getenv("MQ_EXCHANGE", "dams"),
-                "dams.job_status_init",
-                parent_job_doc,
-            )
+            _attach_child(parent_job_id, collection)
 
     except Exception as exception:
         log.exception(
@@ -309,32 +293,6 @@ def create_job(routing_key, body, message_id):
         )
 
 
-@get_rabbit().queue(
-    **__argument_wrapper(
-        queue_name=f"{queue_prefix}-attach_child",
-        routing_key=f"{routing_key_prefix}.job_status_init",
-    )
-)
-def attach_child(routing_key, body, message_id):
-    try:
-        job_id = body["data"]["id"]
-        config = get_object_configuration_mapper().get("job")
-        collection = config.crud()["collection"]
-        storage = StorageManager().get_db_engine()
-        parent_job = storage.get_item_from_collection_by_id(
-            collection=collection, id=job_id
-        )
-        if parent_job and get_item_metadata_value(parent_job, "child_jobs"):
-            storage.increment_metadata_values(
-                job_id, collection, "child_jobs", {"initiated": 1, "queued": 1}
-            )
-
-    except Exception as exception:
-        log.exception(
-            f"{exception.__class__.__name__}: {exception}",
-            body["data"],
-            exc_info=exception,
-        )
 
 
 @get_rabbit().queue(
