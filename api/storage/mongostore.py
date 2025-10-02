@@ -1024,12 +1024,13 @@ class MongoStorageManager(GenericStorageManager):
     def save_item_to_collection_v2(
         self, collection, items, *, is_history=False, run_post_crud_hook=True
     ):
+        errors = []
         if not isinstance(items, list):
             items = [items]
         item = {}
-        try:
-            for item in items:
-                if not is_history:
+        for item in items:
+            try:
+                if not is_history and not item.get("data"):
                     self.__verify_uniqueness(item)
                 config = get_object_configuration_mapper().get(item["type"])
                 if not self.is_dry_run():
@@ -1049,19 +1050,28 @@ class MongoStorageManager(GenericStorageManager):
                     )
                 if not self.is_dry_run():
                     log.info("Successfully saved item", item)
-        except DuplicateKeyError as error:
-            log.exception(f"{error.__class__.__name__}: {error}", item, exc_info=error)
-            if error.code == 11000:
-                try:
-                    duplicate_entry = (
-                        error.details.get("errmsg").split('"')[1].split(":")[-1]
-                    )
-                except Exception:
-                    duplicate_entry = error.details.get("errmsg")
-                raise NonUniqueException(
-                    f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} | duplicate_entry:{duplicate_entry} - Following entry must be unique: {duplicate_entry}"
+            except (DuplicateKeyError, NonUniqueException) as error:
+                log.exception(
+                    f"{error.__class__.__name__}: {error}", item, exc_info=error
                 )
-            raise error
+                if isinstance(error, DuplicateKeyError):
+                    if error.code == 11000:
+                        try:
+                            duplicate_entry = (
+                                error.details.get("errmsg").split('"')[1].split(":")[-1]
+                            )
+                        except Exception:
+                            duplicate_entry = error.details.get("errmsg")
+                        errors.append(
+                            NonUniqueException(
+                                f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} | duplicate_entry:{duplicate_entry} - Following entry must be unique: {duplicate_entry}"
+                            )
+                        )
+                else:
+                    errors.append(error)
+        else:
+            if errors and len(errors) == len(items):
+                raise errors[0]
         return self._prepare_mongo_document(item, True, to_format="elody")
 
     def set_primary_field_collection_item(self, collection, id, mediafile_id, field):
