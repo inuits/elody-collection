@@ -247,7 +247,9 @@ def _attach_child(parent_job_id, collection):
     )
     if not parent_job:
         sleep(5)
-        parent_job = storage.get_item_from_collection_by_id(collection, id)
+        parent_job = storage.get_item_from_collection_by_id(
+            collection=collection, id=parent_job_id
+        )
     if not parent_job:
         return
     if parent_job and get_item_metadata_value(parent_job, "child_jobs"):
