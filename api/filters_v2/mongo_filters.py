@@ -20,6 +20,10 @@ from filters_v2.stages import (
 from logging_elody.log import log
 from storage.storagemanager import StorageManager
 
+from tracing import get_tracer
+
+tracer = get_tracer()
+
 
 class MongoFilters:
     def __init__(self):
@@ -36,38 +40,39 @@ class MongoFilters:
         return_query_without_executing=False,
         tidy_up_match=True,
     ):
-        BaseMatchers.collection = collection
-        BaseMatchers.type = get_type_filter_value(filter_request_body)
-        options_requesting_filter = get_options_requesting_filter(filter_request_body)
-        BaseMatchers.force_base_nested_matcher_builder = bool(
-            options_requesting_filter
-            or has_non_exact_match_filter(filter_request_body)
-            or has_selection_filter_with_multiple_values(filter_request_body)
-        )
-        facets_request = get_facets(filter_request_body)
+        with tracer.start_as_current_span("MongoFilters.filter") as mongo_filter_span:
+            BaseMatchers.collection = collection
+            BaseMatchers.type = get_type_filter_value(filter_request_body)
+            options_requesting_filter = get_options_requesting_filter(filter_request_body)
+            BaseMatchers.force_base_nested_matcher_builder = bool(
+                options_requesting_filter
+                or has_non_exact_match_filter(filter_request_body)
+                or has_selection_filter_with_multiple_values(filter_request_body)
+            )
+            facets_request = get_facets(filter_request_body)
 
-        pipeline, match, group = self.__build_aggregation_query(
-            filter_request_body,
-            skip,
-            limit,
-            order_by,
-            asc,
-            options_requesting_filter,
-            facets_request,
-            tidy_up_match,
-        )
-        if return_query_without_executing:
-            return pipeline
+            pipeline, match, group = self.__build_aggregation_query(
+                filter_request_body,
+                skip,
+                limit,
+                order_by,
+                asc,
+                options_requesting_filter,
+                facets_request,
+                tidy_up_match,
+            )
+            if return_query_without_executing:
+                return pipeline
 
-        return self.__execute_aggregation_query(
-            pipeline,
-            match,
-            group,
-            skip,
-            limit,
-            options_requesting_filter,
-            facets_request,
-        )
+            return self.__execute_aggregation_query(
+                pipeline,
+                match,
+                group,
+                skip,
+                limit,
+                options_requesting_filter,
+                facets_request,
+            )
 
     def __build_aggregation_query(
         self,
@@ -110,28 +115,29 @@ class MongoFilters:
         options_requesting_filter,
         facets_request,
     ):
-        try:
-            cursor = self.storage.db[BaseMatchers.collection].aggregate(
-                pipeline, allowDiskUse=self.storage.allow_disk_use
-            )
-        except Exception as exception:
-            log.exception(
-                f"{exception.__class__.__name__}: {exception}",
-                {},
-                exc_info=exception,
-                info_labels={"pipeline": pipeline},
-            )
-            raise exception
+        with tracer.start_as_current_span("MongoFilters.__execute_aggregation_query") as mongo_execute_span:
+            try:
+                cursor = self.storage.db[BaseMatchers.collection].aggregate(
+                    pipeline, allowDiskUse=self.storage.allow_disk_use
+                )
+            except Exception as exception:
+                log.exception(
+                    f"{exception.__class__.__name__}: {exception}",
+                    {},
+                    exc_info=exception,
+                    info_labels={"pipeline": pipeline},
+                )
+                raise exception
 
-        if facets_request:
-            output = next(cursor)
-            output = {"results": output["results"], "facets": output["facets"]}
-        else:
-            output = {"results": list(cursor)}
+            if facets_request:
+                output = next(cursor)
+                output = {"results": output["results"], "facets": output["facets"]}
+            else:
+                output = {"results": list(cursor)}
 
-        return self.__get_items(
-            output, match, group, skip, limit, options_requesting_filter
-        )
+            return self.__get_items(
+                output, match, group, skip, limit, options_requesting_filter
+            )
 
     def __get_items(
         self,

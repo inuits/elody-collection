@@ -13,6 +13,9 @@ from policy_factory import init_policy_factory, get_user_context
 from rabbit import init_rabbit, get_rabbit
 from secrets import token_hex
 from werkzeug.exceptions import Forbidden, HTTPException, Unauthorized
+from tracing import init_tracer
+
+tracer = init_tracer()
 
 
 SWAGGER_URL = "/api/docs"  # URL for exposing Swagger UI (without trailing '/')
