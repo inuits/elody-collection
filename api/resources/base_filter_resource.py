@@ -41,7 +41,9 @@ class BaseFilterResource(BaseResource):
         items["results"] = self._inject_api_urls_into_entities(items["results"])
         return items
 
-    @tracer.start_as_current_span("base.BaseFilterResource._execute_advanced_search_with_query_v2")
+    @tracer.start_as_current_span(
+        "base.BaseFilterResource._execute_advanced_search_with_query_v2"
+    )
     def _execute_advanced_search_with_query_v2(
         self, query, collection="entities", *, skip=None, limit=None
     ):

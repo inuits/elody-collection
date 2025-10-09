@@ -1033,6 +1033,10 @@ class MongoStorageManager(GenericStorageManager):
                 if not is_history and not item.get("data"):
                     self.__verify_uniqueness(item)
                 config = get_object_configuration_mapper().get(item["type"])
+                pre_crud_hook = config.crud()["pre_crud_hook"]
+                post_crud_hook = config.crud()["post_crud_hook"]
+                timestamp = datetime.now(timezone.utc)
+                item = pre_crud_hook(crud="create", timestamp=timestamp, document=item)
                 if not self.is_dry_run():
                     self.db[
                         config.crud()[
@@ -1040,7 +1044,6 @@ class MongoStorageManager(GenericStorageManager):
                         ]
                     ].insert_one(item)
                 if not is_history and run_post_crud_hook:
-                    post_crud_hook = config.crud()["post_crud_hook"]
                     post_crud_hook(
                         crud="create",
                         document=item,

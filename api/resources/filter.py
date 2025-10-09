@@ -15,7 +15,9 @@ from resources.base_filter_resource import BaseFilterResource
 from werkzeug.exceptions import BadRequest
 
 from tracing import get_tracer
+
 tracer = get_tracer()
+
 
 class FilterMatchers(BaseFilterResource):
     def get(self, spec="elody"):

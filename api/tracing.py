@@ -16,7 +16,6 @@ trace.set_tracer_provider(provider)
 _tracer = None
 
 
-
 def init_tracer():
     global _tracer
     _tracer = trace.get_tracer("collection-api.tracer")
