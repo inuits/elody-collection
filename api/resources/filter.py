@@ -237,64 +237,64 @@ class FilterGenericObjects(BaseFilterResource):
 # currently only suitable when using generic policies
 class FilterGenericObjectsV2(BaseFilterResource):
     @apply_policies(RequestContext(request))
+    @tracer.start_as_current_span("base.FilterGenericObjectsV2")
     def post(self, collection, spec="elody", is_type_required=False, content=[]):
 
-        with tracer.start_as_current_span("FilterGenericObjectsV2") as filter_span:
-            if request.args.get("soft", 0, int):
-                return "good", 200
-            query: list = content or request.get_json()
-            document_type = get_type_filter_value(query)
-            if not document_type:
-                document_type = get_selection_type_filter_value(query)
-                if len(document_type) > 0:
-                    document_type = document_type[0]
-                elif is_type_required:
-                    raise BadRequest(
-                        "Filter with type 'type', or a filter with type 'selection' and 'key' equal to 'type' is required"
-                    )
-            config = get_object_configuration_mapper().get(document_type or collection)
-            collection = config.crud().get("collection")
-            storage_type = config.crud()["storage_type"]
-            if storage_type != "http":
-                self._check_if_collection_name_exists(collection)
-            accept_header = request.headers.get("Accept")
-            access_restricting_filters = get_user_context().access_restrictions.filters
-            if access_restricting_filters:
-                for filter in access_restricting_filters:
-                    query.insert(0, filter)
-            if storage_type == "http":
-                http_storage = get_storage_mapper().get(
-                    "http"
-                )()  # pyright: ignore[reportOptionalCall]
-                filter = config.serialization(
-                    f"{spec}_filter", f"{config.SCHEMA_TYPE}_filter"
+        if request.args.get("soft", 0, int):
+            return "good", 200
+        query: list = content or request.get_json()
+        document_type = get_type_filter_value(query)
+        if not document_type:
+            document_type = get_selection_type_filter_value(query)
+            if len(document_type) > 0:
+                document_type = document_type[0]
+            elif is_type_required:
+                raise BadRequest(
+                    "Filter with type 'type', or a filter with type 'selection' and 'key' equal to 'type' is required"
                 )
-                filters = filter(query)
-                skip = request.args.get("skip", 0, int)
-                limit = request.args.get("limit", 20, int)
-                items = http_storage.get_items_from_collection(
-                    collection,
-                    filters=filters,
-                    skip=skip,
-                    limit=limit,
-                )
-            else:
-                items = self._execute_advanced_search_with_query_v2(query, collection)
-            return self._create_response_according_accept_header(
-                mappers.map_data_according_to_accept_header(
-                    (
-                        get_user_context().access_restrictions.post_request_hook(items)
-                        if not get_options_requesting_filter(query)
-                        else items
-                    ),
-                    accept_header,
-                    "entities",
-                    [],
-                    spec,
-                    request.args,
+        config = get_object_configuration_mapper().get(document_type or collection)
+        collection = config.crud().get("collection")
+        storage_type = config.crud()["storage_type"]
+        if storage_type != "http":
+            self._check_if_collection_name_exists(collection)
+        accept_header = request.headers.get("Accept")
+        access_restricting_filters = get_user_context().access_restrictions.filters
+        if access_restricting_filters:
+            for filter in access_restricting_filters:
+                query.insert(0, filter)
+        if storage_type == "http":
+            http_storage = get_storage_mapper().get(
+                "http"
+            )()  # pyright: ignore[reportOptionalCall]
+            filter = config.serialization(
+                f"{spec}_filter", f"{config.SCHEMA_TYPE}_filter"
+            )
+            filters = filter(query)
+            skip = request.args.get("skip", 0, int)
+            limit = request.args.get("limit", 20, int)
+            items = http_storage.get_items_from_collection(
+                collection,
+                filters=filters,
+                skip=skip,
+                limit=limit,
+            )
+        else:
+            items = self._execute_advanced_search_with_query_v2(query, collection)
+        return self._create_response_according_accept_header(
+            mappers.map_data_according_to_accept_header(
+                (
+                    get_user_context().access_restrictions.post_request_hook(items)
+                    if not get_options_requesting_filter(query)
+                    else items
                 ),
                 accept_header,
-            )
+                "entities",
+                [],
+                spec,
+                request.args,
+            ),
+            accept_header,
+        )
 
 
 class FilterGenericObjectsBySavedSearchId(BaseFilterResource):

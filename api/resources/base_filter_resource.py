@@ -41,42 +41,42 @@ class BaseFilterResource(BaseResource):
         items["results"] = self._inject_api_urls_into_entities(items["results"])
         return items
 
+    @tracer.start_as_current_span("base.BaseFilterResource._execute_advanced_search_with_query_v2")
     def _execute_advanced_search_with_query_v2(
         self, query, collection="entities", *, skip=None, limit=None
     ):
-        with tracer.start_as_current_span("_execute_advanced_search_with_query_v2") as execute_base_span:
-            order_by = request.args.get("order_by", None) if request else None
-            asc = bool(request.args.get("asc", 1, int)) if request else 1
-            if request:
-                skip = skip if skip is not None else request.args.get("skip", 0, int)
-                limit = limit if limit is not None else request.args.get("limit", 20, int)
-            else:
-                skip = skip if skip else 0
-                limit = limit if limit else 20
+        order_by = request.args.get("order_by", None) if request else None
+        asc = bool(request.args.get("asc", 1, int)) if request else 1
+        if request:
+            skip = skip if skip is not None else request.args.get("skip", 0, int)
+            limit = limit if limit is not None else request.args.get("limit", 20, int)
+        else:
+            skip = skip if skip else 0
+            limit = limit if limit else 20
 
-            if request:
+        if request:
 
-                @after_this_request
-                def add_header(response):
-                    response.headers["Access-Control-Allow-Origin"] = "*"
-                    return response
+            @after_this_request
+            def add_header(response):
+                response.headers["Access-Control-Allow-Origin"] = "*"
+                return response
 
-            if not self.filter_engine_v2:
-                abort(500, message="Failed to init search engine")
+        if not self.filter_engine_v2:
+            abort(500, message="Failed to init search engine")
 
-            items = self.filter_engine_v2.filter(
-                query, skip, limit, collection, order_by, asc
+        items = self.filter_engine_v2.filter(
+            query, skip, limit, collection, order_by, asc
+        )
+        if skip + limit < items["count"]:
+            items["next"] = f"/{collection}/filter?skip={skip + limit}&limit={limit}"
+        if skip > 0:
+            items["previous"] = (
+                f"/{collection}/filter?skip={max(0, skip - limit)}&limit={limit}"
             )
-            if skip + limit < items["count"]:
-                items["next"] = f"/{collection}/filter?skip={skip + limit}&limit={limit}"
-            if skip > 0:
-                items["previous"] = (
-                    f"/{collection}/filter?skip={max(0, skip - limit)}&limit={limit}"
-                )
-            if collection in ["entities", "mediafiles"]:
-                items["results"] = self._inject_api_urls_into_entities(items["results"])
-                # this should be done when serializing ^
-            return items
+        if collection in ["entities", "mediafiles"]:
+            items["results"] = self._inject_api_urls_into_entities(items["results"])
+            # this should be done when serializing ^
+        return items
 
     def _execute_advanced_search_with_saved_search(
         self, id, collection="entities", order_by=None, asc=True

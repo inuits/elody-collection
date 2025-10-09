@@ -1,10 +1,9 @@
 from opentelemetry import trace
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import (
     BatchSpanProcessor,
-    ConsoleSpanExporter,
 )
-from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 
 provider = TracerProvider()
 processor = BatchSpanProcessor(OTLPSpanExporter())
@@ -24,6 +23,6 @@ def init_tracer():
     return _tracer
 
 
-def get_tracer():
+def get_tracer() -> trace.Tracer:
     global _tracer
     return _tracer
