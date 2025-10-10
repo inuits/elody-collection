@@ -7,7 +7,7 @@ from resources.base_resource import BaseResource
 
 class JellyStreamingResource(BaseResource):
     def get(self):
-        db_name = request.args.get('db', 'hairoad')
+        db = self.storage.db
         collection_name = request.args.get('collection', 'entities')
         batch_size = int(request.args.get('batch_size', 100))
 
@@ -15,7 +15,7 @@ class JellyStreamingResource(BaseResource):
             return {"error": "batch_size must be between 1 and 1000"}, 400
 
         def generate():
-                for chunk in generate_jelly_stream(self.storage, collection_name, batch_size):
+                for chunk in generate_jelly_stream(db, collection_name, batch_size):
                     yield chunk
                 return []
 

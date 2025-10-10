@@ -41,8 +41,8 @@ def mongo_to_triples(doc) -> List[Triple]:
     return triples
 
 
-def generate_jelly_stream(storage, collection_name, batch_size):
-    entities = storage.db[collection_name].find({})
+def generate_jelly_stream(db, collection_name, batch_size):
+    entities = db[collection_name].find({})
 
     batch = []
     for entity in entities:
