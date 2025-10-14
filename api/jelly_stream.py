@@ -1,5 +1,4 @@
-from pymongo.mongo_client import MongoClient
-from typing import Union, List, Tuple, Iterator
+from typing import Union, List, Tuple
 from rdflib import Graph, URIRef, Literal, Namespace, RDF
 from pyjelly.integrations.rdflib.serialize import SerializerOptions, StreamParameters
 from urllib.parse import quote
@@ -42,7 +41,7 @@ def mongo_to_triples(doc) -> List[Triple]:
 
 
 def generate_jelly_stream(db, collection_name, batch_size):
-    entities = db[collection_name].find({})
+    entities = db[collection_name].find({'type': 'sensorDetection'})
 
     batch = []
     for entity in entities:
@@ -68,4 +67,3 @@ def serialize_batch_to_jelly(batch):
     buffer = BytesIO()
     graph.serialize(destination=buffer, format="jelly", options=options)
     return buffer.getvalue()
-
