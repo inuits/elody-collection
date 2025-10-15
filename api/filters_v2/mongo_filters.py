@@ -3,6 +3,7 @@ from filters_v2.helpers.base_helper import (
     get_facets,
     get_options_requesting_filter,
     get_type_filter_value,
+    get_selection_type_filter_value,
     has_non_exact_match_filter,
     has_selection_filter_with_multiple_values,
 )
@@ -43,6 +44,10 @@ class MongoFilters:
     ):
         BaseMatchers.collection = collection
         BaseMatchers.type = get_type_filter_value(filter_request_body)
+        if not BaseMatchers.type:
+            BaseMatchers.type = get_selection_type_filter_value(filter_request_body)
+            if len(BaseMatchers.type) > 0:
+                BaseMatchers.type = BaseMatchers.type[0]
         options_requesting_filter = get_options_requesting_filter(filter_request_body)
         BaseMatchers.force_base_nested_matcher_builder = bool(
             options_requesting_filter
@@ -94,6 +99,7 @@ class MongoFilters:
             pipeline = [*match, *project]
         else:
             sort = sort_stage.build(order_by, asc, filter_request_body, self.storage)
+            # raise Exception(f"\n LOGGING THE ORDER BY: {order_by} \n SORTING: {sort}")
             skip = skip_stage.build(skip)
             limit = limit_stage.build(limit) if limit != -1 else []
             if facets_request:
