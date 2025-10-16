@@ -19,6 +19,9 @@ from resources.base_resource import BaseResource
 from urllib.parse import quote
 from validation.validate import validate
 from werkzeug.exceptions import BadRequest
+from tracing import get_tracer
+
+tracer = get_tracer()
 
 
 class GenericObject(BaseResource):
@@ -459,6 +462,7 @@ class GenericObjectDetail(BaseResource):
 # POC: currently only suitable when supporting multiples specs for a client
 class GenericObjectDetailV2(BaseResource):
     @apply_policies(RequestContext(request))
+    @tracer.start_as_current_span("base.GenericObjectDetailV2.get")
     def get(self, collection, id, spec="elody"):
         if request.args.get("soft", 0, int):
             return "good", 200

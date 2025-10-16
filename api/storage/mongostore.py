@@ -1,3 +1,4 @@
+from importlib import import_module
 import re
 import time
 
@@ -24,6 +25,8 @@ from rabbit import get_rabbit
 from storage.genericstore import GenericStorageManager
 from urllib.parse import quote_plus
 from werkzeug.exceptions import BadRequest
+from tracing import get_tracer
+from opentelemetry import trace
 
 
 class MongoStorageManager(GenericStorageManager):
@@ -47,6 +50,17 @@ class MongoStorageManager(GenericStorageManager):
             "true",
             True,
         ]
+        if bool(getenv("INSTRUMENT_MONGODB", False)):
+            try:
+                instrumentation_library = import_module(
+                    "opentelemetry.instrumentation.pymongo"
+                )
+                instrumentor = instrumentation_library.PymongoInstrumentor()
+                provider = trace.get_tracer_provider()
+                instrumentor.instrument(tracer_provider=provider)
+            except Exception as e:
+                print("WE'RE NOT INSTRUMENTING ACTUALLY", "\n\n\n", flush=True)
+                raise e
         self.client = MongoClient(
             self.__create_mongo_connection_string(),
             directConnection=bool(self.mongo_direct),

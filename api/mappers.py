@@ -8,6 +8,8 @@ from elody.util import get_item_metadata_value
 from rdflib import Graph
 from serialization.serialize import serialize
 from storage.storagemanager import StorageManager
+from tracing import get_tracer
+tracer = get_tracer()
 
 # TODO Move to client specific codebase
 general_excluded_fields = [
@@ -131,7 +133,7 @@ def is_uuid(value):
     except ValueError:
         return False
 
-
+@tracer.start_as_current_span("base.mappers.map_data_according_to_accept_header")
 def map_data_according_to_accept_header(
     data,
     accept_header,
@@ -365,6 +367,7 @@ def map_to_rdf_data(data, data_type, format):
             return map_entity_to_rdf_data(data.get("results"), format)
 
 
+@tracer.start_as_current_span("base.mappers.__serialize_data_according_to_accept_header")
 def __serialize_data_according_to_accept_header(
     data, data_type, to_format, accept_header, entity_type=None
 ):

@@ -31,6 +31,9 @@ from rabbit import get_rabbit
 from serialization.serialize import serialize
 from storage.storagemanager import StorageManager
 from urllib.parse import quote
+from tracing import get_tracer
+
+tracer = get_tracer()
 
 
 class BaseResource(Resource):
@@ -242,6 +245,7 @@ class BaseResource(Resource):
         signal_entity_changed(get_rabbit(), entity)
         return mediafile
 
+    # @tracer.start_as_current_span("base._create_response_according_accept_header")
     def _create_response_according_accept_header(
         self, response_data, accept_header=None, status_code=200, spec="elody"
     ):
