@@ -1,27 +1,39 @@
 from apscheduler.schedulers.background import BackgroundScheduler
-from configuration import init_mappers
+from configuration import get_features, get_route_mapper, init_mappers
 from elody.error_codes import ErrorCode, get_error_code, get_read
 from elody.loader import load_apps, load_jobs
-from elody.util import CustomJSONEncoder
+from elody.util import CustomJSONEncoder, read_json_as_dict
 from flask import Flask, g, make_response, jsonify, Response, request
 from flask_swagger_ui import get_swaggerui_blueprint
+from glob import glob
 from health import init_health_check
 from importlib import import_module
 from logging_elody.log import log
-from os import getenv
+from os import getenv, path
 from policy_factory import init_policy_factory, get_user_context
 from rabbit import init_rabbit, get_rabbit
 from secrets import token_hex
-from werkzeug.exceptions import Forbidden, HTTPException, Unauthorized
 from tracing import init_tracer
-
-tracer = init_tracer()
+from werkzeug.exceptions import Forbidden, HTTPException, Unauthorized
 
 
 SWAGGER_URL = "/api/docs"  # URL for exposing Swagger UI (without trailing '/')
 API_URL = (
     "/spec/dams-collection-api.json"  # Our API url (can of course be a local resource)
 )
+
+
+def __process_resource_rules(rules):
+    rules_map = dict(
+        sorted(
+            {
+                rule["route"]: (rule["route"], rule["resource"], rule["api"])
+                for rule in rules
+            }.items()
+        )
+    )
+    for route, resource, api in rules_map.values():
+        api.add_resource(resource, get_route_mapper().get(resource.__name__, route))
 
 
 def load_sentry():
@@ -36,12 +48,60 @@ def load_sentry():
         )
 
 
+def load_specs(app):
+    resource_rules = []
+    resources_path = path.join(app.root_path, "resources")
+    for spec in get_features().get("specs", {}).keys():
+        specs_path = path.join(resources_path, spec)
+        resource_paths = glob(path.join(specs_path, "*.py"))
+        for sub_spec_module in get_features()["specs"][spec].keys():
+            resource_paths.extend(
+                glob(path.join(specs_path, f"{sub_spec_module}/*.py"))
+            )
+        for resource_path in resource_paths:
+            try:
+                module_path = (
+                    resource_path.removeprefix(f"{app.root_path}/")
+                    .removesuffix(".py")
+                    .replace("/", ".")
+                )
+                module = import_module(module_path)
+                try:
+                    app.register_blueprint(module.blueprint)
+                except AttributeError:
+                    rules = module.resource_rules()
+                    resource_rules.extend(rules)
+            except ModuleNotFoundError:
+                pass
+    return resource_rules
+
+
+def load_app_resources():
+    resource_rules = []
+    apps = read_json_as_dict(getenv("APPS_MANIFEST"), None)
+    for app in apps:
+        for resource in apps[app].get("resources", []):
+            module = import_module(f"apps.{app}.resources.{resource}")
+            try:
+                app.register_blueprint(module.blueprint)
+            except AttributeError:
+                try:
+                    rules = module.resource_rules()
+                    resource_rules.extend(rules)
+                except AttributeError:
+                    pass
+    return resource_rules
+
+
 def init_app():
     app = Flask(__name__)
     app.config["RESTFUL_JSON"] = {"cls": CustomJSONEncoder}
     app.secret_key = getenv("SECRET_KEY", token_hex(16))
     init_mappers()
     load_apps(app, None)
+    resource_rules = load_specs(app)
+    resource_rules.extend(load_app_resources())
+    __process_resource_rules(resource_rules)
     return app
 
 
@@ -79,6 +139,7 @@ def rabbit_available():
 
 
 load_sentry()
+tracer = init_tracer()
 app = init_app()
 
 if scheduler := init_scheduler():

@@ -6,6 +6,15 @@ _object_configuration_mapper = ObjectConfigurationMapper()
 _route_mapper = {}
 _collection_mapper = {}
 _storage_mapper = {}
+_features = {
+    "bulk_operations": {
+        "delete": {},
+        "edit": {},
+        "export": {},
+        "import": {},
+    },
+    "specs": {"elody": {"mediafiles": {}}},
+}
 
 
 def init_mappers():
@@ -13,6 +22,7 @@ def init_mappers():
     global _route_mapper
     global _collection_mapper
     global _storage_mapper
+    global _features
 
     try:
         mapper_module = import_module("apps.mappers")
@@ -22,6 +32,7 @@ def init_mappers():
         _route_mapper = mapper_module.ROUTE_MAPPER
         _collection_mapper = mapper_module.COLLECTION_MAPPER
         _storage_mapper = mapper_module.STORAGE_MAPPER
+        _features = mapper_module.FEATURES
     except ModuleNotFoundError:
         from logging_elody.log import log
         from storage.arangostore import ArangoStorageManager
@@ -62,3 +73,8 @@ def get_collection_mapper():
 def get_storage_mapper():
     global _storage_mapper
     return _storage_mapper
+
+
+def get_features():
+    global _features
+    return _features
