@@ -99,7 +99,6 @@ class MongoFilters:
             pipeline = [*match, *project]
         else:
             sort = sort_stage.build(order_by, asc, filter_request_body, self.storage)
-            # raise Exception(f"\n LOGGING THE ORDER BY: {order_by} \n SORTING: {sort}")
             skip = skip_stage.build(skip)
             limit = limit_stage.build(limit) if limit != -1 else []
             if facets_request:
