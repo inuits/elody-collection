@@ -25,8 +25,9 @@ from rabbit import get_rabbit
 from storage.genericstore import GenericStorageManager
 from urllib.parse import quote_plus
 from werkzeug.exceptions import BadRequest
-from tracing import get_tracer
-from opentelemetry import trace
+from tracing import get_tracer, init_mongo_instrumentation
+
+tracer = get_tracer()
 
 
 class MongoStorageManager(GenericStorageManager):
@@ -35,6 +36,8 @@ class MongoStorageManager(GenericStorageManager):
     def __init__(self, *, apply_default_entities_index=True):
         if getenv("DB_ENGINE", "mongo") != "mongo":
             return
+        if bool(getenv("INSTRUMENT_MONGODB", False)):
+            init_mongo_instrumentation()
         self.mongo_direct = int(getenv("MONGODB_DIRECT", 0))
         self.mongo_db_name = getenv("MONGODB_DB_NAME", "dams")
         self.mongo_hosts = getenv("MONGODB_HOSTS", "mongo").split(",")
@@ -50,17 +53,7 @@ class MongoStorageManager(GenericStorageManager):
             "true",
             True,
         ]
-        if bool(getenv("INSTRUMENT_MONGODB", False)):
-            try:
-                instrumentation_library = import_module(
-                    "opentelemetry.instrumentation.pymongo"
-                )
-                instrumentor = instrumentation_library.PymongoInstrumentor()
-                provider = trace.get_tracer_provider()
-                instrumentor.instrument(tracer_provider=provider)
-            except Exception as e:
-                print("WE'RE NOT INSTRUMENTING ACTUALLY", "\n\n\n", flush=True)
-                raise e
+
         self.client = MongoClient(
             self.__create_mongo_connection_string(),
             directConnection=bool(self.mongo_direct),
@@ -935,6 +928,7 @@ class MongoStorageManager(GenericStorageManager):
             log.info("Successfully patched item", item)
         return self._prepare_mongo_document(item, False, False)
 
+    @tracer.start_as_current_span("base.mongostore.put_item_from_collection")
     def put_item_from_collection(
         self,
         collection,
@@ -1035,6 +1029,7 @@ class MongoStorageManager(GenericStorageManager):
             else self.get_item_from_collection_by_id(collection, item_id)
         )
 
+    @tracer.start_as_current_span("base.mongostore.save_item_to_collection_v2")
     def save_item_to_collection_v2(
         self, collection, items, *, is_history=False, run_post_crud_hook=True
     ):
@@ -1141,6 +1136,7 @@ class MongoStorageManager(GenericStorageManager):
         self.__add_child_relations(id, content)
         return content
 
+    @tracer.start_as_current_span("base.mongostore.update_item_from_collection")
     def update_item_from_collection(
         self, collection, id, content, create_sortable_metadata=True
     ):
@@ -1165,6 +1161,7 @@ class MongoStorageManager(GenericStorageManager):
     def get_collection_item_mediafiles_count(self, id):
         return self.db["mediafiles"].count_documents({"relations.key": id})
 
+    @tracer.start_as_current_span("base.mongostore.get_existing_collections")
     def get_existing_collections(self):
         return self.db.list_collection_names()
 

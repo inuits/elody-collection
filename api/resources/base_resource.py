@@ -756,6 +756,7 @@ class BaseResource(Resource):
                 )
         return entity
 
+    @tracer.start_as_current_span("base.BaseResource._sync_roles_from_idp")
     def _sync_roles_from_idp(self, user, roles_per_tenant):
         serialized_user = serialize(user, type="user", to_format="elody")
         new, updated, _, untouched = self._group_user_relations_by_idp_role_status(

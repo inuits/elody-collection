@@ -4,6 +4,9 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import (
     BatchSpanProcessor,
 )
+from os import getenv
+from importlib import import_module
+
 
 provider = TracerProvider()
 processor = BatchSpanProcessor(OTLPSpanExporter())
@@ -14,6 +17,7 @@ trace.set_tracer_provider(provider)
 
 
 _tracer = None
+_mongoInstrumentor = None
 
 
 def init_tracer():
@@ -25,3 +29,18 @@ def init_tracer():
 def get_tracer() -> trace.Tracer:
     global _tracer
     return _tracer
+
+def init_mongo_instrumentation():
+    if bool(getenv("INSTRUMENT_MONGODB", False)):
+        global _mongoInstrumentor
+        try:
+            instrumentation_library = import_module(
+                "opentelemetry.instrumentation.pymongo"
+            )
+            if not _mongoInstrumentor:
+                _mongoInstrumentor = instrumentation_library.PymongoInstrumentor()
+                provider = trace.get_tracer_provider()
+                _mongoInstrumentor.instrument(tracer_provider=provider)
+        except Exception as e:
+            print("WE'RE NOT INSTRUMENTING ACTUALLY", "\n\n\n", flush=True)
+            raise e

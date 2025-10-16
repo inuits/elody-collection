@@ -483,6 +483,7 @@ class GenericObjectDetailV2(BaseResource):
 
     @apply_policies(RequestContext(request))
     @validate("put", request)
+    @tracer.start_as_current_span("base.GenericObjectDetailV2.put")
     def put(
         self,
         collection,
