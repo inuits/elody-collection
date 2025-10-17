@@ -16,6 +16,8 @@ from secrets import token_hex
 from tracing import init_tracer
 from werkzeug.exceptions import Forbidden, HTTPException, Unauthorized
 
+from opentelemetry.instrumentation.flask import FlaskInstrumentor
+
 
 SWAGGER_URL = "/api/docs"  # URL for exposing Swagger UI (without trailing '/')
 API_URL = (
@@ -141,6 +143,7 @@ def rabbit_available():
 load_sentry()
 tracer = init_tracer()
 app = init_app()
+FlaskInstrumentor().instrument_app(app)
 
 if scheduler := init_scheduler():
     load_jobs(scheduler, None)
@@ -148,6 +151,7 @@ register_swaggerui(app)
 from init_api import init_api
 
 api = init_api(app)
+
 init_rabbit(app)
 init_health_check(app, database_available, rabbit_available)
 init_policy_factory()
