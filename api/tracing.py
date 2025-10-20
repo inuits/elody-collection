@@ -40,7 +40,7 @@ def init_mongo_instrumentation():
             if not _mongoInstrumentor:
                 _mongoInstrumentor = instrumentation_library.PymongoInstrumentor()
                 provider = trace.get_tracer_provider()
-                _mongoInstrumentor.instrument(tracer_provider=provider)
+                _mongoInstrumentor.instrument(tracer_provider=provider, capture_statement=True)
         except Exception as e:
             print("WE'RE NOT INSTRUMENTING ACTUALLY", "\n\n\n", flush=True)
             raise e
