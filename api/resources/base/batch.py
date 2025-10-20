@@ -68,6 +68,8 @@ class Batch(BaseResource):
                 contents = []
                 for content in [content, *g.get("parsed_contents", [])]:
                     try:
+                        if isinstance(content, Exception):
+                            raise content
                         if not force_patch_only:
                             prepare_creation = (
                                 get_object_configuration_mapper()
@@ -76,7 +78,15 @@ class Batch(BaseResource):
                             )
                             content = prepare_creation(content)
                     except Exception as exception:
-                        if content.get("type") != "mediafile" or g.get("dry_run"):
+                        if isinstance(content, Exception):
+                            errors, status_code = self.__process_errors(
+                                errors,
+                                exception,
+                                status_code,
+                                line_count=line_count,
+                                document_type=document_type,
+                            )
+                        elif content.get("type") != "mediafile" or g.get("dry_run"):
                             errors, status_code = self.__process_errors(
                                 errors,
                                 exception,
@@ -296,6 +306,9 @@ class Batch(BaseResource):
                 message = message.replace("| prefix:", f"| prefix:{line_info}")
             if message not in errors:
                 errors.append(message)
+        else:
+            return errors, status_code
+
         if isinstance(exception, HTTPError):
             status_code = exception.response.status_code
         elif isinstance(exception, BadRequest):
