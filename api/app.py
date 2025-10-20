@@ -9,14 +9,13 @@ from glob import glob
 from health import init_health_check
 from importlib import import_module
 from logging_elody.log import log
+from opentelemetry.instrumentation.flask import FlaskInstrumentor
 from os import getenv, path
 from policy_factory import init_policy_factory, get_user_context
 from rabbit import init_rabbit, get_rabbit
 from secrets import token_hex
 from tracing import init_tracer
 from werkzeug.exceptions import Forbidden, HTTPException, Unauthorized
-
-from opentelemetry.instrumentation.flask import FlaskInstrumentor
 
 
 SWAGGER_URL = "/api/docs"  # URL for exposing Swagger UI (without trailing '/')
