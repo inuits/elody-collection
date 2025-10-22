@@ -77,6 +77,7 @@ class MongoFilters:
             limit,
             options_requesting_filter,
             facets_request,
+            collection=collection,
         )
 
     def __build_aggregation_query(
@@ -120,12 +121,15 @@ class MongoFilters:
         limit,
         options_requesting_filter,
         facets_request,
+        collection=None,
     ):
+        # FIXME: ref #146927
+        collection = collection or BaseMatchers.collection
         try:
             with tracer.start_as_current_span(
                 "base.MongoFilters.__execute_aggregation_query.aggregate"
             ) as aggregation_span:
-                cursor = self.storage.db[BaseMatchers.collection].aggregate(
+                cursor = self.storage.db[collection].aggregate(
                     pipeline, allowDiskUse=self.storage.allow_disk_use
                 )
         except Exception as exception:
@@ -144,7 +148,13 @@ class MongoFilters:
             output = {"results": list(cursor)}
 
         return self.__get_items(
-            output, match, group, skip, limit, options_requesting_filter
+            output,
+            match,
+            group,
+            skip,
+            limit,
+            options_requesting_filter,
+            collection=collection,
         )
 
     @tracer.start_as_current_span("base.MongoFilters.__get_items")
@@ -156,7 +166,20 @@ class MongoFilters:
         skip,
         limit,
         options_requesting_filter=None,
+        collection=None,
     ):
+        # FIXME: ref #146927
+        # When BaseMatchers.collection is used to choose which collection to
+        # aggregate on, and many requests are made within a small timeframe,
+        # and not all requests end up filtering on the same collection, it can
+        # happen that BaseMatchers.collection has changed between the
+        # aggregation in __execute_aggregation_query and the aggregation in
+        # __get_items. This is now fixed by pinning the collection parameter to
+        # the collection value at the start of this flow, but it should be
+        # changed to an object such as Flask.g. However, it's not certain this
+        # logic isn't invoked in a flow where there is no active http-request
+        # (or Flask.RequestContext) like in a queue or when a cronjob runs.
+        collection = collection or BaseMatchers.collection
         items = {"results": [], "count": 0, "facets": output.get("facets", [])}
 
         if options_requesting_filter:
@@ -190,7 +213,7 @@ class MongoFilters:
         else:
             items["skip"] = skip
             items["limit"] = limit
-            count = self.storage.db[BaseMatchers.collection].aggregate(
+            count = self.storage.db[collection].aggregate(
                 [*match, *group, {"$count": "count"}],
                 allowDiskUse=self.storage.allow_disk_use,
             )
