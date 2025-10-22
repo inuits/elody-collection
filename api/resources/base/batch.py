@@ -29,17 +29,24 @@ class Batch(BaseResource):
         g.enable_parsers = True
         status_code = 201 if not force_patch_only else 200
         documents, errors, mediafile_errors = [], [], []
-        job_id, parent_job_id = "", None
-        if has_accept_text_uri_list_header := (
-            request.headers.get("Accept") == "text/uri-list"
-        ):
-            request.headers = Headers({**request.headers, "Accept": "application/json"})
         line_count, content = 1, {}
+        job_id, parent_job_id = "", None
         document_type = request.args.get("type", "")
         view_args_id = (request.view_args or {}).get("id")
 
+        content_type = encode_content_type_header(request.content_type)
+        has_accept_text_uri_list_header = (
+            request.headers.get("Accept") == "text/uri-list"
+        )
+        request.headers = Headers(
+            {
+                **request.headers,
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+            }
+        )
+
         try:
-            content_type = encode_content_type_header(request.content_type)
             default_config = get_object_configuration_mapper().get("_default")
             serialize_batch = default_config.serialization(
                 content_type, default_config.SCHEMA_TYPE
