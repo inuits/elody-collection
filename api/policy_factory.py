@@ -1,4 +1,4 @@
-from flask import g
+from app_context import g
 from importlib import import_module
 from inuits_policy_based_auth import PolicyFactory, RequestContext
 from inuits_policy_based_auth.exceptions import NoUserContextException
