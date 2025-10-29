@@ -24,6 +24,10 @@ class _FallbackStorage:
         """Get a value from storage, with optional default."""
         return getattr(self._storage, name, default)
     
+    def set(self, name: str, value: Any) -> None:
+        """Set a value in storage."""
+        setattr(self._storage, name, value)
+    
     def __getattr__(self, name: str) -> Any:
         """Get attribute from storage."""
         if name.startswith('_'):
@@ -81,6 +85,14 @@ class _GProxy:
         else:
             return getattr(target, name, default)
     
+    def set(self, name: str, value: Any) -> None:
+        """Set a value."""
+        target = self._get_target()
+        if hasattr(target, 'set'):
+            target.set(name, value)
+        else:
+            setattr(target, name, value)
+    
     def __getattr__(self, name: str) -> Any:
         """Get attribute from the appropriate storage."""
         if name.startswith('_'):
@@ -109,78 +121,178 @@ class _GProxy:
 class _RequestProxy:
     """
     Proxy for Flask's request object that works in both Flask and non-Flask contexts.
-    Returns None or sensible defaults when not in Flask context.
+    
+    In Flask context: delegates to Flask's request (read-only).
+    Outside Flask context: allows setting values for testing/mocking.
     """
     
-    @property
-    def _flask_request(self):
-        """Get Flask's request object if available."""
+    def __init__(self):
+        self._fallback = _FallbackStorage()
+    
+    def _in_flask_context(self) -> bool:
+        """Check if we're in Flask request context."""
         try:
             from flask import request as flask_request
             # Try to access to verify we're in request context
             _ = flask_request.method
-            return flask_request
+            return True
         except (ImportError, RuntimeError, AttributeError):
-            return None
+            return False
     
+    @property
+    def _flask_request(self):
+        """Get Flask's request object if available."""
+        if self._in_flask_context():
+            from flask import request as flask_request
+            return flask_request
+        return None
+    
+    # Method property with getter and setter
     @property
     def method(self) -> Optional[str]:
         """Get request method."""
         req = self._flask_request
-        return req.method if req else None
+        if req:
+            return req.method
+        return self._fallback.get('method')
     
+    @method.setter
+    def method(self, value: str) -> None:
+        """Set request method (only works outside Flask context)."""
+        if not self._in_flask_context():
+            self._fallback.set('method', value)
+    
+    # Path property with getter and setter
     @property
     def path(self) -> Optional[str]:
         """Get request path."""
         req = self._flask_request
-        return req.path if req else None
+        if req:
+            return req.path
+        return self._fallback.get('path')
     
+    @path.setter
+    def path(self, value: str) -> None:
+        """Set request path (only works outside Flask context)."""
+        if not self._in_flask_context():
+            self._fallback.set('path', value)
+    
+    # Endpoint property with getter and setter
     @property
     def endpoint(self) -> Optional[str]:
         """Get request endpoint."""
         req = self._flask_request
-        return req.endpoint if req else None
+        if req:
+            return req.endpoint
+        return self._fallback.get('endpoint')
     
+    @endpoint.setter
+    def endpoint(self, value: str) -> None:
+        """Set request endpoint (only works outside Flask context)."""
+        if not self._in_flask_context():
+            self._fallback.set('endpoint', value)
+    
+    # URL property with getter and setter
     @property
     def url(self) -> Optional[str]:
         """Get request URL."""
         req = self._flask_request
-        return req.url if req else None
+        if req:
+            return req.url
+        return self._fallback.get('url')
     
+    @url.setter
+    def url(self, value: str) -> None:
+        """Set request URL (only works outside Flask context)."""
+        if not self._in_flask_context():
+            self._fallback.set('url', value)
+    
+    # Base URL property with getter and setter
     @property
     def base_url(self) -> Optional[str]:
         """Get request base URL."""
         req = self._flask_request
-        return req.base_url if req else None
+        if req:
+            return req.base_url
+        return self._fallback.get('base_url')
     
+    @base_url.setter
+    def base_url(self, value: str) -> None:
+        """Set request base URL (only works outside Flask context)."""
+        if not self._in_flask_context():
+            self._fallback.set('base_url', value)
+    
+    # Args property with getter and setter
     @property
     def args(self):
         """Get request query parameters."""
         req = self._flask_request
-        return req.args if req else {}
+        if req:
+            return req.args
+        return self._fallback.get('args', {})
     
+    @args.setter
+    def args(self, value: dict) -> None:
+        """Set request query parameters (only works outside Flask context)."""
+        if not self._in_flask_context():
+            self._fallback.set('args', value)
+    
+    # JSON property with getter and setter
     @property
     def json(self):
         """Get request JSON data."""
         req = self._flask_request
-        return req.json if req else None
+        if req:
+            return req.json
+        return self._fallback.get('json')
     
+    @json.setter
+    def json(self, value: Any) -> None:
+        """Set request JSON data (only works outside Flask context)."""
+        if not self._in_flask_context():
+            self._fallback.set('json', value)
+    
+    # Data property with getter and setter
     @property
     def data(self):
         """Get request raw data."""
         req = self._flask_request
-        return req.data if req else None
+        if req:
+            return req.data
+        return self._fallback.get('data')
     
+    @data.setter
+    def data(self, value: Any) -> None:
+        """Set request raw data (only works outside Flask context)."""
+        if not self._in_flask_context():
+            self._fallback.set('data', value)
+    
+    # Headers property with getter and setter
     @property
     def headers(self):
         """Get request headers."""
         req = self._flask_request
-        return req.headers if req else {}
+        if req:
+            return req.headers
+        return self._fallback.get('headers', {})
+    
+    @headers.setter
+    def headers(self, value: dict) -> None:
+        """Set request headers (only works outside Flask context)."""
+        if not self._in_flask_context():
+            self._fallback.set('headers', value)
     
     def get_json(self, *args, **kwargs):
         """Get request JSON data with options."""
         req = self._flask_request
-        return req.get_json(*args, **kwargs) if req else None
+        if req:
+            return req.get_json(*args, **kwargs)
+        return self._fallback.get('json')
+    
+    def set_json(self, value: Any) -> None:
+        """Set request JSON data (only works outside Flask context)."""
+        if not self._in_flask_context():
+            self._fallback.set('json', value)
 
 
 # Create singleton instances
