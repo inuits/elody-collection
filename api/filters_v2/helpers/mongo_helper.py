@@ -163,10 +163,17 @@ def get_options_mapper(
 
 
 def lookup_already_exists_in_pipeline(lookup: list[dict], pipeline: list[dict]) -> bool:
+    lookup_stage = None
+    for stage in lookup:
+        if stage.get("$lookup"):
+            lookup_stage = stage
+            break
+
     for stage in pipeline:
         if list(stage.keys())[0] == "$lookup":
-            if stage["$lookup"] == lookup[0]["$lookup"]:
+            if stage["$lookup"] == lookup_stage:
                 return True
+
     return False
 
 

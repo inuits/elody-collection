@@ -1,3 +1,6 @@
+from elody.policies.helpers import parse_optional_filter_key
+
+
 def get_distinct_by(filter_request_body: list[dict]) -> str:
     distinct_by = [
         filter_criteria["distinct_by"]
@@ -75,18 +78,19 @@ def parse_optional_filters(filter_criteria: dict) -> list[dict]:
         return [filter_criteria]
 
     filter_criterias = []
-    prefix = ""
-    key = filter_criteria["key"]
-    if key[0] == "!":
-        key = key[1:]
-        prefix += "!"
-    if key[0] == "?":
-        key = key[1:]
-        prefix += "?"
+    prefix, lookup_prefix = "", ""
+    if lookup_key := filter_criteria.get("lookup", {}).get("as", ""):
+        _, lookup_prefix = parse_optional_filter_key(filter_criteria["key"])
+        lookup_key = f"{lookup_prefix}{lookup_key}."
+
+    key, prefix = parse_optional_filter_key(
+        filter_criteria["key"].removeprefix(lookup_key)
+    )
+    key = f"{lookup_key.removeprefix(lookup_prefix)}{key}"
 
     if filter_criteria["type"] == "boolean" and filter_criteria["value"] is False:
         prefix = "?"
-    elif not prefix:
+    elif not prefix and not lookup_prefix:
         return [filter_criteria]
 
     filter_criterias.append(
