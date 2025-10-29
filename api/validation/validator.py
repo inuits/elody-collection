@@ -40,7 +40,7 @@ class Validator(BaseResource):
                 strategy, validator = (
                     get_object_configuration_mapper().get(content["type"]).validation()
                 )
-                apply_strategy = getattr(self, f"_apply_{strategy}_strategy")
+                apply_strategy = getattr(self, f"apply_{strategy}_strategy")
                 apply_strategy(validator, content, http_method=http_method, item=item)
                 return function(*args, **kwargs)
 
@@ -48,18 +48,8 @@ class Validator(BaseResource):
 
         return decorator
 
-    def _apply_function_strategy(self, validator, content, http_method, item, **_):
-        try:
-            validator(http_method.lower(), content, item)
-        except BadRequest as bad_request:
-            log.exception(
-                f"{bad_request.__class__.__name__}: {bad_request}",
-                content,
-                exc_info=bad_request,
-            )
-            raise bad_request
 
-    def _apply_schema_strategy(self, validator, content, **_):
+    def apply_schema_strategy(self, validator, content, **_):
         try:
             validate_json(content, validator)
         except ValidationError as error:
@@ -82,3 +72,14 @@ class Validator(BaseResource):
                 .get("errorMessages", {})
                 .get(error_type, error.message)
             )
+
+    def apply_function_strategy(self, validator, content, http_method, item, **_):
+        try:
+            validator(http_method.lower(), content, item)
+        except BadRequest as bad_request:
+            log.exception(
+                f"{bad_request.__class__.__name__}: {bad_request}",
+                content,
+                exc_info=bad_request,
+            )
+            raise bad_request
