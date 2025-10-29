@@ -16,7 +16,7 @@ class Filter(FilterGenericObjectsV2):
         filters = []
         for filter in g.get("content", []):
             if filter.get("lookup") and not filter["lookup"].get("from"):
-                collection = resolve_collections(id=filter["value"][0])[0]
+                collection = resolve_collections(id=filter["value"])[0]
                 filter["lookup"]["from"] = collection
             filters.append(filter)
         return super().post(
