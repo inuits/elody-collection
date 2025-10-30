@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from filters_v2.matchers.base_matchers import BaseMatchers
 from filters_v2.matchers.mongo_matchers import MongoMatchers
 from os import getenv
+from re import escape
 
 
 class BaseMatcher(ABC):
@@ -43,7 +44,8 @@ class ContainsMatcher(BaseMatcher):
 
     def match(self, key, value, **kwargs):
         if isinstance(key, str) and not kwargs.get("match_exact", False):
-            value = value.replace(".", "\\.").replace("?", "\\?").replace("*", ".*")
+            value = escape(value)
+            value.replace("\\*", ".*")
             return self.matcher_engine.contains(
                 key, value, kwargs.get("inner_exact_matches", {})
             )
