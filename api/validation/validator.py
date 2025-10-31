@@ -48,7 +48,6 @@ class Validator(BaseResource):
 
         return decorator
 
-
     def apply_schema_strategy(self, validator, content, **_):
         try:
             validate_json(content, validator)

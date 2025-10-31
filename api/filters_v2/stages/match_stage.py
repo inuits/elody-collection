@@ -68,6 +68,9 @@ def __construct_matchers_per_schema(
 ):
     matchers_per_schema = initial_matchers_per_schema
     for filter_criteria in filter_request_body:
+        if filter_criteria.get("or"):
+            filter_criteria["operator"] = "or"
+
         filter = get_filter(filter_criteria["type"])
         if not initial_matchers_per_schema:
             matchers_per_schema = {"general": []}
@@ -84,6 +87,12 @@ def __construct_matchers_per_schema(
         item_types = filter_criteria.get("item_types", [])
         if len(item_types) > 0:
             matchers_per_schema["general"].append({"type": {"$in": item_types}})
+
+        for or_filter_request_body in filter_criteria.get("or", []):
+            test = build(or_filter_request_body, False)
+            for _, matchers in matchers_per_schema.items():
+                if matchers:
+                    matchers.append({"OR_MATCHER": test[0]["$match"]})
 
         yield matchers_per_schema, filter_criteria
 
