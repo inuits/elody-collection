@@ -39,7 +39,11 @@ class ElodyDocumentRelations(BaseResource):
             document = self._check_if_collection_and_item_exists(None, id)
             document = serialize(document, type=document.get("type"), to_format=spec)
         document["relations"] = [
-            {**content, "sort": {}} if content.get("sort") is None else content
+            (
+                {**content, "sort": {}, "value": None}
+                if content.get("sort") is None
+                else content
+            )
             for content in g.get("content", [])
         ]
         g.content = document
