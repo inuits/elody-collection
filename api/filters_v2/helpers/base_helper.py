@@ -79,7 +79,7 @@ def parse_optional_filters(filter_criteria: dict) -> list[dict]:
 
     filter_criterias = []
     prefix, lookup_prefix = "", ""
-    if lookup_key := filter_criteria.get("lookup", {}).get("as", ""):
+    if lookup_key := (filter_criteria.get("lookup", {}) or {}).get("as", ""):
         _, lookup_prefix = parse_optional_filter_key(filter_criteria["key"])
         lookup_key = f"{lookup_prefix}{lookup_key}."
 
