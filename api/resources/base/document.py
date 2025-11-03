@@ -24,7 +24,9 @@ class Document(GenericObjectDetailV2):
     def patch(self, *, id, spec):
         self.__set_request(id, "PATCH")
         g.enable_parsers = True
-        content_type = encode_content_type_header(request.content_type)
+        content_type = encode_content_type_header(
+            request.content_type, "application/json"
+        )
         if content_type != "applicationjson":
             default_config = get_object_configuration_mapper().get("_default")
             serialize = default_config.serialization(
