@@ -1084,9 +1084,9 @@ class MongoStorageManager(GenericStorageManager):
         else:
             if errors:
                 if len(errors) == len(items):
-                    raise errors[0]
+                    raise errors[-1]
                 elif self.is_dry_run():
-                    raise errors[0]
+                    raise errors[-1]
         return self._prepare_mongo_document(item, True, to_format="elody")
 
     def set_primary_field_collection_item(self, collection, id, mediafile_id, field):
