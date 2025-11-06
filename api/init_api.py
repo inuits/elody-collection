@@ -243,55 +243,55 @@ def init_api(app):
         ),
     )
 
-    api.add_resource(
-        Mediafile, get_route_mapper().get(Mediafile.__name__, "/mediafiles")
-    )
-    api.add_resource(
-        MediafileAssets,
-        get_route_mapper().get(
-            MediafileAssets.__name__, "/mediafiles/<string:id>/assets"
-        ),
-    )
-    api.add_resource(
-        MediafileCopyright,
-        get_route_mapper().get(
-            MediafileCopyright.__name__, "/mediafiles/<string:id>/copyright"
-        ),
-    )
-    api.add_resource(
-        MediafileDerivatives,
-        get_route_mapper().get(
-            MediafileDerivatives.__name__, "/mediafiles/<string:id>/derivatives"
-        ),
-    )
-    api.add_resource(
-        MediafileDownload,
-        get_route_mapper().get(
-            MediafileDownload.__name__, "/mediafiles/<string:id>/download"
-        ),
-    )
-    api.add_resource(
-        MediafileDetail,
-        get_route_mapper().get(MediafileDetail.__name__, "/mediafiles/<string:id>"),
-    )
-    api.add_resource(
-        MediafileMetadata,
-        get_route_mapper().get(
-            MediafileMetadata.__name__, "/mediafiles/<string:id>/metadata"
-        ),
-    )
-    api.add_resource(
-        MediafileParent,
-        get_route_mapper().get(
-            MediafileParent.__name__, "/mediafiles/<string:id>/parent"
-        ),
-    )
-    api.add_resource(
-        MediafileRelations,
-        get_route_mapper().get(
-            MediafileRelations.__name__, "/mediafiles/<string:id>/relations"
-        ),
-    )
+    # api.add_resource(
+    #     Mediafile, get_route_mapper().get(Mediafile.__name__, "/mediafiles")
+    # )
+    # api.add_resource(
+    #     MediafileAssets,
+    #     get_route_mapper().get(
+    #         MediafileAssets.__name__, "/mediafiles/<string:id>/assets"
+    #     ),
+    # )
+    # api.add_resource(
+    #     MediafileCopyright,
+    #     get_route_mapper().get(
+    #         MediafileCopyright.__name__, "/mediafiles/<string:id>/copyright"
+    #     ),
+    # )
+    # api.add_resource(
+    #     MediafileDerivatives,
+    #     get_route_mapper().get(
+    #         MediafileDerivatives.__name__, "/mediafiles/<string:id>/derivatives"
+    #     ),
+    # )
+    # api.add_resource(
+    #     MediafileDownload,
+    #     get_route_mapper().get(
+    #         MediafileDownload.__name__, "/mediafiles/<string:id>/download"
+    #     ),
+    # )
+    # api.add_resource(
+    #     MediafileDetail,
+    #     get_route_mapper().get(MediafileDetail.__name__, "/mediafiles/<string:id>"),
+    # )
+    # api.add_resource(
+    #     MediafileMetadata,
+    #     get_route_mapper().get(
+    #         MediafileMetadata.__name__, "/mediafiles/<string:id>/metadata"
+    #     ),
+    # )
+    # api.add_resource(
+    #     MediafileParent,
+    #     get_route_mapper().get(
+    #         MediafileParent.__name__, "/mediafiles/<string:id>/parent"
+    #     ),
+    # )
+    # api.add_resource(
+    #     MediafileRelations,
+    #     get_route_mapper().get(
+    #         MediafileRelations.__name__, "/mediafiles/<string:id>/relations"
+    #     ),
+    # )
 
     api.add_resource(
         OpenAPISpec,

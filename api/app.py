@@ -15,7 +15,7 @@ from policy_factory import init_policy_factory, get_user_context
 from rabbit import init_rabbit, get_rabbit
 from secrets import token_hex
 from tracing import init_tracer
-from werkzeug.exceptions import Forbidden, HTTPException, Unauthorized
+from werkzeug.exceptions import Forbidden, HTTPException, NotFound, Unauthorized
 
 
 SWAGGER_URL = "/api/docs"  # URL for exposing Swagger UI (without trailing '/')
@@ -179,9 +179,10 @@ def exception(exception):
             item = get_user_context().bag.get("item_being_processed")
     except Exception:
         pass
-    log.exception(
-        f"{exception.__class__.__name__}: {exception}", item, exc_info=exception
-    )
+    if exception.__class__ != NotFound:
+        log.exception(
+            f"{exception.__class__.__name__}: {exception}", item, exc_info=exception
+        )
     try:
         return jsonify(message=exception.description), exception.code
     except:
