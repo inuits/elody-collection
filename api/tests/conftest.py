@@ -14,8 +14,9 @@ def flask_app():
     """
     try:
         from flask import Flask
+
         app = Flask(__name__)
-        app.config['TESTING'] = True
+        app.config["TESTING"] = True
         return app
     except ImportError:
         pytest.skip("Flask not installed")
@@ -36,10 +37,10 @@ def flask_request_context(flask_app):
     Provide Flask request context.
     """
     with flask_app.test_request_context(
-        '/api/test',
-        method='GET',
+        "/api/test",
+        method="GET",
         json={"data": "test"},
-        headers={"Content-Type": "application/json"}
+        headers={"Content-Type": "application/json"},
     ):
         yield flask_app
 
@@ -48,22 +49,23 @@ def flask_request_context(flask_app):
 def thread_barrier():
     """
     Create a threading barrier for synchronizing multiple threads in tests.
-    
+
     Usage:
         def test_thread_safety(thread_barrier):
             barrier = thread_barrier(3)  # For 3 threads
-            
+
             def worker():
                 barrier.wait()  # All threads start together
                 # Do work
-            
+
             threads = [threading.Thread(target=worker) for _ in range(3)]
             for t in threads: t.start()
             for t in threads: t.join()
     """
+
     def create_barrier(num_threads):
         return threading.Barrier(num_threads)
-    
+
     return create_barrier
 
 
@@ -74,14 +76,14 @@ def clean_app_context():
     This fixture reimports the module to reset singleton instances.
     """
     # Remove app_context from sys.modules if it exists
-    if 'app_context' in sys.modules:
-        del sys.modules['app_context']
-    
+    if "app_context" in sys.modules:
+        del sys.modules["app_context"]
+
     yield
-    
+
     # Clean up after test
-    if 'app_context' in sys.modules:
-        del sys.modules['app_context']
+    if "app_context" in sys.modules:
+        del sys.modules["app_context"]
 
 
 @pytest.fixture
@@ -90,6 +92,7 @@ def fallback_storage():
     Create a fresh _FallbackStorage instance for testing.
     """
     from app_context import _FallbackStorage
+
     return _FallbackStorage()
 
 
@@ -99,6 +102,7 @@ def g_proxy():
     Create a fresh _GProxy instance for testing.
     """
     from app_context import _GProxy
+
     return _GProxy()
 
 
@@ -108,6 +112,7 @@ def request_proxy():
     Create a fresh _RequestProxy instance for testing.
     """
     from app_context import _RequestProxy
+
     return _RequestProxy()
 
 
@@ -120,7 +125,7 @@ def sample_user_context():
         "user_id": 123,
         "username": "testuser",
         "email": "test@example.com",
-        "roles": ["admin", "user"]
+        "roles": ["admin", "user"],
     }
 
 
@@ -138,5 +143,5 @@ def sample_request_data():
         "args": {"filter": "active"},
         "json": {"name": "John Doe", "email": "john@example.com"},
         "data": b'{"name": "John Doe"}',
-        "headers": {"Authorization": "Bearer token123"}
+        "headers": {"Authorization": "Bearer token123"},
     }
