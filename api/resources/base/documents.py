@@ -17,10 +17,12 @@ from werkzeug.exceptions import BadRequest, Forbidden, MethodNotAllowed
 class Documents(GenericObjectV2):
     @authenticate(RequestContext(request))
     def get(self, *, spec, collection="", is_type_required=False):
-        if (
-            "export" not in get_features().get("bulk_operations", {}).keys()
-            and request.headers.get("Accept") != "application/json"
-        ):
+        if "export" not in get_features().get(
+            "bulk_operations", {}
+        ).keys() and request.headers.get("Accept", "*/*") not in [
+            "*/*",
+            "application/json",
+        ]:
             raise MethodNotAllowed()
 
         self.__set_request("GET")
