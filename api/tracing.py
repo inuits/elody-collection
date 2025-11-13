@@ -8,6 +8,11 @@ from os import getenv
 from importlib import import_module
 
 
+class DummyTracer:
+    def start_as_current_span(self, *args, **kwargs):
+        return lambda function: function
+
+
 provider = TracerProvider()
 processor = BatchSpanProcessor(OTLPSpanExporter())
 provider.add_span_processor(processor)
@@ -16,7 +21,7 @@ provider.add_span_processor(processor)
 trace.set_tracer_provider(provider)
 
 
-_tracer = None
+_tracer = DummyTracer()
 _mongoInstrumentor = None
 
 
@@ -26,7 +31,7 @@ def init_tracer():
     return _tracer
 
 
-def get_tracer() -> trace.Tracer:
+def get_tracer():
     global _tracer
     return _tracer
 
