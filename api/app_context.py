@@ -250,7 +250,7 @@ class _RequestProxy:
         """Get request route parameters."""
         req = self._flask_request
         if req:
-            return req.args
+            return req.view_args
         return self._fallback.get("view_args", {})
 
     @view_args.setter
