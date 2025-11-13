@@ -244,6 +244,21 @@ class _RequestProxy:
         if not self._in_flask_context():
             self._fallback.set("args", value)
 
+    # View args property with getter and setter
+    @property
+    def view_args(self):
+        """Get request route parameters."""
+        req = self._flask_request
+        if req:
+            return req.args
+        return self._fallback.get("view_args", {})
+
+    @view_args.setter
+    def view_args(self, value: dict) -> None:
+        """Set request route parameters (only works outside Flask context)."""
+        if not self._in_flask_context():
+            self._fallback.set("view_args", value)
+
     # JSON property with getter and setter
     @property
     def json(self):
