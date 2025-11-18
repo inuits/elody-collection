@@ -32,6 +32,17 @@ class ElodyMediafileDownloadUrls(BaseResource):
 
         config = get_object_configuration_mapper().get("mediafile")
         serialize = config.serialization(config.SCHEMA_TYPE, "texturilist")
+        # NOTE: Using config.SCHEMA_TYPE is technically incorrect: The
+        # ElodyMediafile will fetch mediafiles in the "elody" format. However,
+        # the clients will try to serialize from their own formats in this
+        # function. It doesn't matter particularly much for AICAP and DAMS it
+        # looks like, but this broke for vliz However, the following fix won't
+        # work for them since they don't have elody_to_texturilist functions,
+        # but we should pick this back up at some point, in case a client goes
+        # completely different in their mediafiles
+        # serialize = config.serialization(
+        #     mediafile.get("schema", {}).get("type", "elody"), "texturilist"
+        # )
         response = {}
 
         if original_file_location := serialize(
