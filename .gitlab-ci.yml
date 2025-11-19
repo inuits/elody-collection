@@ -29,12 +29,12 @@ variables:
 # Template overrides
 # --------------------------------------------------------------
 
-# Only run pipeline for default branch
+# Don't run the pipeline for renovate branches
 workflow:
   rules:
-    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
-      when: always
-    - when: never
+    - if: '$CI_COMMIT_BRANCH =~ /^renovate/'
+      when: never
+    - when: always
 
 # Disable uat, not needed
 uat:
