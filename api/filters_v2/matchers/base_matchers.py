@@ -44,6 +44,12 @@ class BaseMatchers(ABC):
         pass
 
     @abstractmethod
+    def regex(
+        self, key: str, value: str, inner_exact_matches: dict = {}, options: str = ""
+    ) -> dict:
+        pass
+
+    @abstractmethod
     def min(
         self,
         key: str,

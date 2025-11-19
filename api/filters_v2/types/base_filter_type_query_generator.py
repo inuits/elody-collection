@@ -14,6 +14,8 @@ class BaseFilterTypeQueryGenerator(ABC):
             filter_criteria["value"],
             match_exact=filter_criteria.get("match_exact"),
             inner_exact_matches=filter_criteria.get("inner_exact_matches", {}),
+            regex=filter_criteria.get("regex", False),
+            regex_options=filter_criteria.get("regex_options", ""),
         )
 
     @abstractmethod
@@ -89,7 +91,7 @@ class BaseFilterTypeQueryGenerator(ABC):
         matchers: dict[str, Type[BaseMatcher]],
         key: str | list[str],
         value,
-        **kwargs
+        **kwargs,
     ):
         for matcher in matchers.values():
             result = matcher().match(key, value, **kwargs)

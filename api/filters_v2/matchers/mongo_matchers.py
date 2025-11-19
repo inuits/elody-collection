@@ -31,6 +31,11 @@ class MongoMatchers(BaseMatchers):
         match_value = {"$regex": value, "$options": "i"}
         return self.__contains_range_match(key, match_value, inner_exact_matches)
 
+    # TODO: Error checking on the regex options
+    def regex(self, key, value, inner_exact_matches={}, options=""):
+        match_value = {"$regex": value, "$options": options}
+        return self.__contains_range_match(key, match_value, inner_exact_matches)
+
     def min(self, key, value, is_datetime_value=False, aggregation=""):
         if is_datetime_value:
             value = self.__get_datetime_query_value(value)

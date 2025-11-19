@@ -473,6 +473,8 @@ class BaseResource(Resource):
                             ),
                             "value": f"^{value}$",  # changing this regex will break pza
                             "match_exact": False,
+                            # "regex": True,
+                            # "regex_options": "i",
                         }
                     )
         return filters

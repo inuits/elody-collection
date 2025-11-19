@@ -2,6 +2,7 @@ from abc import ABC
 from filters_v2.matchers.matchers import (
     AnyMatcher,
     ContainsMatcher,
+    RegexMatcher,
     ExactMatcher,
     GeoMatcher,
     InBetweenMatcher,
@@ -18,6 +19,7 @@ class FilterMatcherMapping(ABC):
             "none": NoneMatcher,
             "exact": ExactMatcher,
             "contains": ContainsMatcher,
+            "regex": RegexMatcher,
         },
         "date": {
             "any": AnyMatcher,
