@@ -30,10 +30,11 @@ variables:
 # --------------------------------------------------------------
 
 # Only run pipeline for default branch
-rules:
-  - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
-    when: always
-  - when: never
+workflow:
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+      when: always
+    - when: never
 
 # Disable uat, not needed
 uat:
