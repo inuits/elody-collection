@@ -29,12 +29,13 @@ variables:
 # Template overrides
 # --------------------------------------------------------------
 
-# Don't run the pipeline for renovate branches
+# Only run pipeline for default branch, otherwise require manual approval
 workflow:
   rules:
-    - if: '$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME =~ /^renovate/'
-      when: never
-    - when: always
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+      when: always
+    - when: manual
+
 
 # Disable uat, not needed
 uat:
