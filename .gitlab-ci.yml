@@ -30,11 +30,12 @@ variables:
 # --------------------------------------------------------------
 
 # Only run pipeline for default branch, otherwise require manual approval
-workflow:
+build:
   rules:
     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
       when: always
-    - when: manual
+    - if: '$CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH'
+      when: manual
 
 
 # Disable uat, not needed
