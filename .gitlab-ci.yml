@@ -32,7 +32,7 @@ variables:
 # Don't run the pipeline for renovate branches
 workflow:
   rules:
-    - if: '$CI_COMMIT_BRANCH =~ /^renovate/'
+    - if: '$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME =~ /^renovate/'
       when: never
     - when: always
 
