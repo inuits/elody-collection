@@ -58,7 +58,9 @@ class ElodyMediafilesGenerateTranscode(BaseResource):
 
         for id in identifiers:
             self.__set_request(id, "PATCH")
-            self.resource.patch(id=id, **kwargs)
+            self.resource.patch(
+                id=id, parent_job_id=parent_generate_transcode_job_id, **kwargs
+            )
         response = {"parent_job_id": parent_generate_transcode_job_id}
         return self._create_response_according_accept_header(response)
 
