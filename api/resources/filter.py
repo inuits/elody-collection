@@ -245,12 +245,12 @@ class FilterGenericObjectsV2(BaseFilterResource):
         if request.args.get("soft", 0, int):
             return "good", 200
         query: list = content or request.get_json()
-        document_type = get_type_filter_value(query)
-        if not isinstance(document_type, list) and document_type:
-            document_type = [document_type]
-        if not document_type:
-            document_type = get_selection_type_filter_value(query)
-            if len(document_type) > 0:
+        document_types = get_type_filter_value(query)
+        if not isinstance(document_types, list) and document_types:
+            document_types = [document_types]
+        if not document_types:
+            document_types = get_selection_type_filter_value(query)
+            if len(document_types) > 0:
                 pass
             elif is_type_required:
                 raise BadRequest(
@@ -258,48 +258,32 @@ class FilterGenericObjectsV2(BaseFilterResource):
                 )
 
         collection_map = dict()
-        for doctype in document_type:
-            config = get_object_configuration_mapper().get(doctype or collection)
+        for document_type in document_types:
+            config = get_object_configuration_mapper().get(document_type or collection)
             collection = config.crud().get("collection")
             if not collection_map.get(collection):
-                collection_map[collection] = [doctype]
+                collection_map[collection] = [document_type]
             else:
-                collection_map[collection] += doctype
+                collection_map[collection] += document_type
 
         # TODO: This will not properly respect limits
+        accept_header = request.headers.get("Accept")
+        access_restricting_filters = get_user_context().access_restrictions.filters
+        skip = request.args.get("skip", 0, int)
+        limit = request.args.get("limit", 20, int)
+        internal_skip = skip
+        internal_limit = limit
         items = {
             "results": [],
             "count": 0,
             "facets": [],
         }
-        accept_header = request.headers.get("Accept")
-        access_restricting_filters = get_user_context().access_restrictions.filters
-        # if access_restricting_filters:
-        #     for filter in access_restricting_filters:
-        #         query.insert(0, filter)
-        # if storage_type == "http":
-        #     http_storage = get_storage_mapper().get(
-        #         "http"
-        #     )()  # pyright: ignore[reportOptionalCall]
-        #     filter = config.serialization(
-        #         f"{spec}_filter", f"{config.SCHEMA_TYPE}_filter"
-        #     )
-        #     filters = filter(query)
-        #     skip = request.args.get("skip", 0, int)
-        #     limit = request.args.get("limit", 20, int)
-        #     items = http_storage.get_items_from_collection(
-        #         collection,
-        #         filters=filters,
-        #         skip=skip,
-        #         limit=limit,
-        #     )
-        # else:
-        #     items = self._execute_advanced_search_with_query_v2(query, collection)
         for collection in collection_map:
+            count = items["count"]
+
             config = get_object_configuration_mapper().get(
                 collection_map[collection][0] or collection
             )
-            # collection = config.crud().get("collection")
             # NOTE: I'm assuming entity types that share a collection also share a storage type
             storage_type = config.crud()["storage_type"]
             if storage_type != "http":
@@ -307,25 +291,36 @@ class FilterGenericObjectsV2(BaseFilterResource):
             if access_restricting_filters:
                 for filter in access_restricting_filters:
                     query.insert(0, filter)
+
             if storage_type == "http":
-                http_storage = get_storage_mapper().get("http")
+                http_storage = get_storage_mapper().get("http")()
                 filter = config.serialization(
                     f"{spec}_filter", f"{config.SCHEMA_TYPE}_filter"
                 )
                 filters = filter(query)
-                skip = request.args.get("skip", 0, int)
-                limit = request.args.get("limit", 20, int)
-                items = http_storage.get_items_from_collection(
-                    self,
+                result_items = http_storage.get_items_from_collection(
                     collection,
                     filters=filters,
-                    skip=skip,
-                    limit=limit,
+                    skip=internal_skip,
+                    limit=internal_limit,
                 )
             else:
-                results = self._execute_advanced_search_with_query_v2(query, collection)
-                for key in items:
-                    items[key] += results[key]
+                result_items = self._execute_advanced_search_with_query_v2(
+                    query, collection, skip=internal_skip, limit=internal_limit
+                )
+
+            count += result_items["count"]
+            for key in items:
+                # NOTE: This can technically have issues if the result_items
+                # ever don't have a "count" field, since it will try to do int
+                # + list, which will fail
+                items[key] += result_items.get(key, [])
+            if len(items["results"]) == limit:
+                break
+            if internal_skip >= count:
+                internal_skip -= count
+            internal_limit -= len(items["results"])
+
         return self._create_response_according_accept_header(
             mappers.map_data_according_to_accept_header(
                 (
