@@ -39,7 +39,7 @@ class ElodyMediafileGenerateTranscode(BaseResource):
         if request.args.get("soft", 0, int):
             return "good", 200
 
-        parent_job_id = kwargs.get("parent_job_id", None)
+        parent_job_id = kwargs.pop("parent_job_id", None)
 
         entity = self.resource.get(id=id, **kwargs)
 

@@ -47,7 +47,7 @@ class ElodyMediafilesGenerateTranscode(BaseResource):
 
         parent_generate_transcode_job_id = self.__init_job(
             f"Generate Transcodes for {identifiers}",
-            "Transcode fixup",
+            "Bulk Transcode Generation",
             get_rabbit=lambda: get_rabbit(),
             user_email="developers@inuits.eu",
             # user_email=get_user_context().email,
