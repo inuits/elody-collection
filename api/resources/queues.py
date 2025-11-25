@@ -176,7 +176,7 @@ def update_job(routing_key, body, message_id):
                     run_post_crud_hook=False,
                 )
                 parent_job_id = get_item_relation_key(document, "hasParentJob")
-                if parent_job_id and current_status != new_status:
+                if parent_job_id and new_status and current_status != new_status:
                     _handle_status_update(
                         parent_job_id, collection, current_status, new_status
                     )
