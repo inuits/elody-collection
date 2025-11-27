@@ -52,6 +52,7 @@ class BaseFilterTypeQueryGenerator(ABC):
             filter_criteria["value"],
             match_exact=filter_criteria.get("match_exact"),
             inner_exact_matches=filter_criteria.get("inner_exact_matches", {}),
+            list_operation=filter_criteria.get("list_operation", "or"),
         )
 
     @abstractmethod

@@ -36,6 +36,7 @@ class BaseMatchers(ABC):
         is_datetime_value: bool = False,
         aggregation: str = "",
         inner_exact_matches: dict = {},
+        list_operation: str = "or",
     ) -> dict:
         pass
 

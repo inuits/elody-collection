@@ -11,9 +11,17 @@ class MongoMatchers(BaseMatchers):
         is_datetime_value=False,
         aggregation="",
         inner_exact_matches={},
+        list_operation="or",
     ):
+        match list_operation:
+            case "and":
+                operator = "$all"
+            case "or":
+                operator = "$in"
+            case _:
+                operator = "$in"
         if isinstance(value, list):
-            value = {"$in": value}
+            value = {operator: value}
         elif is_datetime_value:
             value = self.__get_datetime_query_value(value)
             return self.__contains_range_match(key, value)

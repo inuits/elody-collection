@@ -35,6 +35,7 @@ class ExactMatcher(BaseMatcher):
                 kwargs.get("is_datetime_value", False),
                 kwargs.get("aggregation", ""),
                 kwargs.get("inner_exact_matches", {}),
+                kwargs.get("list_operation", "or"),
             )
 
 
