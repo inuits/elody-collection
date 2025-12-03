@@ -281,3 +281,81 @@ def __unify_or_matchers(match):
 
     if match.get("$or") is not None and len(match.get("$or")) == 0:
         del match["$or"]
+
+
+def has_bucket_filter(filter_request_body):
+    geo_filter = None
+
+    for filter in filter_request_body:
+        if filter["type"] == "geo" and filter.get("bucket", False):
+            geo_filter = filter
+            break
+
+    return geo_filter
+
+
+def get_bucket_stages(geo_filter: dict):
+
+    bucket = geo_filter["bucket"]
+    value = geo_filter["value"]
+
+    bucket = int(bucket)
+    intial_polygon = value
+    coordinates = intial_polygon["coordinates"][0]
+
+    lngs = [p[0] for p in coordinates]
+    min_lng = min(lngs)
+    max_lng = max(lngs)
+
+    lng_delta = max_lng - min_lng
+    if lng_delta < 0 or (max_lng < min_lng):
+        lng_delta = (180 - min_lng) + (max_lng + 180)
+    step_size = lng_delta / bucket
+
+    group = {
+        "$group": {
+            "_id": {
+                "grid_x": {
+                    "$floor": {
+                        "$divide": [
+                            {"$arrayElemAt": ["$location.coordinates", 0]},
+                            step_size,
+                        ]
+                    }
+                },
+                "grid_y": {
+                    "$floor": {
+                        "$divide": [
+                            {"$arrayElemAt": ["$location.coordinates", 1]},
+                            step_size,
+                        ]
+                    }
+                },
+            },
+            "count": {"$sum": 1},
+            # Visual center of the cluster
+            "avg_lng": {"$avg": {"$arrayElemAt": ["$location.coordinates", 0]}},
+            "avg_lat": {"$avg": {"$arrayElemAt": ["$location.coordinates", 1]}},
+            # Keep the data of the first document found
+            "first_doc": {"$first": "$$ROOT"},
+        }
+    }
+
+    replaceRoot = {
+        "$replaceRoot": {
+            "newRoot": {
+                "$mergeObjects": [
+                    "$first_doc",
+                    {
+                        "bucket_count": "$count",
+                        "location": {
+                            "type": "Point",
+                            "coordinates": ["$avg_lng", "$avg_lat"],
+                        },
+                    },
+                ]
+            }
+        }
+    }
+
+    return [group], [replaceRoot]
