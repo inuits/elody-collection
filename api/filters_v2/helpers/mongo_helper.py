@@ -1,5 +1,7 @@
-from configuration import get_object_configuration_mapper
+import math
 from copy import deepcopy
+
+from configuration import get_object_configuration_mapper
 from elody.error_codes import ErrorCode, get_error_code, get_read
 from elody.util import flatten_dict, interpret_flat_key
 from filters_v2.matchers.base_matchers import BaseMatchers
@@ -307,10 +309,23 @@ def get_bucket_stages(geo_filter: dict):
     min_lng = min(lngs)
     max_lng = max(lngs)
 
+    lats = [p[1] for p in coordinates]
+    min_lat = min(lats)
+    max_lat = max(lats)
+
     lng_delta = max_lng - min_lng
     if lng_delta < 0 or (max_lng < min_lng):
         lng_delta = (180 - min_lng) + (max_lng + 180)
-    step_size = lng_delta / bucket
+    step_size_x = lng_delta / bucket
+
+    center_lat = (min_lat + max_lat) / 2
+    lat_radians = math.radians(center_lat)
+    correction_factor = math.cos(lat_radians)
+
+    if correction_factor < 0.1:  # Avoid /0 at poles
+        correction_factor = 0.1
+
+    step_size_y = step_size_x * correction_factor
 
     group = {
         "$group": {
@@ -319,7 +334,7 @@ def get_bucket_stages(geo_filter: dict):
                     "$floor": {
                         "$divide": [
                             {"$arrayElemAt": ["$location.coordinates", 0]},
-                            step_size,
+                            step_size_x,
                         ]
                     }
                 },
@@ -327,7 +342,7 @@ def get_bucket_stages(geo_filter: dict):
                     "$floor": {
                         "$divide": [
                             {"$arrayElemAt": ["$location.coordinates", 1]},
-                            step_size,
+                            step_size_y,
                         ]
                     }
                 },
