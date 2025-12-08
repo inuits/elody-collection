@@ -7,7 +7,11 @@ from filters_v2.helpers.base_helper import (
     has_non_exact_match_filter,
     has_selection_filter_with_multiple_values,
 )
-from filters_v2.helpers.mongo_helper import get_filter_option_label
+from filters_v2.helpers.mongo_helper import (
+    get_filter_option_label,
+    has_bucket_filter,
+    get_bucket_stages,
+)
 from filters_v2.matchers.base_matchers import BaseMatchers
 from filters_v2.stages import (
     facet_stage,
@@ -108,6 +112,9 @@ class MongoFilters:
                 pipeline = [*match, *facet, *project]
             else:
                 pipeline = [*match, *group, *sort, *skip, *limit]
+        if geo_bucket_filter := has_bucket_filter(filter_request_body):
+            bucket_group, replace_root = get_bucket_stages(geo_bucket_filter)
+            pipeline = [*match, *bucket_group, *replace_root]
 
         return pipeline, match, group
 
