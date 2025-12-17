@@ -53,6 +53,13 @@ def init_mappers():
         log.error(
             f"Configuration: apps.mappers not found with error {mapper_error}, falling back to default config."
         )
+    except Exception as unknown_error:
+        from logging_elody.log import log
+
+        log.error(
+            f"Configuration: Unexpected error when loading mappers: {unknown_error}"
+        )
+        raise unknown_error
 
 
 def get_object_configuration_mapper():
