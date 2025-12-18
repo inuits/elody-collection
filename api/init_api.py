@@ -9,11 +9,11 @@ from resources.entity import (
     EntityMediafilesCreate,
     EntityMetadata,
     EntityMetadataKey,
+    EntityOrder,
     EntityRelations,
     EntityRelationsAll,
     EntitySetPrimaryMediafile,
     EntitySetPrimaryThumbnail,
-    EntityOrder,
 )
 from resources.filter import (
     FilterEntities,
@@ -37,19 +37,27 @@ from resources.generic_object import (
     GenericObjectV2,
 )
 from resources.history import History
-from resources.key_value_store import KeyValueStore, KeyValueStoreDetail
-from resources.mediafile import (
-    Mediafile,
-    MediafileAssets,
-    MediafileCopyright,
-    MediafileDerivatives,
-    MediafileDetail,
-    MediafileDownload,
-    MediafileMetadata,
-    MediafileParent,
-    MediafileRelations,
+
+# from resources.mediafile import (
+#     Mediafile,
+#     MediafileAssets,
+#     MediafileCopyright,
+#     MediafileDerivatives,
+#     MediafileDetail,
+#     MediafileDownload,
+#     MediafileMetadata,
+#     MediafileParent,
+#     MediafileRelations,
+# )
+from resources.job import (
+    AddDocumentToJob,
+    FailJob,
+    FinishJob,
+    FinishJobWithWarning,
+    InitJob,
+    StartJob,
 )
-from resources.job import StartJob, FinishJob, FailJob
+from resources.key_value_store import KeyValueStore, KeyValueStoreDetail
 from resources.saved_search import SavedSearch, SavedSearchDetail
 from resources.share_link import ShareLink, ShareLinkDetail
 from resources.spec import AsyncAPISpec, OpenAPISpec
@@ -299,8 +307,18 @@ def init_api(app):
     )
 
     api.add_resource(
+        InitJob,
+        get_route_mapper().get(InitJob.__name__, "/job/init"),
+    )
+    api.add_resource(
         StartJob,
-        get_route_mapper().get(StartJob.__name__, "/job/start"),
+        get_route_mapper().get(StartJob.__name__, "/job/start/<string:id>"),
+    )
+    api.add_resource(
+        AddDocumentToJob,
+        get_route_mapper().get(
+            AddDocumentToJob.__name__, "/job/add_document/<string:id>"
+        ),
     )
     api.add_resource(
         FinishJob,
@@ -309,6 +327,10 @@ def init_api(app):
     api.add_resource(
         FailJob,
         get_route_mapper().get(FailJob.__name__, "/job/fail/<string:id>"),
+    )
+    api.add_resource(
+        FinishJobWithWarning,
+        get_route_mapper().get(FinishJobWithWarning.__name__, "/job/warn/<string:id>"),
     )
     api.add_resource(
         SavedSearch, get_route_mapper().get(SavedSearch.__name__, "/saved_searches")

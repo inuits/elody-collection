@@ -2081,6 +2081,158 @@
         }
       }
     },
+    "/job/init": {
+      "post": {
+        "tags": [
+          "job"
+        ],
+        "summary": "Initialize job",
+        "operationId": "initJob",
+        "requestBody": {
+          "description": "Relation objects to add",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/job_body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "job_id": {
+                      "type": "string",
+                      "example": "uuid"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/job/start/{job_id}": {
+      "post": {
+        "tags": [
+          "job"
+        ],
+        "summary": "start job",
+        "operationId": "startJob",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "description": "job_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation"
+          },
+          "403": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Job not found"
+          }
+        }
+      }
+    },
+    "/job/finish/{job_id}": {
+      "post": {
+        "tags": [
+          "job"
+        ],
+        "summary": "finish job sucessfully",
+        "operationId": "finishJob",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "description": "job_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation"
+          },
+          "403": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Job not found"
+          }
+        }
+      }
+    },
+    "/job/fail/{job_id}": {
+      "post": {
+        "tags": [
+          "job"
+        ],
+        "summary": "finish job unsucessfully",
+        "operationId": "failJob",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "description": "job_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Error message",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "required": [
+                  "exception_message"
+                ],
+                "properties": {
+                  "exception_message": {
+                    "type": "string",
+                    "example": "something went wrong"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "successful operation"
+          },
+          "403": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Job not found"
+          }
+        }
+      }
+    },
     "/saved_searches": {
       "get": {
         "tags": [
@@ -2534,6 +2686,34 @@
               "type": "string"
             },
             "description": "Item types to return, or relation types to search in, in case of a MultiSelectFilter"
+          }
+        }
+      },
+      "job_body": {
+        "type": "object",
+        "description": "minimal job object",
+        "required": [
+          "job_name",
+          "job_type"
+        ],
+        "properties": {
+          "job_name": {
+            "type": "string"
+          },
+          "job_type": {
+            "type": "string"
+          },
+          "user_email": {
+            "type": "string"
+          },
+          "parent_id": {
+            "type": "string"
+          },
+          "track_async_children": {
+            "type": "boolean"
+          },
+          "id_of_document_job_was_initiated_for": {
+            "type": "string"
           }
         }
       },
