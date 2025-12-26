@@ -24,7 +24,7 @@ from werkzeug.exceptions import (
 ### contact @eray for more info or feature/bug reports; refs #146921 ###
 class Batch(BaseResource):
     @authenticate(RequestContext(request))
-    def post(self, *, spec, force_patch_only=False):
+    def post(self, *, spec, force_patch_only=False, **_):
         self.__set_request("POST")
         g.enable_parsers = True
         status_code = 201 if not force_patch_only else 200
