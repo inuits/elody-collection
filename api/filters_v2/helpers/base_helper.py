@@ -7,7 +7,7 @@ def get_distinct_by(filter_request_body: list[dict]) -> str:
         for filter_criteria in filter_request_body
         if filter_criteria.get("distinct_by")
     ]
-    return distinct_by[0] if len(distinct_by) > 0 else ""
+    return distinct_by[0] if len(distinct_by) > 0 else "_id"
 
 
 def get_facets(filter_request_body: list[dict]) -> list:

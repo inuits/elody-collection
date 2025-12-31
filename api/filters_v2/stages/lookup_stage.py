@@ -143,3 +143,25 @@ def __handle_match_lookup(lookup: dict) -> list:
         },
         {"$unwind": {"path": f"${lookup['as']}", "preserveNullAndEmptyArrays": True}},
     ]
+    # starting from mongo v5, you can use the simple lookup syntax combined with `pipeline`
+    # => this way `pipeline` will contain the following $match stage, preventing the need of $unwind
+    # => no $unwind means no duplicate documents in the result
+    # example:
+    # {
+    #     "$lookup": {
+    #         "from": "mediafiles",
+    #         "localField": "_id",
+    #         "foreignField": "ref_assets",
+    #         "as": "__lookup.virtual_relations.hasMediafile",
+    #         "pipeline": [
+    #             {
+    #                 "$match": {
+    #                     "$nor": [
+    #                         { "relations": { "$elemMatch": { "type": "hasOrigin" } } },
+    #                         { "relations": { "$elemMatch": { "type": "hasOrigin", "key": { "$exists": false } } } }
+    #                     ]
+    #                 }
+    #             }
+    #         ]
+    #     }
+    # }
