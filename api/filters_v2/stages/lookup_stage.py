@@ -31,7 +31,12 @@ def __build_facet_lookups(facets: list[dict], lookups: list[dict]):
                         "as": facet_lookup["as"],
                     }
                 },
-                {"$unwind": f"${facet_lookup['as']}"},
+                {
+                    "$unwind": {
+                        "path": f"${facet_lookup['as']}",
+                        "preserveNullAndEmptyArrays": True,
+                    }
+                },
             ]
             if not lookup_already_exists_in_pipeline(lookup, lookups):
                 lookups.extend(lookup)
@@ -136,5 +141,5 @@ def __handle_match_lookup(lookup: dict) -> list:
                 "as": lookup["as"],
             }
         },
-        {"$unwind": f"${lookup['as']}"},
+        {"$unwind": {"path": f"${lookup['as']}", "preserveNullAndEmptyArrays": True}},
     ]
