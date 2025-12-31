@@ -24,7 +24,6 @@ from filters_v2.stages import (
 )
 from logging_elody.log import log
 from storage.storagemanager import StorageManager
-
 from tracing import get_tracer
 
 tracer = get_tracer()

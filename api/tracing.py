@@ -1,3 +1,5 @@
+from contextlib import contextmanager
+from importlib import import_module
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from opentelemetry.sdk.trace import TracerProvider
@@ -5,12 +7,12 @@ from opentelemetry.sdk.trace.export import (
     BatchSpanProcessor,
 )
 from os import getenv
-from importlib import import_module
 
 
 class DummyTracer:
+    @contextmanager
     def start_as_current_span(self, *args, **kwargs):
-        return lambda function: function
+        yield None
 
 
 provider = TracerProvider()

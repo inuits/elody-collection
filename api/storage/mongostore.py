@@ -1,4 +1,3 @@
-from importlib import import_module
 import re
 import time
 
@@ -23,9 +22,8 @@ from pymongo import ASCENDING, DESCENDING, MongoClient
 from pymongo.errors import DuplicateKeyError
 from rabbit import get_rabbit
 from storage.genericstore import GenericStorageManager
-from urllib.parse import quote_plus
-from werkzeug.exceptions import BadRequest
 from tracing import get_tracer, init_mongo_instrumentation
+from urllib.parse import quote_plus
 
 tracer = get_tracer()
 
