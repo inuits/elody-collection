@@ -19,7 +19,7 @@ from migration.migrate import migrate
 from os import getenv
 from policy_factory import get_user_context
 from pymongo import ASCENDING, DESCENDING, MongoClient
-from pymongo.errors import DuplicateKeyError
+from pymongo.errors import DuplicateKeyError, WriteError
 from rabbit import get_rabbit
 from storage.genericstore import GenericStorageManager
 from tracing import get_tracer, init_mongo_instrumentation
@@ -964,7 +964,20 @@ class MongoStorageManager(GenericStorageManager):
                 get_user_context=get_user_context,
             )
             if not self.is_dry_run():
-                self.db[collection].replace_one({"_id": item["_id"]}, item)
+                try:
+                    self.db[collection].replace_one(
+                        {"_id": unpatched_item["_id"]}, item
+                    )
+                except WriteError as exception:
+                    if exception.details.get("code") == 66:
+                        self.db[config.crud()["collection"]].delete_one(
+                            self._get_id_query(unpatched_item["_id"])
+                        )
+                        self.db[collection].insert_one(item)
+                    else:
+                        raise exception
+                except Exception as exception:
+                    raise exception
             if run_post_crud_hook:
                 post_crud_hook(
                     crud="update",
