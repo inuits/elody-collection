@@ -1049,10 +1049,10 @@ class MongoStorageManager(GenericStorageManager):
             items = [items]
         item = {}
         for item in items:
+            config = get_object_configuration_mapper().get(item["type"])
             try:
                 if not is_history and not item.get("data"):
                     self.__verify_uniqueness(item)
-                config = get_object_configuration_mapper().get(item["type"])
                 pre_crud_hook = config.crud()["pre_crud_hook"]
                 post_crud_hook = config.crud()["post_crud_hook"]
                 timestamp = datetime.now(timezone.utc)
@@ -1077,6 +1077,9 @@ class MongoStorageManager(GenericStorageManager):
                 log.exception(
                     f"{error.__class__.__name__}: {error}", item, exc_info=error
                 )
+                construct_document_exception_message = config.crud()[
+                    "document_exception_message_constructor"
+                ]
                 if isinstance(error, DuplicateKeyError):
                     if error.code == 11000:
                         try:
@@ -1085,13 +1088,16 @@ class MongoStorageManager(GenericStorageManager):
                             )
                         except Exception:
                             duplicate_entry = error.details.get("errmsg")
-                        errors.append(
-                            NonUniqueException(
-                                f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} | duplicate_entry:{duplicate_entry} - Following entry must be unique: {duplicate_entry}"
-                            )
+                        exception = NonUniqueException(
+                            f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} | duplicate_entry:{duplicate_entry} - Following entry must be unique: {duplicate_entry}"
                         )
+                        message = construct_document_exception_message(
+                            exception, str(exception)
+                        )
+                        errors.append(NonUniqueException(message))
                 else:
-                    errors.append(error)
+                    message = construct_document_exception_message(error, str(error))
+                    errors.append(NonUniqueException(message))
         else:
             if errors:
                 if len(errors) == len(items):
