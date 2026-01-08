@@ -255,7 +255,9 @@ class FilterGenericObjectsV2(BaseFilterResource):
                     "Filter with type 'type', or a filter with type 'selection' and 'key' equal to 'type' is required"
                 )
         config = get_object_configuration_mapper().get(document_type or collection)
-        collection = config.crud().get("collection")
+        collection = config.crud().get(
+            "collection" if not request.args.get("history") else "collection_history"
+        )
         storage_type = config.crud()["storage_type"]
         if storage_type != "http":
             self._check_if_collection_name_exists(collection)
