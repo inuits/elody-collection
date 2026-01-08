@@ -45,43 +45,47 @@ class MongoFilters:
         return_query_without_executing=False,
         tidy_up_match=True,
     ):
-        BaseMatchers.collection = collection
-        BaseMatchers.type = get_type_filter_value(filter_request_body)
-        if not BaseMatchers.type:
-            BaseMatchers.type = get_selection_type_filter_value(filter_request_body)
-            if len(BaseMatchers.type) > 0:
-                BaseMatchers.type = BaseMatchers.type[0]
+        entity_type = get_type_filter_value(filter_request_body)
+        if not entity_type:
+            entity_type = get_selection_type_filter_value(filter_request_body)
+            if len(entity_type) > 0:
+                entity_type = entity_type[0]
         options_requesting_filter = get_options_requesting_filter(filter_request_body)
-        BaseMatchers.force_base_nested_matcher_builder = bool(
+        force_base_nested_matcher_builder = bool(
             options_requesting_filter
             or has_non_exact_match_filter(filter_request_body)
             or has_selection_filter_with_multiple_values(filter_request_body)
         )
-        facets_request = get_facets(filter_request_body)
 
-        pipeline, match, group = self.__build_aggregation_query(
-            filter_request_body,
-            skip,
-            limit,
-            order_by,
-            asc,
-            options_requesting_filter,
-            facets_request,
-            tidy_up_match,
-        )
-        if return_query_without_executing:
-            return pipeline
-
-        return self.__execute_aggregation_query(
-            pipeline,
-            match,
-            group,
-            skip,
-            limit,
-            options_requesting_filter,
-            facets_request,
+        with BaseMatchers.context(
             collection=collection,
-        )
+            type_name=entity_type,
+            force_base=force_base_nested_matcher_builder,
+        ):
+            facets_request = get_facets(filter_request_body)
+
+            pipeline, match, group = self.__build_aggregation_query(
+                filter_request_body,
+                skip,
+                limit,
+                order_by,
+                asc,
+                options_requesting_filter,
+                facets_request,
+                tidy_up_match,
+            )
+            if return_query_without_executing:
+                return pipeline
+
+            return self.__execute_aggregation_query(
+                pipeline,
+                match,
+                group,
+                skip,
+                limit,
+                options_requesting_filter,
+                facets_request,
+            )
 
     def __build_aggregation_query(
         self,
@@ -127,15 +131,12 @@ class MongoFilters:
         limit,
         options_requesting_filter,
         facets_request,
-        collection=None,
     ):
-        # FIXME: ref #146927
-        collection = collection or BaseMatchers.collection
         try:
             with tracer.start_as_current_span(
                 "base.MongoFilters.__execute_aggregation_query.aggregate"
             ) as aggregation_span:
-                cursor = self.storage.db[collection].aggregate(
+                cursor = self.storage.db[BaseMatchers.collection].aggregate(
                     pipeline, allowDiskUse=self.storage.allow_disk_use
                 )
         except Exception as exception:
@@ -160,7 +161,6 @@ class MongoFilters:
             skip,
             limit,
             options_requesting_filter,
-            collection=collection,
         )
 
     @tracer.start_as_current_span("base.MongoFilters.__get_items")
@@ -172,20 +172,7 @@ class MongoFilters:
         skip,
         limit,
         options_requesting_filter=None,
-        collection=None,
     ):
-        # FIXME: ref #146927
-        # When BaseMatchers.collection is used to choose which collection to
-        # aggregate on, and many requests are made within a small timeframe,
-        # and not all requests end up filtering on the same collection, it can
-        # happen that BaseMatchers.collection has changed between the
-        # aggregation in __execute_aggregation_query and the aggregation in
-        # __get_items. This is now fixed by pinning the collection parameter to
-        # the collection value at the start of this flow, but it should be
-        # changed to an object such as Flask.g. However, it's not certain this
-        # logic isn't invoked in a flow where there is no active http-request
-        # (or Flask.RequestContext) like in a queue or when a cronjob runs.
-        collection = collection or BaseMatchers.collection
         items = {"results": [], "count": 0, "facets": output.get("facets", [])}
 
         if options_requesting_filter:
@@ -219,7 +206,7 @@ class MongoFilters:
         else:
             items["skip"] = skip
             items["limit"] = limit
-            count = self.storage.db[collection].aggregate(
+            count = self.storage.db[BaseMatchers.collection].aggregate(
                 [*match, *group, {"$count": "count"}],
                 allowDiskUse=self.storage.allow_disk_use,
             )
