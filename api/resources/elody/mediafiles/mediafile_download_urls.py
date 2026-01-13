@@ -12,11 +12,8 @@ class ElodyMediafileDownloadUrls(BaseResource):
     NOT_TRANSCODABLE_MIMETYPES = [
         "application/pdf",
         "application/xml",
-        "audio/mpeg",
-        "image/jpeg",
         "text/plain",
         "text/xml",
-        "video/mp4",
     ]
 
     def __init__(self):
