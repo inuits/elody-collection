@@ -11,9 +11,39 @@ from filters_v2.helpers.mongo_helper import (
 )
 from filters_v2.stages import lookup_stage
 from filters_v2.types.filter_types import get_filter
+from os import getenv
 
 
 def build(filter_request_body: list[dict], tidy_up_match: bool) -> list[dict]:
+    policy_signatured_request_body = []
+    for filter_criteria in deepcopy(filter_request_body):
+        if getenv("STATIC_JWT") and filter_criteria.get("policy_signature") == getenv(
+            "STATIC_JWT"
+        ):
+            filter_request_body.remove(filter_criteria)
+            policy_signatured_request_body.append(filter_criteria)
+
+    policy_signatured_match = __construct_match(
+        policy_signatured_request_body, tidy_up_match
+    )
+    match = __construct_match(filter_request_body, tidy_up_match)
+    for i in range(len(policy_signatured_match)):
+        if i == 0 and policy_signatured_match[i].get("$match"):
+            for sub_stage in match:
+                if sub_stage.get("$match"):
+                    sub_stage["$match"].update(
+                        {"$and": [policy_signatured_match[i].get("$match")]}
+                    )
+                    break
+            else:
+                match.append(policy_signatured_match[i])
+        else:
+            match.append(policy_signatured_match[i])
+
+    return match
+
+
+def __construct_match(filter_request_body: list[dict], tidy_up_match: bool):
     match, restricted_keys = [], []
     if has_or_filter(filter_request_body):
         document_field_filters = filter_request_body
@@ -66,7 +96,7 @@ def __construct_matchers_per_schema(
     restricted_keys: list,
     initial_matchers_per_schema: dict = {},
 ):
-    matchers_per_schema = initial_matchers_per_schema
+    matchers_per_schema = deepcopy(initial_matchers_per_schema)
     for filter_criteria in filter_request_body:
         if filter_criteria.get("or"):
             filter_criteria["operator"] = "or"
@@ -88,11 +118,14 @@ def __construct_matchers_per_schema(
         if len(item_types) > 0:
             matchers_per_schema["general"].append({"type": {"$in": item_types}})
 
-        for or_filter_request_body in filter_criteria.get("or", []):
-            test = build(or_filter_request_body, False)
-            for _, matchers in matchers_per_schema.items():
-                if matchers:
-                    matchers.append({"OR_MATCHER": test[0]["$match"]})
+        if or_filter_request_body := filter_criteria.get("or", []):
+            match = build(or_filter_request_body, False)
+            for schema, matchers in matchers_per_schema.items():
+                if matchers and (
+                    (len(matchers_per_schema.keys()) > 1 and schema != "general")
+                    or (len(matchers_per_schema.keys()) == 1)
+                ):
+                    matchers.append({"OR_MATCHER": match[0]["$match"]})
 
         yield matchers_per_schema, filter_criteria
 
