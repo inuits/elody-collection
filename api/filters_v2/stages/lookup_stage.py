@@ -34,7 +34,10 @@ def __build_facet_lookups(facets: list[dict], lookups: list[dict]):
                 {
                     "$unwind": {
                         "path": f"${facet_lookup['as']}",
-                        "preserveNullAndEmptyArrays": True,
+                        "preserveNullAndEmptyArrays": facet_lookup.get(
+                            "preserveNullAndEmptyArrays", False
+                        )
+                        is True,
                     }
                 },
             ]
@@ -141,7 +144,15 @@ def __handle_match_lookup(lookup: dict) -> list:
                 "as": lookup["as"],
             }
         },
-        {"$unwind": {"path": f"${lookup['as']}", "preserveNullAndEmptyArrays": True}},
+        {
+            "$unwind": {
+                "path": f"${lookup['as']}",
+                "preserveNullAndEmptyArrays": lookup.get(
+                    "preserveNullAndEmptyArrays", False
+                )
+                is True,
+            }
+        },
     ]
     # starting from mongo v5, you can use the simple lookup syntax combined with `pipeline`
     # => this way `pipeline` will contain the following $match stage, preventing the need of $unwind
