@@ -35,7 +35,7 @@ def __build_facet_lookups(facets: list[dict], lookups: list[dict]):
                     "$unwind": {
                         "path": f"${facet_lookup['as']}",
                         "preserveNullAndEmptyArrays": facet_lookup.get(
-                            "preserveNullAndEmptyArrays", False
+                            "preserve_null_and_empty_arrays", False
                         )
                         is True,
                     }
@@ -148,7 +148,7 @@ def __handle_match_lookup(lookup: dict) -> list:
             "$unwind": {
                 "path": f"${lookup['as']}",
                 "preserveNullAndEmptyArrays": lookup.get(
-                    "preserveNullAndEmptyArrays", False
+                    "preserve_null_and_empty_arrays", False
                 )
                 is True,
             }
