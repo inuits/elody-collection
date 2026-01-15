@@ -46,7 +46,7 @@ def load_sentry():
         sentry_sdk.init(
             dsn=getenv("SENTRY_DSN"),
             integrations=[FlaskIntegration()],
-            ignore_errors=[NotFoundException],
+            ignore_errors=[NotFoundException, NotFound],
             environment=getenv("NOMAD_NAMESPACE"),
         )
 
