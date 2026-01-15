@@ -1,3 +1,4 @@
+from elody.exceptions import NotFoundException
 from apscheduler.schedulers.background import BackgroundScheduler
 from configuration import get_features, get_route_mapper, init_mappers
 from elody.error_codes import ErrorCode, get_error_code, get_read
@@ -45,6 +46,7 @@ def load_sentry():
         sentry_sdk.init(
             dsn=getenv("SENTRY_DSN"),
             integrations=[FlaskIntegration()],
+            ignore_errors=[NotFoundException],
             environment=getenv("NOMAD_NAMESPACE"),
         )
 
