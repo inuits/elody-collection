@@ -39,6 +39,18 @@ def __process_resource_rules(rules):
 
 
 def load_sentry():
+    def before_send(event, hint):
+        if "exc_info" in hint:
+            exc_type, exc_value, tb = hint["exc_info"]
+            #
+            status_code = getattr(exc_value, "code", None)
+
+            if status_code:
+                if 400 <= status_code < 500:
+                    return None
+
+        return event
+
     if getenv("SENTRY_ENABLED", False) in ["True", "true", True]:
         import sentry_sdk
         from sentry_sdk.integrations.flask import FlaskIntegration
@@ -46,8 +58,9 @@ def load_sentry():
         sentry_sdk.init(
             dsn=getenv("SENTRY_DSN"),
             integrations=[FlaskIntegration()],
-            ignore_errors=[NotFoundException, NotFound],
+            ignore_errors=[NotFoundException, NotFound, Forbidden],
             environment=getenv("NOMAD_NAMESPACE"),
+            before_send=before_send,
         )
 
 
