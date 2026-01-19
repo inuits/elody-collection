@@ -42,7 +42,6 @@ def load_sentry():
     def before_send(event, hint):
         if "exc_info" in hint:
             exc_type, exc_value, tb = hint["exc_info"]
-            #
             status_code = getattr(exc_value, "code", None)
 
             if status_code:
