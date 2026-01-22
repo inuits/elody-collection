@@ -4,7 +4,7 @@ import csv
 import io
 import re
 
-from configuration import get_object_configuration_mapper
+from configuration import get_object_configuration_mapper, get_storage_mapper
 from copy import deepcopy
 from datetime import datetime, timezone, timedelta
 from elody.error_codes import ErrorCode, get_error_code, get_read, get_write
@@ -171,9 +171,17 @@ class BaseResource(Resource):
             resolve_collections = get_user_context().bag["collection_resolver"]
             collections = resolve_collections(collection=collection, id=id)
             for collection in collections:
-                if item := self.storage.get_item_from_collection_by_id(collection, id):
-                    get_user_context().bag["item_being_processed"] = deepcopy(item)
-                    return item
+                config = get_object_configuration_mapper().get(collection)
+                storage_type = config.crud()["storage_type"]
+                if storage_type == "http":
+                    http_storage = get_storage_mapper().get("http")()
+                    if item := http_storage.get_item_from_collection_by_id(collection, id):
+                        get_user_context().bag["item_being_processed"] = deepcopy(item)
+                        return item
+                else:
+                    if item := self.storage.get_item_from_collection_by_id(collection, id):
+                        get_user_context().bag["item_being_processed"] = deepcopy(item)
+                        return item
             else:
                 abort(
                     404,
