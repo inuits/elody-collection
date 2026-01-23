@@ -54,7 +54,13 @@ def __build_filter_lookups(filter_criteria: dict, lookups: list[dict]):
 
     lookup, lookups = __determine_lookup_fields(lookup, lookups)
     if filter_criteria.get("aggregation"):
-        lookups.append(__handle_aggregation_lookup(lookup))
+        # XXX: This is a temporary fix for lookups in hairoad where we do not
+        # need the failsafe behaviour, which has a *significant* performance
+        # overhead
+        if filter_criteria.get("simple"):
+            lookups.append(__handle_match_lookup(lookup)[0])
+        else:
+            lookups.append(__handle_aggregation_lookup(lookup))
     else:
         lookups.extend(__handle_match_lookup(lookup))
 
