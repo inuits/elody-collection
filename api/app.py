@@ -197,10 +197,9 @@ def exception(exception):
         log.exception(
             f"{exception.__class__.__name__}: {exception}", item, exc_info=exception
         )
-    try:
-        return jsonify(message=exception.description), exception.code
-    except:
-        return jsonify(message=f"{exception.__class__.__name__}: {exception}"), 500
+    if isinstance(exception, HTTPException):
+        return jsonify(message=exception.description), exception.code or 500
+    return jsonify(message=f"{exception.__class__.__name__}: {exception}"), 500
 
 
 @app.after_request
@@ -216,8 +215,11 @@ def intercept_403(response: Response):
                 response.status_code,
             )
         if api.handle_error(Forbidden()).get_data() == response.get_data():
-            raise Forbidden(
-                f"{get_error_code(ErrorCode.INSUFFICIENT_PERMISSIONS_WITHOUT_VARS, get_read())} - You don't have the permission to create/update/delete this resource."
+            return make_response(
+                jsonify(
+                    message=f"{get_error_code(ErrorCode.INSUFFICIENT_PERMISSIONS_WITHOUT_VARS, get_read())} - You don't have the permission to create/update/delete this resource."
+                ),
+                403,
             )
     return response
 
@@ -225,8 +227,11 @@ def intercept_403(response: Response):
 @app.after_request
 def intercept_401(response: Response):
     if response.status_code == 401:
-        raise Unauthorized(
-            f"{get_error_code(ErrorCode.INVALID_TOKEN, get_read())} - The access token provided is expired, revoked, malformed, or invalid for other reasons."
+        return make_response(
+            jsonify(
+                message=f"{get_error_code(ErrorCode.INVALID_TOKEN, get_read())} - The access token provided is expired, revoked, malformed, or invalid for other reasons."
+            ),
+            401,
         )
     return response
 
