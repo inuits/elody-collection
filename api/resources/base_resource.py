@@ -175,11 +175,15 @@ class BaseResource(Resource):
                 storage_type = config.crud()["storage_type"]
                 if storage_type == "http":
                     http_storage = get_storage_mapper().get("http")()
-                    if item := http_storage.get_item_from_collection_by_id(collection, id):
+                    if item := http_storage.get_item_from_collection_by_id(
+                        collection, id
+                    ):
                         get_user_context().bag["item_being_processed"] = deepcopy(item)
                         return item
                 else:
-                    if item := self.storage.get_item_from_collection_by_id(collection, id):
+                    if item := self.storage.get_item_from_collection_by_id(
+                        collection, id
+                    ):
                         get_user_context().bag["item_being_processed"] = deepcopy(item)
                         return item
             else:
