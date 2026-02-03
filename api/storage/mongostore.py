@@ -903,10 +903,15 @@ class MongoStorageManager(GenericStorageManager):
                 or self._does_request_changes(unpatched_item, item)
                 or self._does_request_changes(item, unpatched_item)
             ):
+                etag_key = config.document_info().get("etag_key")
                 result = self.db[collection].replace_one(
                     {
                         "_id": item["_id"],
-                        "document_version": unpatched_item.get("document_version"),
+                        **(
+                            {etag_key: unpatched_item.get("etag_key")}
+                            if etag_key
+                            else {}
+                        ),
                     },
                     item,
                 )
@@ -985,10 +990,15 @@ class MongoStorageManager(GenericStorageManager):
                 or self._does_request_changes(item, unpatched_item, True)
             ):
                 try:
+                    etag_key = config.document_info().get("etag_key")
                     result = self.db[collection].replace_one(
                         {
                             "_id": unpatched_item["_id"],
-                            "document_version": unpatched_item.get("document_version"),
+                            **(
+                                {etag_key: unpatched_item.get("etag_key")}
+                                if etag_key
+                                else {}
+                            ),
                         },
                         item,
                     )
