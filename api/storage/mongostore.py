@@ -24,6 +24,7 @@ from rabbit import get_rabbit
 from storage.genericstore import GenericStorageManager
 from tracing import get_tracer, init_mongo_instrumentation
 from urllib.parse import quote_plus
+from werkzeug.exceptions import Conflict
 
 tracer = get_tracer()
 
@@ -902,7 +903,17 @@ class MongoStorageManager(GenericStorageManager):
                 or self._does_request_changes(unpatched_item, item)
                 or self._does_request_changes(item, unpatched_item)
             ):
-                self.db[collection].replace_one({"_id": item["_id"]}, item)
+                result = self.db[collection].replace_one(
+                    {
+                        "_id": item["_id"],
+                        "document_version": unpatched_item.get("document_version"),
+                    },
+                    item,
+                )
+                if result.matched_count == 0:
+                    raise Conflict(
+                        "Version mismatch detected due to concurrent updates"
+                    )
                 if run_post_crud_hook:
                     post_crud_hook(
                         crud="update",
@@ -974,9 +985,17 @@ class MongoStorageManager(GenericStorageManager):
                 or self._does_request_changes(item, unpatched_item, True)
             ):
                 try:
-                    self.db[collection].replace_one(
-                        {"_id": unpatched_item["_id"]}, item
+                    result = self.db[collection].replace_one(
+                        {
+                            "_id": unpatched_item["_id"],
+                            "document_version": unpatched_item.get("document_version"),
+                        },
+                        item,
                     )
+                    if result.matched_count == 0:
+                        raise Conflict(
+                            "Version mismatch detected due to concurrent updates"
+                        )
                 except WriteError as exception:
                     if exception.details.get("code") == 66:
                         self.db[config.crud()["collection"]].delete_one(
