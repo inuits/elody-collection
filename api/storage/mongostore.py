@@ -896,18 +896,23 @@ class MongoStorageManager(GenericStorageManager):
                 unpatched_document=unpatched_item,
                 get_user_context=get_user_context,
             )
-            if not self.is_dry_run():
+            # prevent db operation and history write for patches that only contains changes on virtual fields (fields only used for syncing, e.g. virtual relations)
+            if not self.is_dry_run() and (
+                patched_item
+                or self._does_request_changes(unpatched_item, item)
+                or self._does_request_changes(item, unpatched_item)
+            ):
                 self.db[collection].replace_one({"_id": item["_id"]}, item)
-            if run_post_crud_hook:
-                post_crud_hook(
-                    crud="update",
-                    document=item,
-                    content=content,
-                    unpatched_document=unpatched_item,
-                    storage=self,
-                    get_user_context=get_user_context,
-                    get_rabbit=get_rabbit,
-                )
+                if run_post_crud_hook:
+                    post_crud_hook(
+                        crud="update",
+                        document=item,
+                        content=content,
+                        unpatched_document=unpatched_item,
+                        storage=self,
+                        get_user_context=get_user_context,
+                        get_rabbit=get_rabbit,
+                    )
         except DuplicateKeyError as error:
             log.exception(f"{error.__class__.__name__}: {error}", item, exc_info=error)
             if error.code == 11000:
@@ -963,7 +968,11 @@ class MongoStorageManager(GenericStorageManager):
                 unpatched_document=unpatched_item,
                 get_user_context=get_user_context,
             )
-            if not self.is_dry_run():
+            if not self.is_dry_run() and (
+                patched_item
+                or self._does_request_changes(unpatched_item, item, True)
+                or self._does_request_changes(item, unpatched_item, True)
+            ):
                 try:
                     self.db[collection].replace_one(
                         {"_id": unpatched_item["_id"]}, item
@@ -978,16 +987,16 @@ class MongoStorageManager(GenericStorageManager):
                         raise exception
                 except Exception as exception:
                     raise exception
-            if run_post_crud_hook:
-                post_crud_hook(
-                    crud="update",
-                    document=item,
-                    content=content,
-                    unpatched_document=unpatched_item,
-                    storage=self,
-                    get_user_context=get_user_context,
-                    get_rabbit=get_rabbit,
-                )
+                if run_post_crud_hook:
+                    post_crud_hook(
+                        crud="update",
+                        document=item,
+                        content=content,
+                        unpatched_document=unpatched_item,
+                        storage=self,
+                        get_user_context=get_user_context,
+                        get_rabbit=get_rabbit,
+                    )
         except DuplicateKeyError as error:
             log.exception(f"{error.__class__.__name__}: {error}", item, exc_info=error)
             if error.code == 11000:
@@ -1063,14 +1072,14 @@ class MongoStorageManager(GenericStorageManager):
                             "collection" if not is_history else "collection_history"
                         ]
                     ].insert_one(item)
-                if not is_history and run_post_crud_hook:
-                    post_crud_hook(
-                        crud="create",
-                        document=item,
-                        storage=self,
-                        get_user_context=get_user_context,
-                        get_rabbit=get_rabbit,
-                    )
+                    if not is_history and run_post_crud_hook:
+                        post_crud_hook(
+                            crud="create",
+                            document=item,
+                            storage=self,
+                            get_user_context=get_user_context,
+                            get_rabbit=get_rabbit,
+                        )
                 if not self.is_dry_run():
                     log.info("Successfully saved item", item)
             except (DuplicateKeyError, NonUniqueException) as error:

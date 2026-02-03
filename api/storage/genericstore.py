@@ -63,7 +63,19 @@ class GenericStorageManager:
         flat_content = flatten_dict(object_lists, content)
 
         for content_key, content_value in content.items():
-            if content_key in ["_id", "_key", "id", "identifiers"]:
+            if content_key in [
+                "_id",
+                "_key",
+                "id",
+                "identifiers",
+                "audit",
+                "date_created",
+                "created_by",
+                "date_updated",
+                "last_editor",
+                "date_deleted",
+                "document_version",
+            ]:
                 continue
             if content_key in object_lists:
                 if overwrite and len(content[content_key]) != len(
