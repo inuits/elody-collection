@@ -20,6 +20,7 @@ from rabbit import init_rabbit, get_rabbit
 from secrets import token_hex
 from tracing import init_tracer
 from werkzeug.exceptions import Forbidden, HTTPException, NotFound, Unauthorized
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 
 SWAGGER_URL = "/api/docs"  # URL for exposing Swagger UI (without trailing '/')
@@ -123,6 +124,7 @@ def init_app():
     app = Flask(__name__)
     app.config["RESTFUL_JSON"] = {"cls": CustomJSONEncoder}
     app.json = ElodyJSONProvider(app)
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_prefix=1)
     app.secret_key = getenv("SECRET_KEY", token_hex(16))
     init_mappers()
     load_apps(app, None)
