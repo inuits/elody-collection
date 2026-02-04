@@ -1,5 +1,5 @@
 from configuration import get_object_configuration_mapper
-from flask import request
+from flask import Response, request
 from inuits_policy_based_auth import RequestContext
 from policy_factory import apply_policies, get_user_context
 from resources.base_resource import BaseResource
@@ -24,7 +24,9 @@ class ElodyMediafileDownloadUrls(BaseResource):
     def get(self, **kwargs):
         copyright_access = get_user_context().bag["copyright_access"]
         mediafile = self.resource.get(**kwargs)
-        if not isinstance(mediafile, dict):
+        if isinstance(mediafile, Response):
+            mediafile = mediafile.json
+        elif not isinstance(mediafile, dict):
             return mediafile
 
         config = get_object_configuration_mapper().get("mediafile")

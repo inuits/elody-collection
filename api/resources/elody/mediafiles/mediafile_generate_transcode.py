@@ -4,7 +4,7 @@ import re
 from cloudevents.conversion import to_dict
 from cloudevents.http import CloudEvent
 from configuration import get_object_configuration_mapper
-from flask import request
+from flask import Response, request
 from inuits_policy_based_auth import RequestContext
 from mimetypes import guess_type
 from policy_factory import apply_policies, get_user_context
@@ -40,6 +40,8 @@ class ElodyMediafileGenerateTranscode(BaseResource):
         parent_job_id = kwargs.pop("parent_job_id", None)
 
         entity = self.resource.get(id=id, **kwargs)
+        if isinstance(entity, Response):
+            entity = entity.json
 
         generate_transcode_job_id = self.__init_job(
             f'{f"Generate transcode for {entity['type']} | {id}" if id else f"Generate transcode | missing entity | {id}"}',  # noqa
