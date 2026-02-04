@@ -1,6 +1,7 @@
 import re
 import time
 
+from app_context import request
 from bson.codec_options import CodecOptions
 from configuration import get_object_configuration_mapper
 from copy import deepcopy
@@ -24,7 +25,7 @@ from rabbit import get_rabbit
 from storage.genericstore import GenericStorageManager
 from tracing import get_tracer, init_mongo_instrumentation
 from urllib.parse import quote_plus
-from werkzeug.exceptions import Conflict
+from werkzeug.exceptions import Conflict, PreconditionFailed
 
 tracer = get_tracer()
 
@@ -904,18 +905,17 @@ class MongoStorageManager(GenericStorageManager):
                 or self._does_request_changes(item, unpatched_item)
             ):
                 etag_key = config.document_info().get("etag_key")
+                etag = unpatched_item.get(etag_key, "") if etag_key else ""
+                if request.headers.get("If-Match", str(etag)) != str(etag):
+                    raise PreconditionFailed(
+                        "The resource has been modified since it was last fetched. The provided ETag does not match the current server state."
+                    )
                 result = self.db[collection].replace_one(
-                    {
-                        "_id": item["_id"],
-                        **(
-                            {etag_key: unpatched_item.get(etag_key)} if etag_key else {}
-                        ),
-                    },
-                    item,
+                    {"_id": item["_id"], **({etag_key: etag} if etag else {})}, item
                 )
                 if result.matched_count == 0:
                     raise Conflict(
-                        "Version mismatch detected due to concurrent updates"
+                        "Optimistic concurrency failure. Target document version has changed."
                     )
                 if run_post_crud_hook:
                     post_crud_hook(
@@ -989,20 +989,21 @@ class MongoStorageManager(GenericStorageManager):
             ):
                 try:
                     etag_key = config.document_info().get("etag_key")
+                    etag = unpatched_item.get(etag_key, "") if etag_key else ""
+                    if request.headers.get("If-Match", str(etag)) != str(etag):
+                        raise PreconditionFailed(
+                            "The resource has been modified since it was last fetched. The provided ETag does not match the current server state."
+                        )
                     result = self.db[collection].replace_one(
                         {
                             "_id": unpatched_item["_id"],
-                            **(
-                                {etag_key: unpatched_item.get(etag_key)}
-                                if etag_key
-                                else {}
-                            ),
+                            **({etag_key: etag} if etag else {}),
                         },
                         item,
                     )
                     if result.matched_count == 0:
                         raise Conflict(
-                            "Version mismatch detected due to concurrent updates"
+                            "Optimistic concurrency failure. Target document version has changed."
                         )
                 except WriteError as exception:
                     if exception.details.get("code") == 66:

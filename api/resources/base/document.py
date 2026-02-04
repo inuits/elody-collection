@@ -1,5 +1,5 @@
 from configuration import get_object_configuration_mapper
-from flask import g, request
+from flask import g, make_response, request
 from inuits_policy_based_auth import RequestContext
 from policy_factory import authenticate
 from resources.generic_object import GenericObjectDetailV2
@@ -11,7 +11,14 @@ from util import encode_content_type_header
 class Document(GenericObjectDetailV2):
     def get(self, *, id, spec):
         self.__set_request(id, "GET")
-        return super().get(collection=None, id=id, spec=spec)
+        response_data = super().get(collection=None, id=id, spec=spec)
+        if isinstance(response_data, dict):
+            config = get_object_configuration_mapper().get(response_data["type"])
+            etag_key = config.document_info().get("etag_key")
+            response = make_response(response_data, 200)
+            response.set_etag(str(response_data.get(etag_key, "")))
+            return response
+        return response_data
 
     def put(self, *, id, spec):
         self.__set_request(id, "PUT")

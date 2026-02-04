@@ -1,10 +1,13 @@
-from elody.exceptions import NotFoundException
+import json
+
 from apscheduler.schedulers.background import BackgroundScheduler
 from configuration import get_features, get_route_mapper, init_mappers
 from elody.error_codes import ErrorCode, get_error_code, get_read
+from elody.exceptions import NotFoundException
 from elody.loader import load_apps, load_jobs
 from elody.util import CustomJSONEncoder, read_json_as_dict
 from flask import Flask, g, make_response, jsonify, Response, request
+from flask.json.provider import DefaultJSONProvider
 from flask_swagger_ui import get_swaggerui_blueprint
 from glob import glob
 from health import init_health_check
@@ -23,6 +26,14 @@ SWAGGER_URL = "/api/docs"  # URL for exposing Swagger UI (without trailing '/')
 API_URL = (
     "/spec/dams-collection-api.json"  # Our API url (can of course be a local resource)
 )
+
+
+class ElodyJSONProvider(DefaultJSONProvider):
+    def dumps(self, obj, **kwargs):
+        return json.dumps(obj, cls=CustomJSONEncoder, **kwargs)
+
+    def loads(self, s, **kwargs):
+        return json.loads(s, **kwargs)
 
 
 def __process_resource_rules(rules):
@@ -57,7 +68,7 @@ def load_sentry():
         sentry_sdk.init(
             dsn=getenv("SENTRY_DSN"),
             integrations=[FlaskIntegration()],
-            ignore_errors=[NotFoundException, NotFound, Forbidden],
+            ignore_errors=[NotFoundException, NotFound, Forbidden, Unauthorized],
             environment=getenv("NOMAD_NAMESPACE"),
             before_send=before_send,
         )
@@ -111,6 +122,7 @@ def load_app_resources():
 def init_app():
     app = Flask(__name__)
     app.config["RESTFUL_JSON"] = {"cls": CustomJSONEncoder}
+    app.json = ElodyJSONProvider(app)
     app.secret_key = getenv("SECRET_KEY", token_hex(16))
     init_mappers()
     load_apps(app, None)
