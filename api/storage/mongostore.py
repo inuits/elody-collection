@@ -908,9 +908,7 @@ class MongoStorageManager(GenericStorageManager):
                     {
                         "_id": item["_id"],
                         **(
-                            {etag_key: unpatched_item.get("etag_key")}
-                            if etag_key
-                            else {}
+                            {etag_key: unpatched_item.get(etag_key)} if etag_key else {}
                         ),
                     },
                     item,
@@ -995,7 +993,7 @@ class MongoStorageManager(GenericStorageManager):
                         {
                             "_id": unpatched_item["_id"],
                             **(
-                                {etag_key: unpatched_item.get("etag_key")}
+                                {etag_key: unpatched_item.get(etag_key)}
                                 if etag_key
                                 else {}
                             ),
