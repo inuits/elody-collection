@@ -21,6 +21,8 @@ from secrets import token_hex
 from tracing import init_tracer
 from werkzeug.exceptions import Forbidden, HTTPException, NotFound, Unauthorized
 from werkzeug.middleware.proxy_fix import ProxyFix
+from metrics import init_metrics
+from glitchtip import init_glitchtip
 
 SWAGGER_URL = "/api/docs"  # URL for exposing Swagger UI (without trailing '/')
 API_URL = (
@@ -47,31 +49,6 @@ def __process_resource_rules(rules):
     )
     for route, resource, api in rules_map.values():
         api.add_resource(resource, get_route_mapper().get(resource.__name__, route))
-
-
-def load_sentry():
-    def before_send(event, hint):
-        if "exc_info" in hint:
-            exc_type, exc_value, tb = hint["exc_info"]
-            status_code = getattr(exc_value, "code", None)
-
-            if status_code:
-                if 400 <= status_code < 500:
-                    return None
-
-        return event
-
-    if getenv("SENTRY_ENABLED", False) in ["True", "true", True]:
-        import sentry_sdk
-        from sentry_sdk.integrations.flask import FlaskIntegration
-
-        sentry_sdk.init(
-            dsn=getenv("SENTRY_DSN"),
-            integrations=[FlaskIntegration()],
-            ignore_errors=[NotFoundException, NotFound, Forbidden, Unauthorized],
-            environment=getenv("NOMAD_NAMESPACE"),
-            before_send=before_send,
-        )
 
 
 def load_specs(app):
@@ -141,7 +118,7 @@ def init_scheduler():
         return scheduler
 
 
-def register_exporter(app, api):
+def register_exporter(app, api):  # deprecated
     from prometheus_flask_exporter import RESTfulPrometheusMetrics
 
     metrics = RESTfulPrometheusMetrics(app, api, group_by="url_rule")
@@ -166,7 +143,6 @@ def rabbit_available():
     return False, "Failed to reach RabbitMQ"
 
 
-load_sentry()
 tracer = init_tracer()
 app = init_app()
 FlaskInstrumentor().instrument_app(app)
@@ -182,13 +158,16 @@ init_rabbit(app)
 init_health_check(app, database_available, rabbit_available)
 init_policy_factory()
 if getenv("ENABLE_METRICS", False) in ["True", "true", True]:
-    register_exporter(app, api)
+    # register_exporter(app, api)
+    init_metrics(app, api)
 
 try:
     client_app = import_module("apps.client_app")
     client_app.init(app, api)
 except (ModuleNotFoundError, AttributeError):
     pass
+
+init_glitchtip(app, api)
 
 
 @app.before_request
