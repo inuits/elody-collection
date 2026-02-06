@@ -45,7 +45,9 @@ class ElodyMediafileDownloadUrls(BaseResource):
         response = {}
 
         if original_file_location := serialize(
-            mediafile, copyright_access=copyright_access
+            mediafile,
+            filename_key="filename" if copyright_access is True else "display_filename",
+            copyright_access=copyright_access,
         ):
             response.update({"original_file_location": original_file_location})
         if transcode_file_location := serialize(
