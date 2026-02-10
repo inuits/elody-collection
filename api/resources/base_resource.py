@@ -30,8 +30,9 @@ from policy_factory import get_user_context
 from rabbit import get_rabbit
 from serialization.serialize import serialize
 from storage.storagemanager import StorageManager
-from urllib.parse import quote
 from tracing import get_tracer
+from urllib.parse import quote
+from werkzeug.exceptions import BadRequest
 
 tracer = get_tracer()
 
@@ -472,7 +473,12 @@ class BaseResource(Resource):
                 )
         if fields := request.args.getlist("q"):
             for field in fields:
-                key, value = field.split("==")
+                try:
+                    key, value = field.split("==")
+                except ValueError:
+                    raise BadRequest(
+                        f"Invalid query parameter q={field}. Expected syntax is 'q=key==value'."
+                    )
                 if key and value:
                     filters.append(
                         {

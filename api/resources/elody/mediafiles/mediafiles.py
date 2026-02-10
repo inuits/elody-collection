@@ -9,7 +9,7 @@ from werkzeug.datastructures import ImmutableMultiDict
 class ElodyMediafiles(ElodyDocuments):
     def get(self, **kwargs):
         request.args = ImmutableMultiDict(
-            {**request.args, "type": "mediafile"}
+            {"q": "technical_origin==original", **request.args, "type": "mediafile"}
         )  # pyright: ignore
         config = get_object_configuration_mapper().get("mediafile")
         return super().get(collection=config.crud()["collection"], **kwargs)
