@@ -500,7 +500,6 @@ class MongoStorageManager(GenericStorageManager):
             )
             log.info("Successfully deleted data from item", item)
         except DuplicateKeyError as error:
-            log.exception(f"{error.__class__.__name__}: {error}", item, exc_info=error)
             if error.code == 11000:
                 try:
                     duplicate_entry = (
@@ -511,6 +510,9 @@ class MongoStorageManager(GenericStorageManager):
                 raise NonUniqueException(
                     f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} | duplicate_entry:{duplicate_entry} - Following entry must be unique: {duplicate_entry}"
                 )
+            raise error
+        except Exception as error:
+            log.exception(f"{error.__class__.__name__}: {error}", item, exc_info=error)
             raise error
         return self._prepare_mongo_document(item, False, False)
 
@@ -928,7 +930,6 @@ class MongoStorageManager(GenericStorageManager):
                         get_rabbit=get_rabbit,
                     )
         except DuplicateKeyError as error:
-            log.exception(f"{error.__class__.__name__}: {error}", item, exc_info=error)
             if error.code == 11000:
                 try:
                     duplicate_entry = (
@@ -939,6 +940,9 @@ class MongoStorageManager(GenericStorageManager):
                 raise NonUniqueException(
                     f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} | duplicate_entry:{duplicate_entry} - Following entry must be unique: {duplicate_entry}"
                 )
+            raise error
+        except Exception as error:
+            log.exception(f"{error.__class__.__name__}: {error}", item, exc_info=error)
             raise error
 
         if not self.is_dry_run():
@@ -1026,7 +1030,6 @@ class MongoStorageManager(GenericStorageManager):
                         get_rabbit=get_rabbit,
                     )
         except DuplicateKeyError as error:
-            log.exception(f"{error.__class__.__name__}: {error}", item, exc_info=error)
             if error.code == 11000:
                 try:
                     duplicate_entry = (
@@ -1037,6 +1040,9 @@ class MongoStorageManager(GenericStorageManager):
                 raise NonUniqueException(
                     f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} | duplicate_entry:{duplicate_entry} - Following entry must be unique: {duplicate_entry}"
                 )
+            raise error
+        except Exception as error:
+            log.exception(f"{error.__class__.__name__}: {error}", item, exc_info=error)
             raise error
 
         if not self.is_dry_run():
@@ -1111,9 +1117,6 @@ class MongoStorageManager(GenericStorageManager):
                 if not self.is_dry_run():
                     log.info("Successfully saved item", item)
             except (DuplicateKeyError, NonUniqueException) as error:
-                log.exception(
-                    f"{error.__class__.__name__}: {error}", item, exc_info=error
-                )
                 construct_document_exception_message = config.crud()[
                     "document_exception_message_constructor"
                 ]
@@ -1135,6 +1138,11 @@ class MongoStorageManager(GenericStorageManager):
                 else:
                     message = construct_document_exception_message(error, str(error))
                     errors.append(NonUniqueException(message))
+            except Exception as error:
+                log.exception(
+                    f"{error.__class__.__name__}: {error}", item, exc_info=error
+                )
+                raise error
         else:
             if errors:
                 if len(errors) == len(items):
