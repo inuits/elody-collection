@@ -118,7 +118,7 @@ class Documents(GenericObjectV2):
         self.__set_request("DELETE")
         request.view_args = request.view_args or {}
         job_id = init_job(
-            f"Bulk delete {identifiers}",
+            "Bulk delete",
             "Bulk delete",
             get_rabbit=get_rabbit,
             user_email=get_user_context().email,
