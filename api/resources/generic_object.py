@@ -12,7 +12,7 @@ from elody.util import (
 from flask import after_this_request, request
 from flask_restful import abort
 from inuits_policy_based_auth import RequestContext
-from policy_factory import apply_policies, get_user_context
+from policy_factory import apply_policies, get_user_context, authenticate
 from rabbit import get_rabbit
 from resources.base_filter_resource import BaseFilterResource
 from resources.base_resource import BaseResource
@@ -53,9 +53,7 @@ class GenericObject(BaseResource):
             for filter in access_restricting_filters:
                 filters.update(filter)
         if storage_type == "http":
-            http_storage = get_storage_mapper().get(
-                "http"
-            )()  # pyright: ignore[reportOptionalCall]
+            http_storage = get_storage_mapper().get("http")()  # pyright: ignore[reportOptionalCall]
             collection_data = http_storage.get_items_from_collection(collection)
         else:
             collection_data = self.storage.get_items_from_collection(
@@ -335,13 +333,11 @@ class GenericObjectDetail(BaseResource):
         if storage_type != "http":
             item = self._check_if_collection_and_item_exists(collection, id)
         else:
-            http_storage = get_storage_mapper().get(
-                "http"
-            )()  # pyright: ignore[reportOptionalCall]
+            http_storage = get_storage_mapper().get("http")()  # pyright: ignore[reportOptionalCall]
             item = http_storage.get_item_from_collection_by_id(collection, id)
         return item
 
-    @apply_policies(RequestContext(request))
+    @authenticate(RequestContext(request))
     def get(self, collection, id, spec="elody"):
         item = self.get_object_detail(collection, id, spec)
         accept_header = request.headers.get("Accept")

@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from flask import request
 from flask_restful import abort
 from inuits_policy_based_auth import RequestContext
-from policy_factory import authenticate, apply_policies
+from policy_factory import authenticate
 from resources.generic_object import (
     GenericObject,
     GenericObjectDetail,
@@ -25,7 +25,7 @@ class Ticket(GenericObject):
 
 
 class TicketDetail(GenericObjectDetail):
-    @apply_policies(RequestContext(request))
+    @authenticate(RequestContext(request))
     def get(self, id):
         ticket = super().get("abstracts", id) or {}
         is_expired = datetime.now(tz=timezone.utc).timestamp() >= float(ticket["exp"])
