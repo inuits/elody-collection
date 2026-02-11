@@ -2,6 +2,7 @@ import mappers
 import re
 
 from configuration import get_object_configuration_mapper, get_storage_mapper
+from copy import deepcopy
 from filters_v2.filter_matcher_mapping import FilterMatcherMapping
 from filters_v2.helpers.base_helper import (
     get_options_requesting_filter,
@@ -255,9 +256,12 @@ class FilterGenericObjectsV2(BaseFilterResource):
                     "Filter with type 'type', or a filter with type 'selection' and 'key' equal to 'type' is required"
                 )
         config = get_object_configuration_mapper().get(document_type or collection)
-        collection = config.crud().get(
+        collection_key = (
             "collection" if not request.args.get("history") else "collection_history"
         )
+        collection = config.crud().get(collection_key)
+        # TODO: storage_type is determined from the first type in the list,
+        # multi-collection filtering does not work across different storage types (e.g. http + mongo mix)
         storage_type = config.crud()["storage_type"]
         if storage_type != "http":
             self._check_if_collection_name_exists(collection)
@@ -283,7 +287,13 @@ class FilterGenericObjectsV2(BaseFilterResource):
                 limit=limit,
             )
         else:
-            items = self._execute_advanced_search_with_query_v2(query, collection)
+            type_values = _get_type_filter_list_value(query)
+            if type_values and len(type_values) > 1:
+                items = self._execute_multi_collection_filter(
+                    query, type_values, collection_key
+                )
+            else:
+                items = self._execute_advanced_search_with_query_v2(query, collection)
         return self._create_response_according_accept_header(
             mappers.map_data_according_to_accept_header(
                 (
@@ -299,6 +309,48 @@ class FilterGenericObjectsV2(BaseFilterResource):
             ),
             accept_header,
         )
+
+    def _execute_multi_collection_filter(
+        self, query, type_values, collection_key="collection"
+    ):
+        skip = request.args.get("skip", 0, int)
+        limit = request.args.get("limit", 20, int)
+
+        collections_to_types = {}
+        for type_value in type_values:
+            config = get_object_configuration_mapper().get(type_value)
+            collection = (
+                config.crud().get(collection_key, "entities")
+                if config
+                else "entities"
+            )
+            collections_to_types.setdefault(collection, []).append(type_value)
+
+        merged_results = []
+        merged_count = 0
+        merged = None
+
+        for collection, types in collections_to_types.items():
+            collection_query = deepcopy(query)
+            for filter_criteria in collection_query:
+                if filter_criteria.get("type") == "type":
+                    filter_criteria["value"] = types
+                    break
+            result = self._execute_advanced_search_with_query_v2(
+                collection_query, collection, skip=0, limit=skip + limit
+            )
+            merged_results.extend(result.get("results", []))
+            merged_count += result.get("count", 0)
+            if merged is None:
+                merged = result
+
+        if merged is not None:
+            merged["results"] = merged_results[skip : skip + limit]
+            merged["count"] = merged_count
+            merged.pop("next", None)
+            merged.pop("previous", None)
+            return merged
+        return {"results": [], "count": 0}
 
 
 class FilterGenericObjectsBySavedSearchId(BaseFilterResource):
@@ -351,6 +403,15 @@ class FilterMediafilesBySavedSearchId(BaseFilterResource):
         if request.args.get("soft", 0, int):
             return "good", 200
         return self._execute_advanced_search_with_saved_search(id, "mediafiles")
+
+
+def _get_type_filter_list_value(query):
+    for filter_criteria in query:
+        if filter_criteria.get("type") == "type":
+            value = filter_criteria.get("value")
+            if isinstance(value, list):
+                return value
+    return None
 
 
 def sort_items_by_relations(data, relation_type=None, ascending=True):

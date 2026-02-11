@@ -46,8 +46,13 @@ class ContainsMatcher(BaseMatcher):
         if isinstance(key, str) and (
             not kwargs.get("match_exact", False) and not kwargs.get("regex", False)
         ):
-            value = escape(value)
-            value = value.replace("\\*", ".*").replace("\\^", "^").replace("\\$", "$")
+            if kwargs.get("match_all_words") and " " in value:
+                value = "".join(
+                    f"(?=.*{escape(word)})" for word in value.split() if word
+                )
+            else:
+                value = escape(value)
+                value = value.replace("\\*", ".*").replace("\\^", "^").replace("\\$", "$")
             return self.matcher_engine.contains(
                 key, value, kwargs.get("inner_exact_matches", {})
             )

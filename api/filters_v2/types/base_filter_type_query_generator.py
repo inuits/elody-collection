@@ -16,6 +16,7 @@ class BaseFilterTypeQueryGenerator(ABC):
             inner_exact_matches=filter_criteria.get("inner_exact_matches", {}),
             regex=filter_criteria.get("regex", False),
             regex_options=filter_criteria.get("regex_options", ""),
+            match_all_words=filter_criteria.get("match_all_words", False),
         )
 
     @abstractmethod
