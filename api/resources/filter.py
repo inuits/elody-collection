@@ -282,7 +282,13 @@ class FilterGenericObjectsV2(BaseFilterResource):
                 limit=limit,
             )
         else:
-            items = self._execute_advanced_search_with_query_v2(query, collection)
+            typesense_config = config.crud().get("typesense", {})
+            if typesense_config:
+                items = self._execute_typesense_accelerated_search(
+                    query, collection, typesense_config
+                )
+            else:
+                items = self._execute_advanced_search_with_query_v2(query, collection)
         return self._create_response_according_accept_header(
             mappers.map_data_according_to_accept_header(
                 (

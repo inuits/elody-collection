@@ -512,3 +512,61 @@ def handle_mediafile_deleted(routing_key, body, message_id):
     if "entity_id" in data["linked_entities"]:
         storage.handle_mediafile_deleted(data["linked_entities"])
         storage.reindex_mediafile_parents(parents=data["linked_entities"])
+
+
+@get_rabbit().queue(
+    **__argument_wrapper(
+        queue_name=f"{queue_prefix}-sync_entity_to_typesense",
+        routing_key=f"{routing_key_prefix}.entity_changed",
+    )
+)
+def sync_entity_to_typesense(routing_key, body, message_id):
+    from search.typesense_client import prepare_document_for_typesense, upsert_document
+
+    data = body["data"]
+    if __is_malformed_message(data, ["location", "type"]):
+        return
+
+    entity_id = data["location"].removeprefix("/entities/")
+    entity_type = data.get("type", "")
+
+    config = get_object_configuration_mapper().get(entity_type or "entities")
+    ts_config = config.crud().get("typesense", {})
+    if not ts_config.get("enabled"):
+        return
+
+    collection = config.crud().get("collection", "entities")
+    storage = StorageManager().get_db_engine()
+    entity = storage.get_item_from_collection_by_id(collection, entity_id)
+    if not entity:
+        return
+
+    ts_collection = ts_config.get("collection", "entities")
+    search_fields = ts_config.get("search_fields", [])
+    doc = prepare_document_for_typesense(entity, search_fields)
+    upsert_document(ts_collection, doc)
+
+
+@get_rabbit().queue(
+    **__argument_wrapper(
+        queue_name=f"{queue_prefix}-delete_entity_from_typesense",
+        routing_key=f"{routing_key_prefix}.entity_deleted",
+    )
+)
+def delete_entity_from_typesense(routing_key, body, message_id):
+    from search.typesense_client import delete_document
+
+    data = body["data"]
+    entity_id = data.get("entity_id") or data.get("_id")
+    entity_type = data.get("type", "")
+    if not entity_id:
+        log.warning("delete_entity_from_typesense: no entity_id in message")
+        return
+
+    config = get_object_configuration_mapper().get(entity_type)
+    ts_config = config.crud().get("typesense", {})
+    if not ts_config.get("enabled"):
+        return
+
+    ts_collection = ts_config.get("collection", "entities")
+    delete_document(ts_collection, entity_id)
