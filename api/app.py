@@ -22,7 +22,6 @@ from tracing import init_tracer
 from werkzeug.exceptions import Forbidden, HTTPException, NotFound, Unauthorized
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-
 SWAGGER_URL = "/api/docs"  # URL for exposing Swagger UI (without trailing '/')
 API_URL = (
     "/spec/dams-collection-api.json"  # Our API url (can of course be a local resource)

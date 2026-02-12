@@ -1,6 +1,6 @@
 import re as regex
 
-from elody.error_codes import ErrorCode, get_error_code, get_read, get_write
+from elody.error_codes import ErrorCode, get_error_code, get_read
 from filters.matchers.base_matchers import BaseMatchers
 
 

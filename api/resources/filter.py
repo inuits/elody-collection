@@ -241,7 +241,6 @@ class FilterGenericObjectsV2(BaseFilterResource):
     @apply_policies(RequestContext(request))
     @tracer.start_as_current_span("base.FilterGenericObjectsV2")
     def post(self, collection, spec="elody", is_type_required=False, content=[]):
-
         if request.args.get("soft", 0, int):
             return "good", 200
         query: list = content or request.get_json()

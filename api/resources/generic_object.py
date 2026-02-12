@@ -53,7 +53,9 @@ class GenericObject(BaseResource):
             for filter in access_restricting_filters:
                 filters.update(filter)
         if storage_type == "http":
-            http_storage = get_storage_mapper().get("http")()  # pyright: ignore[reportOptionalCall]
+            http_storage = get_storage_mapper().get(
+                "http"
+            )()  # pyright: ignore[reportOptionalCall]
             collection_data = http_storage.get_items_from_collection(collection)
         else:
             collection_data = self.storage.get_items_from_collection(
@@ -333,7 +335,9 @@ class GenericObjectDetail(BaseResource):
         if storage_type != "http":
             item = self._check_if_collection_and_item_exists(collection, id)
         else:
-            http_storage = get_storage_mapper().get("http")()  # pyright: ignore[reportOptionalCall]
+            http_storage = get_storage_mapper().get(
+                "http"
+            )()  # pyright: ignore[reportOptionalCall]
             item = http_storage.get_item_from_collection_by_id(collection, id)
         return item
 

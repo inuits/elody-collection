@@ -107,7 +107,7 @@ class BaseFilterTypeQueryGenerator(ABC):
         key: str | list[str],
         value,
         parent_key: str = "",
-        **kwargs
+        **kwargs,
     ):
         for matcher in matchers.values():
             result = matcher().match(key, value, parent_key, **kwargs)

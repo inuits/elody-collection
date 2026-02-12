@@ -5,7 +5,6 @@ from json import loads
 from os import getenv
 from typing import Any
 
-
 _rabbit = None
 
 

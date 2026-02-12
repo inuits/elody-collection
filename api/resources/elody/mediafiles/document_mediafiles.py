@@ -42,7 +42,7 @@ class ElodyDocumentMediafiles(BaseResource):
         store_relations_on_mediafile,
         mediafile_relation_type,
         technical_origin_relation_type_template,
-        **kwargs
+        **kwargs,
     ):
         mediafile = g.get("content") or request.get_json()
         relation_metadata = mediafile.pop("relation_properties", {})

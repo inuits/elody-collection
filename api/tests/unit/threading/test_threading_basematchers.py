@@ -13,7 +13,6 @@ def mock_config_mapper():
     with patch(
         "filters_v2.matchers.base_matchers.get_object_configuration_mapper"
     ) as mock_get:
-
         # Setup the mock to return a safe dummy structure so calls don't crash
         mock_config_obj = mock_get.return_value.get.return_value
 

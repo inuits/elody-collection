@@ -1,5 +1,4 @@
 # tests/test_jobs.py
-import json
 
 
 def test_init_job(client, mock_dependencies):

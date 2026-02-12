@@ -4,7 +4,6 @@ from elody.util import flatten_dict
 from filters_v2.matchers.base_matchers import BaseMatchers
 from logging_elody.log import log
 
-
 AGGREGATOR_MAP = {"$size": "LENGTH"}
 OPERATOR_MAP = {"$eq": "==", "$gt": ">", "$gte": ">=", "$lt": "<", "$lte": "<="}
 
@@ -27,7 +26,7 @@ def get_comparison(key, value, element_name):
                         f"{' AND ' if i > 0 else ''}{AGGREGATOR_MAP.get(aggregator)}("
                     )
                     comparison += f"\nFOR item IN {edge}"
-                    comparison += f"\nFILTER item._from == document._id"
+                    comparison += "\nFILTER item._from == document._id"
                     comparison += "\nRETURN item"
                     comparison += f"\n) {OPERATOR_MAP.get(operator)} {field_value}"
                 else:
@@ -66,7 +65,7 @@ def get_filter_option_label(get_item_from_collection_by_id, identifier, key):
         return flat_item[key]
     except Exception as exception:
         log.exception(
-            f"Failed fetching filter option label.",
+            "Failed fetching filter option label.",
             exc_info=exception,
             info_labels={
                 "collection": BaseMatchers.collection,
@@ -97,7 +96,7 @@ def handle_object_lists(
             elem_match["$elemMatch"], "", element_name="item", operator="AND"
         )
         if key == "relations":
-            aql += f"\nFILTER item._from == document._id"
+            aql += "\nFILTER item._from == document._id"
         aql += "\nRETURN item"
         aql += f"\n) {'==' if is_none_matcher else '>'} 0"
         index += 1

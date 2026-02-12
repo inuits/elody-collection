@@ -2,7 +2,6 @@ from configuration import get_route_mapper
 from healthcheck import HealthCheck
 from os import getenv
 
-
 _health = HealthCheck()
 
 

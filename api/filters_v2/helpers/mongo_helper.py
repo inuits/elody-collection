@@ -62,7 +62,7 @@ def get_filter_option_label(db, identifier, key):
         return flat_item[key]
     except Exception as exception:
         log.exception(
-            f"Failed fetching filter option label.",
+            "Failed fetching filter option label.",
             exc_info=exception,
             info_labels={
                 "collection": BaseMatchers.collection,
@@ -94,10 +94,10 @@ def get_options_mapper(
                 "as": "input",
                 "in": {
                     "$cond": {
-                        "if": {"$isArray": f"$$input"},
+                        "if": {"$isArray": "$$input"},
                         "then": {
                             "$map": {
-                                "input": f"$$input",
+                                "input": "$$input",
                                 "as": "item",
                                 "in": {
                                     "label": "$$item",
@@ -106,8 +106,8 @@ def get_options_mapper(
                             }
                         },
                         "else": {
-                            "label": f"$$input",
-                            "value": f"${lookup_key}.id" if lookup_key else f"$$input",
+                            "label": "$$input",
+                            "value": f"${lookup_key}.id" if lookup_key else "$$input",
                         },
                     }
                 },
@@ -297,7 +297,6 @@ def has_bucket_filter(filter_request_body):
 
 
 def get_bucket_stages(geo_filter: dict):
-
     bucket = geo_filter["bucket"]
     value = geo_filter["value"]
 

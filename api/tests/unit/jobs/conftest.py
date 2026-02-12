@@ -26,7 +26,6 @@ def mock_dependencies():
         ) as mock_add_doc, patch(
             "rabbit.get_rabbit"
         ) as mock_rabbit:
-
             yield {
                 "rabbit": mock_rabbit,
                 "init_job": mock_init_job,

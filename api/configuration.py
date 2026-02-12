@@ -1,7 +1,6 @@
 from importlib import import_module
 from object_configurations.object_configuration_mapper import ObjectConfigurationMapper
 
-
 _object_configuration_mapper = ObjectConfigurationMapper()
 _route_mapper = {}
 _collection_mapper = {}

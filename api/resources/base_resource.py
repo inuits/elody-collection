@@ -444,7 +444,7 @@ class BaseResource(Resource):
 
     def _get_date_from_object(self, object_dict, date_field):
         now = datetime.now(timezone.utc)
-        if not date_field in object_dict:
+        if date_field not in object_dict:
             return now
         try:
             return datetime.strptime(object_dict.get(date_field), "%Y-%m-%d %H:%M:%S")

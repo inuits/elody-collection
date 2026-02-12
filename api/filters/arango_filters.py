@@ -59,7 +59,6 @@ class ArangoFilters:
         collection_or_result_set = collection
 
         for index, filter_criteria in enumerate(filter_request_body):
-
             filter = get_filter(filter_criteria["type"])
             generated_query = filter.generate_query(filter_criteria)
             if generated_query == "":
@@ -105,7 +104,7 @@ class ArangoFilters:
             FOR result IN {final_result if final_result else collection}
                 FILTER HAS(result, 'metadata')
                 LET sortField = FIRST(
-                    FOR meta IN result.metadata 
+                    FOR meta IN result.metadata
                     FILTER meta.key == "{order_by}"
                     RETURN meta
                 )

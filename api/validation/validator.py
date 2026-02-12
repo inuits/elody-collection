@@ -56,7 +56,8 @@ class Validator(BaseResource):
             error_type = error.schema_path.pop()
             if error_type == "oneOf":
                 property = error.instance.get(  # pyright: ignore
-                    "key", error.instance.get("type")  # pyright: ignore
+                    "key",
+                    error.instance.get("type"),  # pyright: ignore
                 )
                 for context in error.context:  # pyright: ignore
                     if context.schema.get("_property") == property:  # pyright: ignore
