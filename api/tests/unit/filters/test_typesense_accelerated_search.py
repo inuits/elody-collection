@@ -277,7 +277,10 @@ class TestTypesenseFilterClassification:
                     {
                         "enabled": True,
                         "collection": "entities",
-                        "search_fields": ["properties.name.value"],
+                        "search_fields": [
+                            "properties.name.value",
+                            "properties.title.value",
+                        ],
                     },
                 )
 
@@ -1059,6 +1062,340 @@ class TestTypesenseCrossCollectionFiltering:
             assert result["count"] == 45
             assert len(result["results"]) == 5
             assert result["skip"] == 20
+
+
+class TestSmartFilterClassification:
+    """Test that text filters on non-indexed fields are moved to remaining_filters."""
+
+    def test_non_indexed_field_moves_to_remaining(
+        self, flask_app, resource, mock_filter_engine
+    ):
+        """Text filter on a field not in search_fields should become a remaining_filter."""
+        with flask_app.test_request_context(
+            "/entities/filter?limit=20&skip=0",
+            method="POST",
+            content_type="application/json",
+        ):
+            query = [
+                {
+                    "type": "text",
+                    "key": ["vlacc:1|properties.name.value"],
+                    "value": "mozart",
+                    "match_exact": False,
+                },
+                {
+                    "type": "text",
+                    "key": ["vlacc:1|properties.isbn.value"],
+                    "value": "978-123",
+                    "match_exact": False,
+                },
+            ]
+
+            with patch(
+                "resources.base_filter_resource.typesense_search_all_ids"
+            ) as mock_ts_all:
+                mock_ts_all.return_value = make_ts_result(["id1", "id2"], 2)
+                mock_filter_engine.filter.return_value = {
+                    "results": [make_mongo_doc("id1")],
+                    "count": 1,
+                    "skip": 0,
+                    "limit": 20,
+                }
+
+                resource._execute_typesense_accelerated_search(
+                    query,
+                    "entities",
+                    {
+                        "enabled": True,
+                        "collection": "entities",
+                        "search_fields": ["properties.name.value"],
+                    },
+                )
+
+                # Typesense should only get "mozart" (name is indexed)
+                call_args = mock_ts_all.call_args
+                search_query = call_args[0][1]
+                assert search_query == "mozart"
+                assert "978-123" not in search_query
+
+                # isbn filter should be passed to MongoDB as remaining
+                mongo_call = mock_filter_engine.filter.call_args[0]
+                mongo_filters = mongo_call[0]
+                isbn_filter = next(
+                    (
+                        f
+                        for f in mongo_filters
+                        if f.get("key") == ["vlacc:1|properties.isbn.value"]
+                    ),
+                    None,
+                )
+                assert isbn_filter is not None
+
+    def test_all_non_indexed_falls_back_to_mongodb(self, flask_app, resource):
+        """When ALL text filters are on non-indexed fields, fall back entirely to MongoDB."""
+        with flask_app.test_request_context(
+            "/entities/filter?limit=20&skip=0",
+            method="POST",
+            content_type="application/json",
+        ):
+            query = [
+                {
+                    "type": "text",
+                    "key": ["vlacc:1|properties.isbn.value"],
+                    "value": "978-123",
+                    "match_exact": False,
+                },
+            ]
+
+            with patch.object(
+                resource, "_execute_advanced_search_with_query_v2"
+            ) as mock_mongo:
+                mock_mongo.return_value = {
+                    "results": [],
+                    "count": 0,
+                    "skip": 0,
+                    "limit": 20,
+                }
+
+                resource._execute_typesense_accelerated_search(
+                    query,
+                    "entities",
+                    {
+                        "enabled": True,
+                        "collection": "entities",
+                        "search_fields": ["properties.name.value"],
+                    },
+                )
+
+                # Should fall back to MongoDB with the full original query
+                mock_mongo.assert_called_once_with(query, "entities")
+
+    def test_indexed_field_stays_in_typesense(self, flask_app, resource):
+        """Text filter on a field in search_fields should be sent to Typesense."""
+        with flask_app.test_request_context(
+            "/entities/filter?limit=20&skip=0",
+            method="POST",
+            content_type="application/json",
+        ):
+            query = [
+                {
+                    "type": "text",
+                    "key": ["vlacc:1|properties.name.value"],
+                    "value": "test",
+                    "match_exact": False,
+                },
+            ]
+
+            with patch(
+                "resources.base_filter_resource.typesense_search"
+            ) as mock_ts:
+                mock_ts.return_value = make_ts_result([], 0)
+
+                resource._execute_typesense_accelerated_search(
+                    query,
+                    "entities",
+                    {
+                        "enabled": True,
+                        "collection": "entities",
+                        "search_fields": ["properties.name.value"],
+                    },
+                )
+
+                # Typesense search should be called (not search_all_ids)
+                mock_ts.assert_called_once()
+                search_query = mock_ts.call_args[0][1]
+                assert search_query == "test"
+
+    def test_string_key_format_checked_against_search_fields(
+        self, flask_app, resource
+    ):
+        """Text filter with a plain string key should be checked against search_fields."""
+        with flask_app.test_request_context(
+            "/entities/filter?limit=20&skip=0",
+            method="POST",
+            content_type="application/json",
+        ):
+            query = [
+                {
+                    "type": "text",
+                    "key": "properties.name.value",
+                    "value": "test",
+                    "match_exact": False,
+                },
+            ]
+
+            with patch(
+                "resources.base_filter_resource.typesense_search"
+            ) as mock_ts:
+                mock_ts.return_value = make_ts_result([], 0)
+
+                resource._execute_typesense_accelerated_search(
+                    query,
+                    "entities",
+                    {
+                        "enabled": True,
+                        "collection": "entities",
+                        "search_fields": ["properties.name.value"],
+                    },
+                )
+
+                mock_ts.assert_called_once()
+
+    def test_or_operator_non_indexed_logs_warning(
+        self, flask_app, resource
+    ):
+        """Text filter with operator 'or' on a non-indexed field should log a warning."""
+        with flask_app.test_request_context(
+            "/entities/filter?limit=20&skip=0",
+            method="POST",
+            content_type="application/json",
+        ):
+            query = [
+                {
+                    "type": "text",
+                    "key": ["vlacc:1|properties.isbn.value"],
+                    "value": "978-123",
+                    "match_exact": False,
+                    "operator": "or",
+                },
+            ]
+
+            with patch.object(
+                resource, "_execute_advanced_search_with_query_v2"
+            ) as mock_mongo, patch(
+                "resources.base_filter_resource.log"
+            ) as mock_log:
+                mock_mongo.return_value = {
+                    "results": [],
+                    "count": 0,
+                    "skip": 0,
+                    "limit": 20,
+                }
+
+                resource._execute_typesense_accelerated_search(
+                    query,
+                    "entities",
+                    {
+                        "enabled": True,
+                        "collection": "entities",
+                        "search_fields": ["properties.name.value"],
+                    },
+                )
+
+                mock_log.warning.assert_called_once()
+                warning_msg = mock_log.warning.call_args[0][0]
+                assert "properties.isbn.value" in warning_msg
+                assert "or" in warning_msg.lower()
+
+    def test_mixed_indexed_and_non_indexed_uses_search_all_ids(
+        self, flask_app, resource, mock_filter_engine
+    ):
+        """When some text filters are indexed and others aren't, use search_all_ids
+        because non-indexed filters become remaining_filters."""
+        with flask_app.test_request_context(
+            "/entities/filter?limit=20&skip=0",
+            method="POST",
+            content_type="application/json",
+        ):
+            query = [
+                {
+                    "type": "text",
+                    "key": ["vlacc:1|properties.name.value"],
+                    "value": "mozart",
+                    "match_exact": False,
+                },
+                {
+                    "type": "text",
+                    "key": ["vlacc:1|properties.publisher.value"],
+                    "value": "oxford",
+                    "match_exact": False,
+                },
+            ]
+
+            with patch(
+                "resources.base_filter_resource.typesense_search_all_ids"
+            ) as mock_ts_all, patch(
+                "resources.base_filter_resource.typesense_search"
+            ) as mock_ts:
+                mock_ts_all.return_value = make_ts_result(["id1"], 1)
+                mock_filter_engine.filter.return_value = {
+                    "results": [make_mongo_doc("id1")],
+                    "count": 1,
+                    "skip": 0,
+                    "limit": 20,
+                }
+
+                resource._execute_typesense_accelerated_search(
+                    query,
+                    "entities",
+                    {
+                        "enabled": True,
+                        "collection": "entities",
+                        "search_fields": ["properties.name.value"],
+                    },
+                )
+
+                # search_all_ids used because publisher is a remaining_filter
+                mock_ts_all.assert_called_once()
+                mock_ts.assert_not_called()
+
+    def test_all_fields_indexed_no_remaining(self, flask_app, resource):
+        """When all text filter fields are in search_fields, no remaining_filters
+        are created from text filters — regular typesense_search is used."""
+        with flask_app.test_request_context(
+            "/entities/filter?limit=20&skip=0",
+            method="POST",
+            content_type="application/json",
+        ):
+            query = [
+                {
+                    "type": "text",
+                    "key": ["vlacc:1|properties.name.value"],
+                    "value": "mozart",
+                    "match_exact": False,
+                },
+                {
+                    "type": "text",
+                    "key": ["vlacc:1|properties.isbn.value"],
+                    "value": "978-123",
+                    "match_exact": False,
+                },
+            ]
+
+            with patch(
+                "resources.base_filter_resource.typesense_search"
+            ) as mock_ts, patch(
+                "resources.base_filter_resource.StorageManager"
+            ) as mock_sm:
+                mock_ts.return_value = make_ts_result(["id1"], 1)
+
+                mock_storage = MagicMock()
+                mock_storage.db.__getitem__.return_value.find.return_value = [
+                    make_mongo_doc("id1")
+                ]
+                mock_storage._prepare_mongo_document.side_effect = (
+                    lambda doc, _: doc
+                )
+                mock_sm.return_value.get_db_engine.return_value = mock_storage
+
+                resource._execute_typesense_accelerated_search(
+                    query,
+                    "entities",
+                    {
+                        "enabled": True,
+                        "collection": "entities",
+                        "search_fields": [
+                            "properties.name.value",
+                            "properties.isbn.value",
+                        ],
+                    },
+                )
+
+                # Regular search used (not search_all_ids)
+                mock_ts.assert_called_once()
+                search_query = mock_ts.call_args[0][1]
+                assert "mozart" in search_query
+                assert "978-123" in search_query
 
 
 class TestClassifyFiltersForTypesense:

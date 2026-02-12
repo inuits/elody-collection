@@ -184,6 +184,25 @@ class BaseFilterResource(BaseResource):
             self._classify_filters_for_typesense(query)
         )
 
+        search_fields = set(typesense_config.get("search_fields", []))
+        ts_text_filters = []
+        for f in text_filters:
+            key = f.get("key", "")
+            if isinstance(key, list):
+                key = key[0].split("|")[-1] if key else ""
+            if key in search_fields:
+                ts_text_filters.append(f)
+            else:
+                if f.get("operator") == "or":
+                    log.warning(
+                        f"Text filter on non-indexed field '{key}' with operator 'or' "
+                        f"dropped — OR semantics not supported as "
+                        f"remaining_filter. Add to search_fields config to fix."
+                    )
+                else:
+                    remaining_filters.append(f)
+        text_filters = ts_text_filters
+
         if not text_filters:
             return self._execute_advanced_search_with_query_v2(query, collection)
         ts_collection, query_by, search_terms, filter_by = (
