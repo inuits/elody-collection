@@ -69,6 +69,7 @@ class GenericStorageManager:
                 "id",
                 "identifiers",
                 "audit",
+                "service_audit",
                 "created_by",
                 "created_by_service",
                 "date_created",
