@@ -14,7 +14,7 @@ cryptography==44.0.2
 decorator==5.2.1
 deprecation==2.1.0
 dnspython==2.7.0
-elody[loader]==0.0.241
+elody[loader]==0.0.242
 Flask==3.1.0
 Flask-RESTful==0.3.10
 flask-swagger-ui==4.11.1
