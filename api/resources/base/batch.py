@@ -30,7 +30,8 @@ class Batch(BaseResource):
         status_code = 201 if not force_patch_only else 200
         documents, errors, mediafile_errors = [], [], []
         line_count, content = 1, {}
-        job_id, parent_job_id = "", None
+        self.job_id = ""
+        parent_job_id = None
         document_type = request.args.get("type", "")
         view_args_id = (request.view_args or {}).get("id")
 
@@ -54,15 +55,15 @@ class Batch(BaseResource):
             if not g.get("dry_run"):
                 parent_job_id = request.args.get("parent_job_id", "")
                 g.parent_job_id = parent_job_id
-                job_id = init_job(
-                    f"Import {request.args.get('filename', document_type.replace('_', ' ') if document_type else 'file')}",
+                self.job_id = init_job(
+                    f"Import {request.args.get('filename', document_type.replace('_', ' ') if document_type else 'file')}",  # noqa
                     "Data Import",
                     get_rabbit=get_rabbit,
                     user_email=get_user_context().email,
                     parent_id=parent_job_id,
                 )
-                start_job(job_id, get_rabbit=get_rabbit)
-                g.current_job_id = job_id
+                start_job(self.job_id, get_rabbit=get_rabbit)
+                g.current_job_id = self.job_id
 
             documents_resource = Documents()
             document_resource = Document()
@@ -241,9 +242,9 @@ class Batch(BaseResource):
                 request.view_args = {"id": view_args_id}
             if not g.get("dry_run"):
                 if len(errors) == 0:
-                    finish_job(job_id, get_rabbit=get_rabbit)
+                    finish_job(self.job_id, get_rabbit=get_rabbit)
                 else:
-                    fail_job(job_id, "\n".join(errors), get_rabbit=get_rabbit)
+                    fail_job(self.job_id, "\n".join(errors), get_rabbit=get_rabbit)
             if status_code == 500:
                 output = {}
                 output.update(
@@ -255,7 +256,7 @@ class Batch(BaseResource):
                     }
                 )
                 if not g.get("dry_run"):
-                    output.update({"job_id": job_id})
+                    output.update({"job_id": self.job_id})
                 return output, status_code
             else:
                 if has_accept_text_uri_list_header:
@@ -276,7 +277,7 @@ class Batch(BaseResource):
                         "entities": errors,
                         "mediafiles": mediafile_errors,
                     },
-                    "job_id": job_id,
+                    "job_id": self.job_id,
                 }, status_code
 
     def __process_errors(
@@ -332,8 +333,23 @@ class Batch(BaseResource):
     def __format_text_uri_list(self):
         text_uri_list = g.get("text_uri_list", "").replace('"', "").replace("'", "")
         if text_uri_list:
+            upload_mediafile_job_id = init_job(
+                name="Upload Mediafiles",
+                job_type="Mediafile upload",
+                user_email=(get_user_context().email or "developers@inuits.eu"),
+                get_rabbit=get_rabbit,
+                track_async_children=True,
+                parent_id=self.job_id,
+            )
+            # NOTE: This technically means if the batch is ran, but then the
+            # upload isn't started this job will stay in running
+            start_job(upload_mediafile_job_id, get_rabbit=get_rabbit)
             uri_list = text_uri_list.split("\n")
-            return [uri for uri in uri_list if uri]
+            return [
+                uri + f"&parent_job_id={upload_mediafile_job_id}"
+                for uri in uri_list
+                if uri
+            ]
         return []
 
     def __set_request(self, method):
