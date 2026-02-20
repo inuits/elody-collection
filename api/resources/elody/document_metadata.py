@@ -21,8 +21,13 @@ class ElodyDocumentMetadata(BaseResource):
 def resource_rules():
     return [
         {
+            "route": "/elody/v1/entities/<string:id>/metadata",
+            "resource": ElodyDocumentMetadata,
+            "api": api,
+        },
+        {
             "route": "/entities/<string:id>/metadata",
             "resource": ElodyDocumentMetadata,
             "api": api,
-        }
+        },
     ]

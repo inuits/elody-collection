@@ -14,4 +14,7 @@ class ElodyFilter(BaseResource):
 
 
 def resource_rules():
-    return [{"route": "/entities/filter", "resource": ElodyFilter, "api": api}]
+    return [
+        {"route": "/elody/v1/entities/filter", "resource": ElodyFilter, "api": api},
+        {"route": "/entities/filter", "resource": ElodyFilter, "api": api},
+    ]

@@ -116,7 +116,6 @@ class Documents(GenericObjectV2):
             raise MethodNotAllowed()
 
         self.__set_request("DELETE")
-        request.view_args = request.view_args or {}
         job_id = init_job(
             "Bulk delete",
             "Bulk delete",

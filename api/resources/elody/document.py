@@ -23,4 +23,11 @@ class ElodyDocument(BaseResource):
 
 
 def resource_rules():
-    return [{"route": "/entities/<string:id>", "resource": ElodyDocument, "api": api}]
+    return [
+        {
+            "route": "/elody/v1/entities/<string:id>",
+            "resource": ElodyDocument,
+            "api": api,
+        },
+        {"route": "/entities/<string:id>", "resource": ElodyDocument, "api": api},
+    ]

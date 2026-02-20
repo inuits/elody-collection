@@ -28,4 +28,7 @@ class ElodyDocuments(BaseResource):
 def resource_rules():
     if "edit" not in bulk_operation_features:
         ElodyDocuments.methods.discard("PUT")  # pyright: ignore
-    return [{"route": "/entities", "resource": ElodyDocuments, "api": api}]
+    return [
+        {"route": "/elody/v1/entities", "resource": ElodyDocuments, "api": api},
+        {"route": "/entities", "resource": ElodyDocuments, "api": api},
+    ]

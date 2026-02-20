@@ -1,6 +1,7 @@
 import json
 
 from apscheduler.schedulers.background import BackgroundScheduler
+from collections import defaultdict
 from configuration import get_features, get_route_mapper, init_mappers
 from elody.error_codes import ErrorCode, get_error_code, get_read
 from elody.exceptions import NotFoundException
@@ -45,8 +46,13 @@ def __process_resource_rules(rules):
             }.items()
         )
     )
+    grouped_rules = defaultdict(list)
     for route, resource, api in rules_map.values():
-        api.add_resource(resource, get_route_mapper().get(resource.__name__, route))
+        grouped_rules[(resource, api)].append(
+            get_route_mapper().get(resource.__name__, route)
+        )
+    for (resource, api), routes in grouped_rules.items():
+        api.add_resource(resource, *routes)
 
 
 def load_sentry():
