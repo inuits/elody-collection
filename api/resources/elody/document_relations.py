@@ -56,8 +56,13 @@ class ElodyDocumentRelations(BaseResource):
 def resource_rules():
     return [
         {
+            "route": "/elody/v1/entities/<string:id>/relations",
+            "resource": ElodyDocumentRelations,
+            "api": api,
+        },
+        {
             "route": "/entities/<string:id>/relations",
             "resource": ElodyDocumentRelations,
             "api": api,
-        }
+        },
     ]
