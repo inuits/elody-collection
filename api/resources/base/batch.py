@@ -31,7 +31,7 @@ class Batch(BaseResource):
         documents, errors, mediafile_errors = [], [], []
         line_count, content = 1, {}
         self.job_id = ""
-        parent_job_id = None
+        self.parent_job_id = None
         document_type = request.args.get("type", "")
         view_args_id = (request.view_args or {}).get("id")
 
@@ -53,14 +53,14 @@ class Batch(BaseResource):
                 content_type, default_config.SCHEMA_TYPE
             )
             if not g.get("dry_run"):
-                parent_job_id = request.args.get("parent_job_id", "")
-                g.parent_job_id = parent_job_id
+                self.parent_job_id = request.args.get("parent_job_id", "")
+                g.parent_job_id = self.parent_job_id
                 self.job_id = init_job(
                     f"Import {request.args.get('filename', document_type.replace('_', ' ') if document_type else 'file')}",  # noqa
                     "Data Import",
                     get_rabbit=get_rabbit,
                     user_email=get_user_context().email,
-                    parent_id=parent_job_id,
+                    parent_id=self.parent_job_id,
                 )
                 start_job(self.job_id, get_rabbit=get_rabbit)
                 g.current_job_id = self.job_id
@@ -278,6 +278,7 @@ class Batch(BaseResource):
                         "mediafiles": mediafile_errors,
                     },
                     "job_id": self.job_id,
+                    "parent_job_id": self.parent_job_id,
                 }, status_code
 
     def __process_errors(
@@ -341,6 +342,12 @@ class Batch(BaseResource):
                 track_async_children=True,
                 parent_id=self.job_id,
             )
+            # NOTE: This is techinically not a "parent job id", but this value
+            # is used by the frontend to fill in the parent_job_id of the
+            # mediafile upload links, which should be under the
+            # upload_mediafile_job_id.
+            if not self.parent_job_id:
+                self.parent_job_id = upload_mediafile_job_id
             # NOTE: This technically means if the batch is ran, but then the
             # upload isn't started this job will stay in running
             start_job(upload_mediafile_job_id, get_rabbit=get_rabbit)
