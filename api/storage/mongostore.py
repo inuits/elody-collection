@@ -878,14 +878,12 @@ class MongoStorageManager(GenericStorageManager):
         run_post_crud_hook=True,
         patched_item={},
     ):
-        if not patched_item and not self._does_request_changes(item, content):
-            return item
-
         config = get_object_configuration_mapper().get(item["type"])
         collection = collection or config.crud()["collection"]
         patch_document_content = config.crud()["document_content_patcher"]
         pre_crud_hook = config.crud()["pre_crud_hook"]
         post_crud_hook = config.crud()["post_crud_hook"]
+        has_content_changes = config.crud()["content_changes_checker"]
         unpatched_item = deepcopy(item)
 
         try:
@@ -893,6 +891,13 @@ class MongoStorageManager(GenericStorageManager):
             item = patched_item or patch_document_content(
                 document=item, content=content, crud="update", timestamp=timestamp
             )
+            if (
+                not has_content_changes(
+                    document=item, unpatched_document=unpatched_item
+                )
+                and not patched_item
+            ):
+                return item
             item = pre_crud_hook(
                 crud="update",
                 timestamp=timestamp,
@@ -900,12 +905,7 @@ class MongoStorageManager(GenericStorageManager):
                 unpatched_document=unpatched_item,
                 get_user_context=get_user_context,
             )
-            # prevent db operation and history write for patches that only contains changes on virtual fields (fields only used for syncing, e.g. virtual relations)
-            if not self.is_dry_run() and (
-                patched_item
-                or self._does_request_changes(unpatched_item, item)
-                or self._does_request_changes(item, unpatched_item)
-            ):
+            if not self.is_dry_run():
                 etag_key = config.document_info().get("etag_key")
                 etag = unpatched_item.get(etag_key, "") if etag_key else ""
                 if request.headers.get("If-Match", str(etag)) != str(etag):
@@ -960,14 +960,12 @@ class MongoStorageManager(GenericStorageManager):
         run_post_crud_hook=True,
         patched_item={},
     ):
-        if not patched_item and not self._does_request_changes(item, content, True):
-            return item
-
         config = get_object_configuration_mapper().get(item["type"])
         collection = collection or config.crud()["collection"]
         patch_document_content = config.crud()["document_content_patcher"]
         pre_crud_hook = config.crud()["pre_crud_hook"]
         post_crud_hook = config.crud()["post_crud_hook"]
+        has_content_changes = config.crud()["content_changes_checker"]
         unpatched_item = deepcopy(item)
 
         try:
@@ -979,6 +977,13 @@ class MongoStorageManager(GenericStorageManager):
                 timestamp=timestamp,
                 overwrite=True,
             )
+            if (
+                not has_content_changes(
+                    document=item, unpatched_document=unpatched_item
+                )
+                and not patched_item
+            ):
+                return item
             item = pre_crud_hook(
                 crud="update",
                 timestamp=timestamp,
@@ -986,11 +991,7 @@ class MongoStorageManager(GenericStorageManager):
                 unpatched_document=unpatched_item,
                 get_user_context=get_user_context,
             )
-            if not self.is_dry_run() and (
-                patched_item
-                or self._does_request_changes(unpatched_item, item, True)
-                or self._does_request_changes(item, unpatched_item, True)
-            ):
+            if not self.is_dry_run():
                 try:
                     etag_key = config.document_info().get("etag_key")
                     etag = unpatched_item.get(etag_key, "") if etag_key else ""
