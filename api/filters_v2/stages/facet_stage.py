@@ -15,5 +15,18 @@ def build(
 
 def __handle_facet_key(key: str):
     return {
-        key.replace(".", "__"): [{"$group": {"_id": f"${key}", "count": {"$sum": 1}}}]
+        key.replace(".", "__"): [
+            {
+                "$group": {
+                    "_id": {
+                        "$cond": {
+                            "if": {"$isArray": f"${key}"},
+                            "then": {"$arrayElemAt": [f"${key}", 0]},
+                            "else": f"${key}",
+                        }
+                    },
+                    "count": {"$sum": 1},
+                }
+            }
+        ]
     }
