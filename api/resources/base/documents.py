@@ -121,6 +121,7 @@ class Documents(GenericObjectV2):
             "Bulk delete",
             get_rabbit=get_rabbit,
             user_email=get_user_context().email,
+            track_async_children=True,
         )
         start_job(job_id, get_rabbit=get_rabbit)
 
@@ -137,6 +138,7 @@ class Documents(GenericObjectV2):
                 get_rabbit=get_rabbit,
                 user_email=get_user_context().email,
                 parent_id=job_id,
+                track_async_children=True,
             )
             start_job(child_job_id, get_rabbit=get_rabbit)
             try:
