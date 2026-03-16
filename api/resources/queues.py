@@ -47,7 +47,8 @@ def update_parent_relation_values(routing_key, body, message_id):
     if __is_malformed_message(data, ["collection", "parent_id"]):
         return
     StorageManager().get_db_engine().update_parent_relation_values(
-        data["collection"], data["parent_id"]
+        data["collection"],
+        data["parent_id"],
     )
 
 
@@ -55,7 +56,7 @@ def update_parent_relation_values(routing_key, body, message_id):
     **__argument_wrapper(
         queue_name=f"{queue_prefix}-add_entity_to_history",
         routing_key=f"{routing_key_prefix}.entity_changed",
-    )
+    ),
 )
 def add_entity_to_history(routing_key, body, message_id):
     data = body["data"]
@@ -68,7 +69,7 @@ def add_entity_to_history(routing_key, body, message_id):
     **__argument_wrapper(
         queue_name=f"{queue_prefix}-add_mediafile_to_history",
         routing_key=f"{routing_key_prefix}.mediafile_changed",
-    )
+    ),
 )
 def add_mediafile_to_history(routing_key, body, message_id):
     data = body["data"]
@@ -122,7 +123,7 @@ def add_item_to_history(
     **__argument_wrapper(
         queue_name=f"{queue_prefix}-add_scan_info_to_mediafile",
         routing_key=f"{routing_key_prefix}.file_scanned",
-    )
+    ),
 )
 def add_scan_info_to_mediafile(routing_key, body, message_id):
     data = body["data"]
@@ -134,11 +135,14 @@ def add_scan_info_to_mediafile(routing_key, body, message_id):
             "clamav_version": data["clamav_version"],
             "datetime": body["time"],
             "infected": data["infected"],
-        }
+        },
     }
     if data["infected"]:
         metadata = storage.get_collection_item_sub_item(
-            "mediafiles", data["mediafile_id"], "metadata", list()
+            "mediafiles",
+            data["mediafile_id"],
+            "metadata",
+            list(),
         )
         for item in [x for x in metadata if x["key"] == "publication_status"]:
             item["value"] = "infected"
@@ -150,7 +154,7 @@ def add_scan_info_to_mediafile(routing_key, body, message_id):
     **__argument_wrapper(
         queue_name=f"{queue_prefix}-update_job",
         routing_key=f"{routing_key_prefix}.job_changed",
-    )
+    ),
 )
 def update_job(routing_key, body, message_id):
     try:
@@ -179,7 +183,10 @@ def update_job(routing_key, body, message_id):
                 parent_job_id = get_item_relation_key(document, "hasParentJob")
                 if parent_job_id and new_status and current_status != new_status:
                     _handle_status_update(
-                        parent_job_id, collection, current_status, new_status
+                        parent_job_id,
+                        collection,
+                        current_status,
+                        new_status,
                     )
 
     except Exception as exception:
@@ -205,10 +212,10 @@ def _handle_status_update(id, collection, current_status, new_status):
         return
 
     parent_job = storage.increment_metadata_values(
-        id,
-        collection,
-        "child_jobs",
-        {
+        id=id,
+        collection=collection,
+        metadata_key="child_jobs",
+        increment_fields={
             current_status: -1,
             new_status: 1,
         },
@@ -292,18 +299,23 @@ def _attach_child(parent_job_id, collection):
     config = get_object_configuration_mapper().get("job")
     collection = config.crud()["collection"]
     parent_job = storage.get_item_from_collection_by_id(
-        collection=collection, id=parent_job_id
+        collection=collection,
+        id=parent_job_id,
     )
     if not parent_job:
         sleep(5)
         parent_job = storage.get_item_from_collection_by_id(
-            collection=collection, id=parent_job_id
+            collection=collection,
+            id=parent_job_id,
         )
     if not parent_job:
         return
     if parent_job and get_item_metadata_value(parent_job, "child_jobs"):
         parent_job = storage.increment_metadata_values(
-            parent_job_id, collection, "child_jobs", {"initiated": 1, "queued": 1}
+            parent_job_id,
+            collection,
+            "child_jobs",
+            {"initiated": 1, "queued": 1},
         )
 
 
@@ -311,7 +323,7 @@ def _attach_child(parent_job_id, collection):
     **__argument_wrapper(
         queue_name=f"{queue_prefix}-create_job",
         routing_key=f"{routing_key_prefix}.job_created",
-    )
+    ),
 )
 def create_job(routing_key, body, message_id):
     try:
@@ -337,7 +349,7 @@ def create_job(routing_key, body, message_id):
     **__argument_wrapper(
         queue_name=f"{queue_prefix}-handle_mediafile_status_change",
         routing_key=f"{routing_key_prefix}.mediafile_changed",
-    )
+    ),
 )
 def handle_mediafile_status_change(routing_key, body, message_id):
     data = body["data"]
@@ -345,10 +357,12 @@ def handle_mediafile_status_change(routing_key, body, message_id):
         return
     storage = StorageManager().get_db_engine()
     old_publication_status = get_item_metadata_value(
-        data["old_mediafile"], "publication_status"
+        data["old_mediafile"],
+        "publication_status",
     )
     new_publication_status = get_item_metadata_value(
-        data["mediafile"], "publication_status"
+        data["mediafile"],
+        "publication_status",
     )
     if old_publication_status == new_publication_status:
         return
@@ -362,7 +376,7 @@ def handle_mediafile_status_change(routing_key, body, message_id):
     **__argument_wrapper(
         queue_name=f"{queue_prefix}-handle_mediafiles_added_for_entity",
         routing_key=f"{routing_key_prefix}.mediafiles_added_for_entity",
-    )
+    ),
 )
 def handle_mediafiles_added_for_entity(routing_key, body, message_id):
     data = body["data"]
@@ -384,7 +398,9 @@ def process_mediafile(storage, mediafile, entity_id):
             process_ocr([mediafile], alto_relation)
         if pdf_relation := has_ocr_operation(entity_relations, "pdf"):
             storage.delete_collection_item_relations(
-                "entities", entity_id, [pdf_relation]
+                "entities",
+                entity_id,
+                [pdf_relation],
             )
             storage.delete_item_from_collection("mediafiles", pdf_relation.get("key"))
             process_ocr([mediafile], pdf_relation)
@@ -404,7 +420,7 @@ def add_relation(storage, collection, body, item_id):
             "is_ocr": True,
             "operation": body.get("operation"),
             "lang": body.get("lang"),
-        }
+        },
     ]
     storage.patch_collection_item_relations(collection, item_id, payload)
 
@@ -434,7 +450,7 @@ def create_ocr_body(mediafiles_data, relation):
     **__argument_wrapper(
         queue_name=f"{queue_prefix}-handle_mediafile_deleted",
         routing_key=f"{routing_key_prefix}.mediafile_deleted",
-    )
+    ),
 )
 def handle_mediafile_deleted(routing_key, body, message_id):
     data = body["data"]
@@ -447,7 +463,8 @@ def handle_mediafile_deleted(routing_key, body, message_id):
         if relation.get("is_ocr"):
             mediafile_id = relation.get("key")
             mediafile = storage.get_item_from_collection_by_id(
-                "mediafiles", mediafile_id
+                "mediafiles",
+                mediafile_id,
             )
 
             if mediafile and mediafile.get("technical_origin") != "original":
@@ -457,16 +474,20 @@ def handle_mediafile_deleted(routing_key, body, message_id):
     for relation in deleted_mediafile.get("relations", []):
         if relation.get("type") == "belongsTo" and "is_ocr" not in relation:
             entity = storage.get_item_from_collection_by_id(
-                "entities", relation.get("key")
+                "entities",
+                relation.get("key"),
             )
             if entity:
                 entity_relations = entity.get("relations", [])
                 if pdf_relation := has_ocr_operation(entity_relations, "pdf"):
                     storage.delete_collection_item_relations(
-                        "entities", get_raw_id(entity), [pdf_relation]
+                        "entities",
+                        get_raw_id(entity),
+                        [pdf_relation],
                     )
                     storage.delete_item_from_collection(
-                        "mediafiles", pdf_relation.get("key")
+                        "mediafiles",
+                        pdf_relation.get("key"),
                     )
                     entity_mediafiles_ids = []
                     for relation in entity_relations:
@@ -479,14 +500,17 @@ def handle_mediafile_deleted(routing_key, body, message_id):
                         mediafile_image_data = []
                         for id in entity_mediafiles_ids:
                             mediafile = storage.get_item_from_collection_by_id(
-                                "mediafiles", id
+                                "mediafiles",
+                                id,
                             )
                             mediafile_image_data.append(mediafile)
                         process_ocr(mediafile_image_data, pdf_relation)
                 for entity_relation in entity_relations:
                     if entity_relation.get("key") in ocr_keys:
                         storage.delete_collection_item_relations(
-                            "entities", get_raw_id(entity), [entity_relation]
+                            "entities",
+                            get_raw_id(entity),
+                            [entity_relation],
                         )
     if "entity_id" in data["linked_entities"]:
         storage.handle_mediafile_deleted(data["linked_entities"])

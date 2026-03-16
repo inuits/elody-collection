@@ -44,13 +44,14 @@ class Batch(BaseResource):
                 **request.headers,
                 "Content-Type": "application/json",
                 "Accept": "application/json",
-            }
+            },
         )
 
         try:
             default_config = get_object_configuration_mapper().get("_default")
             serialize_batch = default_config.serialization(
-                content_type, default_config.SCHEMA_TYPE
+                content_type,
+                default_config.SCHEMA_TYPE,
             )
             if not g.get("dry_run"):
                 self.parent_job_id = request.args.get("parent_job_id", "")
@@ -124,7 +125,7 @@ class Batch(BaseResource):
                         if exceptions := content.get("exceptions"):
                             for exception in exceptions:
                                 if content.get("type") != "mediafile" or g.get(
-                                    "dry_run"
+                                    "dry_run",
                                 ):
                                     errors, status_code = self.__process_errors(
                                         errors,
@@ -154,7 +155,9 @@ class Batch(BaseResource):
                             if not g.get("dry_run"):
                                 id = content.pop("identifiers")[0]
                                 g.content = serialize(
-                                    content, type=content.get("type"), to_format=spec
+                                    content,
+                                    type=content.get("type"),
+                                    to_format=spec,
                                 )
                                 try:
                                     response = document_resource.patch(id=id, spec=spec)
@@ -172,10 +175,10 @@ class Batch(BaseResource):
 
                         if response is None:
                             continue
-                        elif isinstance(response, tuple):
+                        if isinstance(response, tuple):
                             if response[1] >= 500:
                                 raise Exception(response[0])
-                            elif response[1] >= 400:
+                            if response[1] >= 400:
                                 if (
                                     response[1] == 409
                                     and g.get("dry_run")
@@ -199,7 +202,7 @@ class Batch(BaseResource):
                             documents.append(response)
                     except Exception as exception:
                         if g.get("content", {}).get("type") != "mediafile" or g.get(
-                            "dry_run"
+                            "dry_run",
                         ):
                             errors, status_code = self.__process_errors(
                                 errors,
@@ -253,37 +256,42 @@ class Batch(BaseResource):
                         "errors": {
                             "entities": errors,
                             "mediafiles": mediafile_errors,
-                        }
-                    }
+                        },
+                    },
                 )
                 if not g.get("dry_run"):
                     output.update({"job_id": self.job_id})
                 return output, status_code
-            else:
-                if has_accept_text_uri_list_header:
-                    return "\n".join(self.__format_text_uri_list()), status_code
-                return {
-                    "entities": [
-                        document
-                        for document in documents
-                        if document["type"] != "mediafile"
-                    ],
-                    "mediafiles": [
-                        document
-                        for document in documents
-                        if document["type"] == "mediafile"
-                    ],
-                    "links": self.__format_text_uri_list(),
-                    "errors": {
-                        "entities": errors,
-                        "mediafiles": mediafile_errors,
-                    },
-                    "job_id": self.job_id,
-                    "parent_job_id": self.parent_job_id,
-                }, status_code
+            if has_accept_text_uri_list_header:
+                return "\n".join(self.__format_text_uri_list()), status_code
+            return {
+                "entities": [
+                    document
+                    for document in documents
+                    if document["type"] != "mediafile"
+                ],
+                "mediafiles": [
+                    document
+                    for document in documents
+                    if document["type"] == "mediafile"
+                ],
+                "links": self.__format_text_uri_list(),
+                "errors": {
+                    "entities": errors,
+                    "mediafiles": mediafile_errors,
+                },
+                "job_id": self.job_id,
+                "parent_job_id": self.parent_job_id,
+            }, status_code
 
     def __process_errors(
-        self, errors, exception, status_code, *, line_count=None, document_type=""
+        self,
+        errors,
+        exception,
+        status_code,
+        *,
+        line_count=None,
+        document_type="",
     ):
         if isinstance(exception, HTTPError):
             try:
@@ -297,7 +305,8 @@ class Batch(BaseResource):
                 "document_exception_message_constructor"
             ]
             message = construct_document_exception_message(
-                exception, str(exception.description)
+                exception,
+                str(exception.description),
             )
         elif isinstance(exception, NotFound):
             message = (
