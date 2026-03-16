@@ -4,6 +4,7 @@ from time import sleep
 
 from configuration import get_object_configuration_mapper
 from elody.job import handle_parent_job_finished
+from elody.object_configurations.job_configuration import Status
 from elody.util import (
     get_item_metadata_value,
     get_item_relation_key,
@@ -39,7 +40,7 @@ def __is_malformed_message(data, fields):
     **__argument_wrapper(
         queue_name=f"{queue_prefix}-update_parent_relation_values",
         routing_key=f"{routing_key_prefix}.child_relation_changed",
-    )
+    ),
 )
 def update_parent_relation_values(routing_key, body, message_id):
     data = body["data"]
@@ -153,7 +154,7 @@ def add_scan_info_to_mediafile(routing_key, body, message_id):
 )
 def update_job(routing_key, body, message_id):
     try:
-        id = body["data"]["id"]
+        id = body["data"].get("id", body["data"].get("_id"))
         config = get_object_configuration_mapper().get("job")
         collection = config.crud()["collection"]
 
@@ -213,13 +214,36 @@ def _handle_status_update(id, collection, current_status, new_status):
         },
     )
 
-    parent_child_status = next(
-        (metadata_entry if metadata_entry.get("key") == "child_jobs" else None)
-        for metadata_entry in parent_job.get("metadata", [])
+    parent_status = next(
+        metadata_entry.get("value", None)
+        for metadata_entry in parent_job.get("metadata", [{}])
+        if metadata_entry.get("key") == "status"
     )
 
-    if parent_child_status is not None:
-        parent_child_status_value = parent_child_status["value"]
+    finished, parent_child_status_value = _check_parent_children_status(parent_job)
+    if finished:
+        handle_parent_job_finished(
+            id,
+            parent_child_status_value,
+            get_rabbit=get_rabbit,
+        )
+    elif parent_status == Status.FINISHED and new_status not in (
+        Status.FINISHED,
+        Status.WARNING,
+        Status.FAILED,
+    ):
+        _handle_parent_wrong_status(id, collection)
+
+
+def _check_parent_children_status(document) -> tuple[bool, dict[str, str]]:
+
+    parent_children_status = next(
+        metadata_entry
+        for metadata_entry in document.get("metadata", [])
+        if metadata_entry.get("key") == "child_jobs"
+    )
+    if parent_children_status is not None:
+        parent_child_status_value = parent_children_status["value"]
         child_jobs_initiated = parent_child_status_value["initiated"]
         child_jobs_queued = parent_child_status_value["queued"]
         child_jobs_running = parent_child_status_value["running"]
@@ -233,9 +257,34 @@ def _handle_status_update(id, collection, current_status, new_status):
             and (child_jobs_failed + child_jobs_finished + child_jobs_warning)
             == child_jobs_initiated
         ):
-            handle_parent_job_finished(
-                id, parent_child_status_value, get_rabbit=get_rabbit
-            )
+            return True, parent_child_status_value
+        return False, parent_child_status_value
+    return False, {}
+
+
+def _handle_parent_wrong_status(parent_job_id, collection):
+    storage = StorageManager().get_db_engine()
+    config = get_object_configuration_mapper().get("job")
+    collection = config.crud()["collection"]
+    parent_job = storage.get_item_from_collection_by_id(
+        collection=collection,
+        id=parent_job_id,
+    )
+    if not parent_job:
+        sleep(5)
+        parent_job = storage.get_item_from_collection_by_id(
+            collection=collection,
+            id=parent_job_id,
+        )
+    if not parent_job:
+        return
+
+    finished, _ = _check_parent_children_status(
+        parent_job,
+    )  # checking again to make sure nothing changed in the meantime
+
+    if not finished:
+        config.crud()["start_job"](parent_job_id, get_rabbit=get_rabbit)
 
 
 def _attach_child(parent_job_id, collection):

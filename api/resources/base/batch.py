@@ -61,6 +61,7 @@ class Batch(BaseResource):
                     get_rabbit=get_rabbit,
                     user_email=get_user_context().email,
                     parent_id=self.parent_job_id,
+                    track_async_children=True,
                 )
                 start_job(self.job_id, get_rabbit=get_rabbit)
                 g.current_job_id = self.job_id
