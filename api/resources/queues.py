@@ -173,6 +173,7 @@ def update_job(routing_key, body, message_id):
             current_status = get_item_metadata_value(document, "status")
             new_status = get_item_metadata_value(body["data"]["patch"], "status")
             if current_status != "failed" or new_status == "failed":
+                log.info(f"Updating job {id} with patch {body['data']['patch']}")
                 storage.patch_item_from_collection_v2(
                     collection,
                     document,
@@ -229,6 +230,7 @@ def _handle_status_update(id, collection, current_status, new_status):
 
     finished, parent_child_status_value = _check_parent_children_status(parent_job)
     if finished:
+        log.info(f"Finishing Parent Job: {id}")
         handle_parent_job_finished(
             id,
             parent_child_status_value,
@@ -278,12 +280,6 @@ def _handle_parent_wrong_status(parent_job_id, collection):
         id=parent_job_id,
     )
     if not parent_job:
-        sleep(5)
-        parent_job = storage.get_item_from_collection_by_id(
-            collection=collection,
-            id=parent_job_id,
-        )
-    if not parent_job:
         return
 
     finished, _ = _check_parent_children_status(
@@ -291,6 +287,7 @@ def _handle_parent_wrong_status(parent_job_id, collection):
     )  # checking again to make sure nothing changed in the meantime
 
     if not finished:
+        log.info(f"Moving parent job back to running: {parent_job_id}")
         config.crud()["start_job"](parent_job_id, get_rabbit=get_rabbit)
 
 
