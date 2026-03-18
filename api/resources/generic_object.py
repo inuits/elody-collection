@@ -258,7 +258,9 @@ class GenericObjectV2(BaseFilterResource, BaseResource):
             return "good", 200
         if document_type := request.args.get("type"):
             config = get_object_configuration_mapper().get(document_type)
-            collection = config.crud()["collection"]
+            collection = config.crud().get("collection")
+            if not collection:
+                raise BadRequest(f"Unknown or unsupported type: '{document_type}'")
         elif is_type_required:
             raise BadRequest("Query parameter 'type' is required")
         self._check_if_collection_name_exists(collection)
