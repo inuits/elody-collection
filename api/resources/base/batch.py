@@ -28,7 +28,7 @@ class Batch(BaseResource):
         self.__set_request("POST")
         g.enable_parsers = True
         status_code = 201 if not force_patch_only else 200
-        documents, errors, mediafile_errors = [], [], []
+        documents, errors, mediafile_errors, warnings = [], [], [], []
         line_count, content = 1, {}
         self.job_id = ""
         self.parent_job_id = None
@@ -178,18 +178,20 @@ class Batch(BaseResource):
                         if isinstance(response, tuple):
                             if response[1] >= 500:
                                 raise Exception(response[0])
-                            if response[1] >= 400:
-                                if (
-                                    response[1] == 409
-                                    and g.get("dry_run")
-                                    and document_type == "mediafile"
-                                ):
-                                    documents.append(content)
+                            elif response[1] >= 400:
+                                try:
+                                    message = response[0]["message"]
+                                except Exception:
+                                    message = str(response[0])
+                                if response[1] == 409:
+                                    warnings, _ = self.__process_errors(
+                                        warnings,
+                                        message,
+                                        status_code,
+                                        line_count=line_count,
+                                        document_type=document_type,
+                                    )
                                 else:
-                                    try:
-                                        message = response[0]["message"]
-                                    except Exception:
-                                        message = str(response[0])
                                     raise BadRequest(message)
                             elif response[1] == 200 and request.method == "PATCH":
                                 documents = [
@@ -276,6 +278,10 @@ class Batch(BaseResource):
                     if document["type"] == "mediafile"
                 ],
                 "links": self.__format_text_uri_list(),
+                "warnings": {
+                    "entities": warnings,
+                    "mediafiles": [],
+                },
                 "errors": {
                     "entities": errors,
                     "mediafiles": mediafile_errors,
