@@ -722,7 +722,7 @@ class BaseResource(Resource):
                         self.storage_api_url if internal else self.storage_api_url_ext
                     )
                     mediafile[mediafile_type] = (
-                        f"{base_url.removesuffix("/")}/download-with-ticket/{quote(mediafile_filename)}?ticket_id={ticket_id}"
+                        f"{base_url.removesuffix('/')}/download-with-ticket/{quote('-'.join(mediafile_filename.split('-')[1:]))}?ticket_id={ticket_id}"
                     )
             if "thumbnail_file_location" in mediafile:
                 mediafile["thumbnail_file_location"] = (
