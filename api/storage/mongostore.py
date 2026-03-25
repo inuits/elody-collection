@@ -1157,7 +1157,8 @@ class MongoStorageManager(GenericStorageManager):
                 pre_crud_hook = config.crud()["pre_crud_hook"]
                 post_crud_hook = config.crud()["post_crud_hook"]
                 timestamp = datetime.now(timezone.utc)
-                item = pre_crud_hook(crud="create", timestamp=timestamp, document=item)
+                if not is_history:
+                    item = pre_crud_hook(crud="create", timestamp=timestamp, document=item)
                 if not self.is_dry_run():
                     self.db[
                         config.crud()[
