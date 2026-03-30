@@ -939,11 +939,11 @@ class MongoStorageManager(GenericStorageManager):
                 timestamp=timestamp,
             )
             if (
-                not has_content_changes(
+                not patched_item
+                and not has_content_changes(
                     document=item,
                     unpatched_document=unpatched_item,
                 )
-                and not patched_item
             ):
                 return item
             item = pre_crud_hook(
@@ -1027,11 +1027,11 @@ class MongoStorageManager(GenericStorageManager):
                 overwrite=True,
             )
             if (
-                not has_content_changes(
+                not patched_item
+                and not has_content_changes(
                     document=item,
                     unpatched_document=unpatched_item,
                 )
-                and not patched_item
             ):
                 return item
             item = pre_crud_hook(
