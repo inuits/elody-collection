@@ -300,6 +300,26 @@ class TestEnsureCollection:
             {"name": "new_col", "fields": [{"name": ".*", "type": "auto"}]}
         )
 
+    def test_creates_collection_with_facet_fields(self):
+        mock_client = MagicMock()
+        mock_client.collections.__getitem__.return_value.retrieve.side_effect = Exception("404")
+
+        tc._ensured_collections.discard("facet_col")
+
+        with patch.object(tc, "get_typesense_client", return_value=mock_client):
+            tc.ensure_collection("facet_col", facet_fields=["type", "properties.ref_genre.value"])
+
+        expected_fields = [
+            {"name": ".*", "type": "auto"},
+            {"name": "type", "type": "auto", "facet": True},
+            {"name": "properties_ref_genre_value", "type": "auto", "facet": True},
+        ]
+        mock_client.collections.create.assert_called_once_with(
+            {"name": "facet_col", "fields": expected_fields}
+        )
+
+        tc._ensured_collections.discard("facet_col")
+
         tc._ensured_collections.discard("new_col")
 
     def test_skips_when_already_exists(self):
@@ -336,3 +356,124 @@ class TestEnsureCollection:
             tc.ensure_collection("no_client_col")
 
         assert "no_client_col" not in tc._ensured_collections
+
+
+def _make_search_result_with_facets(ids, found, facet_counts):
+    return {
+        "hits": [_make_hit(i) for i in ids],
+        "found": found,
+        "facet_counts": facet_counts,
+    }
+
+
+class TestSearchWithFacets:
+    def test_facet_by_passed_to_search_params(self):
+        mock_client = MagicMock()
+        mock_client.collections.__getitem__.return_value.documents.search.return_value = (
+            _make_search_result(["a"], 1)
+        )
+
+        with patch.object(tc, "get_typesense_client", return_value=mock_client):
+            search("entities", "mars", "name", facet_by="type,properties_name_value")
+
+        params = mock_client.collections.__getitem__.return_value.documents.search.call_args[0][0]
+        assert params["facet_by"] == "type,properties_name_value"
+
+    def test_no_facet_by_when_not_provided(self):
+        mock_client = MagicMock()
+        mock_client.collections.__getitem__.return_value.documents.search.return_value = (
+            _make_search_result(["a"], 1)
+        )
+
+        with patch.object(tc, "get_typesense_client", return_value=mock_client):
+            search("entities", "mars", "name")
+
+        params = mock_client.collections.__getitem__.return_value.documents.search.call_args[0][0]
+        assert "facet_by" not in params
+
+    def test_facets_transformed_to_mongo_format(self):
+        mock_client = MagicMock()
+        typesense_facets = [
+            {
+                "field_name": "type",
+                "counts": [
+                    {"value": "work_word", "count": 42},
+                    {"value": "person", "count": 15},
+                ],
+            },
+            {
+                "field_name": "properties_name_value",
+                "counts": [
+                    {"value": "alice", "count": 3},
+                ],
+            },
+        ]
+        mock_client.collections.__getitem__.return_value.documents.search.return_value = (
+            _make_search_result_with_facets(["a", "b"], 2, typesense_facets)
+        )
+
+        with patch.object(tc, "get_typesense_client", return_value=mock_client):
+            result = search("entities", "mars", "name", facet_by="type,properties_name_value")
+
+        assert result["facets"] == [
+            {"type": [{"_id": "work_word", "count": 42}, {"_id": "person", "count": 15}]},
+            {"properties_name_value": [{"_id": "alice", "count": 3}]},
+        ]
+
+    def test_facets_none_when_no_facet_by(self):
+        mock_client = MagicMock()
+        mock_client.collections.__getitem__.return_value.documents.search.return_value = (
+            _make_search_result(["a"], 1)
+        )
+
+        with patch.object(tc, "get_typesense_client", return_value=mock_client):
+            result = search("entities", "mars", "name")
+
+        assert "facets" not in result
+
+    def test_facets_empty_when_no_facet_counts(self):
+        mock_client = MagicMock()
+        mock_client.collections.__getitem__.return_value.documents.search.return_value = (
+            _make_search_result_with_facets(["a"], 1, [])
+        )
+
+        with patch.object(tc, "get_typesense_client", return_value=mock_client):
+            result = search("entities", "mars", "name", facet_by="type")
+
+        assert result["facets"] == []
+
+
+class TestPrepareDocumentWithFacetFields:
+    def test_includes_facet_fields(self):
+        entity = {
+            "_id": "ent-1",
+            "type": "work_word",
+            "properties": {"ref_genre": {"value": "fiction"}},
+        }
+        result = prepare_document_for_typesense(
+            entity, ["properties.name.value"], facet_fields=["properties.ref_genre.value"]
+        )
+        assert result["properties_ref_genre_value"] == "fiction"
+
+    def test_facet_fields_default_empty(self):
+        entity = {"_id": "ent-1", "type": "work_word"}
+        result = prepare_document_for_typesense(entity, [])
+        assert result == {"id": "ent-1", "_id": "ent-1", "type": "work_word"}
+
+    def test_overlapping_search_and_facet_fields(self):
+        entity = {
+            "_id": "ent-1",
+            "type": "work_word",
+            "properties": {"name": {"value": "alice"}},
+        }
+        result = prepare_document_for_typesense(
+            entity, ["properties.name.value"], facet_fields=["properties.name.value"]
+        )
+        assert result["properties_name_value"] == "alice"
+
+    def test_missing_facet_field_excluded(self):
+        entity = {"_id": "ent-1", "type": "work_word"}
+        result = prepare_document_for_typesense(
+            entity, [], facet_fields=["properties.ref_genre.value"]
+        )
+        assert "properties_ref_genre_value" not in result

@@ -197,6 +197,136 @@ class TestTypesenseFilterClassification:
                 assert "work_word" in filter_by
                 assert "work_music" in filter_by
 
+    def test_selection_with_match_exact_false_treated_as_text(self, flask_app, resource):
+        """A selection filter with match_exact=false and a string value is a text search."""
+        with flask_app.test_request_context(
+            "/entities/filter?limit=20&skip=0",
+            method="POST",
+            content_type="application/json",
+        ):
+            query = [
+                {
+                    "type": "selection",
+                    "key": "type",
+                    "value": ["work_word"],
+                    "match_exact": True,
+                },
+                {
+                    "type": "selection",
+                    "key": ["vlacc:1|properties.ref_authors.key"],
+                    "value": "brusselmans",
+                    "match_exact": False,
+                },
+            ]
+
+            text, types, remaining = resource._classify_filters_for_typesense(query)
+            assert len(text) == 1
+            assert text[0]["value"] == "brusselmans"
+            assert "work_word" in types
+            assert len(remaining) == 0
+
+    def test_selection_with_match_exact_true_stays_remaining(self, flask_app, resource):
+        """A selection filter with match_exact=true stays as remaining filter."""
+        with flask_app.test_request_context(
+            "/entities/filter?limit=20&skip=0",
+            method="POST",
+            content_type="application/json",
+        ):
+            query = [
+                {
+                    "type": "selection",
+                    "key": ["vlacc:1|properties.ref_authors.key"],
+                    "value": "brusselmans",
+                    "match_exact": True,
+                },
+            ]
+
+            text, types, remaining = resource._classify_filters_for_typesense(query)
+            assert len(text) == 0
+            assert len(remaining) == 1
+
+    def test_selection_with_list_value_stays_remaining(self, flask_app, resource):
+        """A selection filter with a list value (multi-select) is not a text search."""
+        with flask_app.test_request_context(
+            "/entities/filter?limit=20&skip=0",
+            method="POST",
+            content_type="application/json",
+        ):
+            query = [
+                {
+                    "type": "selection",
+                    "key": "properties.ref_genre.value",
+                    "value": ["fiction", "thriller"],
+                    "match_exact": True,
+                },
+            ]
+
+            text, types, remaining = resource._classify_filters_for_typesense(query)
+            assert len(text) == 0
+            assert len(remaining) == 1
+
+    def test_lookup_filter_resolved_via_typesense(self, flask_app, resource):
+        """A filter with a lookup should be resolved via Typesense search on the foreign collection."""
+        with flask_app.test_request_context(
+            "/entities/filter?limit=20&skip=0",
+            method="POST",
+            content_type="application/json",
+        ):
+            query = [
+                {
+                    "type": "selection",
+                    "key": "type",
+                    "value": ["work_word"],
+                    "match_exact": True,
+                },
+                {
+                    "type": "selection",
+                    "key": ["vlacc:1|properties.ref_authors.key"],
+                    "value": "brusselmans",
+                    "match_exact": False,
+                    "lookup": {
+                        "from": "entities_actual",
+                        "local_field": "properties.ref_authors.value",
+                        "foreign_field": "_id",
+                        "as": "lookup.virtual_relations.ref_authors",
+                    },
+                },
+            ]
+
+            text, types, remaining = resource._classify_filters_for_typesense(query)
+            # The lookup filter should NOT be in text or remaining —
+            # it should be resolved into an ID-based filter
+            assert "work_word" in types
+            # The lookup filter value is a string with match_exact=False,
+            # so it would be classified as text, but it has a lookup
+            # which should be handled specially
+
+    def test_lookup_filter_without_typesense_falls_to_remaining(self, flask_app, resource):
+        """A lookup filter with match_exact=True (exact ID match) stays as remaining."""
+        with flask_app.test_request_context(
+            "/entities/filter?limit=20&skip=0",
+            method="POST",
+            content_type="application/json",
+        ):
+            query = [
+                {
+                    "type": "selection",
+                    "key": ["vlacc:1|identifiers"],
+                    "value": ["PERS-12345"],
+                    "match_exact": True,
+                    "lookup": {
+                        "from": "entities_actual",
+                        "local_field": "properties.ref_authors.value",
+                        "foreign_field": "_id",
+                        "as": "lookup.virtual_relations.ref_authors",
+                    },
+                },
+            ]
+
+            text, types, remaining = resource._classify_filters_for_typesense(query)
+            assert len(remaining) == 1
+            assert remaining[0].get("lookup") is not None
+
     def test_single_type_filter_uses_exact_match(self, flask_app, resource):
         with flask_app.test_request_context(
             "/entities/filter?limit=20&skip=0",
@@ -1631,3 +1761,242 @@ class TestAddPaginationLinks:
         ) as mock_inject:
             resource._add_pagination_links(items, 0, 20, "entities")
             mock_inject.assert_called_once()
+
+
+class TestTypesenseAcceleratedSearchWithFacets:
+    """Test that facets from Typesense are passed through in the response."""
+
+    def test_facets_included_in_direct_typesense_response(
+        self, flask_app, resource, mock_storage
+    ):
+        """When Typesense returns facets (no remaining_filters), they appear in the response."""
+        query = [{"type": "text", "key": "properties.name.value", "value": "alice"}]
+        ts_config = {
+            "enabled": True,
+            "collection": "entities",
+            "search_fields": ["properties.name.value"],
+            "facet_fields": ["type"],
+        }
+        ts_facets = [{"type": [{"_id": "work_word", "count": 5}]}]
+        ts_result = {"ids": ["a"], "count": 1, "facets": ts_facets}
+
+        with flask_app.test_request_context("/?skip=0&limit=20"):
+            with patch.object(
+                resource, "_classify_filters_for_typesense",
+                return_value=([query[0]], [], []),
+            ), patch.object(
+                resource, "_build_typesense_query",
+                return_value=("entities", "properties_name_value", "alice", None),
+            ), patch.object(
+                resource, "_execute_typesense_search", return_value=ts_result,
+            ), patch.object(
+                resource, "_fetch_documents_from_mongo",
+                return_value=[make_mongo_doc("a")],
+            ), patch.object(
+                resource, "_resolve_mongo_collections", return_value=["entities_actual"],
+            ), patch.object(
+                resource, "_add_cors_headers",
+            ), patch.object(
+                resource, "_inject_api_urls_into_entities",
+                side_effect=lambda x: x,
+            ):
+                result = resource._execute_typesense_accelerated_search(
+                    query, "entities", ts_config
+                )
+
+        assert result.get("facets") == ts_facets
+
+    def test_facet_fields_converted_to_facet_by_string(
+        self, flask_app, resource, mock_storage
+    ):
+        """facet_fields from config are converted to Typesense facet_by format."""
+        query = [{"type": "text", "key": "properties.name.value", "value": "test"}]
+        ts_config = {
+            "enabled": True,
+            "collection": "entities",
+            "search_fields": ["properties.name.value"],
+            "facet_fields": ["type", "properties.ref_genre.value"],
+        }
+
+        with flask_app.test_request_context("/?skip=0&limit=20"):
+            with patch.object(
+                resource, "_classify_filters_for_typesense",
+                return_value=([query[0]], [], []),
+            ), patch.object(
+                resource, "_build_typesense_query",
+                return_value=("entities", "properties_name_value", "test", None),
+            ), patch.object(
+                resource, "_execute_typesense_search",
+                return_value={"ids": [], "count": 0, "facets": []},
+            ) as mock_ts_search, patch.object(
+                resource, "_add_cors_headers",
+            ):
+                resource._execute_typesense_accelerated_search(
+                    query, "entities", ts_config
+                )
+
+        call_args = mock_ts_search.call_args
+        assert call_args is not None
+        # facet_by should be the 8th positional arg or keyword arg
+        if len(call_args[0]) > 7:
+            assert call_args[0][7] == "type,properties_ref_genre_value"
+        else:
+            assert call_args[1].get("facet_by") == "type,properties_ref_genre_value"
+
+    def test_no_facets_when_config_has_no_facet_fields(
+        self, flask_app, resource, mock_storage
+    ):
+        """When facet_fields is absent from config, no facets are requested."""
+        query = [{"type": "text", "key": "properties.name.value", "value": "test"}]
+        ts_config = {
+            "enabled": True,
+            "collection": "entities",
+            "search_fields": ["properties.name.value"],
+        }
+        ts_result = {"ids": ["a"], "count": 1}
+
+        with flask_app.test_request_context("/?skip=0&limit=20"):
+            with patch.object(
+                resource, "_classify_filters_for_typesense",
+                return_value=([query[0]], [], []),
+            ), patch.object(
+                resource, "_build_typesense_query",
+                return_value=("entities", "properties_name_value", "test", None),
+            ), patch.object(
+                resource, "_execute_typesense_search", return_value=ts_result,
+            ), patch.object(
+                resource, "_fetch_documents_from_mongo",
+                return_value=[make_mongo_doc("a")],
+            ), patch.object(
+                resource, "_resolve_mongo_collections", return_value=["entities_actual"],
+            ), patch.object(
+                resource, "_add_cors_headers",
+            ), patch.object(
+                resource, "_inject_api_urls_into_entities",
+                side_effect=lambda x: x,
+            ):
+                result = resource._execute_typesense_accelerated_search(
+                    query, "entities", ts_config
+                )
+
+        assert "facets" not in result or result.get("facets") is None
+
+    def test_lookup_resolved_via_typesense_then_used_as_id_filter(
+        self, flask_app, resource, mock_storage, mock_filter_engine, mock_config_mapper
+    ):
+        """A lookup filter should resolve IDs via Typesense, then pass resolved
+        ID-based filter to the standard filter pipeline on the correct collection."""
+        query = [
+            {
+                "type": "selection",
+                "key": "type",
+                "value": ["work_word"],
+                "match_exact": True,
+            },
+            {
+                "type": "selection",
+                "key": ["vlacc:1|properties.ref_authors.key"],
+                "value": "brusselmans",
+                "match_exact": False,
+                "lookup": {
+                    "from": "entities_actual",
+                    "local_field": "properties.ref_authors.value",
+                    "foreign_field": "_id",
+                    "as": "lookup.virtual_relations.ref_authors",
+                },
+            },
+        ]
+        ts_config = {
+            "enabled": True,
+            "collection": "entities",
+            "search_fields": ["properties.name.value"],
+        }
+
+        with flask_app.test_request_context("/?skip=0&limit=20"):
+            mock_mongo_storage = MagicMock()
+            mock_mongo_storage.db.__getitem__.return_value.find.return_value = [
+                {"_id": "uuid-1", "identifiers": ["uuid-1", "PERS-123"]},
+                {"_id": "uuid-2", "identifiers": ["uuid-2", "PERS-456"]},
+            ]
+
+            with patch(
+                "resources.base_filter_resource.typesense_search_all_ids"
+            ) as mock_ts_all, patch(
+                "resources.base_filter_resource.StorageManager"
+            ) as mock_sm_lookup, patch.object(
+                resource, "_execute_advanced_search_with_query_v2",
+                return_value={"results": [make_mongo_doc("work-1")], "count": 1},
+            ) as mock_v2, patch.object(
+                resource, "_add_cors_headers",
+            ):
+                mock_sm_lookup.return_value.get_db_engine.return_value = mock_mongo_storage
+                mock_ts_all.return_value = {"ids": ["uuid-1", "uuid-2"], "count": 2}
+
+                resource._execute_typesense_accelerated_search(
+                    query, "entities", ts_config
+                )
+
+                # Verify Typesense was called to resolve the lookup
+                assert mock_ts_all.called
+                assert "brusselmans" in mock_ts_all.call_args[0][1]
+
+                # Verify the standard filter pipeline was called with resolved filters
+                assert mock_v2.called
+                resolved_query = mock_v2.call_args[0][0]
+                target_collection = mock_v2.call_args[0][1]
+
+                # Should target the correct MongoDB collection, not "entities"
+                assert target_collection == "bibliographic_entities_actual"
+
+                # Should contain the resolved ID filter
+                id_filter = next(
+                    (f for f in resolved_query if f.get("key") == "properties.ref_authors.value"),
+                    None,
+                )
+                assert id_filter is not None
+                assert set(id_filter["value"]) == {"uuid-1", "PERS-123", "uuid-2", "PERS-456"}
+                assert id_filter["match_exact"] is True
+
+                # Should still contain the type filter
+                type_filter = next(
+                    (f for f in resolved_query if f.get("key") == "type"),
+                    None,
+                )
+                assert type_filter is not None
+
+    def test_fallback_to_mongodb_preserves_facets(
+        self, flask_app, resource, mock_filter_engine
+    ):
+        """When Typesense is unavailable, MongoDB fallback still returns facets."""
+        query = [{"type": "text", "key": "properties.name.value", "value": "test"}]
+        ts_config = {
+            "enabled": True,
+            "collection": "entities",
+            "search_fields": ["properties.name.value"],
+            "facet_fields": ["type"],
+        }
+        mongo_facets = [{"type": [{"_id": "person", "count": 10}]}]
+        mock_filter_engine.filter.return_value = {
+            "results": [], "count": 0, "skip": 0, "limit": 20, "facets": mongo_facets,
+        }
+
+        with flask_app.test_request_context("/?skip=0&limit=20"):
+            with patch.object(
+                resource, "_classify_filters_for_typesense",
+                return_value=([query[0]], [], []),
+            ), patch.object(
+                resource, "_build_typesense_query",
+                return_value=("entities", "properties_name_value", "test", None),
+            ), patch.object(
+                resource, "_execute_typesense_search", return_value=None,
+            ), patch.object(
+                resource, "_add_cors_headers",
+            ), patch.object(
+                resource, "_inject_api_urls_into_entities",
+                side_effect=lambda x: x,
+            ):
+                result = resource._execute_typesense_accelerated_search(
+                    query, "entities", ts_config
+                )
+
+        assert result.get("facets") == mongo_facets

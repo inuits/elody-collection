@@ -57,7 +57,7 @@ class TestSyncEntityToTypesense:
 
             self._call({"data": {"location": "/entities/ent-1", "type": "work_word"}})
 
-            mock_prepare.assert_called_once_with(entity, ["properties.name.value"])
+            mock_prepare.assert_called_once_with(entity, ["properties.name.value"], facet_fields=[])
             mock_upsert.assert_called_once_with(
                 "entities", {"id": "ent-1", "_id": "ent-1", "type": "work_word"}
             )
@@ -120,7 +120,7 @@ class TestSyncEntityToTypesense:
 
             self._call({"data": {"location": "/entities/ent-1", "type": "work_word"}})
 
-            mock_prepare.assert_called_once_with(entity, ["title"])
+            mock_prepare.assert_called_once_with(entity, ["title"], facet_fields=[])
             mock_upsert.assert_called_once_with("bibliographic", {"id": "ent-1"})
 
 

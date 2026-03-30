@@ -46,7 +46,7 @@ def get_typesense_client():
     return _client
 
 
-def ensure_collection(collection):
+def ensure_collection(collection, facet_fields=None):
     """Ensure a Typesense collection exists with auto schema detection."""
     if collection in _ensured_collections:
         return
@@ -61,10 +61,14 @@ def ensure_collection(collection):
             client.collections[collection].retrieve()
         except Exception:
             try:
+                fields = [{"name": ".*", "type": "auto"}]
+                for field_path in (facet_fields or []):
+                    flat_key = field_path.replace(".", "_")
+                    fields.append({"name": flat_key, "type": "auto", "facet": True})
                 client.collections.create(
                     {
                         "name": collection,
-                        "fields": [{"name": ".*", "type": "auto"}],
+                        "fields": fields,
                     }
                 )
                 log.info(f"Created Typesense collection '{collection}' with auto schema")
@@ -74,7 +78,17 @@ def ensure_collection(collection):
         _ensured_collections.add(collection)
 
 
-def search(collection, query, query_by, filter_by=None, per_page=250, page=1, offset=None):
+def _transform_facets(facet_counts):
+    """Transform Typesense facet_counts into MongoDB-style facet format."""
+    result = []
+    for facet in facet_counts:
+        field = facet["field_name"]
+        entries = [{"_id": c["value"], "count": c["count"]} for c in facet["counts"]]
+        result.append({field: entries})
+    return result
+
+
+def search(collection, query, query_by, filter_by=None, per_page=250, page=1, offset=None, facet_by=None):
     client = get_typesense_client()
     if not client:
         return None
@@ -91,11 +105,22 @@ def search(collection, query, query_by, filter_by=None, per_page=250, page=1, of
             search_params["page"] = page
         if filter_by:
             search_params["filter_by"] = filter_by
+        if facet_by:
+            search_params["facet_by"] = facet_by
 
         result = client.collections[collection].documents.search(search_params)
         ids = [hit["document"]["_id"] for hit in result["hits"]]
-        return {"ids": ids, "count": result["found"]}
+        response = {"ids": ids, "count": result["found"]}
+        if facet_by:
+            response["facets"] = _transform_facets(result.get("facet_counts", []))
+        return response
     except Exception as e:
+        if "Could not find a field named" in str(e) and query_by:
+            missing = str(e).split("`")[1] if "`" in str(e) else ""
+            filtered = ",".join(f for f in query_by.split(",") if f != missing)
+            if filtered:
+                log.warning(f"Retrying Typesense search without missing field '{missing}'")
+                return search(collection, query, filtered, filter_by, per_page, page, offset, facet_by)
         log.warning(f"Typesense search failed, falling back to MongoDB: {e}")
         return None
 
@@ -135,6 +160,12 @@ def search_all_ids(collection, query, query_by, filter_by=None):
 
         return {"ids": all_ids, "count": total}
     except Exception as e:
+        if "Could not find a field named" in str(e) and query_by:
+            missing = str(e).split("`")[1] if "`" in str(e) else ""
+            filtered = ",".join(f for f in query_by.split(",") if f != missing)
+            if filtered:
+                log.warning(f"Retrying search_all_ids without missing field '{missing}'")
+                return search_all_ids(collection, query, filtered, filter_by)
         log.warning(f"Typesense search_all_ids failed, falling back to MongoDB: {e}")
         return None
 
@@ -181,13 +212,16 @@ def get_nested_value(obj, path):
     return obj
 
 
-def prepare_document_for_typesense(entity, search_fields):
+def prepare_document_for_typesense(entity, search_fields, facet_fields=None):
     doc = {
         "id": entity["_id"],
         "_id": entity["_id"],
         "type": entity.get("type", ""),
     }
-    for field_path in search_fields:
+    all_fields = set(search_fields)
+    if facet_fields:
+        all_fields.update(facet_fields)
+    for field_path in all_fields:
         value = get_nested_value(entity, field_path)
         if value is not None:
             flat_key = field_path.replace(".", "_")
