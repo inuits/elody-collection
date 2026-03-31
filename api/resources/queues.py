@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from os import getenv
 from time import sleep
 
@@ -99,7 +99,7 @@ def add_item_to_history(
     relations = storage.get_collection_item_relations(collection, id, True)
     content = {
         "object": item,
-        "timestamp": datetime.now(timezone.utc),
+        "timestamp": datetime.now(UTC),
         "collection": collection,
         "relations": relations,
     }
@@ -405,7 +405,7 @@ def process_mediafile(storage, mediafile, entity_id):
 
 def process_ocr(mediafiles_data, operation_relation):
     body = create_ocr_body(mediafiles_data, operation_relation)
-    get_rabbit().send(body, routing_key="dams.ocr_request")
+    get_rabbit().send(body, routing_key=f"{routing_key_prefix}.ocr_request")
 
 
 def add_relation(storage, collection, body, item_id):
