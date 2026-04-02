@@ -8,6 +8,8 @@ from elody.exceptions import NonUniqueException
 from elody.job import init_job, start_job, finish_job, fail_job
 from elody.util import (
     get_raw_id,
+    signal_entity_changed,
+    signal_entity_deleted,
 )
 from flask import after_this_request, request
 from flask_restful import abort
@@ -313,6 +315,7 @@ class GenericObjectV2(BaseFilterResource, BaseResource):
             item = self.storage.save_item_to_collection_v2(collection, item)
         except NonUniqueException as ex:
             return ex.args[0], 409
+        signal_entity_changed(get_rabbit(), item)
         return self._create_response_according_accept_header(
             mappers.map_data_according_to_accept_header(
                 item,
@@ -505,6 +508,7 @@ class GenericObjectDetailV2(BaseResource):
             )
         except NonUniqueException as error:
             return str(error), 409
+        signal_entity_changed(get_rabbit(), item)
         accept_header = request.headers.get("Accept")
         return (
             self._create_response_according_accept_header(
@@ -543,6 +547,7 @@ class GenericObjectDetailV2(BaseResource):
             )
         except NonUniqueException as error:
             return str(error), 409
+        signal_entity_changed(get_rabbit(), item)
         accept_header = request.headers.get("Accept")
         return (
             self._create_response_according_accept_header(
@@ -571,6 +576,7 @@ class GenericObjectDetailV2(BaseResource):
         if request.args.get("soft", 0, int):
             return "good", 200
         item = self._check_if_collection_and_item_exists(collection, id)
+        signal_entity_deleted(get_rabbit(), item)
         self.storage.delete_item(item)
         return "", 204
 
