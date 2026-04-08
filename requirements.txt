@@ -1,5 +1,5 @@
 AMQPStorm==2.11.1
-amqpstorm-flask==0.6.0-dev
+amqpstorm-flask==0.6.1
 aniso8601==10.0.0
 apscheduler==3.11.0
 attrs==25.3.0
@@ -14,7 +14,7 @@ cryptography==44.0.2
 decorator==5.2.1
 deprecation==2.1.0
 dnspython==2.7.0
-elody[loader]==0.0.251
+elody[loader]==0.0.253
 Flask==3.1.0
 Flask-RESTful==0.3.10
 flask-swagger-ui==4.11.1
