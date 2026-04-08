@@ -3,8 +3,8 @@ import re
 from mimetypes import guess_type
 from urllib.parse import parse_qs, urlparse
 
-from cloudevents.conversion import to_dict
-from cloudevents.http import CloudEvent
+from cloudevents.v1.conversion import to_dict
+from cloudevents.v1.http import CloudEvent
 from configuration import get_object_configuration_mapper
 from flask import Response, request
 from inuits_policy_based_auth import RequestContext
