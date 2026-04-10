@@ -31,8 +31,8 @@ def get_typesense_client():
                     "api_key": api_key,
                     "nodes": [
                         {
-                            "host": getenv("TYPESENSE_HOST", "typesense"),
-                            "port": getenv("TYPESENSE_PORT", "8108"),
+                            "host": getenv("TYPESENSE_SERVER_HOST", getenv("TYPESENSE_HOST", "typesense")),
+                            "port": getenv("TYPESENSE_SERVER_PORT", getenv("TYPESENSE_PORT", "8108")),
                             "protocol": "http",
                         }
                     ],
