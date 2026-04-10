@@ -938,12 +938,9 @@ class MongoStorageManager(GenericStorageManager):
                 crud="update",
                 timestamp=timestamp,
             )
-            if (
-                not patched_item
-                and not has_content_changes(
-                    document=item,
-                    unpatched_document=unpatched_item,
-                )
+            if not patched_item and not has_content_changes(
+                document=item,
+                unpatched_document=unpatched_item,
             ):
                 return item
             item = pre_crud_hook(
@@ -953,7 +950,11 @@ class MongoStorageManager(GenericStorageManager):
                 unpatched_document=unpatched_item,
                 get_user_context=get_user_context,
             )
-            if not self.is_dry_run():
+            if not self.is_dry_run() and (
+                patched_item
+                or has_content_changes(document=item, unpatched_document=unpatched_item)
+                # verify a second time after virtual_properties are removed from item by pre_crud_hook, this prevents db operation and history write when there are no 'actual' changes
+            ):
                 etag_key = config.document_info().get("etag_key")
                 etag = unpatched_item.get(etag_key, "") if etag_key else ""
                 if request.headers.get("If-Match", str(etag)) != str(etag):
@@ -1026,12 +1027,9 @@ class MongoStorageManager(GenericStorageManager):
                 timestamp=timestamp,
                 overwrite=True,
             )
-            if (
-                not patched_item
-                and not has_content_changes(
-                    document=item,
-                    unpatched_document=unpatched_item,
-                )
+            if not patched_item and not has_content_changes(
+                document=item,
+                unpatched_document=unpatched_item,
             ):
                 return item
             item = pre_crud_hook(
@@ -1041,7 +1039,11 @@ class MongoStorageManager(GenericStorageManager):
                 unpatched_document=unpatched_item,
                 get_user_context=get_user_context,
             )
-            if not self.is_dry_run():
+            if not self.is_dry_run() and (
+                patched_item
+                or has_content_changes(document=item, unpatched_document=unpatched_item)
+                # verify a second time after virtual_properties are removed from item by pre_crud_hook, this prevents db operation and history write when there are no 'actual' changes
+            ):
                 try:
                     etag_key = config.document_info().get("etag_key")
                     etag = unpatched_item.get(etag_key, "") if etag_key else ""
@@ -1158,7 +1160,9 @@ class MongoStorageManager(GenericStorageManager):
                 post_crud_hook = config.crud()["post_crud_hook"]
                 timestamp = datetime.now(timezone.utc)
                 if not is_history:
-                    item = pre_crud_hook(crud="create", timestamp=timestamp, document=item)
+                    item = pre_crud_hook(
+                        crud="create", timestamp=timestamp, document=item
+                    )
                 if not self.is_dry_run():
                     self.db[
                         config.crud()[
