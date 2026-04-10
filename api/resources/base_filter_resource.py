@@ -4,7 +4,12 @@ from flask import after_this_request, request
 from flask_restful import abort
 from logging_elody.log import log
 from resources.base_resource import BaseResource
-from search.typesense_client import build_type_filter, ensure_collection as typesense_ensure_collection, search as typesense_search, search_all_ids as typesense_search_all_ids
+from search.typesense_client import (
+    build_type_filter,
+    ensure_collection as typesense_ensure_collection,
+    search as typesense_search,
+    search_all_ids as typesense_search_all_ids,
+)
 from storage.storagemanager import StorageManager
 from tracing import get_tracer
 
@@ -95,9 +100,7 @@ class BaseFilterResource(BaseResource):
         if not query_by:
             return None
 
-        ts_result = typesense_search_all_ids(
-            ts_collection, search_value, query_by
-        )
+        ts_result = typesense_search_all_ids(ts_collection, search_value, query_by)
         if not ts_result or not ts_result.get("ids"):
             return None
 
@@ -120,7 +123,9 @@ class BaseFilterResource(BaseResource):
             "match_exact": True,
         }
 
-    def _build_typesense_query(self, text_filters, type_filter_values, typesense_config):
+    def _build_typesense_query(
+        self, text_filters, type_filter_values, typesense_config
+    ):
         """Build Typesense search parameters from classified filters."""
         ts_collection = typesense_config.get("collection", "entities")
         typesense_ensure_collection(ts_collection)
@@ -133,7 +138,15 @@ class BaseFilterResource(BaseResource):
         return ts_collection, query_by, search_terms, filter_by
 
     def _execute_typesense_search(
-        self, ts_collection, search_terms, query_by, filter_by, has_remaining, skip, limit, facet_by=None
+        self,
+        ts_collection,
+        search_terms,
+        query_by,
+        filter_by,
+        has_remaining,
+        skip,
+        limit,
+        facet_by=None,
     ):
         """Execute Typesense search with fallback. Returns None if unavailable."""
         if has_remaining:
@@ -141,8 +154,13 @@ class BaseFilterResource(BaseResource):
                 ts_collection, search_terms, query_by, filter_by=filter_by
             )
         return typesense_search(
-            ts_collection, search_terms, query_by,
-            filter_by=filter_by, per_page=limit, offset=skip, facet_by=facet_by,
+            ts_collection,
+            search_terms,
+            query_by,
+            filter_by=filter_by,
+            per_page=limit,
+            offset=skip,
+            facet_by=facet_by,
         )
 
     def _fetch_documents_from_mongo(self, matching_ids, collections):
@@ -180,6 +198,7 @@ class BaseFilterResource(BaseResource):
 
     def _add_cors_headers(self):
         if request:
+
             @after_this_request
             def add_header(response):
                 response.headers["Access-Control-Allow-Origin"] = "*"
@@ -254,7 +273,9 @@ class BaseFilterResource(BaseResource):
             key = f.get("key", "")
             if isinstance(key, list):
                 key = key[0].split("|")[-1] if key else ""
-            is_relation_filter = f.get("lookup") or (".ref_" in key and key.endswith(".key"))
+            is_relation_filter = f.get("lookup") or (
+                ".ref_" in key and key.endswith(".key")
+            )
             if is_relation_filter:
                 resolved = self._resolve_lookup_via_typesense(f, typesense_config)
                 if resolved:
@@ -288,29 +309,40 @@ class BaseFilterResource(BaseResource):
         if not text_filters:
             if has_resolved_lookups:
                 type_filters = [
-                    f for f in query
+                    f
+                    for f in query
                     if f.get("type") == "type"
                     or (f.get("type") == "selection" and f.get("key") == "type")
                 ]
                 resolved_query = type_filters + remaining_filters
-                mongo_collections = self._resolve_mongo_collections(type_filter_values, collection)
+                mongo_collections = self._resolve_mongo_collections(
+                    type_filter_values, collection
+                )
                 target_collection = next(iter(mongo_collections), collection)
                 return self._execute_advanced_search_with_query_v2(
                     resolved_query, target_collection
                 )
             return self._execute_advanced_search_with_query_v2(query, collection)
-        ts_collection, query_by, search_terms, filter_by = (
-            self._build_typesense_query(text_filters, type_filter_values, typesense_config)
+        ts_collection, query_by, search_terms, filter_by = self._build_typesense_query(
+            text_filters, type_filter_values, typesense_config
         )
 
         facet_fields = typesense_config.get("facet_fields", [])
         facet_by = (
-            ",".join(f.replace(".", "_") for f in facet_fields) if facet_fields else None
+            ",".join(f.replace(".", "_") for f in facet_fields)
+            if facet_fields
+            else None
         )
 
         ts_result = self._execute_typesense_search(
-            ts_collection, search_terms, query_by, filter_by,
-            bool(remaining_filters), skip, limit, facet_by=facet_by,
+            ts_collection,
+            search_terms,
+            query_by,
+            filter_by,
+            bool(remaining_filters),
+            skip,
+            limit,
+            facet_by=facet_by,
         )
         if ts_result is None:
             log.info("Typesense unavailable, falling back to MongoDB")
@@ -323,15 +355,27 @@ class BaseFilterResource(BaseResource):
 
         if remaining_filters:
             remaining_filters.append(
-                {"type": "selection", "key": "_id", "value": matching_ids, "match_exact": True}
+                {
+                    "type": "selection",
+                    "key": "_id",
+                    "value": matching_ids,
+                    "match_exact": True,
+                }
             )
             items = self.filter_engine_v2.filter(
                 remaining_filters, skip, limit, collection, order_by, asc
             )
         else:
-            mongo_collections = self._resolve_mongo_collections(type_filter_values, collection)
+            mongo_collections = self._resolve_mongo_collections(
+                type_filter_values, collection
+            )
             results = self._fetch_documents_from_mongo(matching_ids, mongo_collections)
-            items = {"results": results, "count": total_count, "skip": skip, "limit": limit}
+            items = {
+                "results": results,
+                "count": total_count,
+                "skip": skip,
+                "limit": limit,
+            }
             if "facets" in ts_result:
                 items["facets"] = ts_result["facets"]
 

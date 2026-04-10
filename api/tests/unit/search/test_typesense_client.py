@@ -93,8 +93,8 @@ class TestPrepareDocumentForTypesense:
 class TestSearch:
     def test_returns_ids_and_count(self):
         mock_client = MagicMock()
-        mock_client.collections.__getitem__.return_value.documents.search.return_value = (
-            _make_search_result(["a", "b"], 2)
+        mock_client.collections.__getitem__.return_value.documents.search.return_value = _make_search_result(
+            ["a", "b"], 2
         )
 
         with patch.object(tc, "get_typesense_client", return_value=mock_client):
@@ -104,53 +104,69 @@ class TestSearch:
 
     def test_uses_offset_when_provided(self):
         mock_client = MagicMock()
-        mock_client.collections.__getitem__.return_value.documents.search.return_value = (
-            _make_search_result([], 0)
+        mock_client.collections.__getitem__.return_value.documents.search.return_value = _make_search_result(
+            [], 0
         )
 
         with patch.object(tc, "get_typesense_client", return_value=mock_client):
             search("entities", "mars", "name", offset=20, per_page=10)
 
-        params = mock_client.collections.__getitem__.return_value.documents.search.call_args[0][0]
+        params = (
+            mock_client.collections.__getitem__.return_value.documents.search.call_args[
+                0
+            ][0]
+        )
         assert params["offset"] == 20
         assert "page" not in params
         assert params["per_page"] == 10
 
     def test_uses_page_when_no_offset(self):
         mock_client = MagicMock()
-        mock_client.collections.__getitem__.return_value.documents.search.return_value = (
-            _make_search_result([], 0)
+        mock_client.collections.__getitem__.return_value.documents.search.return_value = _make_search_result(
+            [], 0
         )
 
         with patch.object(tc, "get_typesense_client", return_value=mock_client):
             search("entities", "mars", "name", page=3)
 
-        params = mock_client.collections.__getitem__.return_value.documents.search.call_args[0][0]
+        params = (
+            mock_client.collections.__getitem__.return_value.documents.search.call_args[
+                0
+            ][0]
+        )
         assert params["page"] == 3
         assert "offset" not in params
 
     def test_includes_filter_by(self):
         mock_client = MagicMock()
-        mock_client.collections.__getitem__.return_value.documents.search.return_value = (
-            _make_search_result([], 0)
+        mock_client.collections.__getitem__.return_value.documents.search.return_value = _make_search_result(
+            [], 0
         )
 
         with patch.object(tc, "get_typesense_client", return_value=mock_client):
             search("entities", "mars", "name", filter_by="type:=work_word")
 
-        params = mock_client.collections.__getitem__.return_value.documents.search.call_args[0][0]
+        params = (
+            mock_client.collections.__getitem__.return_value.documents.search.call_args[
+                0
+            ][0]
+        )
         assert params["filter_by"] == "type:=work_word"
 
     def test_no_filter_by_when_none(self):
         mock_client = MagicMock()
-        mock_client.collections.__getitem__.return_value.documents.search.return_value = (
-            _make_search_result([], 0)
+        mock_client.collections.__getitem__.return_value.documents.search.return_value = _make_search_result(
+            [], 0
         )
 
         with patch.object(tc, "get_typesense_client", return_value=mock_client):
             search("entities", "mars", "name")
 
-        params = mock_client.collections.__getitem__.return_value.documents.search.call_args[0][0]
+        params = (
+            mock_client.collections.__getitem__.return_value.documents.search.call_args[
+                0
+            ][0]
+        )
         assert "filter_by" not in params
 
     def test_returns_none_when_no_client(self):
@@ -159,8 +175,8 @@ class TestSearch:
 
     def test_returns_none_on_exception(self):
         mock_client = MagicMock()
-        mock_client.collections.__getitem__.return_value.documents.search.side_effect = (
-            Exception("connection error")
+        mock_client.collections.__getitem__.return_value.documents.search.side_effect = Exception(
+            "connection error"
         )
 
         with patch.object(tc, "get_typesense_client", return_value=mock_client):
@@ -170,8 +186,8 @@ class TestSearch:
 class TestSearchAllIds:
     def test_single_page(self):
         mock_client = MagicMock()
-        mock_client.collections.__getitem__.return_value.documents.search.return_value = (
-            _make_search_result(["a", "b", "c"], 3)
+        mock_client.collections.__getitem__.return_value.documents.search.return_value = _make_search_result(
+            ["a", "b", "c"], 3
         )
 
         with patch.object(tc, "get_typesense_client", return_value=mock_client):
@@ -211,14 +227,18 @@ class TestSearchAllIds:
 
     def test_includes_filter_by(self):
         mock_client = MagicMock()
-        mock_client.collections.__getitem__.return_value.documents.search.return_value = (
-            _make_search_result([], 0)
+        mock_client.collections.__getitem__.return_value.documents.search.return_value = _make_search_result(
+            [], 0
         )
 
         with patch.object(tc, "get_typesense_client", return_value=mock_client):
             search_all_ids("entities", "mars", "name", filter_by="type:=work_word")
 
-        params = mock_client.collections.__getitem__.return_value.documents.search.call_args[0][0]
+        params = (
+            mock_client.collections.__getitem__.return_value.documents.search.call_args[
+                0
+            ][0]
+        )
         assert params["filter_by"] == "type:=work_word"
 
     def test_returns_none_when_no_client(self):
@@ -227,8 +247,8 @@ class TestSearchAllIds:
 
     def test_returns_none_on_exception(self):
         mock_client = MagicMock()
-        mock_client.collections.__getitem__.return_value.documents.search.side_effect = (
-            Exception("timeout")
+        mock_client.collections.__getitem__.return_value.documents.search.side_effect = Exception(
+            "timeout"
         )
 
         with patch.object(tc, "get_typesense_client", return_value=mock_client):
@@ -240,12 +260,15 @@ class TestUpsertDocument:
         mock_client = MagicMock()
         doc = {"id": "ent-1", "_id": "ent-1", "type": "work_word"}
 
-        with patch.object(tc, "get_typesense_client", return_value=mock_client), \
-             patch.object(tc, "ensure_collection") as mock_ensure:
+        with patch.object(
+            tc, "get_typesense_client", return_value=mock_client
+        ), patch.object(tc, "ensure_collection") as mock_ensure:
             upsert_document("entities", doc)
 
         mock_ensure.assert_called_once_with("entities")
-        mock_client.collections.__getitem__.return_value.documents.upsert.assert_called_once_with(doc)
+        mock_client.collections.__getitem__.return_value.documents.upsert.assert_called_once_with(
+            doc
+        )
 
     def test_skips_when_no_client(self):
         with patch.object(tc, "get_typesense_client", return_value=None):
@@ -253,12 +276,13 @@ class TestUpsertDocument:
 
     def test_handles_exception(self):
         mock_client = MagicMock()
-        mock_client.collections.__getitem__.return_value.documents.upsert.side_effect = (
-            Exception("write error")
+        mock_client.collections.__getitem__.return_value.documents.upsert.side_effect = Exception(
+            "write error"
         )
 
-        with patch.object(tc, "get_typesense_client", return_value=mock_client), \
-             patch.object(tc, "ensure_collection"):
+        with patch.object(
+            tc, "get_typesense_client", return_value=mock_client
+        ), patch.object(tc, "ensure_collection"):
             upsert_document("entities", {"id": "ent-1"})
 
 
@@ -277,8 +301,8 @@ class TestDeleteDocument:
 
     def test_handles_exception(self):
         mock_client = MagicMock()
-        mock_client.collections.__getitem__.return_value.documents.__getitem__.return_value.delete.side_effect = (
-            Exception("not found")
+        mock_client.collections.__getitem__.return_value.documents.__getitem__.return_value.delete.side_effect = Exception(
+            "not found"
         )
 
         with patch.object(tc, "get_typesense_client", return_value=mock_client):
@@ -288,7 +312,9 @@ class TestDeleteDocument:
 class TestEnsureCollection:
     def test_creates_collection_when_not_exists(self):
         mock_client = MagicMock()
-        mock_client.collections.__getitem__.return_value.retrieve.side_effect = Exception("404")
+        mock_client.collections.__getitem__.return_value.retrieve.side_effect = (
+            Exception("404")
+        )
 
         # Clear the cached set for this test
         tc._ensured_collections.discard("new_col")
@@ -302,12 +328,16 @@ class TestEnsureCollection:
 
     def test_creates_collection_with_facet_fields(self):
         mock_client = MagicMock()
-        mock_client.collections.__getitem__.return_value.retrieve.side_effect = Exception("404")
+        mock_client.collections.__getitem__.return_value.retrieve.side_effect = (
+            Exception("404")
+        )
 
         tc._ensured_collections.discard("facet_col")
 
         with patch.object(tc, "get_typesense_client", return_value=mock_client):
-            tc.ensure_collection("facet_col", facet_fields=["type", "properties.ref_genre.value"])
+            tc.ensure_collection(
+                "facet_col", facet_fields=["type", "properties.ref_genre.value"]
+            )
 
         expected_fields = [
             {"name": ".*", "type": "auto"},
@@ -369,26 +399,34 @@ def _make_search_result_with_facets(ids, found, facet_counts):
 class TestSearchWithFacets:
     def test_facet_by_passed_to_search_params(self):
         mock_client = MagicMock()
-        mock_client.collections.__getitem__.return_value.documents.search.return_value = (
-            _make_search_result(["a"], 1)
+        mock_client.collections.__getitem__.return_value.documents.search.return_value = _make_search_result(
+            ["a"], 1
         )
 
         with patch.object(tc, "get_typesense_client", return_value=mock_client):
             search("entities", "mars", "name", facet_by="type,properties_name_value")
 
-        params = mock_client.collections.__getitem__.return_value.documents.search.call_args[0][0]
+        params = (
+            mock_client.collections.__getitem__.return_value.documents.search.call_args[
+                0
+            ][0]
+        )
         assert params["facet_by"] == "type,properties_name_value"
 
     def test_no_facet_by_when_not_provided(self):
         mock_client = MagicMock()
-        mock_client.collections.__getitem__.return_value.documents.search.return_value = (
-            _make_search_result(["a"], 1)
+        mock_client.collections.__getitem__.return_value.documents.search.return_value = _make_search_result(
+            ["a"], 1
         )
 
         with patch.object(tc, "get_typesense_client", return_value=mock_client):
             search("entities", "mars", "name")
 
-        params = mock_client.collections.__getitem__.return_value.documents.search.call_args[0][0]
+        params = (
+            mock_client.collections.__getitem__.return_value.documents.search.call_args[
+                0
+            ][0]
+        )
         assert "facet_by" not in params
 
     def test_facets_transformed_to_mongo_format(self):
@@ -408,22 +446,29 @@ class TestSearchWithFacets:
                 ],
             },
         ]
-        mock_client.collections.__getitem__.return_value.documents.search.return_value = (
-            _make_search_result_with_facets(["a", "b"], 2, typesense_facets)
+        mock_client.collections.__getitem__.return_value.documents.search.return_value = _make_search_result_with_facets(
+            ["a", "b"], 2, typesense_facets
         )
 
         with patch.object(tc, "get_typesense_client", return_value=mock_client):
-            result = search("entities", "mars", "name", facet_by="type,properties_name_value")
+            result = search(
+                "entities", "mars", "name", facet_by="type,properties_name_value"
+            )
 
         assert result["facets"] == [
-            {"type": [{"_id": "work_word", "count": 42}, {"_id": "person", "count": 15}]},
+            {
+                "type": [
+                    {"_id": "work_word", "count": 42},
+                    {"_id": "person", "count": 15},
+                ]
+            },
             {"properties_name_value": [{"_id": "alice", "count": 3}]},
         ]
 
     def test_facets_none_when_no_facet_by(self):
         mock_client = MagicMock()
-        mock_client.collections.__getitem__.return_value.documents.search.return_value = (
-            _make_search_result(["a"], 1)
+        mock_client.collections.__getitem__.return_value.documents.search.return_value = _make_search_result(
+            ["a"], 1
         )
 
         with patch.object(tc, "get_typesense_client", return_value=mock_client):
@@ -433,8 +478,8 @@ class TestSearchWithFacets:
 
     def test_facets_empty_when_no_facet_counts(self):
         mock_client = MagicMock()
-        mock_client.collections.__getitem__.return_value.documents.search.return_value = (
-            _make_search_result_with_facets(["a"], 1, [])
+        mock_client.collections.__getitem__.return_value.documents.search.return_value = _make_search_result_with_facets(
+            ["a"], 1, []
         )
 
         with patch.object(tc, "get_typesense_client", return_value=mock_client):
@@ -451,7 +496,9 @@ class TestPrepareDocumentWithFacetFields:
             "properties": {"ref_genre": {"value": "fiction"}},
         }
         result = prepare_document_for_typesense(
-            entity, ["properties.name.value"], facet_fields=["properties.ref_genre.value"]
+            entity,
+            ["properties.name.value"],
+            facet_fields=["properties.ref_genre.value"],
         )
         assert result["properties_ref_genre_value"] == "fiction"
 

@@ -51,13 +51,20 @@ class TestSyncEntityToTypesense:
         entity = make_entity("ent-1", "work_word")
         storage.get_item_from_collection_by_id.return_value = entity
 
-        with patch("search.typesense_client.upsert_document") as mock_upsert, \
-             patch("search.typesense_client.prepare_document_for_typesense") as mock_prepare:
-            mock_prepare.return_value = {"id": "ent-1", "_id": "ent-1", "type": "work_word"}
+        with patch("search.typesense_client.upsert_document") as mock_upsert, patch(
+            "search.typesense_client.prepare_document_for_typesense"
+        ) as mock_prepare:
+            mock_prepare.return_value = {
+                "id": "ent-1",
+                "_id": "ent-1",
+                "type": "work_word",
+            }
 
             self._call({"data": {"location": "/entities/ent-1", "type": "work_word"}})
 
-            mock_prepare.assert_called_once_with(entity, ["properties.name.value"], facet_fields=[])
+            mock_prepare.assert_called_once_with(
+                entity, ["properties.name.value"], facet_fields=[]
+            )
             mock_upsert.assert_called_once_with(
                 "entities", {"id": "ent-1", "_id": "ent-1", "type": "work_word"}
             )
@@ -74,19 +81,31 @@ class TestSyncEntityToTypesense:
         storage.get_item_from_collection_by_id.return_value = None
 
         with patch("search.typesense_client.upsert_document") as mock_upsert:
-            self._call({"data": {"location": "/entities/ent-missing", "type": "work_word"}})
+            self._call(
+                {"data": {"location": "/entities/ent-missing", "type": "work_word"}}
+            )
             mock_upsert.assert_not_called()
 
     def test_uses_config_collection(self, storage, mapper):
         entity = make_entity("ent-1", "bibliographic_entity")
         storage.get_item_from_collection_by_id.return_value = entity
-        mapper.get.return_value = make_mock_config(collection="bibliographic_entities_actual")
+        mapper.get.return_value = make_mock_config(
+            collection="bibliographic_entities_actual"
+        )
 
-        with patch("search.typesense_client.upsert_document") as mock_upsert, \
-             patch("search.typesense_client.prepare_document_for_typesense") as mock_prepare:
+        with patch("search.typesense_client.upsert_document") as mock_upsert, patch(
+            "search.typesense_client.prepare_document_for_typesense"
+        ) as mock_prepare:
             mock_prepare.return_value = {"id": "ent-1"}
 
-            self._call({"data": {"location": "/entities/ent-1", "type": "bibliographic_entity"}})
+            self._call(
+                {
+                    "data": {
+                        "location": "/entities/ent-1",
+                        "type": "bibliographic_entity",
+                    }
+                }
+            )
 
             storage.get_item_from_collection_by_id.assert_called_once_with(
                 "bibliographic_entities_actual", "ent-1"
@@ -114,8 +133,9 @@ class TestSyncEntityToTypesense:
             ts_collection="bibliographic", search_fields=["title"]
         )
 
-        with patch("search.typesense_client.upsert_document") as mock_upsert, \
-             patch("search.typesense_client.prepare_document_for_typesense") as mock_prepare:
+        with patch("search.typesense_client.upsert_document") as mock_upsert, patch(
+            "search.typesense_client.prepare_document_for_typesense"
+        ) as mock_prepare:
             mock_prepare.return_value = {"id": "ent-1"}
 
             self._call({"data": {"location": "/entities/ent-1", "type": "work_word"}})

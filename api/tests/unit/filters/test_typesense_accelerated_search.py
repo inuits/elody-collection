@@ -115,14 +115,10 @@ class TestTypesenseFilterClassification:
                 },
             ]
 
-            with patch(
-                "resources.base_filter_resource.typesense_search"
-            ) as mock_ts:
+            with patch("resources.base_filter_resource.typesense_search") as mock_ts:
                 mock_ts.return_value = make_ts_result(["id1", "id2"], 2)
 
-                with patch(
-                    "resources.base_filter_resource.StorageManager"
-                ) as mock_sm:
+                with patch("resources.base_filter_resource.StorageManager") as mock_sm:
                     mock_storage = MagicMock()
                     mock_storage.db.__getitem__.return_value.find.return_value = [
                         make_mongo_doc("id1"),
@@ -145,9 +141,9 @@ class TestTypesenseFilterClassification:
 
                 # Verify Typesense was called with all 3 types
                 call_kwargs = mock_ts.call_args
-                filter_by = call_kwargs.kwargs.get(
+                filter_by = call_kwargs.kwargs.get("filter_by") or call_kwargs[1].get(
                     "filter_by"
-                ) or call_kwargs[1].get("filter_by")
+                )
                 assert "work_word" in filter_by
                 assert "work_music" in filter_by
                 assert "person" in filter_by
@@ -175,9 +171,7 @@ class TestTypesenseFilterClassification:
                 },
             ]
 
-            with patch(
-                "resources.base_filter_resource.typesense_search"
-            ) as mock_ts:
+            with patch("resources.base_filter_resource.typesense_search") as mock_ts:
                 mock_ts.return_value = make_ts_result(["id1"], 1)
 
                 resource._execute_typesense_accelerated_search(
@@ -191,13 +185,15 @@ class TestTypesenseFilterClassification:
                 )
 
                 call_kwargs = mock_ts.call_args
-                filter_by = call_kwargs.kwargs.get(
+                filter_by = call_kwargs.kwargs.get("filter_by") or call_kwargs[1].get(
                     "filter_by"
-                ) or call_kwargs[1].get("filter_by")
+                )
                 assert "work_word" in filter_by
                 assert "work_music" in filter_by
 
-    def test_selection_with_match_exact_false_treated_as_text(self, flask_app, resource):
+    def test_selection_with_match_exact_false_treated_as_text(
+        self, flask_app, resource
+    ):
         """A selection filter with match_exact=false and a string value is a text search."""
         with flask_app.test_request_context(
             "/entities/filter?limit=20&skip=0",
@@ -301,7 +297,9 @@ class TestTypesenseFilterClassification:
             # so it would be classified as text, but it has a lookup
             # which should be handled specially
 
-    def test_lookup_filter_without_typesense_falls_to_remaining(self, flask_app, resource):
+    def test_lookup_filter_without_typesense_falls_to_remaining(
+        self, flask_app, resource
+    ):
         """A lookup filter with match_exact=True (exact ID match) stays as remaining."""
         with flask_app.test_request_context(
             "/entities/filter?limit=20&skip=0",
@@ -343,9 +341,7 @@ class TestTypesenseFilterClassification:
                 },
             ]
 
-            with patch(
-                "resources.base_filter_resource.typesense_search"
-            ) as mock_ts:
+            with patch("resources.base_filter_resource.typesense_search") as mock_ts:
                 mock_ts.return_value = make_ts_result([], 0)
 
                 resource._execute_typesense_accelerated_search(
@@ -359,9 +355,9 @@ class TestTypesenseFilterClassification:
                 )
 
                 call_kwargs = mock_ts.call_args
-                filter_by = call_kwargs.kwargs.get(
+                filter_by = call_kwargs.kwargs.get("filter_by") or call_kwargs[1].get(
                     "filter_by"
-                ) or call_kwargs[1].get("filter_by")
+                )
                 assert filter_by == "type:=work_word"
 
     def test_wildcard_text_filter_excluded(
@@ -451,9 +447,7 @@ class TestTypesensePagination:
                 mock_storage.db.__getitem__.return_value.find.return_value = [
                     make_mongo_doc(id) for id in ids
                 ]
-                mock_storage._prepare_mongo_document.side_effect = (
-                    lambda doc, _: doc
-                )
+                mock_storage._prepare_mongo_document.side_effect = lambda doc, _: doc
                 mock_sm.return_value.get_db_engine.return_value = mock_storage
 
                 result = resource._execute_typesense_accelerated_search(
@@ -469,9 +463,7 @@ class TestTypesensePagination:
             assert result["count"] == 50
             assert len(result["results"]) == 20
 
-    def test_typesense_receives_correct_offset_and_limit(
-        self, flask_app, resource
-    ):
+    def test_typesense_receives_correct_offset_and_limit(self, flask_app, resource):
         """Typesense should receive offset=skip and per_page=limit."""
         with flask_app.test_request_context(
             "/entities/filter?limit=10&skip=30",
@@ -487,9 +479,7 @@ class TestTypesensePagination:
                 },
             ]
 
-            with patch(
-                "resources.base_filter_resource.typesense_search"
-            ) as mock_ts:
+            with patch("resources.base_filter_resource.typesense_search") as mock_ts:
                 mock_ts.return_value = make_ts_result([], 50)
 
                 resource._execute_typesense_accelerated_search(
@@ -523,9 +513,7 @@ class TestTypesensePagination:
                 },
             ]
 
-            with patch(
-                "resources.base_filter_resource.typesense_search"
-            ) as mock_ts:
+            with patch("resources.base_filter_resource.typesense_search") as mock_ts:
                 # Typesense returns 0 hits but found=30 (total matches)
                 mock_ts.return_value = make_ts_result([], 30)
 
@@ -578,9 +566,7 @@ class TestTypesensePagination:
                     mock_storage._prepare_mongo_document.side_effect = (
                         lambda doc, _: doc
                     )
-                    mock_sm.return_value.get_db_engine.return_value = (
-                        mock_storage
-                    )
+                    mock_sm.return_value.get_db_engine.return_value = mock_storage
 
                     result = resource._execute_typesense_accelerated_search(
                         query,
@@ -623,9 +609,7 @@ class TestTypesensePagination:
                 mock_storage.db.__getitem__.return_value.find.return_value = [
                     make_mongo_doc(id) for id in ids
                 ]
-                mock_storage._prepare_mongo_document.side_effect = (
-                    lambda doc, _: doc
-                )
+                mock_storage._prepare_mongo_document.side_effect = lambda doc, _: doc
                 mock_sm.return_value.get_db_engine.return_value = mock_storage
 
                 result = resource._execute_typesense_accelerated_search(
@@ -668,9 +652,7 @@ class TestTypesensePagination:
                 mock_storage.db.__getitem__.return_value.find.return_value = [
                     make_mongo_doc(id) for id in ids
                 ]
-                mock_storage._prepare_mongo_document.side_effect = (
-                    lambda doc, _: doc
-                )
+                mock_storage._prepare_mongo_document.side_effect = lambda doc, _: doc
                 mock_sm.return_value.get_db_engine.return_value = mock_storage
 
                 result = resource._execute_typesense_accelerated_search(
@@ -705,9 +687,7 @@ class TestTypesenseFallback:
                 },
             ]
 
-            with patch(
-                "resources.base_filter_resource.typesense_search"
-            ) as mock_ts:
+            with patch("resources.base_filter_resource.typesense_search") as mock_ts:
                 mock_ts.return_value = None  # Typesense unavailable
 
                 with patch.object(
@@ -813,9 +793,7 @@ class TestTypesenseFallback:
 class TestTypesenseResultOrdering:
     """Test that MongoDB results preserve Typesense relevance order."""
 
-    def test_results_ordered_by_typesense_relevance(
-        self, flask_app, resource
-    ):
+    def test_results_ordered_by_typesense_relevance(self, flask_app, resource):
         with flask_app.test_request_context(
             "/entities/filter?limit=20&skip=0",
             method="POST",
@@ -846,9 +824,7 @@ class TestTypesenseResultOrdering:
                     make_mongo_doc("best_match"),
                     make_mongo_doc("good_match"),
                 ]
-                mock_storage._prepare_mongo_document.side_effect = (
-                    lambda doc, _: doc
-                )
+                mock_storage._prepare_mongo_document.side_effect = lambda doc, _: doc
                 mock_sm.return_value.get_db_engine.return_value = mock_storage
 
                 result = resource._execute_typesense_accelerated_search(
@@ -899,9 +875,7 @@ class TestTypesenseRemainingFilters:
             ) as mock_ts_all, patch(
                 "resources.base_filter_resource.typesense_search"
             ) as mock_ts:
-                mock_ts_all.return_value = make_ts_result(
-                    ["id1", "id2", "id3"], 3
-                )
+                mock_ts_all.return_value = make_ts_result(["id1", "id2", "id3"], 3)
 
                 resource._execute_typesense_accelerated_search(
                     query,
@@ -944,9 +918,7 @@ class TestTypesenseRemainingFilters:
             with patch(
                 "resources.base_filter_resource.typesense_search_all_ids"
             ) as mock_ts_all:
-                mock_ts_all.return_value = make_ts_result(
-                    ["id1", "id2", "id3"], 3
-                )
+                mock_ts_all.return_value = make_ts_result(["id1", "id2", "id3"], 3)
                 mock_filter_engine.filter.return_value = {
                     "results": [make_mongo_doc("id1")],
                     "count": 1,
@@ -971,8 +943,7 @@ class TestTypesenseRemainingFilters:
                     (
                         f
                         for f in filters
-                        if f.get("key") == "_id"
-                        and f.get("type") == "selection"
+                        if f.get("key") == "_id" and f.get("type") == "selection"
                     ),
                     None,
                 )
@@ -1014,9 +985,7 @@ class TestTypesenseCrossCollectionFiltering:
                     make_mongo_doc("id1", "work_word"),
                     make_mongo_doc("id2", "person"),
                 ]
-                mock_storage._prepare_mongo_document.side_effect = (
-                    lambda doc, _: doc
-                )
+                mock_storage._prepare_mongo_document.side_effect = lambda doc, _: doc
                 mock_sm.return_value.get_db_engine.return_value = mock_storage
 
                 resource._execute_typesense_accelerated_search(
@@ -1031,9 +1000,9 @@ class TestTypesenseCrossCollectionFiltering:
 
                 # Typesense should receive both work_word and person
                 call_kwargs = mock_ts.call_args
-                filter_by = call_kwargs.kwargs.get(
+                filter_by = call_kwargs.kwargs.get("filter_by") or call_kwargs[1].get(
                     "filter_by"
-                ) or call_kwargs[1].get("filter_by")
+                )
                 assert "work_word" in filter_by
                 assert "person" in filter_by
 
@@ -1062,9 +1031,7 @@ class TestTypesenseCrossCollectionFiltering:
                 },
             ]
 
-            with patch(
-                "resources.base_filter_resource.typesense_search"
-            ) as mock_ts:
+            with patch("resources.base_filter_resource.typesense_search") as mock_ts:
                 mock_ts.return_value = make_ts_result([], 0)
 
                 resource._execute_typesense_accelerated_search(
@@ -1078,16 +1045,14 @@ class TestTypesenseCrossCollectionFiltering:
                 )
 
                 call_kwargs = mock_ts.call_args
-                filter_by = call_kwargs.kwargs.get(
+                filter_by = call_kwargs.kwargs.get("filter_by") or call_kwargs[1].get(
                     "filter_by"
-                ) or call_kwargs[1].get("filter_by")
+                )
                 assert "work_word" in filter_by
                 assert "work_music" in filter_by
                 assert "work_serial" in filter_by
 
-    def test_cross_collection_count_includes_all_types(
-        self, flask_app, resource
-    ):
+    def test_cross_collection_count_includes_all_types(self, flask_app, resource):
         """Count should reflect all matching types across collections."""
         with flask_app.test_request_context(
             "/entities/filter?limit=20&skip=0",
@@ -1119,11 +1084,10 @@ class TestTypesenseCrossCollectionFiltering:
                 # to return docs only on first call, empty on second
                 all_docs = [make_mongo_doc(f"id{i}") for i in range(20)]
                 mock_storage.db.__getitem__.return_value.find.side_effect = [
-                    all_docs, []
+                    all_docs,
+                    [],
                 ]
-                mock_storage._prepare_mongo_document.side_effect = (
-                    lambda doc, _: doc
-                )
+                mock_storage._prepare_mongo_document.side_effect = lambda doc, _: doc
                 mock_sm.return_value.get_db_engine.return_value = mock_storage
 
                 result = resource._execute_typesense_accelerated_search(
@@ -1172,11 +1136,10 @@ class TestTypesenseCrossCollectionFiltering:
                 # Return docs only from first collection, empty from second
                 all_docs = [make_mongo_doc(id) for id in page2_ids]
                 mock_storage.db.__getitem__.return_value.find.side_effect = [
-                    all_docs, []
+                    all_docs,
+                    [],
                 ]
-                mock_storage._prepare_mongo_document.side_effect = (
-                    lambda doc, _: doc
-                )
+                mock_storage._prepare_mongo_document.side_effect = lambda doc, _: doc
                 mock_sm.return_value.get_db_engine.return_value = mock_storage
 
                 result = resource._execute_typesense_accelerated_search(
@@ -1316,9 +1279,7 @@ class TestSmartFilterClassification:
                 },
             ]
 
-            with patch(
-                "resources.base_filter_resource.typesense_search"
-            ) as mock_ts:
+            with patch("resources.base_filter_resource.typesense_search") as mock_ts:
                 mock_ts.return_value = make_ts_result([], 0)
 
                 resource._execute_typesense_accelerated_search(
@@ -1336,9 +1297,7 @@ class TestSmartFilterClassification:
                 search_query = mock_ts.call_args[0][1]
                 assert search_query == "test"
 
-    def test_string_key_format_checked_against_search_fields(
-        self, flask_app, resource
-    ):
+    def test_string_key_format_checked_against_search_fields(self, flask_app, resource):
         """Text filter with a plain string key should be checked against search_fields."""
         with flask_app.test_request_context(
             "/entities/filter?limit=20&skip=0",
@@ -1354,9 +1313,7 @@ class TestSmartFilterClassification:
                 },
             ]
 
-            with patch(
-                "resources.base_filter_resource.typesense_search"
-            ) as mock_ts:
+            with patch("resources.base_filter_resource.typesense_search") as mock_ts:
                 mock_ts.return_value = make_ts_result([], 0)
 
                 resource._execute_typesense_accelerated_search(
@@ -1371,9 +1328,7 @@ class TestSmartFilterClassification:
 
                 mock_ts.assert_called_once()
 
-    def test_or_operator_non_indexed_logs_warning(
-        self, flask_app, resource
-    ):
+    def test_or_operator_non_indexed_logs_warning(self, flask_app, resource):
         """Text filter with operator 'or' on a non-indexed field should log a warning."""
         with flask_app.test_request_context(
             "/entities/filter?limit=20&skip=0",
@@ -1392,9 +1347,7 @@ class TestSmartFilterClassification:
 
             with patch.object(
                 resource, "_execute_advanced_search_with_query_v2"
-            ) as mock_mongo, patch(
-                "resources.base_filter_resource.log"
-            ) as mock_log:
+            ) as mock_mongo, patch("resources.base_filter_resource.log") as mock_log:
                 mock_mongo.return_value = {
                     "results": [],
                     "count": 0,
@@ -1503,9 +1456,7 @@ class TestSmartFilterClassification:
                 mock_storage.db.__getitem__.return_value.find.return_value = [
                     make_mongo_doc("id1")
                 ]
-                mock_storage._prepare_mongo_document.side_effect = (
-                    lambda doc, _: doc
-                )
+                mock_storage._prepare_mongo_document.side_effect = lambda doc, _: doc
                 mock_sm.return_value.get_db_engine.return_value = mock_storage
 
                 resource._execute_typesense_accelerated_search(
@@ -1613,9 +1564,7 @@ class TestResolveMongoCollections:
     """Unit tests for _resolve_mongo_collections helper."""
 
     def test_empty_types_returns_default(self, resource):
-        with patch(
-            "resources.base_filter_resource.get_object_configuration_mapper"
-        ):
+        with patch("resources.base_filter_resource.get_object_configuration_mapper"):
             result = resource._resolve_mongo_collections([], "entities")
         assert result == {"entities"}
 
@@ -1629,9 +1578,7 @@ class TestResolveMongoCollections:
             }
             mock_mapper.return_value.get.return_value = mock_config
 
-            result = resource._resolve_mongo_collections(
-                ["work_word"], "entities"
-            )
+            result = resource._resolve_mongo_collections(["work_word"], "entities")
         assert result == {"bibliographic_entities_actual"}
 
     def test_multiple_types_multiple_collections(self, resource):
@@ -1661,9 +1608,7 @@ class TestResolveMongoCollections:
         ) as mock_mapper:
             mock_mapper.return_value.get.side_effect = Exception("Unknown type")
 
-            result = resource._resolve_mongo_collections(
-                ["unknown_type"], "entities"
-            )
+            result = resource._resolve_mongo_collections(["unknown_type"], "entities")
         assert result == {"entities"}
 
 
@@ -1671,9 +1616,7 @@ class TestFetchDocumentsFromMongo:
     """Unit tests for _fetch_documents_from_mongo helper."""
 
     def test_preserves_typesense_relevance_order(self, resource):
-        with patch(
-            "resources.base_filter_resource.StorageManager"
-        ) as mock_sm:
+        with patch("resources.base_filter_resource.StorageManager") as mock_sm:
             mock_storage = MagicMock()
             mock_storage.db.__getitem__.return_value.find.return_value = [
                 make_mongo_doc("a"),
@@ -1690,18 +1633,14 @@ class TestFetchDocumentsFromMongo:
         assert [r["_id"] for r in results] == ["c", "a", "b"]
 
     def test_fetches_from_multiple_collections(self, resource):
-        with patch(
-            "resources.base_filter_resource.StorageManager"
-        ) as mock_sm:
+        with patch("resources.base_filter_resource.StorageManager") as mock_sm:
             mock_storage = MagicMock()
             mock_col = MagicMock()
             mock_col.find.return_value = []
             mock_storage.db.__getitem__.return_value = mock_col
             mock_sm.return_value.get_db_engine.return_value = mock_storage
 
-            resource._fetch_documents_from_mongo(
-                ["id1"], {"col1", "col2"}
-            )
+            resource._fetch_documents_from_mongo(["id1"], {"col1", "col2"})
 
         db_calls = mock_storage.db.__getitem__.call_args_list
         queried = {call[0][0] for call in db_calls}
@@ -1709,9 +1648,7 @@ class TestFetchDocumentsFromMongo:
         assert "col2" in queried
 
     def test_unknown_docs_sorted_to_end(self, resource):
-        with patch(
-            "resources.base_filter_resource.StorageManager"
-        ) as mock_sm:
+        with patch("resources.base_filter_resource.StorageManager") as mock_sm:
             mock_storage = MagicMock()
             mock_storage.db.__getitem__.return_value.find.return_value = [
                 make_mongo_doc("a"),
@@ -1721,9 +1658,7 @@ class TestFetchDocumentsFromMongo:
             mock_storage._prepare_mongo_document.side_effect = lambda doc, _: doc
             mock_sm.return_value.get_db_engine.return_value = mock_storage
 
-            results = resource._fetch_documents_from_mongo(
-                ["a", "b"], {"entities"}
-            )
+            results = resource._fetch_documents_from_mongo(["a", "b"], {"entities"})
 
         result_ids = [r["_id"] for r in results]
         assert result_ids == ["a", "b", "unknown"]
@@ -1782,22 +1717,31 @@ class TestTypesenseAcceleratedSearchWithFacets:
 
         with flask_app.test_request_context("/?skip=0&limit=20"):
             with patch.object(
-                resource, "_classify_filters_for_typesense",
+                resource,
+                "_classify_filters_for_typesense",
                 return_value=([query[0]], [], []),
             ), patch.object(
-                resource, "_build_typesense_query",
+                resource,
+                "_build_typesense_query",
                 return_value=("entities", "properties_name_value", "alice", None),
             ), patch.object(
-                resource, "_execute_typesense_search", return_value=ts_result,
+                resource,
+                "_execute_typesense_search",
+                return_value=ts_result,
             ), patch.object(
-                resource, "_fetch_documents_from_mongo",
+                resource,
+                "_fetch_documents_from_mongo",
                 return_value=[make_mongo_doc("a")],
             ), patch.object(
-                resource, "_resolve_mongo_collections", return_value=["entities_actual"],
+                resource,
+                "_resolve_mongo_collections",
+                return_value=["entities_actual"],
             ), patch.object(
-                resource, "_add_cors_headers",
+                resource,
+                "_add_cors_headers",
             ), patch.object(
-                resource, "_inject_api_urls_into_entities",
+                resource,
+                "_inject_api_urls_into_entities",
                 side_effect=lambda x: x,
             ):
                 result = resource._execute_typesense_accelerated_search(
@@ -1820,16 +1764,20 @@ class TestTypesenseAcceleratedSearchWithFacets:
 
         with flask_app.test_request_context("/?skip=0&limit=20"):
             with patch.object(
-                resource, "_classify_filters_for_typesense",
+                resource,
+                "_classify_filters_for_typesense",
                 return_value=([query[0]], [], []),
             ), patch.object(
-                resource, "_build_typesense_query",
+                resource,
+                "_build_typesense_query",
                 return_value=("entities", "properties_name_value", "test", None),
             ), patch.object(
-                resource, "_execute_typesense_search",
+                resource,
+                "_execute_typesense_search",
                 return_value={"ids": [], "count": 0, "facets": []},
             ) as mock_ts_search, patch.object(
-                resource, "_add_cors_headers",
+                resource,
+                "_add_cors_headers",
             ):
                 resource._execute_typesense_accelerated_search(
                     query, "entities", ts_config
@@ -1857,22 +1805,31 @@ class TestTypesenseAcceleratedSearchWithFacets:
 
         with flask_app.test_request_context("/?skip=0&limit=20"):
             with patch.object(
-                resource, "_classify_filters_for_typesense",
+                resource,
+                "_classify_filters_for_typesense",
                 return_value=([query[0]], [], []),
             ), patch.object(
-                resource, "_build_typesense_query",
+                resource,
+                "_build_typesense_query",
                 return_value=("entities", "properties_name_value", "test", None),
             ), patch.object(
-                resource, "_execute_typesense_search", return_value=ts_result,
+                resource,
+                "_execute_typesense_search",
+                return_value=ts_result,
             ), patch.object(
-                resource, "_fetch_documents_from_mongo",
+                resource,
+                "_fetch_documents_from_mongo",
                 return_value=[make_mongo_doc("a")],
             ), patch.object(
-                resource, "_resolve_mongo_collections", return_value=["entities_actual"],
+                resource,
+                "_resolve_mongo_collections",
+                return_value=["entities_actual"],
             ), patch.object(
-                resource, "_add_cors_headers",
+                resource,
+                "_add_cors_headers",
             ), patch.object(
-                resource, "_inject_api_urls_into_entities",
+                resource,
+                "_inject_api_urls_into_entities",
                 side_effect=lambda x: x,
             ):
                 result = resource._execute_typesense_accelerated_search(
@@ -1924,12 +1881,16 @@ class TestTypesenseAcceleratedSearchWithFacets:
             ) as mock_ts_all, patch(
                 "resources.base_filter_resource.StorageManager"
             ) as mock_sm_lookup, patch.object(
-                resource, "_execute_advanced_search_with_query_v2",
+                resource,
+                "_execute_advanced_search_with_query_v2",
                 return_value={"results": [make_mongo_doc("work-1")], "count": 1},
             ) as mock_v2, patch.object(
-                resource, "_add_cors_headers",
+                resource,
+                "_add_cors_headers",
             ):
-                mock_sm_lookup.return_value.get_db_engine.return_value = mock_mongo_storage
+                mock_sm_lookup.return_value.get_db_engine.return_value = (
+                    mock_mongo_storage
+                )
                 mock_ts_all.return_value = {"ids": ["uuid-1", "uuid-2"], "count": 2}
 
                 resource._execute_typesense_accelerated_search(
@@ -1950,11 +1911,20 @@ class TestTypesenseAcceleratedSearchWithFacets:
 
                 # Should contain the resolved ID filter
                 id_filter = next(
-                    (f for f in resolved_query if f.get("key") == "properties.ref_authors.value"),
+                    (
+                        f
+                        for f in resolved_query
+                        if f.get("key") == "properties.ref_authors.value"
+                    ),
                     None,
                 )
                 assert id_filter is not None
-                assert set(id_filter["value"]) == {"uuid-1", "PERS-123", "uuid-2", "PERS-456"}
+                assert set(id_filter["value"]) == {
+                    "uuid-1",
+                    "PERS-123",
+                    "uuid-2",
+                    "PERS-456",
+                }
                 assert id_filter["match_exact"] is True
 
                 # Should still contain the type filter
@@ -1977,22 +1947,32 @@ class TestTypesenseAcceleratedSearchWithFacets:
         }
         mongo_facets = [{"type": [{"_id": "person", "count": 10}]}]
         mock_filter_engine.filter.return_value = {
-            "results": [], "count": 0, "skip": 0, "limit": 20, "facets": mongo_facets,
+            "results": [],
+            "count": 0,
+            "skip": 0,
+            "limit": 20,
+            "facets": mongo_facets,
         }
 
         with flask_app.test_request_context("/?skip=0&limit=20"):
             with patch.object(
-                resource, "_classify_filters_for_typesense",
+                resource,
+                "_classify_filters_for_typesense",
                 return_value=([query[0]], [], []),
             ), patch.object(
-                resource, "_build_typesense_query",
+                resource,
+                "_build_typesense_query",
                 return_value=("entities", "properties_name_value", "test", None),
             ), patch.object(
-                resource, "_execute_typesense_search", return_value=None,
+                resource,
+                "_execute_typesense_search",
+                return_value=None,
             ), patch.object(
-                resource, "_add_cors_headers",
+                resource,
+                "_add_cors_headers",
             ), patch.object(
-                resource, "_inject_api_urls_into_entities",
+                resource,
+                "_inject_api_urls_into_entities",
                 side_effect=lambda x: x,
             ):
                 result = resource._execute_typesense_accelerated_search(

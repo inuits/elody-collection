@@ -31,8 +31,14 @@ def get_typesense_client():
                     "api_key": api_key,
                     "nodes": [
                         {
-                            "host": getenv("TYPESENSE_SERVER_HOST", getenv("TYPESENSE_HOST", "typesense")),
-                            "port": getenv("TYPESENSE_SERVER_PORT", getenv("TYPESENSE_PORT", "8108")),
+                            "host": getenv(
+                                "TYPESENSE_SERVER_HOST",
+                                getenv("TYPESENSE_HOST", "typesense"),
+                            ),
+                            "port": getenv(
+                                "TYPESENSE_SERVER_PORT",
+                                getenv("TYPESENSE_PORT", "8108"),
+                            ),
                             "protocol": "http",
                         }
                     ],
@@ -62,7 +68,7 @@ def ensure_collection(collection, facet_fields=None):
         except Exception:
             try:
                 fields = [{"name": ".*", "type": "auto"}]
-                for field_path in (facet_fields or []):
+                for field_path in facet_fields or []:
                     flat_key = field_path.replace(".", "_")
                     fields.append({"name": flat_key, "type": "auto", "facet": True})
                 client.collections.create(
@@ -71,9 +77,13 @@ def ensure_collection(collection, facet_fields=None):
                         "fields": fields,
                     }
                 )
-                log.info(f"Created Typesense collection '{collection}' with auto schema")
+                log.info(
+                    f"Created Typesense collection '{collection}' with auto schema"
+                )
             except Exception as e:
-                log.warning(f"Failed to create Typesense collection '{collection}': {e}")
+                log.warning(
+                    f"Failed to create Typesense collection '{collection}': {e}"
+                )
                 return
         _ensured_collections.add(collection)
 
@@ -88,7 +98,16 @@ def _transform_facets(facet_counts):
     return result
 
 
-def search(collection, query, query_by, filter_by=None, per_page=250, page=1, offset=None, facet_by=None):
+def search(
+    collection,
+    query,
+    query_by,
+    filter_by=None,
+    per_page=250,
+    page=1,
+    offset=None,
+    facet_by=None,
+):
     client = get_typesense_client()
     if not client:
         return None
@@ -119,8 +138,19 @@ def search(collection, query, query_by, filter_by=None, per_page=250, page=1, of
             missing = str(e).split("`")[1] if "`" in str(e) else ""
             filtered = ",".join(f for f in query_by.split(",") if f != missing)
             if filtered:
-                log.warning(f"Retrying Typesense search without missing field '{missing}'")
-                return search(collection, query, filtered, filter_by, per_page, page, offset, facet_by)
+                log.warning(
+                    f"Retrying Typesense search without missing field '{missing}'"
+                )
+                return search(
+                    collection,
+                    query,
+                    filtered,
+                    filter_by,
+                    per_page,
+                    page,
+                    offset,
+                    facet_by,
+                )
         log.warning(f"Typesense search failed, falling back to MongoDB: {e}")
         return None
 
@@ -164,7 +194,9 @@ def search_all_ids(collection, query, query_by, filter_by=None):
             missing = str(e).split("`")[1] if "`" in str(e) else ""
             filtered = ",".join(f for f in query_by.split(",") if f != missing)
             if filtered:
-                log.warning(f"Retrying search_all_ids without missing field '{missing}'")
+                log.warning(
+                    f"Retrying search_all_ids without missing field '{missing}'"
+                )
                 return search_all_ids(collection, query, filtered, filter_by)
         log.warning(f"Typesense search_all_ids failed, falling back to MongoDB: {e}")
         return None

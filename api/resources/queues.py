@@ -544,7 +544,9 @@ def sync_entity_to_typesense(routing_key, body, message_id):
     ts_collection = ts_config.get("collection", "entities")
     search_fields = ts_config.get("search_fields", [])
     facet_fields = ts_config.get("facet_fields", [])
-    doc = prepare_document_for_typesense(entity, search_fields, facet_fields=facet_fields)
+    doc = prepare_document_for_typesense(
+        entity, search_fields, facet_fields=facet_fields
+    )
     upsert_document(ts_collection, doc)
 
 
