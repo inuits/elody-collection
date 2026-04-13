@@ -28,11 +28,22 @@ def get_options_requesting_filter(filter_request_body: list[dict]) -> dict:
     return options_requesting_filter[0] if len(options_requesting_filter) > 0 else {}
 
 
+def _is_type_key(key) -> bool:
+    if key == "type":
+        return True
+    if isinstance(key, list):
+        return any(
+            k == "type" or (isinstance(k, str) and k.split("|")[-1] == "type")
+            for k in key
+        )
+    return isinstance(key, str) and key.split("|")[-1] == "type"
+
+
 def get_selection_type_filter_value(filter_request_body: list[dict]) -> list:
     selection_type_filter = [
         filter_criteria
         for filter_criteria in filter_request_body
-        if filter_criteria["type"] == "selection" and filter_criteria["key"] == "type"
+        if filter_criteria["type"] == "selection" and _is_type_key(filter_criteria["key"])
     ]
     return selection_type_filter[0]["value"] if len(selection_type_filter) > 0 else []
 
