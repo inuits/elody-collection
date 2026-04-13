@@ -21,17 +21,6 @@ class BaseFilterResource(BaseResource):
         super().__init__()
         self.filter_engine_v2 = FilterManagerV2().get_filter_engine()
 
-    @staticmethod
-    def _is_type_key(key):
-        """Check if a filter key refers to the entity type field."""
-        if key == "type":
-            return True
-        if isinstance(key, list):
-            return any(k.endswith("|type") or k == "type" for k in key)
-        if isinstance(key, str):
-            return key.endswith("|type")
-        return False
-
     def _classify_filters_for_typesense(self, query):
         """Split query filters into text, type, and remaining categories."""
         text_filters = []
@@ -51,17 +40,15 @@ class BaseFilterResource(BaseResource):
             elif f.get("type") == "type":
                 val = f.get("value")
                 if isinstance(val, list):
-                    for v in val:
-                        type_filter_values.extend(s.strip() for s in str(v).split(",") if s.strip())
+                    type_filter_values.extend(val)
                 elif val:
-                    type_filter_values.extend(s.strip() for s in str(val).split(",") if s.strip())
-            elif f.get("type") == "selection" and self._is_type_key(f.get("key")):
+                    type_filter_values.append(val)
+            elif f.get("type") == "selection" and f.get("key") == "type":
                 val = f.get("value")
                 if isinstance(val, list):
-                    for v in val:
-                        type_filter_values.extend(s.strip() for s in str(v).split(",") if s.strip())
+                    type_filter_values.extend(val)
                 elif val:
-                    type_filter_values.extend(s.strip() for s in str(val).split(",") if s.strip())
+                    type_filter_values.append(val)
             else:
                 remaining_filters.append(f)
         return text_filters, type_filter_values, remaining_filters
