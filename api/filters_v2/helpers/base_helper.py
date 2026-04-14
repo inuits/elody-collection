@@ -43,7 +43,8 @@ def get_selection_type_filter_value(filter_request_body: list[dict]) -> list:
     selection_type_filter = [
         filter_criteria
         for filter_criteria in filter_request_body
-        if filter_criteria["type"] == "selection" and _is_type_key(filter_criteria["key"])
+        if filter_criteria["type"] == "selection"
+        and _is_type_key(filter_criteria["key"])
     ]
     return selection_type_filter[0]["value"] if len(selection_type_filter) > 0 else []
 
