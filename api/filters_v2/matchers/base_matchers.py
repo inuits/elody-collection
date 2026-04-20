@@ -80,6 +80,12 @@ class BaseMatchers(ABC, metaclass=ThreadSafeMeta):
         pass
 
     @abstractmethod
+    def contains_not(
+        self, key: str, value: str, inner_exact_matches: dict = {}
+    ) -> dict:
+        pass
+
+    @abstractmethod
     def regex(
         self, key: str, value: str, inner_exact_matches: dict = {}, options: str = ""
     ) -> dict:

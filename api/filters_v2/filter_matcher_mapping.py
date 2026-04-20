@@ -2,13 +2,14 @@ from abc import ABC
 from filters_v2.matchers.matchers import (
     AnyMatcher,
     ContainsMatcher,
-    RegexMatcher,
+    ContainsNotMatcher,
     ExactMatcher,
     GeoMatcher,
     InBetweenMatcher,
     MaxIncludedMatcher,
     MinIncludedMatcher,
     NoneMatcher,
+    RegexMatcher,
 )
 
 
@@ -19,6 +20,7 @@ class FilterMatcherMapping(ABC):
             "none": NoneMatcher,
             "exact": ExactMatcher,
             "contains": ContainsMatcher,
+            "contains_not": ContainsNotMatcher,
             "regex": RegexMatcher,
         },
         "date": {
@@ -40,6 +42,7 @@ class FilterMatcherMapping(ABC):
             "none": NoneMatcher,
             "exact": ExactMatcher,
             "contains": ContainsMatcher,
+            "contains_not": ContainsNotMatcher,
         },
         "boolean": {
             "any": AnyMatcher,

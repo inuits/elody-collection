@@ -1,6 +1,7 @@
 from datetime import datetime
 from elody.util import interpret_flat_key
 from filters_v2.matchers.base_matchers import BaseMatchers
+from re import compile, IGNORECASE
 
 
 class MongoMatchers(BaseMatchers):
@@ -29,6 +30,10 @@ class MongoMatchers(BaseMatchers):
 
     def contains(self, key, value, inner_exact_matches={}):
         match_value = {"$regex": value, "$options": "i"}
+        return self.__contains_range_match(key, match_value, inner_exact_matches)
+
+    def contains_not(self, key, value, inner_exact_matches={}):
+        match_value = {"$not": compile(value, IGNORECASE)}
         return self.__contains_range_match(key, match_value, inner_exact_matches)
 
     # TODO: Error checking on the regex options

@@ -44,11 +44,30 @@ class ContainsMatcher(BaseMatcher):
 
     def match(self, key, value, **kwargs):
         if isinstance(key, str) and (
-            not kwargs.get("match_exact", False) and not kwargs.get("regex", False)
+            not kwargs.get("match_exact", False)
+            and not kwargs.get("match_not", False)
+            and not kwargs.get("regex", False)
         ):
             value = escape(value)
             value = value.replace("\\*", ".*").replace("\\^", "^").replace("\\$", "$")
             return self.matcher_engine.contains(
+                key, value, kwargs.get("inner_exact_matches", {})
+            )
+
+
+class ContainsNotMatcher(BaseMatcher):
+    def __init__(self):
+        super().__init__()
+
+    def match(self, key, value, **kwargs):
+        if isinstance(key, str) and (
+            not kwargs.get("match_exact", False)
+            and kwargs.get("match_not", False)
+            and not kwargs.get("regex", False)
+        ):
+            value = escape(value)
+            value = value.replace("\\*", ".*").replace("\\^", "^").replace("\\$", "$")
+            return self.matcher_engine.contains_not(
                 key, value, kwargs.get("inner_exact_matches", {})
             )
 
