@@ -5,6 +5,7 @@ from flask_restful import abort
 from logging_elody.log import log
 from resources.base_resource import BaseResource
 from search.typesense_client import (
+    build_filter_by,
     build_type_filter,
     ensure_collection as typesense_ensure_collection,
     search as typesense_search,
@@ -22,9 +23,10 @@ class BaseFilterResource(BaseResource):
         self.filter_engine_v2 = FilterManagerV2().get_filter_engine()
 
     def _classify_filters_for_typesense(self, query):
-        """Split query filters into text, type, and remaining categories."""
+        """Split query filters into text, type, exact-match, and remaining categories."""
         text_filters = []
         type_filter_values = []
+        exact_match_filters = []
         remaining_filters = []
         for f in query:
             is_text_search = (
@@ -49,9 +51,16 @@ class BaseFilterResource(BaseResource):
                     type_filter_values.extend(val)
                 elif val:
                     type_filter_values.append(val)
+            elif (
+                f.get("type") == "selection"
+                and f.get("match_exact")
+                and f.get("value")
+                and f.get("value") != "*"
+            ):
+                exact_match_filters.append(f)
             else:
                 remaining_filters.append(f)
-        return text_filters, type_filter_values, remaining_filters
+        return text_filters, type_filter_values, exact_match_filters, remaining_filters
 
     def _resolve_mongo_collections(self, type_filter_values, default_collection):
         """Map entity types to their MongoDB collections."""
@@ -124,18 +133,39 @@ class BaseFilterResource(BaseResource):
         }
 
     def _build_typesense_query(
-        self, text_filters, type_filter_values, typesense_config
+        self,
+        text_filters,
+        type_filter_values,
+        typesense_config,
+        exact_match_filters=None,
     ):
         """Build Typesense search parameters from classified filters."""
         ts_collection = typesense_config.get("collection", "entities")
         typesense_ensure_collection(ts_collection)
         search_fields = typesense_config.get("search_fields", [])
-        query_by = ",".join(field.replace(".", "_") for field in search_fields)
+        filter_keys = []
+        distinct_keys = []
+        for f in text_filters:
+            key = f.get("key", "")
+            if isinstance(key, list):
+                key = key[0].split("|")[-1] if key else ""
+            if key:
+                filter_keys.append(key)
+            distinct_by = f.get("distinct_by")
+            if distinct_by:
+                distinct_keys.append(distinct_by)
+        if filter_keys:
+            query_by = ",".join(dict.fromkeys(k.replace(".", "_") for k in filter_keys))
+        else:
+            query_by = ",".join(field.replace(".", "_") for field in search_fields)
         search_terms = " ".join(
             f.get("value", "") for f in text_filters if f.get("value")
         )
-        filter_by = build_type_filter(type_filter_values)
-        return ts_collection, query_by, search_terms, filter_by
+        if not search_terms:
+            search_terms = "*"
+        filter_by = build_filter_by(type_filter_values, exact_match_filters or [])
+        group_by = distinct_keys[0].replace(".", "_") if distinct_keys else None
+        return ts_collection, query_by, search_terms, filter_by, group_by
 
     def _execute_typesense_search(
         self,
@@ -147,11 +177,16 @@ class BaseFilterResource(BaseResource):
         skip,
         limit,
         facet_by=None,
+        group_by=None,
     ):
         """Execute Typesense search with fallback. Returns None if unavailable."""
         if has_remaining:
             return typesense_search_all_ids(
-                ts_collection, search_terms, query_by, filter_by=filter_by
+                ts_collection,
+                search_terms,
+                query_by,
+                filter_by=filter_by,
+                group_by=group_by,
             )
         return typesense_search(
             ts_collection,
@@ -161,6 +196,7 @@ class BaseFilterResource(BaseResource):
             per_page=limit,
             offset=skip,
             facet_by=facet_by,
+            group_by=group_by,
         )
 
     def _fetch_documents_from_mongo(self, matching_ids, collections):
@@ -262,7 +298,7 @@ class BaseFilterResource(BaseResource):
         order_by = request.args.get("order_by", None) if request else None
         asc = bool(request.args.get("asc", 1, int)) if request else 1
 
-        text_filters, type_filter_values, remaining_filters = (
+        text_filters, type_filter_values, exact_match_filters, remaining_filters = (
             self._classify_filters_for_typesense(query)
         )
 
@@ -306,7 +342,19 @@ class BaseFilterResource(BaseResource):
                     remaining_filters.append(f)
         text_filters = ts_text_filters
 
-        if not text_filters:
+        ts_exact_match_filters = []
+        for f in exact_match_filters:
+            key = f.get("key", "")
+            if isinstance(key, list):
+                key = key[0].split("|")[-1] if key else ""
+            if key in search_fields:
+                ts_exact_match_filters.append(
+                    (key.replace(".", "_"), f.get("value"))
+                )
+            else:
+                remaining_filters.append(f)
+
+        if not text_filters and not ts_exact_match_filters:
             if has_resolved_lookups:
                 type_filters = [
                     f
@@ -323,8 +371,13 @@ class BaseFilterResource(BaseResource):
                     resolved_query, target_collection
                 )
             return self._execute_advanced_search_with_query_v2(query, collection)
-        ts_collection, query_by, search_terms, filter_by = self._build_typesense_query(
-            text_filters, type_filter_values, typesense_config
+        ts_collection, query_by, search_terms, filter_by, group_by = (
+            self._build_typesense_query(
+                text_filters,
+                type_filter_values,
+                typesense_config,
+                exact_match_filters=ts_exact_match_filters,
+            )
         )
 
         facet_fields = typesense_config.get("facet_fields", [])
@@ -343,6 +396,7 @@ class BaseFilterResource(BaseResource):
             skip,
             limit,
             facet_by=facet_by,
+            group_by=group_by,
         )
         if ts_result is None:
             log.info("Typesense unavailable, falling back to MongoDB")

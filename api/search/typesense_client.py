@@ -107,6 +107,7 @@ def search(
     page=1,
     offset=None,
     facet_by=None,
+    group_by=None,
 ):
     client = get_typesense_client()
     if not client:
@@ -126,9 +127,19 @@ def search(
             search_params["filter_by"] = filter_by
         if facet_by:
             search_params["facet_by"] = facet_by
+        if group_by:
+            search_params["group_by"] = group_by
+            search_params["group_limit"] = 1
 
         result = client.collections[collection].documents.search(search_params)
-        ids = [hit["document"]["_id"] for hit in result["hits"]]
+        if group_by and "grouped_hits" in result:
+            ids = [
+                g["hits"][0]["document"]["_id"]
+                for g in result["grouped_hits"]
+                if g.get("hits")
+            ]
+        else:
+            ids = [hit["document"]["_id"] for hit in result["hits"]]
         response = {"ids": ids, "count": result["found"]}
         if facet_by:
             response["facets"] = _transform_facets(result.get("facet_counts", []))
@@ -150,12 +161,13 @@ def search(
                     page,
                     offset,
                     facet_by,
+                    group_by,
                 )
         log.warning(f"Typesense search failed, falling back to MongoDB: {e}")
         return None
 
 
-def search_all_ids(collection, query, query_by, filter_by=None):
+def search_all_ids(collection, query, query_by, filter_by=None, group_by=None):
     """Fetch all matching IDs from Typesense by paginating through results."""
     client = get_typesense_client()
     if not client:
@@ -176,12 +188,22 @@ def search_all_ids(collection, query, query_by, filter_by=None):
             }
             if filter_by:
                 search_params["filter_by"] = filter_by
+            if group_by:
+                search_params["group_by"] = group_by
+                search_params["group_limit"] = 1
 
             result = client.collections[collection].documents.search(search_params)
             if total is None:
                 total = result["found"]
 
-            ids = [hit["document"]["_id"] for hit in result["hits"]]
+            if group_by and "grouped_hits" in result:
+                ids = [
+                    g["hits"][0]["document"]["_id"]
+                    for g in result["grouped_hits"]
+                    if g.get("hits")
+                ]
+            else:
+                ids = [hit["document"]["_id"] for hit in result["hits"]]
             all_ids.extend(ids)
 
             if len(all_ids) >= total or len(ids) < per_page:
@@ -197,7 +219,9 @@ def search_all_ids(collection, query, query_by, filter_by=None):
                 log.warning(
                     f"Retrying search_all_ids without missing field '{missing}'"
                 )
-                return search_all_ids(collection, query, filtered, filter_by)
+                return search_all_ids(
+                    collection, query, filtered, filter_by, group_by
+                )
         log.warning(f"Typesense search_all_ids failed, falling back to MongoDB: {e}")
         return None
 
@@ -209,6 +233,39 @@ def build_type_filter(type_values):
     if len(type_values) == 1:
         return f"type:={type_values[0]}"
     return f"type:[{','.join(type_values)}]"
+
+
+def _quote_ts_value(value):
+    """Quote a single Typesense filter_by value using backticks when needed."""
+    s = value if isinstance(value, str) else str(value)
+    needs_quote = any(c in s for c in (" ", ",", "(", ")", "[", "]", "`", "&", ":"))
+    if needs_quote:
+        return "`" + s.replace("`", "\\`") + "`"
+    return s
+
+
+def build_filter_by(type_values, exact_match_filters=None):
+    """Build combined filter_by for type filter + exact-match field filters.
+
+    exact_match_filters is a list of (flat_key, value_or_list) tuples.
+    """
+    parts = []
+    type_clause = build_type_filter(type_values)
+    if type_clause:
+        parts.append(type_clause)
+    for flat_key, values in exact_match_filters or []:
+        if isinstance(values, list):
+            values = [v for v in values if v not in (None, "")]
+            if not values:
+                continue
+            quoted = [_quote_ts_value(v) for v in values]
+            if len(quoted) == 1:
+                parts.append(f"{flat_key}:={quoted[0]}")
+            else:
+                parts.append(f"{flat_key}:=[{','.join(quoted)}]")
+        elif values not in (None, ""):
+            parts.append(f"{flat_key}:={_quote_ts_value(values)}")
+    return " && ".join(parts) if parts else None
 
 
 def upsert_document(collection, doc):
