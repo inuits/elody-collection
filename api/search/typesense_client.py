@@ -235,13 +235,29 @@ def delete_document(collection, doc_id):
 
 
 def get_nested_value(obj, path):
-    keys = path.split(".")
-    for key in keys:
-        if isinstance(obj, dict):
-            obj = obj.get(key)
-        else:
-            return None
-    return obj
+    keys = path.split(".") if isinstance(path, str) else list(path)
+    return _descend(obj, keys)
+
+
+def _descend(obj, keys):
+    if not keys:
+        return obj
+    if obj is None:
+        return None
+    if isinstance(obj, dict):
+        return _descend(obj.get(keys[0]), keys[1:])
+    if isinstance(obj, list):
+        collected = []
+        for item in obj:
+            v = _descend(item, keys)
+            if v is None:
+                continue
+            if isinstance(v, list):
+                collected.extend(x for x in v if x is not None)
+            else:
+                collected.append(v)
+        return collected or None
+    return None
 
 
 def prepare_document_for_typesense(entity, search_fields, facet_fields=None):
@@ -255,7 +271,13 @@ def prepare_document_for_typesense(entity, search_fields, facet_fields=None):
         all_fields.update(facet_fields)
     for field_path in all_fields:
         value = get_nested_value(entity, field_path)
-        if value is not None:
-            flat_key = field_path.replace(".", "_")
-            doc[flat_key] = str(value) if not isinstance(value, str) else value
+        if value is None:
+            continue
+        flat_key = field_path.replace(".", "_")
+        if isinstance(value, list):
+            doc[flat_key] = [v if isinstance(v, str) else str(v) for v in value]
+        elif isinstance(value, str):
+            doc[flat_key] = value
+        else:
+            doc[flat_key] = str(value)
     return doc
