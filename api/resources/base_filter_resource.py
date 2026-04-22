@@ -32,7 +32,6 @@ class BaseFilterResource(BaseResource):
             is_text_search = (
                 not f.get("match_exact")
                 and f.get("value")
-                and f.get("value") != "*"
                 and isinstance(f.get("value"), str)
             )
             if f.get("type") == "text" and is_text_search:
