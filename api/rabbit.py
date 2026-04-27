@@ -3,9 +3,11 @@ from json import loads
 from os import getenv
 from typing import Any
 
-from elody.loader import load_queues
 from elody.util import CustomJSONEncoder, custom_json_dumps
 from logging_elody.log import log
+
+# from elody.loader import load_queues
+from util import load_queues
 
 _rabbit = None
 
