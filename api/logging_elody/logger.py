@@ -1,13 +1,27 @@
 import inspect
+import logging
+from os import getenv
 
 from configuration import get_object_configuration_mapper
 from elody.util import flatten_dict
 from logging_loki import JsonLokiLogger, LokiLogger
-from os import getenv
 
 
 class Logger:
     def __init__(self):
+        log_level = getenv("LOG_LEVEL", "info")
+
+        match log_level.lower():
+            case "info":
+                log_level = logging.INFO
+            case "debug":
+                log_level = logging.DEBUG
+            case "warning":
+                log_level = logging.DEBUG
+            case "error":
+                log_level = logging.ERROR
+            case _:
+                log_level = logging.INFO
         logger = LokiLogger(
             loki_url=getenv("LOKI_URL", None),
             default_loki_labels={
@@ -17,6 +31,7 @@ class Logger:
                 "category": getenv("SERVICE_TYPE_CATEGORY", "collection"),
             },
             headers={"X-Scope-OrgID": getenv("LOKI_TENANT_ID", "infra")},
+            log_level=log_level,
         )
         self.logger = JsonLokiLogger(logger)
 
@@ -76,7 +91,14 @@ class Logger:
         )
 
     def _log(
-        self, severity, message: str, item={}, *, frame_info, exc_info=None, **kwargs
+        self,
+        severity,
+        message: str,
+        item={},
+        *,
+        frame_info,
+        exc_info=None,
+        **kwargs,
     ):
         tags, extra_json_properties = None, None
         if not kwargs.get("only_log_message", False):
@@ -94,8 +116,8 @@ class Logger:
             extra_json_properties = info["info_labels"]
             extra_json_properties.update(
                 {
-                    "frame_info": f"Logged from file: {frame_info.filename}, line: {frame_info.lineno}, in function: {frame_info.function}"
-                }
+                    "frame_info": f"Logged from file: {frame_info.filename}, line: {frame_info.lineno}, in function: {frame_info.function}",
+                },
             )
             if info_labels := kwargs.get("info_labels"):
                 extra_json_properties.update(info_labels)
