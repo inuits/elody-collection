@@ -3,6 +3,8 @@ from json import loads
 from os import getenv
 from typing import Any
 
+from apscheduler.executors.pool import ThreadPoolExecutor
+from apscheduler.schedulers.background import BackgroundScheduler
 from elody.loader import load_queues
 from elody.util import CustomJSONEncoder, custom_json_dumps
 from logging_elody.log import log
@@ -47,6 +49,13 @@ def init_rabbit(app):
             passive=passive_exchange,
         ),
     )
+    # FIXME: This is a temporary solution. The default amount of workers for
+    # the backgroundscheduler are 10, but currently for DAMS for exapmle we are
+    # at 12 queues, which means some queues don't start getting consumed.
+    _rabbit.scheduler = BackgroundScheduler(
+        executors={"default": ThreadPoolExecutor(20)},
+    )
+    load_queues(log)
     if amqp_module.__name__ == "amqpstorm_flask":
         _rabbit.init_app(
             app,
@@ -57,7 +66,6 @@ def init_rabbit(app):
         )
     else:
         _rabbit.init_app(app, "basic", loads, custom_json_dumps)
-    load_queues(log)
 
 
 def get_rabbit() -> Any:
