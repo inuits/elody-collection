@@ -14,6 +14,7 @@ _rabbit = None
 
 def init_rabbit(app):
     global _rabbit
+    apscheduler_enabled = int(getenv("AMQP_STORM_APSCHEDULER", 1))
     amqp_module = import_module(getenv("AMQP_MANAGER", "amqpstorm_flask"))
     auto_delete_exchange = getenv("AUTO_DELETE_EXCHANGE", False) in [
         1,
@@ -52,10 +53,11 @@ def init_rabbit(app):
     # FIXME: This is a temporary solution. The default amount of workers for
     # the backgroundscheduler are 10, but currently for DAMS for exapmle we are
     # at 12 queues, which means some queues don't start getting consumed.
-    _rabbit.scheduler = BackgroundScheduler(
-        executors={"default": ThreadPoolExecutor(20)},
-    )
-    load_queues(log)
+    if apscheduler_enabled == 1:
+        _rabbit.scheduler = BackgroundScheduler(
+            executors={"default": ThreadPoolExecutor(20)},
+        )
+        load_queues(log)
     if amqp_module.__name__ == "amqpstorm_flask":
         _rabbit.init_app(
             app,
@@ -66,6 +68,8 @@ def init_rabbit(app):
         )
     else:
         _rabbit.init_app(app, "basic", loads, custom_json_dumps)
+    if apscheduler_enabled != 1:
+        load_queues(log)
 
 
 def get_rabbit() -> Any:
