@@ -301,7 +301,11 @@ def _descend(obj, keys):
         return obj
     if obj is None:
         return None
-    if isinstance(obj, dict):
+    if isinstance(obj, list):
+            if not obj:
+                return None
+            obj = obj[0]
+        if isinstance(obj, dict):
         return _descend(obj.get(keys[0]), keys[1:])
     if isinstance(obj, list):
         collected = []

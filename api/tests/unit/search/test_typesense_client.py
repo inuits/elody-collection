@@ -53,6 +53,14 @@ class TestGetNestedValue:
     def test_non_dict_intermediate_returns_none(self):
         assert get_nested_value({"a": "string"}, "a.b") is None
 
+    def test_list_valued_property(self):
+        obj = {"properties": {"title": [{"value": "My Production"}]}}
+        assert get_nested_value(obj, "properties.title.value") == "My Production"
+
+    def test_empty_list_returns_none(self):
+        obj = {"properties": {"title": []}}
+        assert get_nested_value(obj, "properties.title.value") is None
+
 
 class TestPrepareDocumentForTypesense:
     def test_basic_document(self):
