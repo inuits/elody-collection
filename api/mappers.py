@@ -1,5 +1,6 @@
 import csv
 import io
+import os
 import json
 import uuid
 import re
@@ -150,13 +151,21 @@ def map_data_according_to_accept_header(
         return __serialize_data_according_to_accept_header(
             data, data_type, to_format, accept_header
         )
-
     match accept_header:
         case "application/ld+json":
+            data = __serialize_data_according_to_accept_header(
+                data, data_type, to_format, accept_header
+            )
             return map_to_rdf_data(data, data_type, format="json-ld")
         case "application/n-triples":
+            data = __serialize_data_according_to_accept_header(
+                data, data_type, to_format, accept_header
+            )
             return map_to_rdf_data(data, data_type, format="nt")
         case "application/rdf+xml":
+            data = __serialize_data_according_to_accept_header(
+                data, data_type, to_format, accept_header
+            )
             return map_to_rdf_data(data, data_type, format="pretty-xml")
         case "text/csv":
             if not data["results"]:
@@ -172,6 +181,9 @@ def map_data_according_to_accept_header(
             except AttributeError:
                 return map_to_csv(data, data_type, fields, exclude_non_editable_fields)
         case "text/turtle":
+            data = __serialize_data_according_to_accept_header(
+                data, data_type, to_format, accept_header
+            )
             return map_to_rdf_data(data, data_type, format="turtle")
         case _:
             return __serialize_data_according_to_accept_header(
@@ -321,14 +333,15 @@ def cast_to_boolean(value):
 
 
 def map_entity_to_rdf_data(objects, format):
+    ELODY_CONTEXT = {"@vocab": os.getenv("ELODY_LD_CONTEXT", "https://elody.eu/")}
     graph = Graph()
     for object in objects:
-        if "data" not in object:
-            continue
-        data = json.dumps(object["data"])
+        if "data" in object:
+            object = object["data"]
+        object.pop("audit", None)
+        data = json.dumps({"@context": ELODY_CONTEXT, "@graph": [object]})
         graph.parse(data=data, format="json-ld")
-    rdf_data = graph.serialize(format=format)
-    return rdf_data
+    return graph.serialize(format=format)
 
 
 def map_metadata_to_csv(metadata, fields=None):
