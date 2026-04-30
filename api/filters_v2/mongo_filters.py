@@ -2,15 +2,15 @@ from filters_v2.helpers.base_helper import (
     get_distinct_by,
     get_facets,
     get_options_requesting_filter,
-    get_type_filter_value,
     get_selection_type_filter_value,
+    get_type_filter_value,
     has_non_exact_match_filter,
     has_selection_filter_with_multiple_values,
 )
 from filters_v2.helpers.mongo_helper import (
+    get_bucket_stages,
     get_filter_option_label,
     has_bucket_filter,
-    get_bucket_stages,
 )
 from filters_v2.matchers.base_matchers import BaseMatchers
 from filters_v2.stages import (
@@ -44,6 +44,7 @@ class MongoFilters:
         asc=True,
         return_query_without_executing=False,
         tidy_up_match=True,
+        return_cursor=False,
     ):
         entity_type = get_type_filter_value(filter_request_body)
         if not entity_type:
@@ -85,6 +86,7 @@ class MongoFilters:
                 limit,
                 options_requesting_filter,
                 facets_request,
+                return_cursor,
             )
 
     def __build_aggregation_query(
@@ -131,6 +133,7 @@ class MongoFilters:
         limit,
         options_requesting_filter,
         facets_request,
+        return_cursor=False,
     ):
         try:
             with tracer.start_as_current_span(
@@ -139,6 +142,8 @@ class MongoFilters:
                 cursor = self.storage.db[BaseMatchers.collection].aggregate(
                     pipeline, allowDiskUse=self.storage.allow_disk_use
                 )
+                if return_cursor:
+                    return cursor
         except Exception as exception:
             log.exception(
                 f"{exception.__class__.__name__}: {exception}",
