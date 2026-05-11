@@ -20,12 +20,17 @@ queue_type = getenv("QUEUE_TYPE")
 routing_key_prefix = getenv("ROUTING_KEY_PREFIX", "dams")
 
 
-def __argument_wrapper(*, queue_name, routing_key):
+def __argument_wrapper(*, queue_name, routing_key, single_active_consumer=False):
     arguments = {"routing_key": routing_key}
     if getenv("AMQP_MANAGER", "amqpstorm_flask") == "amqpstorm_flask":
         arguments["queue_name"] = queue_name
+        queue_arguments = {}
         if queue_type:
-            arguments["queue_arguments"] = {"x-queue-type": queue_type}
+            queue_arguments.update({"x-queue-type": queue_type})
+        if single_active_consumer:
+            queue_arguments.update({"x-single-active-consumer": True})
+        if queue_arguments:
+            arguments["queue_arguments"] = queue_arguments
     return arguments
 
 
@@ -85,18 +90,18 @@ def add_mediafile_to_history(routing_key, body, message_id):
 
 
 def add_item_to_history(
-    id,
+    id,  # noqa: A002
     data,
     unchanged_item=None,
     collection="entities",
-    required_fields=["location", "type"],
+    required_fields=["location", "type"],  # noqa: B006
 ):
     storage = StorageManager().get_db_engine()
     if __is_malformed_message(data, required_fields):
         return
 
     item = storage.get_item_from_collection_by_id(collection, id)
-    relations = storage.get_collection_item_relations(collection, id, True)
+    relations = storage.get_collection_item_relations(collection, id, True)  # noqa: FBT003
     content = {
         "object": item,
         "timestamp": datetime.now(UTC),
@@ -142,7 +147,7 @@ def add_scan_info_to_mediafile(routing_key, body, message_id):
             "mediafiles",
             data["mediafile_id"],
             "metadata",
-            list(),
+            [],
         )
         for item in [x for x in metadata if x["key"] == "publication_status"]:
             item["value"] = "infected"
@@ -153,27 +158,38 @@ def add_scan_info_to_mediafile(routing_key, body, message_id):
 @get_rabbit().queue(
     **__argument_wrapper(
         queue_name=f"{queue_prefix}-update_job",
-        routing_key=f"{routing_key_prefix}.job_changed",
+        routing_key=[
+            f"{routing_key_prefix}.job_changed",
+            f"{routing_key_prefix}.job_created",
+        ],
+        single_active_consumer=True,
     ),
 )
+def handle_job_change(routing_key, body, message_id):
+    if not body["data"].get("patch"):
+        create_job(routing_key, body, message_id)
+    else:
+        update_job(routing_key, body, message_id)
+
+
 def update_job(routing_key, body, message_id):
     try:
-        id = body["data"].get("id", body["data"].get("_id"))
+        job_id = body["data"].get("id", body["data"].get("_id"))
         config = get_object_configuration_mapper().get("job")
         collection = config.crud()["collection"]
 
-        if id and collection:
+        if job_id and collection:
             storage = StorageManager().get_db_engine()
-            document = storage.get_item_from_collection_by_id(collection, id)
+            document = storage.get_item_from_collection_by_id(collection, job_id)
             if not document:
                 sleep(5)
-                document = storage.get_item_from_collection_by_id(collection, id)
+                document = storage.get_item_from_collection_by_id(collection, job_id)
             if not document:
                 return
             current_status = get_item_metadata_value(document, "status")
             new_status = get_item_metadata_value(body["data"]["patch"], "status")
             if current_status != "failed" or new_status == "failed":
-                log.info(f"Updating job {id} with patch {body['data']['patch']}")
+                log.info(f"Updating job {job_id} with patch {body['data']['patch']}")
                 storage.patch_item_from_collection_v2(
                     collection,
                     document,
@@ -190,7 +206,7 @@ def update_job(routing_key, body, message_id):
                         new_status,
                     )
 
-    except Exception as exception:
+    except Exception as exception:  # noqa: BLE001
         log.exception(
             f"{exception.__class__.__name__}: {exception}",
             info_labels={"mq_message": body},
@@ -198,22 +214,22 @@ def update_job(routing_key, body, message_id):
         )
 
 
-def _handle_status_update(id, collection, current_status, new_status):
+def _handle_status_update(job_id, collection, current_status, new_status):
     if current_status == new_status:
         return
 
     storage = StorageManager().get_db_engine()
-    parent_job = storage.get_item_from_collection_by_id(collection, id)
+    parent_job = storage.get_item_from_collection_by_id(collection, job_id)
     if not parent_job:
         sleep(5)
-        parent_job = storage.get_item_from_collection_by_id(collection, id)
+        parent_job = storage.get_item_from_collection_by_id(collection, job_id)
     if not parent_job:
         return
     if not get_item_metadata_value(parent_job, "child_jobs"):
         return
 
     parent_job = storage.increment_metadata_values(
-        id=id,
+        id=job_id,
         collection=collection,
         metadata_key="child_jobs",
         increment_fields={
@@ -230,9 +246,9 @@ def _handle_status_update(id, collection, current_status, new_status):
 
     finished, parent_child_status_value = _check_parent_children_status(parent_job)
     if finished:
-        log.info(f"Finishing Parent Job: {id}")
+        log.info(f"Finishing Parent Job: {job_id}")
         handle_parent_job_finished(
-            id,
+            job_id,
             parent_child_status_value,
             get_rabbit=get_rabbit,
         )
@@ -241,7 +257,7 @@ def _handle_status_update(id, collection, current_status, new_status):
         Status.WARNING,
         Status.FAILED,
     ):
-        _handle_parent_wrong_status(id, collection)
+        _handle_parent_wrong_status(job_id, collection)
 
 
 def _check_parent_children_status(document) -> tuple[bool, dict[str, str]]:
@@ -316,12 +332,6 @@ def _attach_child(parent_job_id, collection):
         )
 
 
-@get_rabbit().queue(
-    **__argument_wrapper(
-        queue_name=f"{queue_prefix}-create_job",
-        routing_key=f"{routing_key_prefix}.job_created",
-    ),
-)
 def create_job(routing_key, body, message_id):
     try:
         job = body["data"]
@@ -334,7 +344,7 @@ def create_job(routing_key, body, message_id):
         if parent_job_id:
             _attach_child(parent_job_id, collection)
 
-    except Exception as exception:
+    except Exception as exception:  # noqa: BLE001
         log.exception(
             f"{exception.__class__.__name__}: {exception}",
             body["data"],
@@ -449,7 +459,7 @@ def create_ocr_body(mediafiles_data, relation):
         routing_key=f"{routing_key_prefix}.mediafile_deleted",
     ),
 )
-def handle_mediafile_deleted(routing_key, body, message_id):
+def handle_mediafile_deleted(routing_key, body, message_id):  # noqa: PLR0912
     data = body["data"]
     deleted_mediafile = data["mediafile"]
     if __is_malformed_message(data, ["linked_entities", "mediafile"]):
@@ -487,7 +497,7 @@ def handle_mediafile_deleted(routing_key, body, message_id):
                         pdf_relation.get("key"),
                     )
                     entity_mediafiles_ids = []
-                    for relation in entity_relations:
+                    for relation in entity_relations:  # noqa: PLW2901
                         if (
                             relation.get("type") == "hasMediafile"
                             and relation.get("label") == "hasMediafile"
@@ -495,10 +505,10 @@ def handle_mediafile_deleted(routing_key, body, message_id):
                             entity_mediafiles_ids.append(relation.get("key"))
                     if len(entity_mediafiles_ids) > 0:
                         mediafile_image_data = []
-                        for id in entity_mediafiles_ids:
+                        for mediafile_id in entity_mediafiles_ids:
                             mediafile = storage.get_item_from_collection_by_id(
                                 "mediafiles",
-                                id,
+                                mediafile_id,
                             )
                             mediafile_image_data.append(mediafile)
                         process_ocr(mediafile_image_data, pdf_relation)
@@ -518,10 +528,13 @@ def handle_mediafile_deleted(routing_key, body, message_id):
     **__argument_wrapper(
         queue_name=f"{queue_prefix}-sync_entity_to_typesense",
         routing_key=f"{routing_key_prefix}.entity_changed",
-    )
+    ),
 )
 def sync_entity_to_typesense(routing_key, body, message_id):
-    from search.typesense_client import prepare_document_for_typesense, upsert_document
+    from search.typesense_client import (  # noqa: PLC0415
+        prepare_document_for_typesense,
+        upsert_document,
+    )
 
     data = body["data"]
     if __is_malformed_message(data, ["location", "type"]):
@@ -545,7 +558,9 @@ def sync_entity_to_typesense(routing_key, body, message_id):
     search_fields = ts_config.get("search_fields", [])
     facet_fields = ts_config.get("facet_fields", [])
     doc = prepare_document_for_typesense(
-        entity, search_fields, facet_fields=facet_fields
+        entity,
+        search_fields,
+        facet_fields=facet_fields,
     )
     upsert_document(ts_collection, doc)
 
@@ -554,10 +569,10 @@ def sync_entity_to_typesense(routing_key, body, message_id):
     **__argument_wrapper(
         queue_name=f"{queue_prefix}-delete_entity_from_typesense",
         routing_key=f"{routing_key_prefix}.entity_deleted",
-    )
+    ),
 )
 def delete_entity_from_typesense(routing_key, body, message_id):
-    from search.typesense_client import delete_document
+    from search.typesense_client import delete_document  # noqa: PLC0415
 
     data = body["data"]
     entity_id = data.get("entity_id") or data.get("_id")
