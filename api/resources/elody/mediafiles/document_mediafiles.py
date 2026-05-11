@@ -54,15 +54,7 @@ class ElodyDocumentMediafiles(BaseResource):
     ):
         mediafile = g.get("content") or request.get_json()
         relation_metadata = mediafile.pop("relation_properties", {})
-        mediafile = {
-            **mediafile,
-            "metadata": [
-                metadata
-                for metadata in mediafile.get("metadata", [])
-                if metadata["key"] != "title"
-            ],
-            "type": "mediafile",
-        }
+        mediafile = {**mediafile, "type": "mediafile"}
         get_relations = lambda key: [
             *(mediafile.get("relations", []) if key == id else []),
             {
