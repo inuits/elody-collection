@@ -219,9 +219,7 @@ def search_all_ids(collection, query, query_by, filter_by=None, group_by=None):
                 log.warning(
                     f"Retrying search_all_ids without missing field '{missing}'"
                 )
-                return search_all_ids(
-                    collection, query, filtered, filter_by, group_by
-                )
+                return search_all_ids(collection, query, filtered, filter_by, group_by)
         log.warning(f"Typesense search_all_ids failed, falling back to MongoDB: {e}")
         return None
 

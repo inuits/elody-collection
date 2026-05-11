@@ -347,9 +347,7 @@ class BaseFilterResource(BaseResource):
             if isinstance(key, list):
                 key = key[0].split("|")[-1] if key else ""
             if key in search_fields:
-                ts_exact_match_filters.append(
-                    (key.replace(".", "_"), f.get("value"))
-                )
+                ts_exact_match_filters.append((key.replace(".", "_"), f.get("value")))
             else:
                 remaining_filters.append(f)
 

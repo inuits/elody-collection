@@ -101,7 +101,9 @@ def add_item_to_history(
         return
 
     item = storage.get_item_from_collection_by_id(collection, id)
-    relations = storage.get_collection_item_relations(collection, id, True)  # noqa: FBT003
+    relations = storage.get_collection_item_relations(
+        collection, id, True
+    )  # noqa: FBT003
     content = {
         "object": item,
         "timestamp": datetime.now(UTC),
