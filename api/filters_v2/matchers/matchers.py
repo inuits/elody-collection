@@ -48,7 +48,7 @@ class ContainsMatcher(BaseMatcher):
             and not kwargs.get("match_not", False)
             and not kwargs.get("regex", False)
         ):
-            value = escape(value)
+            value = escape(value.strip())
             value = value.replace("\\*", ".*").replace("\\^", "^").replace("\\$", "$")
             return self.matcher_engine.contains(
                 key, value, kwargs.get("inner_exact_matches", {})
@@ -65,7 +65,7 @@ class ContainsNotMatcher(BaseMatcher):
             and kwargs.get("match_not", False)
             and not kwargs.get("regex", False)
         ):
-            value = escape(value)
+            value = escape(value.strip())
             value = value.replace("\\*", ".*").replace("\\^", "^").replace("\\$", "$")
             return self.matcher_engine.contains_not(
                 key, value, kwargs.get("inner_exact_matches", {})
