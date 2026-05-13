@@ -275,11 +275,15 @@ class FilterGenericObjectsV2(BaseFilterResource):
             filters = filter(query)
             skip = request.args.get("skip", 0, int)
             limit = request.args.get("limit", 20, int)
+            order_by = request.args.get("order_by")
+            asc = request.args.get("asc", True, bool)
             items = http_storage.get_items_from_collection(
                 collection,
                 filters=filters,
                 skip=skip,
                 limit=limit,
+                sort=order_by,
+                asc=asc
             )
         else:
             typesense_config = config.crud().get("typesense", {})
