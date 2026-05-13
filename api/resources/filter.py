@@ -276,7 +276,7 @@ class FilterGenericObjectsV2(BaseFilterResource):
             skip = request.args.get("skip", 0, int)
             limit = request.args.get("limit", 20, int)
             order_by = request.args.get("order_by")
-            asc = request.args.get("asc", True, bool)
+            asc = request.args.get("asc", 0, int)
             items = http_storage.get_items_from_collection(
                 collection,
                 filters=filters,
