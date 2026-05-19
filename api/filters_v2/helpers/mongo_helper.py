@@ -332,7 +332,7 @@ def get_bucket_stages(geo_filter: dict):
                 "grid_x": {
                     "$floor": {
                         "$divide": [
-                            {"$arrayElemAt": ["$location.coordinates", 0]},
+                            {"$arrayElemAt": ["$properties.gps_coordinates.value.longitude", 0]},
                             step_size_x,
                         ]
                     }
@@ -340,7 +340,7 @@ def get_bucket_stages(geo_filter: dict):
                 "grid_y": {
                     "$floor": {
                         "$divide": [
-                            {"$arrayElemAt": ["$location.coordinates", 1]},
+                            {"$arrayElemAt": ["$properties.gps_coordinates.value.latitude", 0]},
                             step_size_y,
                         ]
                     }
@@ -348,8 +348,8 @@ def get_bucket_stages(geo_filter: dict):
             },
             "count": {"$sum": 1},
             # Visual center of the cluster
-            "avg_lng": {"$avg": {"$arrayElemAt": ["$location.coordinates", 0]}},
-            "avg_lat": {"$avg": {"$arrayElemAt": ["$location.coordinates", 1]}},
+            "avg_lng": {"$avg": {"$arrayElemAt": ["$properties.gps_coordinates.value.longitude", 0]}},
+            "avg_lat": {"$avg": {"$arrayElemAt": ["$properties.gps_coordinates.value.latitude", 0]}},
             # Keep the data of the first document found
             "first_doc": {"$first": "$$ROOT"},
         }

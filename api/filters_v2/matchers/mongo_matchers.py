@@ -91,7 +91,7 @@ class MongoMatchers(BaseMatchers):
         return self.__any_none_match(key, "NONE_MATCH")
 
     def geo(self, key, value):
-        return {key: {"$geoWithin": {"$geometry": value}}}
+        return {f"properties.{key}.geojson": {"$geoWithin": {"$geometry": value}}}
 
     def __aggregation_match(self, key: str, value, aggregation: str):
         return {
