@@ -283,7 +283,7 @@ class FilterGenericObjectsV2(BaseFilterResource):
                 skip=skip,
                 limit=limit,
                 sort=order_by,
-                asc=asc
+                asc=asc,
             )
         else:
             typesense_config = config.crud().get("typesense", {})
