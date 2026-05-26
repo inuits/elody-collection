@@ -33,6 +33,19 @@ class ElodyDocumentRelations(BaseResource):
         return self.put(id=id, spec=spec, document=document)
 
     @authenticate(RequestContext(request))
+    def patch(self, id, spec):
+        g.content = g.get("content") or request.get_json()
+        raw_document = self._check_if_collection_and_item_exists(None, id)
+        document = serialize(raw_document, type=raw_document.get("type"), to_format=spec)
+        existing_by_key = {r["key"]: r for r in raw_document.get("relations", [])}
+        existing_by_key.update({r["key"]: r for r in document.get("relations", [])})
+        incoming_keys = {r["key"] for r in g.get("content", [])}
+        g.content = g.get("content", []) + [
+            r for r in existing_by_key.values() if r["key"] not in incoming_keys
+        ]
+        return self.put(id=id, spec=spec, document=document)
+
+    @authenticate(RequestContext(request))
     def put(self, id, spec, document=None):
         g.content = g.get("content") or request.get_json()
         if not document:
