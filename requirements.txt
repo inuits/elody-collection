@@ -3,14 +3,14 @@ amqpstorm-flask==0.6.1
 aniso8601==10.0.0
 apscheduler==3.11.0
 attrs==25.3.0
-Authlib==1.5.1
+Authlib==1.7.2
 blinker==1.9.0
 certifi==2025.1.31
-cffi==1.17.1
+cffi==2.0.0
 charset-normalizer==3.4.1
 click==8.1.8
 cloudevents==2.0.0
-cryptography==44.0.2
+cryptography==46.0.7
 decorator==5.2.1
 deprecation==2.1.0
 dnspython==2.7.0
