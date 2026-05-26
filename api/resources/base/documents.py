@@ -40,7 +40,7 @@ class Documents(GenericObjectV2):
             collection=collection, spec=spec, is_type_required=is_type_required
         )
 
-    def post(self, *, spec, is_content_prepared_for_creation=False):
+    def post(self, *, spec, is_content_prepared_for_creation=False, enable_jobs=True):
         self.__set_request("POST")
         g.enable_parsers = True
         content = g.get("content") or request.get_json() or {}
@@ -73,9 +73,9 @@ class Documents(GenericObjectV2):
                     raise BadRequest(
                         message
                     )  # temporary BadRequest until error codes are reworked
-                if current_job_id := (
+                if enable_jobs and (current_job_id := (
                     request.args.get("current_job_id") or g.get("current_job_id")
-                ):
+                )):
                     if isinstance(response, dict):
                         add_document_to_job(
                             current_job_id,
