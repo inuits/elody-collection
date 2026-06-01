@@ -26,6 +26,7 @@
         "cryptography",
         "elody",
         "inuits-policy-based-auth",
+        "pamqp",
         "requests",
         "requests-cache"
       ],
@@ -45,6 +46,7 @@
         "cryptography",
         "elody",
         "inuits-policy-based-auth",
+        "pamqp",
         "requests",
         "requests-cache"
       ],
