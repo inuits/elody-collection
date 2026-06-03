@@ -14,7 +14,7 @@ cryptography==48.0.0 # Tracked-by-renovate
 decorator==5.2.1
 deprecation==2.1.0
 dnspython==2.7.0
-elody[loader]==0.0.259 # Tracked-by-renovate
+elody[loader]==0.0.260 # Tracked-by-renovate
 Flask==3.1.0
 Flask-RESTful==0.3.10
 flask-swagger-ui==4.11.1
