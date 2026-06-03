@@ -6,11 +6,22 @@ from unittest.mock import MagicMock, patch
 def make_podiumnet_config():
     """Instantiate PodiumnetConfiguration with all external deps mocked."""
     with (
-        patch("apps.podiumnet.object_configurations.podiumnet_configuration.PodiumnetBaseResource"),
-        patch("apps.podiumnet.object_configurations.podiumnet_configuration.get_object_configuration_mapper"),
-        patch("apps.podiumnet.object_configurations.podiumnet_configuration.get_rabbit"),
-        patch("apps.podiumnet.object_configurations.podiumnet_configuration.get_virtual_properties", return_value=[]),
-        patch("apps.podiumnet.object_configurations.podiumnet_configuration.send_cloudevent"),
+        patch(
+            "apps.podiumnet.object_configurations.podiumnet_configuration.PodiumnetBaseResource"
+        ),
+        patch(
+            "apps.podiumnet.object_configurations.podiumnet_configuration.get_object_configuration_mapper"
+        ),
+        patch(
+            "apps.podiumnet.object_configurations.podiumnet_configuration.get_rabbit"
+        ),
+        patch(
+            "apps.podiumnet.object_configurations.podiumnet_configuration.get_virtual_properties",
+            return_value=[],
+        ),
+        patch(
+            "apps.podiumnet.object_configurations.podiumnet_configuration.send_cloudevent"
+        ),
         patch("apps.podiumnet.object_configurations.podiumnet_configuration.request"),
         patch("apps.podiumnet.object_configurations.podiumnet_configuration.g"),
     ):
@@ -52,7 +63,13 @@ class TestDocumentContentPatcherRelations:
     def test_adds_relation_to_empty_relations(self, config):
         document = {"relations": [], "type": "user"}
         content = {
-            "relations": [{"type": "refOrganizations", "key": "BA-001", "metadata": [{"key": "roles", "value": ["admin"]}]}],
+            "relations": [
+                {
+                    "type": "refOrganizations",
+                    "key": "BA-001",
+                    "metadata": [{"key": "roles", "value": ["admin"]}],
+                }
+            ],
             "type": "user",
         }
         result = config._document_content_patcher(
@@ -61,16 +78,26 @@ class TestDocumentContentPatcherRelations:
         assert len(result["relations"]) == 1
         assert result["relations"][0]["key"] == "BA-001"
 
-    def test_preserves_existing_relation_when_adding_different_key_same_type(self, config):
+    def test_preserves_existing_relation_when_adding_different_key_same_type(
+        self, config
+    ):
         document = {
             "relations": [
-                {"type": "refOrganizations", "key": "BA-001", "metadata": [{"key": "roles", "value": ["admin"]}]}
+                {
+                    "type": "refOrganizations",
+                    "key": "BA-001",
+                    "metadata": [{"key": "roles", "value": ["admin"]}],
+                }
             ],
             "type": "user",
         }
         content = {
             "relations": [
-                {"type": "refOrganizations", "key": "CO-002", "metadata": [{"key": "roles", "value": ["viewer"]}]}
+                {
+                    "type": "refOrganizations",
+                    "key": "CO-002",
+                    "metadata": [{"key": "roles", "value": ["viewer"]}],
+                }
             ],
             "type": "user",
         }
@@ -84,13 +111,21 @@ class TestDocumentContentPatcherRelations:
     def test_updates_existing_relation_with_same_type_and_key(self, config):
         document = {
             "relations": [
-                {"type": "refOrganizations", "key": "BA-001", "metadata": [{"key": "roles", "value": ["viewer"]}]}
+                {
+                    "type": "refOrganizations",
+                    "key": "BA-001",
+                    "metadata": [{"key": "roles", "value": ["viewer"]}],
+                }
             ],
             "type": "user",
         }
         content = {
             "relations": [
-                {"type": "refOrganizations", "key": "BA-001", "metadata": [{"key": "roles", "value": ["admin"]}]}
+                {
+                    "type": "refOrganizations",
+                    "key": "BA-001",
+                    "metadata": [{"key": "roles", "value": ["admin"]}],
+                }
             ],
             "type": "user",
         }
@@ -104,13 +139,21 @@ class TestDocumentContentPatcherRelations:
         document = {
             "relations": [
                 {"type": "hasTag", "key": "TAG-001", "metadata": []},
-                {"type": "refOrganizations", "key": "BA-001", "metadata": [{"key": "roles", "value": ["admin"]}]},
+                {
+                    "type": "refOrganizations",
+                    "key": "BA-001",
+                    "metadata": [{"key": "roles", "value": ["admin"]}],
+                },
             ],
             "type": "user",
         }
         content = {
             "relations": [
-                {"type": "refOrganizations", "key": "CO-002", "metadata": [{"key": "roles", "value": ["viewer"]}]}
+                {
+                    "type": "refOrganizations",
+                    "key": "CO-002",
+                    "metadata": [{"key": "roles", "value": ["viewer"]}],
+                }
             ],
             "type": "user",
         }
@@ -125,8 +168,16 @@ class TestDocumentContentPatcherRelations:
         document = {"relations": [], "type": "user"}
         content = {
             "relations": [
-                {"type": "refOrganizations", "key": "BA-001", "metadata": [{"key": "roles", "value": ["admin"]}]},
-                {"type": "refOrganizations", "key": "CO-002", "metadata": [{"key": "roles", "value": ["viewer"]}]},
+                {
+                    "type": "refOrganizations",
+                    "key": "BA-001",
+                    "metadata": [{"key": "roles", "value": ["admin"]}],
+                },
+                {
+                    "type": "refOrganizations",
+                    "key": "CO-002",
+                    "metadata": [{"key": "roles", "value": ["viewer"]}],
+                },
             ],
             "type": "user",
         }

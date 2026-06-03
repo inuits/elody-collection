@@ -13,6 +13,7 @@ def flask_app():
 @pytest.fixture
 def resource():
     from resources.elody.document_relations import ElodyDocumentRelations
+
     instance = object.__new__(ElodyDocumentRelations)
     instance.storage = MagicMock()
     instance.resource = MagicMock()
@@ -30,12 +31,18 @@ def _run_patch(resource, flask_app, incoming, raw_document, serialized_document=
         serialized_document = {**raw_document, "relations": []}
 
     with (
-        patch.object(resource, "_check_if_collection_and_item_exists", return_value=raw_document),
-        patch("resources.elody.document_relations.serialize", return_value=serialized_document),
+        patch.object(
+            resource, "_check_if_collection_and_item_exists", return_value=raw_document
+        ),
+        patch(
+            "resources.elody.document_relations.serialize",
+            return_value=serialized_document,
+        ),
     ):
         with flask_app.test_request_context("/", method="PATCH", json=incoming):
             resource.patch(id=raw_document["_id"], spec="elody")
             from flask import g
+
             return list(g.content.get("relations", []))
 
 
@@ -43,7 +50,11 @@ def test_patch_merges_incoming_with_existing_from_serializer(resource, flask_app
     """Relations from properties.ref_* (serializer path) are preserved."""
     incoming = [{"type": "refOrganizations", "key": "CO-001"}]
     raw = {"_id": "US-001", "type": "user", "relations": []}
-    serialized = {"_id": "US-001", "type": "user", "relations": [{"type": "refOrganizations", "key": "VE-001"}]}
+    serialized = {
+        "_id": "US-001",
+        "type": "user",
+        "relations": [{"type": "refOrganizations", "key": "VE-001"}],
+    }
 
     relations = _run_patch(resource, flask_app, incoming, raw, serialized)
     keys = {r["key"] for r in relations}
@@ -54,8 +65,16 @@ def test_patch_merges_incoming_with_existing_from_serializer(resource, flask_app
 def test_patch_merges_incoming_with_existing_from_raw_relations(resource, flask_app):
     """Relations stored directly in raw document (patcher path) are preserved."""
     incoming = [{"type": "refOrganizations", "key": "CO-001"}]
-    raw = {"_id": "US-001", "type": "user", "relations": [{"type": "refOrganizations", "key": "VE-001"}]}
-    serialized = {"_id": "US-001", "type": "user", "relations": []}  # serializer returns empty
+    raw = {
+        "_id": "US-001",
+        "type": "user",
+        "relations": [{"type": "refOrganizations", "key": "VE-001"}],
+    }
+    serialized = {
+        "_id": "US-001",
+        "type": "user",
+        "relations": [],
+    }  # serializer returns empty
 
     relations = _run_patch(resource, flask_app, incoming, raw, serialized)
     keys = {r["key"] for r in relations}
@@ -64,8 +83,24 @@ def test_patch_merges_incoming_with_existing_from_raw_relations(resource, flask_
 
 
 def test_patch_replaces_existing_relation_with_same_key(resource, flask_app):
-    incoming = [{"type": "refOrganizations", "key": "VE-001", "metadata": [{"key": "roles", "value": ["admin"]}]}]
-    raw = {"_id": "US-001", "type": "user", "relations": [{"type": "refOrganizations", "key": "VE-001", "metadata": [{"key": "roles", "value": ["viewer"]}]}]}
+    incoming = [
+        {
+            "type": "refOrganizations",
+            "key": "VE-001",
+            "metadata": [{"key": "roles", "value": ["admin"]}],
+        }
+    ]
+    raw = {
+        "_id": "US-001",
+        "type": "user",
+        "relations": [
+            {
+                "type": "refOrganizations",
+                "key": "VE-001",
+                "metadata": [{"key": "roles", "value": ["viewer"]}],
+            }
+        ],
+    }
     serialized = {"_id": "US-001", "type": "user", "relations": []}
 
     relations = _run_patch(resource, flask_app, incoming, raw, serialized)
@@ -75,10 +110,14 @@ def test_patch_replaces_existing_relation_with_same_key(resource, flask_app):
 
 def test_patch_preserves_different_type_relations(resource, flask_app):
     incoming = [{"type": "refOrganizations", "key": "CO-001"}]
-    raw = {"_id": "US-001", "type": "user", "relations": [
-        {"type": "refOrganizations", "key": "VE-001"},
-        {"type": "hasTag", "key": "TAG-001"},
-    ]}
+    raw = {
+        "_id": "US-001",
+        "type": "user",
+        "relations": [
+            {"type": "refOrganizations", "key": "VE-001"},
+            {"type": "hasTag", "key": "TAG-001"},
+        ],
+    }
     serialized = {"_id": "US-001", "type": "user", "relations": []}
 
     relations = _run_patch(resource, flask_app, incoming, raw, serialized)

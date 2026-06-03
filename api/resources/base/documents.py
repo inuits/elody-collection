@@ -73,9 +73,11 @@ class Documents(GenericObjectV2):
                     raise BadRequest(
                         message
                     )  # temporary BadRequest until error codes are reworked
-                if enable_jobs and (current_job_id := (
-                    request.args.get("current_job_id") or g.get("current_job_id")
-                )):
+                if enable_jobs and (
+                    current_job_id := (
+                        request.args.get("current_job_id") or g.get("current_job_id")
+                    )
+                ):
                     if isinstance(response, dict):
                         add_document_to_job(
                             current_job_id,
