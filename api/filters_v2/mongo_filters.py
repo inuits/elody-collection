@@ -135,7 +135,6 @@ class MongoFilters:
         facets_request,
         return_cursor=False,
     ):
-        print(f"{pipeline = }\n\n", flush=True)
         try:
             with tracer.start_as_current_span(
                 "base.MongoFilters.__execute_aggregation_query.aggregate"
