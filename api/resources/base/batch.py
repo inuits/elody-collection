@@ -221,10 +221,11 @@ class Batch(BaseResource):
                                 line_count=line_count,
                                 document_type="mediafile",
                             )
-                    finally:
-                        if request.args.get("soft"):
-                            break
+
                 g.parsed_contents = []
+                if int(request.args.get("soft", 0)):
+                    break
+
             if not content:
                 raise BadRequest("File has no content")
         except BadRequest as exception:
@@ -244,6 +245,8 @@ class Batch(BaseResource):
                 document_type=document_type,
             )
         finally:
+            if int(request.args.get("soft", 0)):
+                return {}, 200 if status_code == 400 else status_code
             if view_args_id:
                 request.view_args = {"id": view_args_id}
             if not g.get("dry_run"):
