@@ -58,6 +58,10 @@ class ElodyDocumentMediafiles(BaseResource):
         technical_origin_relation_type_template,
         **kwargs,
     ):
+        mediafile = g.get("content") or request.get_json()
+        relation_metadata = mediafile.pop("relation_properties", {})
+        mediafile = {**mediafile, "type": "mediafile"}
+
         # future: extend validation with an optional list of state validators like parsers
         # far future: validators bound to usecases => ocr_locked_validator validating ocr_locked no matter the entity type
         # pseudo code:
@@ -71,21 +75,19 @@ class ElodyDocumentMediafiles(BaseResource):
         #         if entity.ocr_locked:
         #             raise ValueError("Cannot modify: entity is OCR locked.")
 
-        original_headers = dict(request.headers)
-        request.headers = Headers({**request.headers, "Accept": "application/json"})
-        flat_document = self.__get_flat_document(id, **kwargs)
-        if flat_document["type"] == "mediafile":
-            for asset_ref in flat_document.get("ref_assets", []):
-                flat_asset = self.__get_flat_document(asset_ref, **kwargs)
-                if flat_asset.get("metadata.ocr_locked.value"):
-                    raise Conflict("OCR is locked for this entity.")
-        elif flat_document.get("metadata.ocr_locked.value"):
-            raise Conflict("OCR is locked for this entity.")
-        request.headers = Headers(original_headers)
+        if mediafile.get("technical_origin") == "ocr":
+            original_headers = dict(request.headers)
+            request.headers = Headers({**request.headers, "Accept": "application/json"})
+            flat_document = self.__get_flat_document(id, **kwargs)
+            if flat_document["type"] == "mediafile":
+                for asset_ref in flat_document.get("ref_assets", []):
+                    flat_asset = self.__get_flat_document(asset_ref, **kwargs)
+                    if flat_asset.get("metadata.ocr_locked.value"):
+                        raise Conflict("OCR is locked for this entity.")
+            elif flat_document.get("metadata.ocr_locked.value"):
+                raise Conflict("OCR is locked for this entity.")
+            request.headers = Headers(original_headers)
 
-        mediafile = g.get("content") or request.get_json()
-        relation_metadata = mediafile.pop("relation_properties", {})
-        mediafile = {**mediafile, "type": "mediafile"}
         get_relations = lambda key: [
             *(mediafile.get("relations", []) if key == id else []),
             {
