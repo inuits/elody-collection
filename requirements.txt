@@ -1,7 +1,7 @@
 AMQPStorm==2.11.1 # Tracked-by-renovate
 amqpstorm-flask==0.6.1 # Tracked-by-renovate
 aniso8601==10.0.0
-apscheduler==3.11.0 # Tracked-by-renovate
+apscheduler==3.11.2 # Tracked-by-renovate
 attrs==25.3.0
 Authlib==1.7.2 # Tracked-by-renovate
 blinker==1.9.0
