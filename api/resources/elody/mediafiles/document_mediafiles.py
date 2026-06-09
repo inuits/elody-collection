@@ -2,6 +2,7 @@ from urllib.parse import parse_qs, urlparse
 
 from elody.policies.helpers import get_flat_item_and_object_lists
 from flask import g, request
+from flask_restful import Headers
 from inuits_policy_based_auth import RequestContext
 from policy_factory import authenticate
 from resources.base_resource import BaseResource
@@ -70,6 +71,8 @@ class ElodyDocumentMediafiles(BaseResource):
         #         if entity.ocr_locked:
         #             raise ValueError("Cannot modify: entity is OCR locked.")
 
+        original_headers = dict(request.headers)
+        request.headers = Headers({**request.headers, "Accept": "application/json"})
         flat_document = self.__get_flat_document(id, **kwargs)
         if flat_document["type"] == "mediafile":
             for asset_ref in flat_document.get("ref_assets", []):
@@ -78,6 +81,7 @@ class ElodyDocumentMediafiles(BaseResource):
                     raise Conflict("OCR is locked for this entity.")
         elif flat_document.get("metadata.ocr_locked.value"):
             raise Conflict("OCR is locked for this entity.")
+        request.headers = Headers(original_headers)
 
         mediafile = g.get("content") or request.get_json()
         relation_metadata = mediafile.pop("relation_properties", {})
