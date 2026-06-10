@@ -10,7 +10,7 @@ cffi==2.0.0 # Tracked-by-renovate
 charset-normalizer==3.4.7 # Tracked-by-renovate
 click==8.1.8
 cloudevents==2.0.0
-cryptography==48.0.0 # Tracked-by-renovate
+cryptography==48.0.1 # Tracked-by-renovate
 decorator==5.2.1
 deprecation==2.1.0
 dnspython==2.7.0
