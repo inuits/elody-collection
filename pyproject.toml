@@ -3,7 +3,7 @@ name = "base-collection-api"
 version = "0.1.0"
 description = "Base repository for the elody collection-api"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = "~=3.13.0"
 dependencies = [
   "amqpstorm==2.11.1",
   "amqpstorm-flask==0.6.1",
