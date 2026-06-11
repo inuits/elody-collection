@@ -1,0 +1,25 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+repos:
+  - repo: "https://github.com/pre-commit/pre-commit-hooks"
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      # This catches actual "debugger" statements. I don't think we use those really but is still good practice
+      - id: debug-statements
+        language_version: python3.12
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    # Ruff version
+    rev: v0.15.13
+    hooks:
+      # Linter
+      - id: ruff
+        # args: [--fix] # This would apply "safe" fixes automatically, but can be a bit confusing since it modifies your files on commit
+      # Formatter (replaces Black)
+      - id: ruff-format
