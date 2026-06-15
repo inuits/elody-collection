@@ -22,7 +22,9 @@ from filters_v2.stages import (
     skip_stage,
     sort_stage,
 )
+
 from logging_elody.log import log
+from pymongo.collation import Collation
 from storage.storagemanager import StorageManager
 from tracing import get_tracer
 
@@ -140,7 +142,9 @@ class MongoFilters:
                 "base.MongoFilters.__execute_aggregation_query.aggregate"
             ) as aggregation_span:
                 cursor = self.storage.db[BaseMatchers.collection].aggregate(
-                    pipeline, allowDiskUse=self.storage.allow_disk_use
+                    pipeline,
+                    allowDiskUse=self.storage.allow_disk_use,
+                    collation=Collation(locale="en", strength=1),
                 )
                 if return_cursor:
                     return cursor
