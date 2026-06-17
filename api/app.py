@@ -67,12 +67,12 @@ def load_sentry():
 
         return event
 
-    if getenv("SENTRY_ENABLED", False) in ["True", "true", True]:
+    if getenv("GLITCH_TIP_ENABLED", False) in ["True", "true", True]:
         import sentry_sdk
         from sentry_sdk.integrations.flask import FlaskIntegration
 
         sentry_sdk.init(
-            dsn=getenv("SENTRY_DSN"),
+            dsn=getenv("GLITCH_TIP_DSN"),
             integrations=[FlaskIntegration()],
             ignore_errors=[NotFoundException, NotFound, Forbidden, Unauthorized],
             environment=getenv("NOMAD_NAMESPACE"),
