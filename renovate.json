@@ -20,9 +20,14 @@
         "charset-normalizer",
         "cryptography",
         "elody",
+        "flask",
         "inuits-policy-based-auth",
+        "PyJWT",
+        "pytest",
         "requests",
-        "requests-cache"
+        "requests-cache",
+        "urllib3",
+        "werkzeug"
       ],
       "enabled": true
     }
