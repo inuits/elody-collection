@@ -344,10 +344,16 @@ class BaseFilterResource(BaseResource):
         ts_exact_match_filters = []
         for f in exact_match_filters:
             key = f.get("key", "")
-            if isinstance(key, list):
-                key = key[0].split("|")[-1] if key else ""
-            if key in search_fields:
-                ts_exact_match_filters.append((key.replace(".", "_"), f.get("value")))
+            keys = key if isinstance(key, list) else [key]
+            bare_keys = [k.split("|")[-1] for k in keys]
+            # Resolve via Typesense only when every key is indexed; otherwise a
+            # dropped OR branch would silently narrow results, so defer the whole
+            # filter to the MongoDB engine which handles multi-key OR correctly.
+            if bare_keys and all(k in search_fields for k in bare_keys):
+                flat_keys = [k.replace(".", "_") for k in bare_keys]
+                ts_exact_match_filters.append(
+                    (flat_keys if len(flat_keys) > 1 else flat_keys[0], f.get("value"))
+                )
             else:
                 remaining_filters.append(f)
 

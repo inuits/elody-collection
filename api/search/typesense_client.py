@@ -245,7 +245,10 @@ def _quote_ts_value(value):
 def build_filter_by(type_values, exact_match_filters=None):
     """Build combined filter_by for type filter + exact-match field filters.
 
-    exact_match_filters is a list of (flat_key, value_or_list) tuples.
+    exact_match_filters is a list of (flat_key, value_or_list) tuples. flat_key
+    may be a single field (str) or a list of fields. A list expresses an OR
+    across those fields for the same value(s), e.g. matching a title against
+    both `properties_name_value` and `properties_title_value`.
     """
     parts = []
     type_clause = build_type_filter(type_values)
@@ -257,12 +260,17 @@ def build_filter_by(type_values, exact_match_filters=None):
             if not values:
                 continue
             quoted = [_quote_ts_value(v) for v in values]
-            if len(quoted) == 1:
-                parts.append(f"{flat_key}:={quoted[0]}")
-            else:
-                parts.append(f"{flat_key}:=[{','.join(quoted)}]")
+            value_clause = quoted[0] if len(quoted) == 1 else f"[{','.join(quoted)}]"
         elif values not in (None, ""):
-            parts.append(f"{flat_key}:={_quote_ts_value(values)}")
+            value_clause = _quote_ts_value(values)
+        else:
+            continue
+        keys = flat_key if isinstance(flat_key, list) else [flat_key]
+        key_clauses = [f"{k}:={value_clause}" for k in keys]
+        if len(key_clauses) == 1:
+            parts.append(key_clauses[0])
+        else:
+            parts.append("(" + " || ".join(key_clauses) + ")")
     return " && ".join(parts) if parts else None
 
 

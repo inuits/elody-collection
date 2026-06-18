@@ -215,14 +215,16 @@ class TestTypesenseFilterClassification:
                 },
             ]
 
-            text, types, remaining = resource._classify_filters_for_typesense(query)
+            text, types, exact, remaining = resource._classify_filters_for_typesense(
+                query
+            )
             assert len(text) == 1
             assert text[0]["value"] == "brusselmans"
             assert "work_word" in types
             assert len(remaining) == 0
 
-    def test_selection_with_match_exact_true_stays_remaining(self, flask_app, resource):
-        """A selection filter with match_exact=true stays as remaining filter."""
+    def test_selection_with_match_exact_true_is_exact_match(self, flask_app, resource):
+        """A selection filter with match_exact=true is an exact-match filter."""
         with flask_app.test_request_context(
             "/entities/filter?limit=20&skip=0",
             method="POST",
@@ -237,12 +239,15 @@ class TestTypesenseFilterClassification:
                 },
             ]
 
-            text, types, remaining = resource._classify_filters_for_typesense(query)
+            text, types, exact, remaining = resource._classify_filters_for_typesense(
+                query
+            )
             assert len(text) == 0
-            assert len(remaining) == 1
+            assert len(exact) == 1
+            assert len(remaining) == 0
 
-    def test_selection_with_list_value_stays_remaining(self, flask_app, resource):
-        """A selection filter with a list value (multi-select) is not a text search."""
+    def test_selection_with_list_value_is_exact_match(self, flask_app, resource):
+        """A selection filter with a list value (multi-select) is an exact match."""
         with flask_app.test_request_context(
             "/entities/filter?limit=20&skip=0",
             method="POST",
@@ -257,9 +262,12 @@ class TestTypesenseFilterClassification:
                 },
             ]
 
-            text, types, remaining = resource._classify_filters_for_typesense(query)
+            text, types, exact, remaining = resource._classify_filters_for_typesense(
+                query
+            )
             assert len(text) == 0
-            assert len(remaining) == 1
+            assert len(exact) == 1
+            assert len(remaining) == 0
 
     def test_lookup_filter_resolved_via_typesense(self, flask_app, resource):
         """A filter with a lookup should be resolved via Typesense search on the foreign collection."""
@@ -289,18 +297,18 @@ class TestTypesenseFilterClassification:
                 },
             ]
 
-            text, types, remaining = resource._classify_filters_for_typesense(query)
-            # The lookup filter should NOT be in text or remaining —
-            # it should be resolved into an ID-based filter
-            assert "work_word" in types
+            text, types, exact, remaining = resource._classify_filters_for_typesense(
+                query
+            )
             # The lookup filter value is a string with match_exact=False,
-            # so it would be classified as text, but it has a lookup
-            # which should be handled specially
+            # so it is classified as text and resolved into an ID-based filter
+            # via Typesense lookup later in the execute path.
+            assert "work_word" in types
 
-    def test_lookup_filter_without_typesense_falls_to_remaining(
-        self, flask_app, resource
-    ):
-        """A lookup filter with match_exact=True (exact ID match) stays as remaining."""
+    def test_lookup_filter_with_match_exact_is_exact_match(self, flask_app, resource):
+        """A lookup filter with match_exact=True is classified as exact-match,
+        keeping its lookup so the execute path can defer it to MongoDB when the
+        key isn't a Typesense search field."""
         with flask_app.test_request_context(
             "/entities/filter?limit=20&skip=0",
             method="POST",
@@ -321,9 +329,11 @@ class TestTypesenseFilterClassification:
                 },
             ]
 
-            text, types, remaining = resource._classify_filters_for_typesense(query)
-            assert len(remaining) == 1
-            assert remaining[0].get("lookup") is not None
+            text, types, exact, remaining = resource._classify_filters_for_typesense(
+                query
+            )
+            assert len(exact) == 1
+            assert exact[0].get("lookup") is not None
 
     def test_single_type_filter_uses_exact_match(self, flask_app, resource):
         with flask_app.test_request_context(
@@ -360,12 +370,12 @@ class TestTypesenseFilterClassification:
                 )
                 assert filter_by == "type:=work_word"
 
-    def test_wildcard_text_filter_excluded(
+    def test_wildcard_text_filter_sent_to_typesense(
         self, flask_app, resource, mock_filter_engine
     ):
-        """Text filters with value '*' should not be sent to Typesense as search terms.
-        The '*' filter becomes a remaining_filter (for MongoDB existence check),
-        so search_all_ids is used."""
+        """Since commit 38fbea30 wildcard text filters are routed through
+        Typesense (q="*" + group_by) rather than excluded, so the '*' term is
+        part of the search query alongside any concrete term."""
         with flask_app.test_request_context(
             "/entities/filter?limit=20&skip=0",
             method="POST",
@@ -386,16 +396,8 @@ class TestTypesenseFilterClassification:
                 },
             ]
 
-            with patch(
-                "resources.base_filter_resource.typesense_search_all_ids"
-            ) as mock_ts_all:
-                mock_ts_all.return_value = make_ts_result([], 0)
-                mock_filter_engine.filter.return_value = {
-                    "results": [],
-                    "count": 0,
-                    "skip": 0,
-                    "limit": 20,
-                }
+            with patch("resources.base_filter_resource.typesense_search") as mock_ts:
+                mock_ts.return_value = make_ts_result([], 0)
 
                 resource._execute_typesense_accelerated_search(
                     query,
@@ -410,10 +412,120 @@ class TestTypesenseFilterClassification:
                     },
                 )
 
-                # search_terms should only contain "mars", not "*"
-                call_args = mock_ts_all.call_args
+                # Both terms are sent to Typesense as the search query.
+                call_args = mock_ts.call_args
                 search_query = call_args[0][1]
-                assert search_query == "mars"
+                assert search_query == "* mars"
+
+
+class TestMultiKeyExactMatchFilter:
+    """A multi-key OR exact-match selection filter must query ALL keys.
+
+    Regression: previously only key[0] survived, so entity types whose data
+    lives in a non-first key (e.g. nomen/time/place use properties.title.value)
+    returned no results, while person/corporation (properties.name.value)
+    worked by accident.
+    """
+
+    SUBJECT_KEYS = [
+        "vlacc:1|properties.name.value",
+        "vlacc:1|properties.title.value",
+        "vlacc:1|properties.non_preferred_name.value",
+        "vlacc:1|properties.non_preferred_title.value",
+    ]
+    SEARCH_FIELDS = [
+        "properties.name.value",
+        "properties.title.value",
+        "properties.non_preferred_name.value",
+        "properties.non_preferred_title.value",
+    ]
+
+    def test_all_keys_present_in_filter_by_or_group(self, flask_app, resource):
+        with flask_app.test_request_context(
+            "/entities/filter?limit=20&skip=0",
+            method="POST",
+            content_type="application/json",
+        ):
+            query = [
+                {
+                    "type": "selection",
+                    "key": self.SUBJECT_KEYS,
+                    "value": ["Bladmuziek"],
+                    "match_exact": True,
+                    "operator": "or",
+                },
+                {
+                    "type": "selection",
+                    "key": "type",
+                    "value": ["nomen", "person"],
+                    "match_exact": True,
+                },
+            ]
+            with patch("resources.base_filter_resource.typesense_search") as mock_ts:
+                mock_ts.return_value = make_ts_result(["id1"], 1)
+                with patch("resources.base_filter_resource.StorageManager") as mock_sm:
+                    mock_storage = MagicMock()
+                    mock_storage.db.__getitem__.return_value.find.return_value = [
+                        make_mongo_doc("id1")
+                    ]
+                    mock_storage._prepare_mongo_document.side_effect = (
+                        lambda doc, _: doc
+                    )
+                    mock_sm.return_value.get_db_engine.return_value = mock_storage
+
+                    resource._execute_typesense_accelerated_search(
+                        query,
+                        "entities",
+                        {
+                            "enabled": True,
+                            "collection": "entities",
+                            "search_fields": self.SEARCH_FIELDS,
+                        },
+                    )
+
+            filter_by = mock_ts.call_args.kwargs.get("filter_by") or mock_ts.call_args[
+                1
+            ].get("filter_by")
+            assert "properties_name_value:=" in filter_by
+            assert "properties_title_value:=" in filter_by
+            assert "properties_non_preferred_name_value:=" in filter_by
+            assert "properties_non_preferred_title_value:=" in filter_by
+            # The keys must be OR-ed together, not AND-ed.
+            assert "||" in filter_by
+
+    def test_non_indexed_key_falls_back_to_mongo(self, flask_app, resource):
+        """If any key is not indexed in Typesense, push the whole filter to the
+        v2 MongoDB engine rather than silently dropping an OR branch."""
+        with flask_app.test_request_context(
+            "/entities/filter?limit=20&skip=0",
+            method="POST",
+            content_type="application/json",
+        ):
+            query = [
+                {
+                    "type": "selection",
+                    "key": [
+                        "vlacc:1|properties.name.value",
+                        "vlacc:1|properties.not_indexed.value",
+                    ],
+                    "value": ["Bach"],
+                    "match_exact": True,
+                    "operator": "or",
+                },
+            ]
+            with patch("resources.base_filter_resource.typesense_search") as mock_ts:
+                resource._execute_typesense_accelerated_search(
+                    query,
+                    "entities",
+                    {
+                        "enabled": True,
+                        "collection": "entities",
+                        "search_fields": ["properties.name.value"],
+                    },
+                )
+                # No exact-match Typesense query — resolved via MongoDB v2 engine.
+                mock_ts.assert_not_called()
+            assert resource.filter_engine_v2.filter.called
 
 
 class TestTypesensePagination:
@@ -1484,66 +1596,91 @@ class TestClassifyFiltersForTypesense:
 
     def test_text_filter_classified(self, resource):
         query = [{"type": "text", "value": "mars", "match_exact": False}]
-        text, types, remaining = resource._classify_filters_for_typesense(query)
+        text, types, exact, remaining = resource._classify_filters_for_typesense(query)
         assert len(text) == 1
         assert text[0]["value"] == "mars"
         assert types == []
+        assert exact == []
         assert remaining == []
 
     def test_exact_text_filter_goes_to_remaining(self, resource):
         query = [{"type": "text", "value": "mars", "match_exact": True}]
-        text, types, remaining = resource._classify_filters_for_typesense(query)
+        text, types, exact, remaining = resource._classify_filters_for_typesense(query)
         assert text == []
         assert types == []
+        assert exact == []
         assert len(remaining) == 1
 
-    def test_wildcard_text_goes_to_remaining(self, resource):
+    def test_wildcard_text_classified_as_text(self, resource):
+        # Since commit 38fbea30 the `value != "*"` exclusion was dropped:
+        # wildcard text filters are routed through Typesense (q="*" + group_by).
         query = [{"type": "text", "value": "*", "match_exact": False}]
-        text, types, remaining = resource._classify_filters_for_typesense(query)
-        assert text == []
+        text, types, exact, remaining = resource._classify_filters_for_typesense(query)
+        assert len(text) == 1
         assert types == []
-        assert len(remaining) == 1
+        assert exact == []
+        assert remaining == []
 
     def test_empty_value_text_goes_to_remaining(self, resource):
         query = [{"type": "text", "value": "", "match_exact": False}]
-        text, types, remaining = resource._classify_filters_for_typesense(query)
+        text, types, exact, remaining = resource._classify_filters_for_typesense(query)
         assert text == []
         assert types == []
+        assert exact == []
         assert len(remaining) == 1
 
     def test_none_value_text_goes_to_remaining(self, resource):
         query = [{"type": "text", "value": None, "match_exact": False}]
-        text, types, remaining = resource._classify_filters_for_typesense(query)
+        text, types, exact, remaining = resource._classify_filters_for_typesense(query)
         assert text == []
         assert types == []
+        assert exact == []
         assert len(remaining) == 1
 
     def test_type_filter_single_value(self, resource):
         query = [{"type": "type", "value": "work_word"}]
-        text, types, remaining = resource._classify_filters_for_typesense(query)
+        text, types, exact, remaining = resource._classify_filters_for_typesense(query)
         assert text == []
         assert types == ["work_word"]
         assert remaining == []
 
     def test_type_filter_list_value(self, resource):
         query = [{"type": "type", "value": ["a", "b"]}]
-        text, types, remaining = resource._classify_filters_for_typesense(query)
+        text, types, exact, remaining = resource._classify_filters_for_typesense(query)
         assert text == []
         assert types == ["a", "b"]
         assert remaining == []
 
     def test_selection_type_filter_extracted(self, resource):
         query = [{"type": "selection", "key": "type", "value": ["a", "b"]}]
-        text, types, remaining = resource._classify_filters_for_typesense(query)
+        text, types, exact, remaining = resource._classify_filters_for_typesense(query)
         assert text == []
         assert types == ["a", "b"]
         assert remaining == []
 
-    def test_non_type_selection_goes_to_remaining(self, resource):
-        query = [{"type": "selection", "key": "status", "value": ["active"]}]
-        text, types, remaining = resource._classify_filters_for_typesense(query)
+    def test_exact_match_selection_classified_as_exact(self, resource):
+        # Since commit 47db92da a match_exact selection with a concrete value
+        # is an exact-match filter (resolved natively by Typesense).
+        query = [
+            {
+                "type": "selection",
+                "key": "properties.name.value",
+                "value": ["Bach"],
+                "match_exact": True,
+            }
+        ]
+        text, types, exact, remaining = resource._classify_filters_for_typesense(query)
         assert text == []
         assert types == []
+        assert len(exact) == 1
+        assert remaining == []
+
+    def test_non_type_selection_goes_to_remaining(self, resource):
+        query = [{"type": "selection", "key": "status", "value": ["active"]}]
+        text, types, exact, remaining = resource._classify_filters_for_typesense(query)
+        assert text == []
+        assert types == []
+        assert exact == []
         assert len(remaining) == 1
 
     def test_mixed_filters(self, resource):
@@ -1553,7 +1690,7 @@ class TestClassifyFiltersForTypesense:
             {"type": "selection", "key": "type", "value": ["person"]},
             {"type": "selection", "key": "status", "value": ["active"]},
         ]
-        text, types, remaining = resource._classify_filters_for_typesense(query)
+        text, types, exact, remaining = resource._classify_filters_for_typesense(query)
         assert len(text) == 1
         assert types == ["work_word", "person"]
         assert len(remaining) == 1
@@ -1719,11 +1856,11 @@ class TestTypesenseAcceleratedSearchWithFacets:
             with patch.object(
                 resource,
                 "_classify_filters_for_typesense",
-                return_value=([query[0]], [], []),
+                return_value=([query[0]], [], [], []),
             ), patch.object(
                 resource,
                 "_build_typesense_query",
-                return_value=("entities", "properties_name_value", "alice", None),
+                return_value=("entities", "properties_name_value", "alice", None, None),
             ), patch.object(
                 resource,
                 "_execute_typesense_search",
@@ -1766,11 +1903,11 @@ class TestTypesenseAcceleratedSearchWithFacets:
             with patch.object(
                 resource,
                 "_classify_filters_for_typesense",
-                return_value=([query[0]], [], []),
+                return_value=([query[0]], [], [], []),
             ), patch.object(
                 resource,
                 "_build_typesense_query",
-                return_value=("entities", "properties_name_value", "test", None),
+                return_value=("entities", "properties_name_value", "test", None, None),
             ), patch.object(
                 resource,
                 "_execute_typesense_search",
@@ -1807,11 +1944,11 @@ class TestTypesenseAcceleratedSearchWithFacets:
             with patch.object(
                 resource,
                 "_classify_filters_for_typesense",
-                return_value=([query[0]], [], []),
+                return_value=([query[0]], [], [], []),
             ), patch.object(
                 resource,
                 "_build_typesense_query",
-                return_value=("entities", "properties_name_value", "test", None),
+                return_value=("entities", "properties_name_value", "test", None, None),
             ), patch.object(
                 resource,
                 "_execute_typesense_search",
@@ -1958,11 +2095,11 @@ class TestTypesenseAcceleratedSearchWithFacets:
             with patch.object(
                 resource,
                 "_classify_filters_for_typesense",
-                return_value=([query[0]], [], []),
+                return_value=([query[0]], [], [], []),
             ), patch.object(
                 resource,
                 "_build_typesense_query",
-                return_value=("entities", "properties_name_value", "test", None),
+                return_value=("entities", "properties_name_value", "test", None, None),
             ), patch.object(
                 resource,
                 "_execute_typesense_search",

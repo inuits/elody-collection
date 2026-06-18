@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch, call
 
 import search.typesense_client as tc
 from search.typesense_client import (
+    build_filter_by,
     build_type_filter,
     delete_document,
     get_nested_value,
@@ -34,6 +35,81 @@ class TestBuildTypeFilter:
 
     def test_multiple_values_array_syntax(self):
         assert build_type_filter(["work_word", "person"]) == "type:[work_word,person]"
+
+
+class TestBuildFilterBy:
+    def test_empty_returns_none(self):
+        assert build_filter_by([], []) is None
+
+    def test_type_only(self):
+        assert build_filter_by(["person"], []) == "type:=person"
+
+    def test_single_string_key_single_value(self):
+        assert (
+            build_filter_by([], [("properties_name_value", "Bach")])
+            == "properties_name_value:=Bach"
+        )
+
+    def test_single_string_key_list_value(self):
+        assert (
+            build_filter_by([], [("properties_name_value", ["a", "b"])])
+            == "properties_name_value:=[a,b]"
+        )
+
+    def test_value_with_space_is_backtick_quoted(self):
+        assert (
+            build_filter_by([], [("properties_name_value", "Bogaerts, Theo")])
+            == "properties_name_value:=`Bogaerts, Theo`"
+        )
+
+    def test_multi_key_single_value_builds_or_group(self):
+        result = build_filter_by(
+            [], [(["properties_name_value", "properties_title_value"], "Bach")]
+        )
+        assert result == "(properties_name_value:=Bach || properties_title_value:=Bach)"
+
+    def test_multi_key_list_value_builds_or_group(self):
+        result = build_filter_by(
+            [], [(["properties_name_value", "properties_title_value"], ["a", "b"])]
+        )
+        assert (
+            result
+            == "(properties_name_value:=[a,b] || properties_title_value:=[a,b])"
+        )
+
+    def test_multi_key_quotes_values_with_spaces(self):
+        result = build_filter_by(
+            [],
+            [(["properties_name_value", "properties_title_value"], "Bogaerts, Theo")],
+        )
+        assert (
+            result
+            == "(properties_name_value:=`Bogaerts, Theo` || "
+            "properties_title_value:=`Bogaerts, Theo`)"
+        )
+
+    def test_multi_key_combined_with_type_filter(self):
+        result = build_filter_by(
+            ["nomen", "person"],
+            [(["properties_name_value", "properties_title_value"], "Bladmuziek")],
+        )
+        assert (
+            result
+            == "type:[nomen,person] && "
+            "(properties_name_value:=Bladmuziek || properties_title_value:=Bladmuziek)"
+        )
+
+    def test_single_element_list_key_has_no_parens(self):
+        result = build_filter_by([], [(["properties_name_value"], "Bach")])
+        assert result == "properties_name_value:=Bach"
+
+    def test_multi_key_empty_list_value_skipped(self):
+        assert (
+            build_filter_by(
+                [], [(["properties_name_value", "properties_title_value"], [])]
+            )
+            is None
+        )
 
 
 class TestGetNestedValue:
