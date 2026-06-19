@@ -348,3 +348,67 @@ def prepare_document_for_typesense(entity, search_fields, facet_fields=None):
         else:
             doc[flat_key] = str(value)
     return doc
+
+
+def resolve_denormalized_fields(entity, denormalized_relations, storage):
+    """Resolve reference fields to denormalized text on the Typesense document.
+
+    WEMI bibliographic data spreads the dimensions a cataloger searches on
+    (title, author, SISO) across separate entities linked by reference ids, so
+    no single document holds them all. This copies the referenced entities' text
+    onto the document at index time — the source (Mongo) is never modified, only
+    the Typesense document gains the extra searchable fields.
+
+    Each relation in `denormalized_relations` is a dict::
+
+        {
+            "ref": "properties.ref_authors.value",   # path to the reference id(s)
+            "source_collection": "entities",          # collection holding the target
+            "target_field": "properties.name.value",  # path to the text on the target
+            "as": "author_names",                     # flat key written to the document
+        }
+
+    The reference value may hold an `_id` or any of the target's `identifiers`;
+    `get_item_from_collection_by_id` resolves both. Returns a dict of
+    ``{flat_key: [values]}`` to merge into the document. References that cannot be
+    resolved are skipped so a broken link never blocks indexing.
+    """
+    extra = {}
+    for relation in denormalized_relations or []:
+        ref_path = relation.get("ref")
+        target_field = relation.get("target_field")
+        flat_key = relation.get("as")
+        if not (ref_path and target_field and flat_key):
+            continue
+        ref_ids = get_nested_value(entity, ref_path)
+        if not ref_ids:
+            continue
+        if not isinstance(ref_ids, list):
+            ref_ids = [ref_ids]
+        source_collection = relation.get("source_collection", "entities")
+        values = []
+        for ref_id in ref_ids:
+            if not ref_id:
+                continue
+            try:
+                target = storage.get_item_from_collection_by_id(
+                    source_collection, ref_id
+                )
+            except Exception as e:
+                log.warning(
+                    f"Denormalization lookup failed for '{ref_id}' in "
+                    f"'{source_collection}': {e}"
+                )
+                continue
+            if not target:
+                continue
+            value = get_nested_value(target, target_field)
+            if value is None:
+                continue
+            for item in value if isinstance(value, list) else [value]:
+                text = item if isinstance(item, str) else str(item)
+                if text and text not in values:
+                    values.append(text)
+        if values:
+            extra[flat_key] = values
+    return extra

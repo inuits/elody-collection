@@ -535,6 +535,7 @@ def handle_mediafile_deleted(routing_key, body, message_id):  # noqa: PLR0912
 def sync_entity_to_typesense(routing_key, body, message_id):
     from search.typesense_client import (  # noqa: PLC0415
         prepare_document_for_typesense,
+        resolve_denormalized_fields,
         upsert_document,
     )
 
@@ -564,6 +565,11 @@ def sync_entity_to_typesense(routing_key, body, message_id):
         search_fields,
         facet_fields=facet_fields,
     )
+    denormalized_relations = ts_config.get("denormalized_relations", [])
+    if denormalized_relations:
+        doc.update(
+            resolve_denormalized_fields(entity, denormalized_relations, storage)
+        )
     upsert_document(ts_collection, doc)
 
 

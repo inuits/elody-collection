@@ -9,6 +9,7 @@ from search.typesense_client import (
     delete_document,
     get_nested_value,
     prepare_document_for_typesense,
+    resolve_denormalized_fields,
     search,
     search_all_ids,
     upsert_document,
@@ -608,3 +609,175 @@ class TestPrepareDocumentWithFacetFields:
             entity, [], facet_fields=["properties.ref_genre.value"]
         )
         assert "properties_ref_genre_value" not in result
+
+
+def _author_relation():
+    return {
+        "ref": "properties.ref_authors.value",
+        "source_collection": "entities",
+        "target_field": "properties.name.value",
+        "as": "author_names",
+    }
+
+
+def _make_storage(by_id):
+    """A storage stub whose get_item_from_collection_by_id reads from a dict."""
+    storage = MagicMock()
+    storage.get_item_from_collection_by_id.side_effect = (
+        lambda collection, ref_id: by_id.get(ref_id)
+    )
+    return storage
+
+
+class TestResolveDenormalizedFields:
+    def test_resolves_single_reference_to_name(self):
+        entity = {
+            "_id": "work-1",
+            "properties": {"ref_authors": {"value": ["PERS-1"]}},
+        }
+        storage = _make_storage(
+            {"PERS-1": {"_id": "p1", "properties": {"name": {"value": "Rowling, J.K."}}}}
+        )
+        result = resolve_denormalized_fields(entity, [_author_relation()], storage)
+        assert result == {"author_names": ["Rowling, J.K."]}
+
+    def test_resolves_multiple_references(self):
+        entity = {
+            "_id": "work-1",
+            "properties": {"ref_authors": {"value": ["PERS-1", "PERS-2"]}},
+        }
+        storage = _make_storage(
+            {
+                "PERS-1": {"properties": {"name": {"value": "Rowling, J.K."}}},
+                "PERS-2": {"properties": {"name": {"value": "Cade, Steven"}}},
+            }
+        )
+        result = resolve_denormalized_fields(entity, [_author_relation()], storage)
+        assert result["author_names"] == ["Rowling, J.K.", "Cade, Steven"]
+
+    def test_deduplicates_resolved_values(self):
+        entity = {
+            "_id": "work-1",
+            "properties": {"ref_authors": {"value": ["PERS-1", "PERS-1b"]}},
+        }
+        storage = _make_storage(
+            {
+                "PERS-1": {"properties": {"name": {"value": "Rowling, J.K."}}},
+                "PERS-1b": {"properties": {"name": {"value": "Rowling, J.K."}}},
+            }
+        )
+        result = resolve_denormalized_fields(entity, [_author_relation()], storage)
+        assert result["author_names"] == ["Rowling, J.K."]
+
+    def test_single_non_list_reference(self):
+        entity = {"_id": "w", "properties": {"ref_authors": {"value": "PERS-1"}}}
+        storage = _make_storage(
+            {"PERS-1": {"properties": {"name": {"value": "Rowling, J.K."}}}}
+        )
+        result = resolve_denormalized_fields(entity, [_author_relation()], storage)
+        assert result == {"author_names": ["Rowling, J.K."]}
+
+    def test_resolves_siso_code(self):
+        entity = {"_id": "w", "properties": {"ref_sisos": {"value": ["SISO-1"]}}}
+        storage = _make_storage(
+            {"SISO-1": {"type": "siso", "properties": {"code": {"value": "451.3"}}}}
+        )
+        relation = {
+            "ref": "properties.ref_sisos.value",
+            "source_collection": "entities",
+            "target_field": "properties.code.value",
+            "as": "siso_codes",
+        }
+        result = resolve_denormalized_fields(entity, [relation], storage)
+        assert result == {"siso_codes": ["451.3"]}
+
+    def test_uses_source_collection(self):
+        entity = {"_id": "w", "properties": {"ref_authors": {"value": ["PERS-1"]}}}
+        storage = _make_storage(
+            {"PERS-1": {"properties": {"name": {"value": "Rowling, J.K."}}}}
+        )
+        relation = dict(_author_relation(), source_collection="entities_actual")
+        resolve_denormalized_fields(entity, [relation], storage)
+        storage.get_item_from_collection_by_id.assert_called_with(
+            "entities_actual", "PERS-1"
+        )
+
+    def test_missing_reference_field_excluded(self):
+        entity = {"_id": "w", "properties": {"title": {"value": "x"}}}
+        storage = _make_storage({})
+        result = resolve_denormalized_fields(entity, [_author_relation()], storage)
+        assert result == {}
+
+    def test_unresolvable_target_skipped(self):
+        entity = {"_id": "w", "properties": {"ref_authors": {"value": ["PERS-MISSING"]}}}
+        storage = _make_storage({})
+        result = resolve_denormalized_fields(entity, [_author_relation()], storage)
+        assert result == {}
+
+    def test_target_without_value_skipped(self):
+        entity = {"_id": "w", "properties": {"ref_authors": {"value": ["PERS-1"]}}}
+        storage = _make_storage({"PERS-1": {"properties": {"other": {"value": "x"}}}})
+        result = resolve_denormalized_fields(entity, [_author_relation()], storage)
+        assert result == {}
+
+    def test_incomplete_relation_config_skipped(self):
+        entity = {"_id": "w", "properties": {"ref_authors": {"value": ["PERS-1"]}}}
+        storage = _make_storage(
+            {"PERS-1": {"properties": {"name": {"value": "Rowling, J.K."}}}}
+        )
+        result = resolve_denormalized_fields(entity, [{"ref": "x"}], storage)
+        assert result == {}
+
+    def test_empty_relations_returns_empty(self):
+        entity = {"_id": "w", "properties": {"ref_authors": {"value": ["PERS-1"]}}}
+        storage = _make_storage({})
+        assert resolve_denormalized_fields(entity, [], storage) == {}
+        assert resolve_denormalized_fields(entity, None, storage) == {}
+
+    def test_lookup_exception_is_skipped(self):
+        entity = {"_id": "w", "properties": {"ref_authors": {"value": ["PERS-1"]}}}
+        storage = MagicMock()
+        storage.get_item_from_collection_by_id.side_effect = Exception("db down")
+        result = resolve_denormalized_fields(entity, [_author_relation()], storage)
+        assert result == {}
+
+    def test_multiple_relations_combined(self):
+        entity = {
+            "_id": "w",
+            "properties": {
+                "ref_authors": {"value": ["PERS-1"]},
+                "ref_sisos": {"value": ["SISO-1"]},
+            },
+        }
+        storage = _make_storage(
+            {
+                "PERS-1": {"properties": {"name": {"value": "Rowling, J.K."}}},
+                "SISO-1": {"properties": {"code": {"value": "451.3"}}},
+            }
+        )
+        relations = [
+            _author_relation(),
+            {
+                "ref": "properties.ref_sisos.value",
+                "source_collection": "entities",
+                "target_field": "properties.code.value",
+                "as": "siso_codes",
+            },
+        ]
+        result = resolve_denormalized_fields(entity, relations, storage)
+        assert result == {
+            "author_names": ["Rowling, J.K."],
+            "siso_codes": ["451.3"],
+        }
+
+    def test_coerces_non_string_target_value(self):
+        entity = {"_id": "w", "properties": {"ref_year": {"value": ["Y-1"]}}}
+        storage = _make_storage({"Y-1": {"properties": {"year": {"value": 1997}}}})
+        relation = {
+            "ref": "properties.ref_year.value",
+            "source_collection": "entities",
+            "target_field": "properties.year.value",
+            "as": "years",
+        }
+        result = resolve_denormalized_fields(entity, [relation], storage)
+        assert result == {"years": ["1997"]}

@@ -9,16 +9,23 @@ def make_entity(entity_id, entity_type="work_word"):
 
 
 def make_mock_config(
-    ts_enabled=True, ts_collection="entities", search_fields=None, collection="entities"
+    ts_enabled=True,
+    ts_collection="entities",
+    search_fields=None,
+    collection="entities",
+    denormalized_relations=None,
 ):
     config = MagicMock()
+    typesense = {
+        "enabled": ts_enabled,
+        "collection": ts_collection,
+        "search_fields": search_fields or ["properties.name.value"],
+    }
+    if denormalized_relations is not None:
+        typesense["denormalized_relations"] = denormalized_relations
     config.crud.return_value = {
         "collection": collection,
-        "typesense": {
-            "enabled": ts_enabled,
-            "collection": ts_collection,
-            "search_fields": search_fields or ["properties.name.value"],
-        },
+        "typesense": typesense,
     }
     return config
 
@@ -142,6 +149,50 @@ class TestSyncEntityToTypesense:
 
             mock_prepare.assert_called_once_with(entity, ["title"], facet_fields=[])
             mock_upsert.assert_called_once_with("bibliographic", {"id": "ent-1"})
+
+    def test_merges_denormalized_relations_into_document(self, storage, mapper):
+        entity = make_entity("ent-1", "work_word")
+        storage.get_item_from_collection_by_id.return_value = entity
+        relations = [
+            {
+                "ref": "properties.ref_authors.value",
+                "source_collection": "entities",
+                "target_field": "properties.name.value",
+                "as": "author_names",
+            }
+        ]
+        mapper.get.return_value = make_mock_config(denormalized_relations=relations)
+
+        with patch("search.typesense_client.upsert_document") as mock_upsert, patch(
+            "search.typesense_client.prepare_document_for_typesense"
+        ) as mock_prepare, patch(
+            "search.typesense_client.resolve_denormalized_fields"
+        ) as mock_resolve:
+            mock_prepare.return_value = {"id": "ent-1", "_id": "ent-1"}
+            mock_resolve.return_value = {"author_names": ["Rowling, J.K."]}
+
+            self._call({"data": {"location": "/entities/ent-1", "type": "work_word"}})
+
+            mock_resolve.assert_called_once_with(entity, relations, storage)
+            mock_upsert.assert_called_once_with(
+                "entities",
+                {"id": "ent-1", "_id": "ent-1", "author_names": ["Rowling, J.K."]},
+            )
+
+    def test_does_not_resolve_when_no_denormalized_relations(self, storage, mapper):
+        entity = make_entity("ent-1", "work_word")
+        storage.get_item_from_collection_by_id.return_value = entity
+
+        with patch("search.typesense_client.upsert_document"), patch(
+            "search.typesense_client.prepare_document_for_typesense"
+        ) as mock_prepare, patch(
+            "search.typesense_client.resolve_denormalized_fields"
+        ) as mock_resolve:
+            mock_prepare.return_value = {"id": "ent-1", "_id": "ent-1"}
+
+            self._call({"data": {"location": "/entities/ent-1", "type": "work_word"}})
+
+            mock_resolve.assert_not_called()
 
 
 class TestDeleteEntityFromTypesense:
