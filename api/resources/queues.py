@@ -533,12 +533,6 @@ def handle_mediafile_deleted(routing_key, body, message_id):  # noqa: PLR0912
     ),
 )
 def sync_entity_to_typesense(routing_key, body, message_id):
-    from search.typesense_client import (  # noqa: PLC0415
-        prepare_document_for_typesense,
-        resolve_denormalized_fields,
-        upsert_document,
-    )
-
     data = body["data"]
     if __is_malformed_message(data, ["location", "type"]):
         return
@@ -557,20 +551,148 @@ def sync_entity_to_typesense(routing_key, body, message_id):
     if not entity:
         return
 
-    ts_collection = ts_config.get("collection", "entities")
-    search_fields = ts_config.get("search_fields", [])
-    facet_fields = ts_config.get("facet_fields", [])
+    _index_entity_to_typesense(entity, ts_config, storage)
+
+
+def _index_entity_to_typesense(entity, ts_config, storage):
+    """Build the Typesense document for an entity (incl. denormalized reference
+    fields) and upsert it. Shared by the direct sync handler and the reverse
+    propagation that re-indexes referrers when a denormalized source changes."""
+    from search.typesense_client import (  # noqa: PLC0415
+        prepare_document_for_typesense,
+        resolve_denormalized_fields,
+        upsert_document,
+    )
+
     doc = prepare_document_for_typesense(
         entity,
-        search_fields,
-        facet_fields=facet_fields,
+        ts_config.get("search_fields", []),
+        facet_fields=ts_config.get("facet_fields", []),
     )
     denormalized_relations = ts_config.get("denormalized_relations", [])
     if denormalized_relations:
         doc.update(
             resolve_denormalized_fields(entity, denormalized_relations, storage)
         )
-    upsert_document(ts_collection, doc)
+    upsert_document(ts_config.get("collection", "entities"), doc)
+
+
+DENORMALIZED_REFERRER_RESYNC_CAP = 5000
+
+
+def _iter_denormalized_source_relations(mapper, source_type):
+    """Yield (ts_config, target_collection, relation) for every denormalized
+    relation across all object configurations whose `source_type` matches
+    `source_type`. Deduplicated by (target_collection, ref, as)."""
+    seen = set()
+    for config_cls in mapper.get_all().values():
+        try:
+            crud = config_cls().crud()
+        except Exception:
+            continue
+        ts_config = crud.get("typesense", {})
+        if not ts_config.get("enabled"):
+            continue
+        target_collection = crud.get("collection", "entities")
+        for relation in ts_config.get("denormalized_relations", []):
+            if relation.get("source_type") != source_type:
+                continue
+            key = (target_collection, relation.get("ref"), relation.get("as"))
+            if key in seen:
+                continue
+            seen.add(key)
+            yield ts_config, target_collection, relation
+
+
+@get_rabbit().queue(
+    **__argument_wrapper(
+        queue_name=f"{queue_prefix}-propagate_denormalized_source_change",
+        routing_key=f"{routing_key_prefix}.entity_changed",
+    ),
+)
+def propagate_denormalized_source_change(routing_key, body, message_id):
+    """When an entity that is denormalized onto other documents (e.g. an author
+    or SISO) changes, re-index the documents referencing it so their copied text
+    stays fresh. Gated on the denormalized value actually changing, so an
+    unrelated edit to a popular author does not re-index thousands of works."""
+    from search.typesense_client import get_nested_value  # noqa: PLC0415
+
+    data = body["data"]
+    if __is_malformed_message(data, ["location", "type"]):
+        return
+
+    unchanged_entity = data.get("unchanged_entity")
+    if not unchanged_entity:
+        # Newly created source: no referrers exist yet, and any that are created
+        # alongside it index themselves on their own save.
+        return
+
+    source_type = data.get("type", "")
+    mapper = get_object_configuration_mapper()
+    relations = list(_iter_denormalized_source_relations(mapper, source_type))
+    if not relations:
+        return
+
+    source_id = data["location"].removeprefix("/entities/")
+    storage = StorageManager().get_db_engine()
+    source_entity = None
+    for ts_config, target_collection, relation in relations:
+        if source_entity is None:
+            source_collection = relation.get("source_collection", "entities")
+            source_entity = storage.get_item_from_collection_by_id(
+                source_collection, source_id
+            )
+            if not source_entity:
+                return
+        target_field = relation["target_field"]
+        if get_nested_value(unchanged_entity, target_field) == get_nested_value(
+            source_entity, target_field
+        ):
+            continue  # denormalized text unchanged -> nothing to propagate
+        _resync_denormalized_referrers(
+            storage, source_entity, target_collection, relation, ts_config
+        )
+
+
+def _resync_denormalized_referrers(
+    storage, source_entity, target_collection, relation, ts_config
+):
+    """Re-index every entity in `target_collection` whose reference field points
+    at `source_entity` (matched on its _id or any of its identifiers)."""
+    ids = [source_entity["_id"], *(source_entity.get("identifiers") or [])]
+    ref_field = relation["ref"]
+    page_size = 250
+    skip = 0
+    synced = 0
+    while True:
+        result = storage.get_items_from_collection(
+            target_collection,
+            skip=skip,
+            limit=page_size,
+            filters={ref_field: {"$in": ids}},
+        )
+        items = result.get("results", [])
+        if not items:
+            break
+        for item in items:
+            _index_entity_to_typesense(item, ts_config, storage)
+            synced += 1
+            if synced >= DENORMALIZED_REFERRER_RESYNC_CAP:
+                log.warning(
+                    f"Denormalized referrer resync hit cap "
+                    f"({DENORMALIZED_REFERRER_RESYNC_CAP}) for source "
+                    f"'{source_entity['_id']}' on '{ref_field}'; remaining "
+                    f"referrers will refresh on the next full reindex."
+                )
+                return
+        if len(items) < page_size:
+            break
+        skip += page_size
+    if synced:
+        log.info(
+            f"Re-indexed {synced} referrer(s) after change to denormalized "
+            f"source '{source_entity['_id']}' ({ref_field})."
+        )
 
 
 @get_rabbit().queue(

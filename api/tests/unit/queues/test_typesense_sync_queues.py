@@ -231,3 +231,162 @@ class TestDeleteEntityFromTypesense:
         with patch("search.typesense_client.delete_document") as mock_delete:
             self._call({"data": {"entity_id": "ent-1", "type": "work_word"}})
             mock_delete.assert_called_once_with("bibliographic", "ent-1")
+
+
+AUTHOR_RELATION = {
+    "ref": "properties.ref_authors.value",
+    "source_collection": "entities_actual",
+    "source_type": "person",
+    "target_field": "properties.name.value",
+    "as": "author_names",
+}
+
+
+def make_config_class(crud_dict):
+    """A stand-in for an object configuration class: calling it returns an
+    object whose .crud() yields crud_dict (matching mapper.get_all() values)."""
+    cls = MagicMock()
+    cls.return_value.crud.return_value = crud_dict
+    return cls
+
+
+def work_crud(relations=None, enabled=True):
+    return {
+        "collection": "bibliographic_entities_actual",
+        "typesense": {
+            "enabled": enabled,
+            "collection": "entities",
+            "search_fields": ["properties.original_headtitle.value"],
+            "denormalized_relations": (
+                [AUTHOR_RELATION] if relations is None else relations
+            ),
+        },
+    }
+
+
+def person(name, identifiers=None):
+    return {
+        "_id": "p1",
+        "type": "person",
+        "identifiers": identifiers if identifiers is not None else ["PERS-1"],
+        "properties": {"name": {"value": name}},
+    }
+
+
+class TestIterDenormalizedSourceRelations:
+    def _iter(self, mapper_dict, source_type):
+        from resources.queues import _iter_denormalized_source_relations
+
+        mapper = MagicMock()
+        mapper.get_all.return_value = mapper_dict
+        return list(_iter_denormalized_source_relations(mapper, source_type))
+
+    def test_finds_matching_relation(self):
+        rels = self._iter({"work_word": make_config_class(work_crud())}, "person")
+        assert len(rels) == 1
+        ts_config, collection, relation = rels[0]
+        assert collection == "bibliographic_entities_actual"
+        assert relation["as"] == "author_names"
+
+    def test_skips_non_matching_source_type(self):
+        assert self._iter({"w": make_config_class(work_crud())}, "siso") == []
+
+    def test_skips_disabled_typesense(self):
+        cfg = make_config_class(work_crud(enabled=False))
+        assert self._iter({"w": cfg}, "person") == []
+
+    def test_deduplicates_same_config_under_multiple_keys(self):
+        cfg = make_config_class(work_crud())
+        rels = self._iter({"a": cfg, "b": cfg}, "person")
+        assert len(rels) == 1
+
+
+class TestPropagateDenormalizedSourceChange:
+    def _call(self, body):
+        from resources.queues import propagate_denormalized_source_change
+
+        propagate_denormalized_source_change("dams.entity_changed", body, "msg-1")
+
+    def test_skips_on_create_without_unchanged_entity(self, storage, mapper):
+        mapper.get_all.return_value = {"w": make_config_class(work_crud())}
+        with patch("resources.queues._index_entity_to_typesense") as idx:
+            self._call({"data": {"location": "/entities/p1", "type": "person"}})
+            idx.assert_not_called()
+
+    def test_skips_when_no_matching_relation(self, storage, mapper):
+        mapper.get_all.return_value = {"w": make_config_class(work_crud())}
+        with patch("resources.queues._index_entity_to_typesense") as idx:
+            self._call(
+                {
+                    "data": {
+                        "location": "/entities/g1",
+                        "type": "genre",
+                        "unchanged_entity": {"_id": "g1"},
+                    }
+                }
+            )
+            idx.assert_not_called()
+            storage.get_items_from_collection.assert_not_called()
+
+    def test_diff_gate_skips_when_name_unchanged(self, storage, mapper):
+        mapper.get_all.return_value = {"w": make_config_class(work_crud())}
+        storage.get_item_from_collection_by_id.return_value = person("Rowling, J.K.")
+        with patch("resources.queues._index_entity_to_typesense") as idx:
+            self._call(
+                {
+                    "data": {
+                        "location": "/entities/p1",
+                        "type": "person",
+                        "unchanged_entity": person("Rowling, J.K."),
+                    }
+                }
+            )
+            idx.assert_not_called()
+            storage.get_items_from_collection.assert_not_called()
+
+    def test_resyncs_referrers_when_name_changed(self, storage, mapper):
+        mapper.get_all.return_value = {"w": make_config_class(work_crud())}
+        storage.get_item_from_collection_by_id.return_value = person("Rowling, Joanne")
+        storage.get_items_from_collection.return_value = {
+            "count": 2,
+            "results": [
+                {"_id": "w1", "type": "work_word"},
+                {"_id": "w2", "type": "work_word"},
+            ],
+        }
+        with patch("resources.queues._index_entity_to_typesense") as idx:
+            self._call(
+                {
+                    "data": {
+                        "location": "/entities/p1",
+                        "type": "person",
+                        "unchanged_entity": person("Rowling, J.K."),
+                    }
+                }
+            )
+            storage.get_items_from_collection.assert_called_once()
+            assert storage.get_items_from_collection.call_args.kwargs["filters"] == {
+                "properties.ref_authors.value": {"$in": ["p1", "PERS-1"]}
+            }
+            assert idx.call_count == 2
+
+    def test_returns_when_source_entity_missing(self, storage, mapper):
+        mapper.get_all.return_value = {"w": make_config_class(work_crud())}
+        storage.get_item_from_collection_by_id.return_value = None
+        with patch("resources.queues._index_entity_to_typesense") as idx:
+            self._call(
+                {
+                    "data": {
+                        "location": "/entities/p1",
+                        "type": "person",
+                        "unchanged_entity": person("Rowling, J.K."),
+                    }
+                }
+            )
+            idx.assert_not_called()
+            storage.get_items_from_collection.assert_not_called()
+
+    def test_skips_malformed_message(self, storage, mapper):
+        with patch("resources.queues._index_entity_to_typesense") as idx:
+            self._call({"data": {"type": "person"}})
+            idx.assert_not_called()
