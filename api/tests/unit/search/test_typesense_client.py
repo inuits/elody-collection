@@ -781,3 +781,100 @@ class TestResolveDenormalizedFields:
         }
         result = resolve_denormalized_fields(entity, [relation], storage)
         assert result == {"years": ["1997"]}
+
+
+def _manifestation_author_path():
+    return {
+        "path": [
+            {
+                "ref": "properties.ref_expressions.value",
+                "collection": "bibliographic_entities_actual",
+            },
+            {
+                "ref": "properties.ref_work.value",
+                "collection": "bibliographic_entities_actual",
+            },
+            {"ref": "properties.ref_authors.value", "collection": "entities_actual"},
+        ],
+        "target_field": "properties.name.value",
+        "as": "author_names",
+    }
+
+
+class TestResolveDenormalizedFieldsMultiHop:
+    def test_three_hop_chain_resolves(self):
+        # manifestation -> reading(expression) -> work -> author
+        manifestation = {
+            "_id": "m1",
+            "properties": {"ref_expressions": {"value": "E-1"}},
+        }
+        storage = _make_storage(
+            {
+                "E-1": {"properties": {"ref_work": {"value": "W-1"}}},
+                "W-1": {"properties": {"ref_authors": {"value": ["PERS-1"]}}},
+                "PERS-1": {"properties": {"name": {"value": "Rowling, J.K."}}},
+            }
+        )
+        result = resolve_denormalized_fields(
+            manifestation, [_manifestation_author_path()], storage
+        )
+        assert result == {"author_names": ["Rowling, J.K."]}
+
+    def test_fan_out_at_final_hop(self):
+        manifestation = {
+            "_id": "m1",
+            "properties": {"ref_expressions": {"value": "E-1"}},
+        }
+        storage = _make_storage(
+            {
+                "E-1": {"properties": {"ref_work": {"value": "W-1"}}},
+                "W-1": {"properties": {"ref_authors": {"value": ["PERS-1", "PERS-2"]}}},
+                "PERS-1": {"properties": {"name": {"value": "Rowling, J.K."}}},
+                "PERS-2": {"properties": {"name": {"value": "Cade, Steven"}}},
+            }
+        )
+        result = resolve_denormalized_fields(
+            manifestation, [_manifestation_author_path()], storage
+        )
+        assert result["author_names"] == ["Rowling, J.K.", "Cade, Steven"]
+
+    def test_broken_link_mid_chain_yields_nothing(self):
+        manifestation = {
+            "_id": "m1",
+            "properties": {"ref_expressions": {"value": "E-MISSING"}},
+        }
+        storage = _make_storage(
+            {"W-1": {"properties": {"ref_authors": {"value": ["PERS-1"]}}}}
+        )
+        result = resolve_denormalized_fields(
+            manifestation, [_manifestation_author_path()], storage
+        )
+        assert result == {}
+
+    def test_two_hop_siso_chain(self):
+        manifestation = {
+            "_id": "m1",
+            "properties": {"ref_work": {"value": "W-1"}},
+        }
+        relation = {
+            "path": [
+                {"ref": "properties.ref_work.value", "collection": "bib"},
+                {"ref": "properties.ref_sisos.value", "collection": "entities"},
+            ],
+            "target_field": "properties.code.value",
+            "as": "siso_codes",
+        }
+        storage = _make_storage(
+            {
+                "W-1": {"properties": {"ref_sisos": {"value": ["SISO-1"]}}},
+                "SISO-1": {"properties": {"code": {"value": "451.3"}}},
+            }
+        )
+        result = resolve_denormalized_fields(manifestation, [relation], storage)
+        assert result == {"siso_codes": ["451.3"]}
+
+    def test_empty_path_is_skipped(self):
+        entity = {"_id": "m1", "properties": {}}
+        storage = _make_storage({})
+        relation = {"path": [], "target_field": "x", "as": "y"}
+        assert resolve_denormalized_fields(entity, [relation], storage) == {}
