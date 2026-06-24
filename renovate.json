@@ -3,33 +3,120 @@
   "extends": ["config:recommended"],
   "packageRules": [
     {
-      "description": "Disable all requirements.txt updates by default",
+      "description": "Enable packages for requirements and pyproject",
       "matchManagers": ["pip_requirements", "pep621"],
+      "enabled": true
+    },
+    {
+      "description": "Disable specific packages (amqpstorm-flask needs to pass correct type to timestamp)",
+      "matchManagers": ["pip_requirements", "pep621"],
+      "matchPackageNames": ["AMQPStorm"],
       "enabled": false
     },
     {
-      "description": "Re-enable specific packages ",
-      "matchManagers": ["pip_requirements", "pep621"],
+      "description": "Group First party packages",
+      "matchPackageNames": ["elody", "inuits-policy-based-auth", "inuits-python-logging-loki"],
+      "groupName": "Inuits"
+    },
+    {
+      "description": "Group Flask and Web Server packages",
       "matchPackageNames": [
-        "AMQPStorm",
-        "amqpstorm-flask",
-        "apscheduler",
-        "Authlib",
-        "certifi",
-        "cffi",
-        "charset-normalizer",
-        "cryptography",
-        "elody",
-        "flask",
-        "inuits-policy-based-auth",
-        "PyJWT",
-        "pytest",
-        "requests",
-        "requests-cache",
-        "urllib3",
-        "werkzeug"
+        "werkzeug",
+        "jinja2",
+        "markupsafe",
+        "itsdangerous",
+        "gunicorn",
+        "blinker"
       ],
-      "enabled": true
+      "matchPackagePatterns": ["^flask", "^Flask"],
+      "groupName": "Flask ecosystem"
+    },
+    {
+      "description": "Group RabbitMQ and AMQP packages",
+      "matchPackageNames": ["pamqp", "pika", "apscheduler", "cloudevents"],
+      "matchPackagePatterns": ["^amqpstorm-", "^rabbitmq-"],
+      "groupName": "RabbitMQ ecosystem"
+    },
+    {
+      "description": "Group Observability, Metrics, and Logging",
+      "matchPackageNames": ["sentry-sdk"],
+      "matchPackagePatterns": ["^opentelemetry-", "^prometheus"],
+      "groupName": "Observability ecosystem"
+    },
+    {
+      "description": "Group Databases and Search",
+      "matchPackageNames": ["pymongo", "python-arango", "typesense"],
+      "groupName": "Database ecosystem"
+    },
+    {
+      "description": "Group HTTP Request packages",
+      "matchPackageNames": [
+        "requests",
+        "urllib3",
+        "certifi",
+        "idna",
+        "charset-normalizer",
+        "dnspython",
+        "py-healthcheck",
+        "retry"
+      ],
+      "matchPackagePatterns": ["^requests-"],
+      "groupName": "HTTP & Requests"
+    },
+    {
+      "description": "Group Auth & Security packages",
+      "matchPackageNames": [
+        "authlib",
+        "Authlib",
+        "cryptography",
+        "cffi",
+        "pycparser",
+        "pyjwt",
+        "PyJWT"
+      ],
+      "groupName": "Auth & Security"
+    },
+    {
+      "description": "Group Date, Time",
+      "matchPackageNames": ["python-dateutil", "pytz", "aniso8601", "rfc3339", "tzlocal"],
+      "groupName": "Date & Time"
+    },
+    {
+      "description": "Group Validation, Schemas, Parsing",
+      "matchPackageNames": [
+        "jsonschema",
+        "jsonschema-specifications",
+        "referencing",
+        "rpds-py",
+        "pyparsing",
+        "rdflib"
+      ],
+      "groupName": "Validation, Schemas & Parsing"
+    },
+    {
+      "description": "Group Utility & Core tooling",
+      "matchPackageNames": [
+        "attrs",
+        "click",
+        "decorator",
+        "importlib-metadata",
+        "packaging",
+        "six",
+        "zipp"
+      ],
+      "groupName": "Validation & Schemas"
+    },
+    {
+      "description": "Group Testing packages",
+      "matchPackageNames": [
+        "coverage",
+        "iniconfig",
+        "pluggy",
+        "pytest",
+        "pytest-cov",
+        "pytest-xdist"
+      ],
+      "groupName": "Testing ecosystem"
     }
   ]
 }
