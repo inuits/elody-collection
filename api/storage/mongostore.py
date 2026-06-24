@@ -119,7 +119,7 @@ class MongoStorageManager(GenericStorageManager):
             if self.mongo_tls:
                 connection_string += "&tls=true"
             if self.read_preference:
-                connection_string += f"&read_preference={self.read_preference}"
+                connection_string += f"&readPreference={self.read_preference}"
         return connection_string
 
     def _delete_impacted_relations(self, collection, id):
