@@ -53,6 +53,7 @@ class MongoStorageManager(GenericStorageManager):
             "true",
             True,
         ]
+        self.read_preference = getenv("MONGODB_READ_PREFERENCE", "secondaryPreferred")
 
         self.client = MongoClient(
             self.__create_mongo_connection_string(),
@@ -117,6 +118,8 @@ class MongoStorageManager(GenericStorageManager):
                 connection_string += f"&replicaSet={self.mongo_replica_set}"
             if self.mongo_tls:
                 connection_string += "&tls=true"
+            if self.read_preference:
+                connection_string += f"&read_preference={self.read_preference}"
         return connection_string
 
     def _delete_impacted_relations(self, collection, id):
