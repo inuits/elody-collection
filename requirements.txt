@@ -5,7 +5,7 @@ apscheduler==3.11.2 # Tracked-by-renovate
 attrs==25.3.0
 Authlib==1.7.2 # Tracked-by-renovate
 blinker==1.9.0
-certifi==2026.5.20 # Tracked-by-renovate
+certifi==2026.6.17 # Tracked-by-renovate
 cffi==2.0.0 # Tracked-by-renovate
 charset-normalizer==3.4.7 # Tracked-by-renovate
 click==8.1.8
@@ -13,13 +13,13 @@ cloudevents==2.0.0
 cryptography==48.0.1 # Tracked-by-renovate
 decorator==5.2.1
 deprecation==2.1.0
-dnspython==2.7.0
+dnspython==2.8.0
 elody[loader]==0.0.260 # Tracked-by-renovate
 Flask==3.1.3 # Tracked-by-renovate
 Flask-RESTful==0.3.10
 flask-swagger-ui==4.11.1
 gunicorn==23.0.0
-idna==3.15 # Tracked-by-renovate
+idna==3.18 # Tracked-by-renovate
 importlib-metadata==8.6.1
 inuits-policy-based-auth==10.1.0 # Tracked-by-renovate
 inuits-python-logging-loki==1.4.1
