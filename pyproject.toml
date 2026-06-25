@@ -48,7 +48,7 @@ dependencies = [
   "py==1.11.0",
   "py-healthcheck==1.10.1",
   "pycparser==2.22",
-  "pyjwt==2.10.1",
+  "pyjwt==2.13.0",
   "pymongo==4.10.1",
   "pyparsing==3.2.3",
   "python-arango==7.9.1",
