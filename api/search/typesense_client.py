@@ -224,12 +224,13 @@ def search_all_ids(collection, query, query_by, filter_by=None, group_by=None):
         return None
 
 
-def facet_values(collection, field, filter_by=None, max_values=1000):
-    """Return [(value, count), ...] for a faceted field, or None if unavailable.
+def group_values(collection, field, filter_by=None, max_groups=250):
+    """Return [(value, representative_id), ...] for a faceted field, or None.
 
-    Populates filter dropdowns: Typesense returns the distinct values of a faceted
-    field (with counts) from facet_counts in one search, instead of a Mongo $group
-    scan over the whole collection. per_page=1 keeps the hit payload minimal.
+    Populates filter dropdowns: a group_by search returns one representative
+    document id per distinct value of the field, in one Typesense call. The id
+    lets the caller hydrate the representative document by _id (indexed) instead
+    of querying Mongo by the (unindexed) field value. Requires a facet field.
     """
     client = get_typesense_client()
     if not client:
@@ -238,19 +239,22 @@ def facet_values(collection, field, filter_by=None, max_values=1000):
         params = {
             "q": "*",
             "query_by": "type",
-            "per_page": 1,
-            "facet_by": field,
-            "max_facet_values": max_values,
+            "per_page": max_groups,
+            "group_by": field,
+            "group_limit": 1,
         }
         if filter_by:
             params["filter_by"] = filter_by
         result = client.collections[collection].documents.search(params)
-        counts = result.get("facet_counts", [])
-        if not counts:
-            return []
-        return [(c["value"], c["count"]) for c in counts[0]["counts"]]
+        pairs = []
+        for group in result.get("grouped_hits", []):
+            keys = group.get("group_key") or []
+            hits = group.get("hits") or []
+            if keys and hits:
+                pairs.append((keys[0], hits[0]["document"]["_id"]))
+        return pairs
     except Exception as e:
-        log.warning(f"Typesense facet on '{field}' failed: {e}")
+        log.warning(f"Typesense group_by on '{field}' failed: {e}")
         return None
 
 

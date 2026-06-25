@@ -1,54 +1,26 @@
-"""Tests for the Typesense-facet distinct_by dropdown path.
+"""Tests for the Typesense-group_by distinct_by dropdown path.
 
-A distinct_by request populates a filter dropdown. On a faceted field the distinct
-values come from a Typesense facet (instant) instead of a Mongo $group scan over
-the whole collection; one representative document per value is then hydrated from
-Mongo. These tests cover the routing decision, sorting/pagination and the fallback
-to Mongo when the query carries filters Typesense cannot express.
+A distinct_by request populates a filter dropdown. On a faceted field the
+distinct values + one representative document id per value come from a Typesense
+group_by (instant); the ids are sorted by value, paginated, and hydrated from
+Mongo BY _id (indexed) — not by the field value (unindexed). These tests cover
+the routing decision, sorting/pagination by value, and the fallback to Mongo.
 """
 
 import resources.base_filter_resource as mod
 
 
-class _FakeColl:
-    def __init__(self, docs_by_value):
-        self._docs = docs_by_value
-
-    def find_one(self, query):
-        value = query["properties.material_type.value"]
-        return self._docs.get(value)
-
-
-class _FakeDB:
-    def __init__(self, coll):
-        self._coll = coll
-
-    def __getitem__(self, name):
-        return self._coll
-
-
-class _FakeStorage:
-    def __init__(self, coll):
-        self.db = _FakeDB(coll)
-
-    def _prepare_mongo_document(self, doc, create_sortable_metadata=True):
-        return doc
-
-
-def _make_resource(monkeypatch, facet, storage):
+def _make_resource(monkeypatch, group_pairs):
     res = mod.BaseFilterResource.__new__(mod.BaseFilterResource)
-    monkeypatch.setattr(mod, "typesense_facet_values", lambda *a, **k: facet)
-    monkeypatch.setattr(
-        mod, "StorageManager", lambda: type("M", (), {"get_db_engine": lambda s: storage})()
-    )
+    monkeypatch.setattr(mod, "typesense_group_values", lambda *a, **k: group_pairs)
     res._resolve_mongo_collections = lambda tv, c: {"bibliographic_entities_actual"}
+    # hydrate-by-id stub: returns a doc per requested id, preserving order.
+    res._fetch_documents_from_mongo = lambda ids, collections: [
+        {"_id": i, "value": i} for i in ids
+    ]
     res._add_cors_headers = lambda: None
     res._add_pagination_links = lambda items, skip, limit, collection: items
     return res
-
-
-def _doc(value):
-    return {"_id": value, "properties": {"material_type": {"value": value}}}
 
 
 _QUERY = [
@@ -58,10 +30,10 @@ _QUERY = [
 
 
 class TestDistinctOptions:
-    def test_returns_facet_values_sorted_with_total_count(self, monkeypatch):
-        facet = [("ARTIKEL", 300), ("BOEK", 1620), ("DVD", 125)]
-        storage = _FakeStorage(_FakeColl({v: _doc(v) for v, _ in facet}))
-        res = _make_resource(monkeypatch, facet, storage)
+    def test_returns_ids_sorted_by_value_with_total_count(self, monkeypatch):
+        # group_by yields (value, representative_id), out of value order
+        pairs = [("BOEK", "id_boek"), ("ARTIKEL", "id_art"), ("DVD", "id_dvd")]
+        res = _make_resource(monkeypatch, pairs)
 
         out = res._execute_typesense_distinct_options(
             _QUERY, "entities", {"collection": "entities"},
@@ -69,13 +41,12 @@ class TestDistinctOptions:
         )
 
         assert out["count"] == 3  # total distinct values, not the page size
-        values = [r["properties"]["material_type"]["value"] for r in out["results"]]
-        assert values == ["ARTIKEL", "BOEK", "DVD"]  # sorted ascending by value
+        # hydrated by _id, ordered by value ascending (ARTIKEL, BOEK, DVD)
+        assert [d["_id"] for d in out["results"]] == ["id_art", "id_boek", "id_dvd"]
 
     def test_descending_sort_and_pagination(self, monkeypatch):
-        facet = [("A", 1), ("B", 1), ("C", 1), ("D", 1)]
-        storage = _FakeStorage(_FakeColl({v: _doc(v) for v, _ in facet}))
-        res = _make_resource(monkeypatch, facet, storage)
+        pairs = [("A", "ia"), ("B", "ib"), ("C", "ic"), ("D", "id")]
+        res = _make_resource(monkeypatch, pairs)
 
         out = res._execute_typesense_distinct_options(
             _QUERY, "entities", {"collection": "entities"},
@@ -83,26 +54,11 @@ class TestDistinctOptions:
         )
 
         assert out["count"] == 4
-        values = [r["properties"]["material_type"]["value"] for r in out["results"]]
-        assert values == ["C", "B"]  # desc [D,C,B,A] -> skip 1, limit 2
+        # desc [D,C,B,A] -> skip 1, limit 2 -> C, B
+        assert [d["_id"] for d in out["results"]] == ["ic", "ib"]
 
-    def test_skips_values_without_a_representative_document(self, monkeypatch):
-        facet = [("A", 1), ("GONE", 1), ("B", 1)]
-        storage = _FakeStorage(_FakeColl({"A": _doc("A"), "B": _doc("B")}))  # GONE missing
-        res = _make_resource(monkeypatch, facet, storage)
-
-        out = res._execute_typesense_distinct_options(
-            _QUERY, "entities", {"collection": "entities"},
-            "properties.material_type.value", 0, 20, True,
-        )
-
-        assert out["count"] == 3  # count still reflects all distinct facet values
-        values = [r["properties"]["material_type"]["value"] for r in out["results"]]
-        assert values == ["A", "B"]
-
-    def test_falls_back_to_mongo_when_facet_unavailable(self, monkeypatch):
-        storage = _FakeStorage(_FakeColl({}))
-        res = _make_resource(monkeypatch, None, storage)  # facet returns None
+    def test_falls_back_to_mongo_when_group_by_unavailable(self, monkeypatch):
+        res = _make_resource(monkeypatch, None)  # group_values returns None
         res._execute_advanced_search_with_query_v2 = (
             lambda q, c: {"results": [], "count": 0, "_fallback": True}
         )
@@ -115,8 +71,7 @@ class TestDistinctOptions:
         assert out.get("_fallback") is True
 
     def test_falls_back_to_mongo_when_unexpressible_filter_present(self, monkeypatch):
-        storage = _FakeStorage(_FakeColl({}))
-        res = _make_resource(monkeypatch, [("A", 1)], storage)
+        res = _make_resource(monkeypatch, [("A", "ia")])
         res._execute_advanced_search_with_query_v2 = (
             lambda q, c: {"results": [], "count": 0, "_fallback": True}
         )

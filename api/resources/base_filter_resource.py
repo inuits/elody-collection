@@ -9,7 +9,7 @@ from search.typesense_client import (
     build_filter_by,
     build_type_filter,
     ensure_collection as typesense_ensure_collection,
-    facet_values as typesense_facet_values,
+    group_values as typesense_group_values,
     search as typesense_search,
     search_all_ids as typesense_search_all_ids,
 )
@@ -579,22 +579,24 @@ class BaseFilterResource(BaseResource):
     def _execute_typesense_distinct_options(
         self, query, collection, typesense_config, distinct_by, skip, limit, asc
     ):
-        """Resolve a distinct_by dropdown via a Typesense facet instead of $group.
+        """Resolve a distinct_by dropdown via a Typesense group_by instead of $group.
 
         A distinct_by request wants one entry per distinct value of the field (a
         filter dropdown). Computing it with a Mongo $group scans the whole
-        collection. For a faceted field, the distinct values come from facet_counts
-        instantly; one representative document per value (page-sized) is then
-        hydrated from Mongo to keep the entity-shaped response contract.
+        collection. For a faceted field, a group_by search returns one
+        representative document id per distinct value in one Typesense call; those
+        ids are sorted by value, paginated, and hydrated from Mongo BY _id (which
+        is indexed) — not by the field value (which is not), keeping both the
+        lookup and the entity-shaped response cheap.
 
         Falls back to the Mongo engine when the query carries filters Typesense
-        cannot express (so the facet counts would be inaccurate) or when Typesense
-        is unavailable.
+        cannot express (so the values would be inaccurate) or when Typesense is
+        unavailable.
         """
         text_filters, type_filter_values, exact_match_filters, remaining_filters = (
             self._classify_filters_for_typesense(query)
         )
-        # Anything Typesense can't express would skew the facet -> use Mongo.
+        # Anything Typesense can't express would skew the values -> use Mongo.
         if remaining_filters or exact_match_filters:
             return self._execute_advanced_search_with_query_v2(query, collection)
 
@@ -602,29 +604,18 @@ class BaseFilterResource(BaseResource):
         flat_field = distinct_by.replace(".", "_")
         filter_by = build_filter_by(type_filter_values, [])
 
-        values = typesense_facet_values(ts_collection, flat_field, filter_by)
-        if values is None:
+        pairs = typesense_group_values(ts_collection, flat_field, filter_by)
+        if pairs is None:
             return self._execute_advanced_search_with_query_v2(query, collection)
 
-        values.sort(key=lambda value_count: value_count[0], reverse=not asc)
-        total = len(values)
-        page = values[skip : skip + limit]
+        pairs.sort(key=lambda value_id: value_id[0], reverse=not asc)
+        total = len(pairs)
+        page_ids = [doc_id for _value, doc_id in pairs[skip : skip + limit]]
 
-        storage = StorageManager().get_db_engine()
-        target_collection = next(
-            iter(self._resolve_mongo_collections(type_filter_values, collection)),
-            collection,
+        mongo_collections = self._resolve_mongo_collections(
+            type_filter_values, collection
         )
-        type_clause = (
-            {"type": {"$in": type_filter_values}} if type_filter_values else {}
-        )
-        results = []
-        for value, _count in page:
-            doc = storage.db[target_collection].find_one(
-                {distinct_by: value, **type_clause}
-            )
-            if doc:
-                results.append(storage._prepare_mongo_document(doc, True))
+        results = self._fetch_documents_from_mongo(page_ids, mongo_collections)
 
         items = {"results": results, "count": total, "skip": skip, "limit": limit}
         self._add_cors_headers()
