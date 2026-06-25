@@ -24,14 +24,48 @@ from filters_v2.stages import (
 )
 from logging_elody.log import log
 from storage.storagemanager import StorageManager
+from time import monotonic
 from tracing import get_tracer
 
 tracer = get_tracer()
+
+# How long a collection's distinct type set is cached before refetching. The set
+# only changes when a brand new entity type is introduced (deploy time), so a
+# few minutes is safe and keeps the count short-circuit cheap.
+DISTINCT_TYPES_TTL_SECONDS = 300
+
+
+def get_type_only_filter_values(match: list, group: list):
+    """Return the ``type`` values when a count reduces to a single type-only $match.
+
+    The count pipeline is ``[*match, *group, {"$count": "count"}]``. When the only
+    predicate is on ``type`` (and no ``$group`` narrows the set), the count equals
+    the number of documents carrying one of those types — which, if the types
+    cover the whole collection, is just the collection size. Returns the list of
+    type values in that case, otherwise ``None`` (caller falls back to ``$count``).
+    """
+    if group:
+        return None
+    if len(match) != 1 or "$match" not in match[0]:
+        return None
+    predicate = match[0]["$match"]
+    if set(predicate.keys()) != {"type"}:
+        return None
+    value = predicate["type"]
+    if isinstance(value, dict):
+        if set(value.keys()) != {"$in"} or not isinstance(value["$in"], list):
+            return None
+        return list(value["$in"])
+    if isinstance(value, str):
+        return [value]
+    return None
 
 
 class MongoFilters:
     def __init__(self):
         self.storage = StorageManager().get_db_engine()
+        # collection -> (set_of_types, monotonic_timestamp)
+        self._distinct_types_cache: dict = {}
 
     @tracer.start_as_current_span("base.MongoFilters.filter")
     def filter(
@@ -211,14 +245,45 @@ class MongoFilters:
         else:
             items["skip"] = skip
             items["limit"] = limit
-            count = self.storage.db[BaseMatchers.collection].aggregate(
-                [*match, *group, {"$count": "count"}],
-                allowDiskUse=self.storage.allow_disk_use,
-            )
-            items["count"] = next(count, {"count": len(output["results"])})["count"]
+            items["count"] = self.__count(BaseMatchers.collection, match, group, output)
             for document in output["results"]:
                 items["results"].append(
                     self.storage._prepare_mongo_document(document, True)
                 )
 
         return items
+
+    def __count(self, collection, match, group, output):
+        """Count matching documents, avoiding a full scan for whole-collection filters.
+
+        A broad type listing (e.g. the home page) filters on every type the
+        collection holds, so the ``$count`` aggregation scans the entire index
+        every request. When the filter provably covers all of the collection's
+        types, the answer is just the collection size, which
+        ``estimated_document_count`` reads from metadata in O(1) without a scan.
+        """
+        type_values = get_type_only_filter_values(match, group)
+        if type_values is not None:
+            collection_types = self.__get_collection_types(collection)
+            if collection_types and collection_types <= set(type_values):
+                return self.storage.db[collection].estimated_document_count()
+
+        count = self.storage.db[collection].aggregate(
+            [*match, *group, {"$count": "count"}],
+            allowDiskUse=self.storage.allow_disk_use,
+        )
+        return next(count, {"count": len(output["results"])})["count"]
+
+    def __get_collection_types(self, collection):
+        """Return the collection's distinct ``type`` values, cached with a TTL.
+
+        ``distinct`` is served by the ``type``-prefixed index (DISTINCT_SCAN), and
+        the result is cached so the count short-circuit stays cheap on every call.
+        """
+        cached = self._distinct_types_cache.get(collection)
+        now = monotonic()
+        if cached and now - cached[1] < DISTINCT_TYPES_TTL_SECONDS:
+            return cached[0]
+        types = set(self.storage.db[collection].distinct("type"))
+        self._distinct_types_cache[collection] = (types, now)
+        return types
