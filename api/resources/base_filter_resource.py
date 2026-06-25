@@ -1,5 +1,6 @@
 from configuration import get_object_configuration_mapper
 from filters_v2.filter_manager import FilterManager as FilterManagerV2
+from filters_v2.helpers.base_helper import get_distinct_by
 from flask import after_this_request, request
 from flask_restful import abort
 from logging_elody.log import log
@@ -8,6 +9,7 @@ from search.typesense_client import (
     build_filter_by,
     build_type_filter,
     ensure_collection as typesense_ensure_collection,
+    facet_values as typesense_facet_values,
     search as typesense_search,
     search_all_ids as typesense_search_all_ids,
 )
@@ -421,6 +423,14 @@ class BaseFilterResource(BaseResource):
         order_by = request.args.get("order_by", None) if request else None
         asc = bool(request.args.get("asc", 1, int)) if request else 1
 
+        # Filter-dropdown options (distinct_by) on a faceted field come from a
+        # Typesense facet instead of a Mongo $group scan over the whole collection.
+        distinct_by = get_distinct_by(query)
+        if distinct_by and distinct_by in typesense_config.get("facet_fields", []):
+            return self._execute_typesense_distinct_options(
+                query, collection, typesense_config, distinct_by, skip, limit, asc
+            )
+
         text_filters, type_filter_values, exact_match_filters, remaining_filters = (
             self._classify_filters_for_typesense(query)
         )
@@ -560,6 +570,63 @@ class BaseFilterResource(BaseResource):
             if "facets" in ts_result:
                 items["facets"] = ts_result["facets"]
 
+        self._add_cors_headers()
+        return self._add_pagination_links(items, skip, limit, collection)
+
+    @tracer.start_as_current_span(
+        "base.BaseFilterResource._execute_typesense_distinct_options"
+    )
+    def _execute_typesense_distinct_options(
+        self, query, collection, typesense_config, distinct_by, skip, limit, asc
+    ):
+        """Resolve a distinct_by dropdown via a Typesense facet instead of $group.
+
+        A distinct_by request wants one entry per distinct value of the field (a
+        filter dropdown). Computing it with a Mongo $group scans the whole
+        collection. For a faceted field, the distinct values come from facet_counts
+        instantly; one representative document per value (page-sized) is then
+        hydrated from Mongo to keep the entity-shaped response contract.
+
+        Falls back to the Mongo engine when the query carries filters Typesense
+        cannot express (so the facet counts would be inaccurate) or when Typesense
+        is unavailable.
+        """
+        text_filters, type_filter_values, exact_match_filters, remaining_filters = (
+            self._classify_filters_for_typesense(query)
+        )
+        # Anything Typesense can't express would skew the facet -> use Mongo.
+        if remaining_filters or exact_match_filters:
+            return self._execute_advanced_search_with_query_v2(query, collection)
+
+        ts_collection = typesense_config.get("collection", collection)
+        flat_field = distinct_by.replace(".", "_")
+        filter_by = build_filter_by(type_filter_values, [])
+
+        values = typesense_facet_values(ts_collection, flat_field, filter_by)
+        if values is None:
+            return self._execute_advanced_search_with_query_v2(query, collection)
+
+        values.sort(key=lambda value_count: value_count[0], reverse=not asc)
+        total = len(values)
+        page = values[skip : skip + limit]
+
+        storage = StorageManager().get_db_engine()
+        target_collection = next(
+            iter(self._resolve_mongo_collections(type_filter_values, collection)),
+            collection,
+        )
+        type_clause = (
+            {"type": {"$in": type_filter_values}} if type_filter_values else {}
+        )
+        results = []
+        for value, _count in page:
+            doc = storage.db[target_collection].find_one(
+                {distinct_by: value, **type_clause}
+            )
+            if doc:
+                results.append(storage._prepare_mongo_document(doc, True))
+
+        items = {"results": results, "count": total, "skip": skip, "limit": limit}
         self._add_cors_headers()
         return self._add_pagination_links(items, skip, limit, collection)
 

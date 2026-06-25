@@ -224,6 +224,36 @@ def search_all_ids(collection, query, query_by, filter_by=None, group_by=None):
         return None
 
 
+def facet_values(collection, field, filter_by=None, max_values=1000):
+    """Return [(value, count), ...] for a faceted field, or None if unavailable.
+
+    Populates filter dropdowns: Typesense returns the distinct values of a faceted
+    field (with counts) from facet_counts in one search, instead of a Mongo $group
+    scan over the whole collection. per_page=1 keeps the hit payload minimal.
+    """
+    client = get_typesense_client()
+    if not client:
+        return None
+    try:
+        params = {
+            "q": "*",
+            "query_by": "type",
+            "per_page": 1,
+            "facet_by": field,
+            "max_facet_values": max_values,
+        }
+        if filter_by:
+            params["filter_by"] = filter_by
+        result = client.collections[collection].documents.search(params)
+        counts = result.get("facet_counts", [])
+        if not counts:
+            return []
+        return [(c["value"], c["count"]) for c in counts[0]["counts"]]
+    except Exception as e:
+        log.warning(f"Typesense facet on '{field}' failed: {e}")
+        return None
+
+
 def build_type_filter(type_values):
     """Build Typesense filter_by string for type values."""
     if not type_values:
