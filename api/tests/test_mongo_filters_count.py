@@ -73,6 +73,7 @@ class _FakeCollection:
 
     def aggregate(self, pipeline, **kwargs):
         self.aggregate_calls += 1
+        self.last_pipeline = list(pipeline)
         return iter([{"count": self._agg_count}])
 
 
@@ -153,3 +154,54 @@ class TestCountDecision:
         _count(mf, match, [])
 
         assert calls["n"] == 1  # second call served from the TTL cache
+
+
+class TestFilteredCountCap:
+    def test_filtered_count_pipeline_has_limit_cap_before_count(self):
+        import filters_v2.mongo_filters as mf_mod
+
+        col = _FakeCollection(types={"a", "b", "c"}, estimated=999, agg_count=101)
+        mf = _make_filters(col)
+        match = [{"$match": {"type": {"$in": ["a", "b"]}}}]  # narrower -> filtered
+
+        _count(mf, match, [])
+
+        # $limit (cap + 1) must sit directly before $count so the scan stops early.
+        assert col.last_pipeline[-2:] == [
+            {"$limit": mf_mod.LISTING_COUNT_CAP + 1},
+            {"$count": "count"},
+        ]
+
+    def test_capped_count_value_is_returned_as_is(self):
+        # agg_count == cap + 1 is the "<cap>+" sentinel; returned unchanged.
+        import filters_v2.mongo_filters as mf_mod
+
+        sentinel = mf_mod.LISTING_COUNT_CAP + 1
+        col = _FakeCollection(types={"a", "b", "c"}, estimated=999, agg_count=sentinel)
+        mf = _make_filters(col)
+
+        result = _count(mf, [{"$match": {"type": {"$in": ["a"]}}}], [])
+
+        assert result == sentinel
+
+    def test_whole_collection_count_is_not_capped(self):
+        # covers all types -> estimated_document_count, exact and uncapped.
+        col = _FakeCollection(types={"a", "b"}, estimated=5_000_000, agg_count=101)
+        mf = _make_filters(col)
+
+        result = _count(mf, [{"$match": {"type": {"$in": ["a", "b"]}}}], [])
+
+        assert result == 5_000_000
+        assert col.aggregate_calls == 0
+
+    def test_cap_disabled_omits_limit_stage(self, monkeypatch):
+        import filters_v2.mongo_filters as mf_mod
+
+        monkeypatch.setattr(mf_mod, "LISTING_COUNT_CAP", 0)
+        col = _FakeCollection(types={"a", "b", "c"}, estimated=999, agg_count=700712)
+        mf = _make_filters(col)
+
+        result = _count(mf, [{"$match": {"type": {"$in": ["a"]}}}], [])
+
+        assert result == 700712
+        assert col.last_pipeline == [{"$match": {"type": {"$in": ["a"]}}}, {"$count": "count"}]

@@ -23,6 +23,7 @@ from filters_v2.stages import (
     sort_stage,
 )
 from logging_elody.log import log
+from os import getenv
 from storage.storagemanager import StorageManager
 from time import monotonic
 from tracing import get_tracer
@@ -33,6 +34,15 @@ tracer = get_tracer()
 # only changes when a brand new entity type is introduced (deploy time), so a
 # few minutes is safe and keeps the count short-circuit cheap.
 DISTINCT_TYPES_TTL_SECONDS = 300
+
+# A filtered listing count is an index scan over every matching key. A broad
+# filter matches millions of keys, so counting them all dominates the request
+# (6-27s on prod). Stop at this cap ($limit short-circuits the scan) and let the
+# UI render "<cap>+"; the unfiltered total stays exact via estimated_document_count.
+# The cap also bounds the navigable page count (frontend derives pages from the
+# count), so 1000 keeps ~50 pages of 20 reachable while staying ~1ms; users after
+# something deeper are expected to narrow the filter. Set 0 to never cap.
+LISTING_COUNT_CAP = int(getenv("LISTING_COUNT_CAP", 1000))
 
 
 def get_type_only_filter_values(match: list, group: list):
@@ -254,13 +264,15 @@ class MongoFilters:
         return items
 
     def __count(self, collection, match, group, output):
-        """Count matching documents, avoiding a full scan for whole-collection filters.
+        """Count matching documents, avoiding a full scan for large result sets.
 
-        A broad type listing (e.g. the home page) filters on every type the
-        collection holds, so the ``$count`` aggregation scans the entire index
-        every request. When the filter provably covers all of the collection's
-        types, the answer is just the collection size, which
-        ``estimated_document_count`` reads from metadata in O(1) without a scan.
+        Two short-circuits keep this off the hot path:
+        - Whole-collection filter (covers every type): the answer is the
+          collection size, read from metadata in O(1) via estimated_document_count.
+        - Any other (filtered) listing: the count is an index scan over every
+          matching key, which dominates the request on large filters. Cap it with
+          a ``$limit`` before ``$count`` so the scan stops early; a returned count
+          above the cap means "<cap>+". Disable with LISTING_COUNT_CAP=0.
         """
         type_values = get_type_only_filter_values(match, group)
         if type_values is not None:
@@ -268,8 +280,9 @@ class MongoFilters:
             if collection_types and collection_types <= set(type_values):
                 return self.storage.db[collection].estimated_document_count()
 
+        cap_stage = [{"$limit": LISTING_COUNT_CAP + 1}] if LISTING_COUNT_CAP > 0 else []
         count = self.storage.db[collection].aggregate(
-            [*match, *group, {"$count": "count"}],
+            [*match, *group, *cap_stage, {"$count": "count"}],
             allowDiskUse=self.storage.allow_disk_use,
         )
         return next(count, {"count": len(output["results"])})["count"]
