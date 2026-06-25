@@ -286,8 +286,15 @@ class FilterGenericObjectsV2(BaseFilterResource):
                 asc=asc,
             )
         else:
+            query, resolved_source_lookups = self._resolve_source_relation_lookups(
+                query
+            )
             typesense_config = config.crud().get("typesense", {})
-            if typesense_config:
+            # A resolved source-relation lookup becomes an indexed selection whose
+            # OR-with-siblings must be evaluated as a single match; the
+            # Typesense-accelerated path would split it across engines, so run it
+            # straight through Mongo.
+            if typesense_config and not resolved_source_lookups:
                 items = self._execute_typesense_accelerated_search(
                     query, collection, typesense_config
                 )

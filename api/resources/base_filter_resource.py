@@ -131,6 +131,130 @@ class BaseFilterResource(BaseResource):
             "match_exact": True,
         }
 
+    def _resolve_source_relation_lookups(self, query):
+        """Rewrite a relation lookup that should be evaluated against the *source*
+        entity's own relation values into an indexed selection, avoiding a
+        collection-wide ``$lookup``.
+
+        A filter whose ``lookup.resolve_to_source_ids`` is truthy is treated as
+        follows: the filter value is the source entity id(s); the source entity is
+        read once from ``lookup.from``, and the ids stored at ``lookup.foreign_field``
+        become the selection values on ``lookup.local_field`` (default ``id``). This
+        replaces an O(collection) reverse self-join with a single indexed read plus
+        an indexed selection. Purely config-driven — no entity-type or client
+        specifics.
+
+        When a lookup is resolved, any ``type`` filter is dropped: the marker
+        denotes a symmetric self-relation, so both the forward (``id`` selection)
+        and reverse (relation-value selection) branches already match only the
+        relevant entities, making the broad ``type`` filter redundant. Keeping it
+        lets the planner satisfy an ``order_by`` via the ``type``-prefixed sort
+        index, scanning the whole collection instead of the selective relation
+        index; dropping it keeps the query on the selective index.
+
+        Returns ``(query, did_resolve)``.
+        """
+        if not isinstance(query, list):
+            return query, False
+
+        did_resolve = False
+        resolved_query = []
+        storage = None
+        for filter_criteria in query:
+            lookup = (
+                filter_criteria.get("lookup")
+                if isinstance(filter_criteria, dict)
+                else None
+            )
+            if not (lookup and lookup.get("resolve_to_source_ids")):
+                resolved_query.append(filter_criteria)
+                continue
+
+            did_resolve = True
+            source_ids = filter_criteria.get("value")
+            source_ids = source_ids if isinstance(source_ids, list) else [source_ids]
+            source_ids = [source_id for source_id in source_ids if source_id]
+            from_collection = lookup.get("from")
+            foreign_field = lookup.get("foreign_field", "")
+            local_field = lookup.get("local_field") or "id"
+
+            # Preserve the original key's schema prefix (e.g. "vlacc:1|") so the
+            # rewritten selection lands in the same matcher bucket as its OR
+            # siblings — otherwise the union with a schema-specific sibling breaks.
+            original_key = filter_criteria.get("key")
+            if isinstance(original_key, list) and original_key and "|" in original_key[0]:
+                schema_prefix = original_key[0].split("|", 1)[0]
+                resolved_key = [f"{schema_prefix}|{local_field}"]
+            else:
+                resolved_key = local_field
+
+            related_ids = []
+            if source_ids and from_collection and foreign_field:
+                if storage is None:
+                    storage = StorageManager().get_db_engine()
+                for document in storage.db[from_collection].find(
+                    {
+                        "$or": [
+                            {"_id": {"$in": source_ids}},
+                            {"identifiers": {"$in": source_ids}},
+                        ]
+                    },
+                    {foreign_field: 1},
+                ):
+                    related_ids.extend(
+                        self._extract_nested_values(document, foreign_field)
+                    )
+
+            seen = set()
+            related_ids = [
+                related_id
+                for related_id in related_ids
+                if not (related_id in seen or seen.add(related_id))
+            ]
+            resolved_query.append(
+                {
+                    "type": "selection",
+                    "key": resolved_key,
+                    "value": related_ids,
+                    "match_exact": True,
+                    "operator": filter_criteria.get("operator", "or"),
+                }
+            )
+
+        if did_resolve:
+            resolved_query = [
+                filter_criteria
+                for filter_criteria in resolved_query
+                if not self._is_type_filter(filter_criteria)
+            ]
+
+        return resolved_query, did_resolve
+
+    @staticmethod
+    def _is_type_filter(filter_criteria):
+        if not isinstance(filter_criteria, dict):
+            return False
+        if filter_criteria.get("type") == "type":
+            return True
+        return (
+            filter_criteria.get("type") == "selection"
+            and filter_criteria.get("key") == "type"
+        )
+
+    @staticmethod
+    def _extract_nested_values(document, dotted_path):
+        """Collect scalar values at a dotted path within a document, descending into
+        any lists encountered along the way (e.g. ``properties.ref_x.value``)."""
+        nodes = [document]
+        for part in dotted_path.split("."):
+            next_nodes = []
+            for node in nodes:
+                if isinstance(node, dict) and part in node:
+                    value = node[part]
+                    next_nodes.extend(value if isinstance(value, list) else [value])
+            nodes = next_nodes
+        return [node for node in nodes if isinstance(node, (str, int))]
+
     def _build_typesense_query(
         self,
         text_filters,

@@ -2117,3 +2117,152 @@ class TestTypesenseAcceleratedSearchWithFacets:
                 )
 
         assert result.get("facets") == mongo_facets
+
+
+class TestSourceRelationLookupResolution:
+    """_resolve_source_relation_lookups rewrites a marked relation lookup into an
+    indexed selection on the source entity's own relation values (no $lookup)."""
+
+    def _make_resource(self):
+        from resources.base_filter_resource import BaseFilterResource
+
+        return BaseFilterResource.__new__(BaseFilterResource)
+
+    def _forward_lookup_filter(self, value="W-CUR"):
+        return {
+            "type": "selection",
+            "key": ["vlacc:1|lookup.virtual_relations.ref_related_works.identifiers"],
+            "operator": "or",
+            "value": value,
+            "match_exact": True,
+            "lookup": {
+                "from": "bibliographic_entities_actual",
+                "local_field": "id",
+                "foreign_field": "properties.ref_related_works.value",
+                "as": "lookup.virtual_relations.ref_related_works",
+                "resolve_to_source_ids": True,
+            },
+        }
+
+    def test_marked_lookup_rewritten_to_indexed_id_selection(self):
+        mock_storage = MagicMock()
+        mock_storage.db.__getitem__.return_value.find.return_value = [
+            {"properties": {"ref_related_works": {"value": ["W-A", "W-B", "W-A"]}}}
+        ]
+        with patch("resources.base_filter_resource.StorageManager") as mock_sm:
+            mock_sm.return_value.get_db_engine.return_value = mock_storage
+            resource = self._make_resource()
+            query = [
+                {
+                    "type": "selection",
+                    "key": "type",
+                    "value": ["work_word"],
+                    "match_exact": True,
+                },
+                {
+                    "type": "selection",
+                    "key": ["vlacc:1|properties.ref_related_works.value"],
+                    "operator": "or",
+                    "value": "W-CUR",
+                    "match_exact": True,
+                },
+                self._forward_lookup_filter(),
+            ]
+
+            new_query, did_resolve = resource._resolve_source_relation_lookups(query)
+
+        assert did_resolve is True
+        forward = next(f for f in new_query if f.get("key") == ["vlacc:1|id"])
+        assert forward["type"] == "selection"
+        assert forward["key"] == ["vlacc:1|id"]  # schema prefix preserved
+        assert forward["value"] == ["W-A", "W-B"]  # deduped, order preserved
+        assert forward["match_exact"] is True
+        assert forward["operator"] == "or"
+        assert "lookup" not in forward
+        # the redundant type filter is dropped on resolve; the reverse sibling stays
+        assert all(f.get("key") != "type" for f in new_query)
+        assert any(
+            f.get("key") == ["vlacc:1|properties.ref_related_works.value"]
+            for f in new_query
+        )
+
+    def test_type_filter_dropped_only_when_resolved(self):
+        resource = self._make_resource()
+        # no marked lookup -> nothing resolved -> type filter preserved
+        query = [
+            {"type": "selection", "key": "type", "value": ["work_word"], "match_exact": True},
+            {"type": "selection", "key": ["vlacc:1|properties.ref_related_works.value"], "value": "W-CUR"},
+        ]
+        new_query, did_resolve = resource._resolve_source_relation_lookups(query)
+        assert did_resolve is False
+        assert any(f.get("key") == "type" for f in new_query)
+
+    def test_source_entity_looked_up_by_id_or_identifiers(self):
+        mock_storage = MagicMock()
+        find = mock_storage.db.__getitem__.return_value.find
+        find.return_value = []
+        with patch("resources.base_filter_resource.StorageManager") as mock_sm:
+            mock_sm.return_value.get_db_engine.return_value = mock_storage
+            resource = self._make_resource()
+            resource._resolve_source_relation_lookups([self._forward_lookup_filter("W-CUR")])
+
+        query_arg = find.call_args[0][0]
+        assert query_arg == {
+            "$or": [
+                {"_id": {"$in": ["W-CUR"]}},
+                {"identifiers": {"$in": ["W-CUR"]}},
+            ]
+        }
+        # source collection comes from the lookup config, not the queried collection
+        assert mock_storage.db.__getitem__.call_args[0][0] == "bibliographic_entities_actual"
+
+    def test_no_source_doc_yields_empty_selection(self):
+        mock_storage = MagicMock()
+        mock_storage.db.__getitem__.return_value.find.return_value = []
+        with patch("resources.base_filter_resource.StorageManager") as mock_sm:
+            mock_sm.return_value.get_db_engine.return_value = mock_storage
+            resource = self._make_resource()
+            new_query, did_resolve = resource._resolve_source_relation_lookups(
+                [self._forward_lookup_filter()]
+            )
+
+        assert did_resolve is True
+        assert new_query[0]["key"] == ["vlacc:1|id"]
+        assert new_query[0]["value"] == []
+
+    def test_unmarked_lookup_left_untouched(self):
+        resource = self._make_resource()
+        query = [
+            {
+                "type": "selection",
+                "key": ["x"],
+                "value": "v",
+                "lookup": {
+                    "from": "c",
+                    "local_field": "id",
+                    "foreign_field": "f",
+                    "as": "a",
+                },
+            }
+        ]
+        new_query, did_resolve = resource._resolve_source_relation_lookups(query)
+
+        assert did_resolve is False
+        assert new_query == query
+
+    def test_query_without_lookup_is_passthrough(self):
+        resource = self._make_resource()
+        query = [{"type": "selection", "key": "type", "value": ["work_word"]}]
+        new_query, did_resolve = resource._resolve_source_relation_lookups(query)
+
+        assert did_resolve is False
+        assert new_query == query
+
+    def test_extract_nested_values_descends_into_lists(self):
+        resource = self._make_resource()
+        doc = {"properties": {"ref_related_works": {"value": ["W-A", "W-B"]}}}
+        assert resource._extract_nested_values(
+            doc, "properties.ref_related_works.value"
+        ) == ["W-A", "W-B"]
+        # missing path → empty, no error
+        assert resource._extract_nested_values({}, "a.b.c") == []
