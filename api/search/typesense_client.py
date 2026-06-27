@@ -6,6 +6,7 @@ from logging_elody.log import log
 _client = None
 _initialized = False
 _ensured_collections = set()
+_field_types_cache = {}
 _lock = threading.Lock()
 
 
@@ -77,6 +78,7 @@ def ensure_collection(collection, facet_fields=None):
                         "fields": fields,
                     }
                 )
+                _field_types_cache.pop(collection, None)
                 log.info(
                     f"Created Typesense collection '{collection}' with auto schema"
                 )
@@ -361,7 +363,61 @@ def _descend(obj, keys):
     return None
 
 
-def prepare_document_for_typesense(entity, search_fields, facet_fields=None):
+def get_collection_field_types(collection):
+    """Return ``{flat_field_name: type}`` for the concretely-typed fields of a
+    Typesense collection.
+
+    Wildcard (``.*``) and ``auto`` fields are omitted: they impose no cardinality
+    constraint, so values for them never need coercion. Cached per collection and
+    invalidated when the collection is (re)created in :func:`ensure_collection`.
+    Returns an empty dict when Typesense is unavailable or the collection does not
+    exist yet, in which case callers leave values untouched.
+    """
+    if collection in _field_types_cache:
+        return _field_types_cache[collection]
+    client = get_typesense_client()
+    if not client:
+        return {}
+    try:
+        schema = client.collections[collection].retrieve()
+    except Exception:
+        return {}
+    field_types = {
+        field["name"]: field["type"]
+        for field in schema.get("fields", [])
+        if field.get("name")
+        and field["name"] != ".*"
+        and field.get("type") not in (None, "auto")
+    }
+    with _lock:
+        _field_types_cache[collection] = field_types
+    return field_types
+
+
+def _coerce_value_to_field_type(value, field_type):
+    """Coerce ``value`` to match an existing Typesense field's cardinality.
+
+    Typesense locks a field's type from the first value indexed into it. A field
+    that is scalar for one entity type (e.g. ``properties.code.value`` is a single
+    string on works/manifestations) but multi-valued for another (a list on zizo)
+    would otherwise be rejected, failing the *whole* document. Collapsing arrays
+    into a scalar field (single element unwrapped, multiple joined) and wrapping
+    scalars into an array field keeps every document indexable regardless of which
+    entity type set the field's type first.
+    """
+    if field_type.endswith("[]"):
+        if isinstance(value, list):
+            return [v if isinstance(v, str) else str(v) for v in value]
+        return [value if isinstance(value, str) else str(value)]
+    if isinstance(value, list):
+        parts = [v if isinstance(v, str) else str(v) for v in value]
+        return parts[0] if len(parts) == 1 else " ".join(parts)
+    return value if isinstance(value, str) else str(value)
+
+
+def prepare_document_for_typesense(
+    entity, search_fields, facet_fields=None, field_types=None
+):
     doc = {
         "id": entity["_id"],
         "_id": entity["_id"],
@@ -375,7 +431,10 @@ def prepare_document_for_typesense(entity, search_fields, facet_fields=None):
         if value is None:
             continue
         flat_key = field_path.replace(".", "_")
-        if isinstance(value, list):
+        field_type = (field_types or {}).get(flat_key)
+        if field_type:
+            doc[flat_key] = _coerce_value_to_field_type(value, field_type)
+        elif isinstance(value, list):
             doc[flat_key] = [v if isinstance(v, str) else str(v) for v in value]
         elif isinstance(value, str):
             doc[flat_key] = value

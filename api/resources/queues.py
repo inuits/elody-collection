@@ -534,6 +534,7 @@ def handle_mediafile_deleted(routing_key, body, message_id):  # noqa: PLR0912
 )
 def sync_entity_to_typesense(routing_key, body, message_id):
     from search.typesense_client import (  # noqa: PLC0415
+        get_collection_field_types,
         prepare_document_for_typesense,
         upsert_document,
     )
@@ -563,6 +564,7 @@ def sync_entity_to_typesense(routing_key, body, message_id):
         entity,
         search_fields,
         facet_fields=facet_fields,
+        field_types=get_collection_field_types(ts_collection),
     )
     upsert_document(ts_collection, doc)
 

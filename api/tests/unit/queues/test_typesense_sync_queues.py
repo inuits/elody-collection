@@ -53,7 +53,10 @@ class TestSyncEntityToTypesense:
 
         with patch("search.typesense_client.upsert_document") as mock_upsert, patch(
             "search.typesense_client.prepare_document_for_typesense"
-        ) as mock_prepare:
+        ) as mock_prepare, patch(
+            "search.typesense_client.get_collection_field_types",
+            return_value={"properties_code_value": "string"},
+        ) as mock_field_types:
             mock_prepare.return_value = {
                 "id": "ent-1",
                 "_id": "ent-1",
@@ -62,8 +65,12 @@ class TestSyncEntityToTypesense:
 
             self._call({"data": {"location": "/entities/ent-1", "type": "work_word"}})
 
+            mock_field_types.assert_called_once_with("entities")
             mock_prepare.assert_called_once_with(
-                entity, ["properties.name.value"], facet_fields=[]
+                entity,
+                ["properties.name.value"],
+                facet_fields=[],
+                field_types={"properties_code_value": "string"},
             )
             mock_upsert.assert_called_once_with(
                 "entities", {"id": "ent-1", "_id": "ent-1", "type": "work_word"}
@@ -135,12 +142,17 @@ class TestSyncEntityToTypesense:
 
         with patch("search.typesense_client.upsert_document") as mock_upsert, patch(
             "search.typesense_client.prepare_document_for_typesense"
-        ) as mock_prepare:
+        ) as mock_prepare, patch(
+            "search.typesense_client.get_collection_field_types", return_value={}
+        ) as mock_field_types:
             mock_prepare.return_value = {"id": "ent-1"}
 
             self._call({"data": {"location": "/entities/ent-1", "type": "work_word"}})
 
-            mock_prepare.assert_called_once_with(entity, ["title"], facet_fields=[])
+            mock_field_types.assert_called_once_with("bibliographic")
+            mock_prepare.assert_called_once_with(
+                entity, ["title"], facet_fields=[], field_types={}
+            )
             mock_upsert.assert_called_once_with("bibliographic", {"id": "ent-1"})
 
 
