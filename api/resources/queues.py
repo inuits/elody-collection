@@ -531,52 +531,68 @@ def handle_mediafile_deleted(routing_key, body, message_id):  # noqa: PLR0912
         queue_name=f"{queue_prefix}-sync_entity_to_typesense",
         routing_key=f"{routing_key_prefix}.entity_changed",
     ),
+    full_message_object=True,
+    auto_ack=False,
 )
-def sync_entity_to_typesense(routing_key, body, message_id):
+def sync_entity_to_typesense(message):
+    # Manual ack (auto_ack=False): the message is acknowledged only after the
+    # entity is successfully indexed. This means a consumer disconnect mid-flight
+    # re-queues the message instead of losing it (which auto-ack does), and an
+    # indexing failure is retried once before being dropped to the reconcile job
+    # as a last resort -- so a transient hiccup no longer silently drops an
+    # entity from the search index.
     from search.typesense_client import (  # noqa: PLC0415
         get_collection_field_types,
         prepare_document_for_typesense,
         upsert_document,
     )
 
-    data = body["data"]
-    if __is_malformed_message(data, ["location", "type"]):
-        return
-
-    entity_id = data["location"].removeprefix("/entities/")
-    entity_type = data.get("type", "")
-
-    config = get_object_configuration_mapper().get(entity_type or "entities")
-    ts_config = config.crud().get("typesense", {})
-    if not ts_config.get("enabled"):
-        return
-
-    collection = config.crud().get("collection", "entities")
-    storage = StorageManager().get_db_engine()
-    entity = storage.get_item_from_collection_by_id(collection, entity_id)
-    if not entity:
-        return
-
-    ts_collection = ts_config.get("collection", "entities")
-    search_fields = ts_config.get("search_fields", [])
-    facet_fields = ts_config.get("facet_fields", [])
-    # Messages are auto-acked on delivery, so a raised exception here would
-    # silently drop the entity from the search index with no trace. Guard the
-    # indexing work and log failures at ERROR level so they stay visible and
-    # recoverable instead of being lost.
+    entity_id = None
     try:
+        data = message.json()["data"]
+        if __is_malformed_message(data, ["location", "type"]):
+            message.ack()
+            return
+
+        entity_id = data["location"].removeprefix("/entities/")
+        entity_type = data.get("type", "")
+
+        config = get_object_configuration_mapper().get(entity_type or "entities")
+        ts_config = config.crud().get("typesense", {})
+        if not ts_config.get("enabled"):
+            message.ack()
+            return
+
+        collection = config.crud().get("collection", "entities")
+        storage = StorageManager().get_db_engine()
+        entity = storage.get_item_from_collection_by_id(collection, entity_id)
+        if not entity:
+            message.ack()
+            return
+
+        ts_collection = ts_config.get("collection", "entities")
         doc = prepare_document_for_typesense(
             entity,
-            search_fields,
-            facet_fields=facet_fields,
+            ts_config.get("search_fields", []),
+            facet_fields=ts_config.get("facet_fields", []),
             field_types=get_collection_field_types(ts_collection),
         )
-        upsert_document(ts_collection, doc)
+        if not upsert_document(ts_collection, doc):
+            raise RuntimeError(
+                f"Typesense upsert failed for collection '{ts_collection}'"
+            )
+        message.ack()
     except Exception as exception:
         log.error(
-            f"Failed to sync entity {entity_id} to Typesense collection "
-            f"'{ts_collection}': {exception.__class__.__name__}: {exception}"
+            f"Failed to sync entity {entity_id} to Typesense: "
+            f"{exception.__class__.__name__}: {exception}"
         )
+        if message.redelivered:
+            # Already retried once: drop it and let the reconcile job recover it,
+            # instead of hot-looping on a deterministic failure.
+            message.reject(requeue=False)
+        else:
+            message.nack(requeue=True)
 
 
 @get_rabbit().queue(

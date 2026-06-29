@@ -42,16 +42,22 @@ def mapper():
 class TestSyncEntityToTypesense:
     """Tests for the sync_entity_to_typesense queue handler."""
 
-    def _call(self, body):
+    def _call(self, body, redelivered=False):
         from resources.queues import sync_entity_to_typesense
 
-        sync_entity_to_typesense("dams.entity_changed", body, "msg-1")
+        message = MagicMock()
+        message.json.return_value = body
+        message.redelivered = redelivered
+        sync_entity_to_typesense(message)
+        return message
 
-    def test_syncs_entity_to_typesense(self, storage, mapper):
+    def test_syncs_entity_to_typesense_and_acks(self, storage, mapper):
         entity = make_entity("ent-1", "work_word")
         storage.get_item_from_collection_by_id.return_value = entity
 
-        with patch("search.typesense_client.upsert_document") as mock_upsert, patch(
+        with patch(
+            "search.typesense_client.upsert_document", return_value=True
+        ) as mock_upsert, patch(
             "search.typesense_client.prepare_document_for_typesense"
         ) as mock_prepare, patch(
             "search.typesense_client.get_collection_field_types",
@@ -63,7 +69,9 @@ class TestSyncEntityToTypesense:
                 "type": "work_word",
             }
 
-            self._call({"data": {"location": "/entities/ent-1", "type": "work_word"}})
+            message = self._call(
+                {"data": {"location": "/entities/ent-1", "type": "work_word"}}
+            )
 
             mock_field_types.assert_called_once_with("entities")
             mock_prepare.assert_called_once_with(
@@ -75,23 +83,29 @@ class TestSyncEntityToTypesense:
             mock_upsert.assert_called_once_with(
                 "entities", {"id": "ent-1", "_id": "ent-1", "type": "work_word"}
             )
+            message.ack.assert_called_once()
+            message.nack.assert_not_called()
 
     def test_skips_when_typesense_not_enabled(self, storage, mapper):
         mapper.get.return_value = make_mock_config(ts_enabled=False)
 
         with patch("search.typesense_client.upsert_document") as mock_upsert:
-            self._call({"data": {"location": "/entities/ent-1", "type": "work_word"}})
+            message = self._call(
+                {"data": {"location": "/entities/ent-1", "type": "work_word"}}
+            )
             storage.get_item_from_collection_by_id.assert_not_called()
             mock_upsert.assert_not_called()
+            message.ack.assert_called_once()
 
     def test_skips_when_entity_not_found(self, storage, mapper):
         storage.get_item_from_collection_by_id.return_value = None
 
         with patch("search.typesense_client.upsert_document") as mock_upsert:
-            self._call(
+            message = self._call(
                 {"data": {"location": "/entities/ent-missing", "type": "work_word"}}
             )
             mock_upsert.assert_not_called()
+            message.ack.assert_called_once()
 
     def test_uses_config_collection(self, storage, mapper):
         entity = make_entity("ent-1", "bibliographic_entity")
@@ -100,7 +114,9 @@ class TestSyncEntityToTypesense:
             collection="bibliographic_entities_actual"
         )
 
-        with patch("search.typesense_client.upsert_document") as mock_upsert, patch(
+        with patch(
+            "search.typesense_client.upsert_document", return_value=True
+        ) as mock_upsert, patch(
             "search.typesense_client.prepare_document_for_typesense"
         ) as mock_prepare:
             mock_prepare.return_value = {"id": "ent-1"}
@@ -119,37 +135,79 @@ class TestSyncEntityToTypesense:
             )
             mock_upsert.assert_called_once()
 
-    def test_does_not_raise_and_logs_error_when_indexing_fails(self, storage, mapper):
+    def test_nacks_and_requeues_on_first_failure(self, storage, mapper):
         entity = make_entity("ent-1", "work_word")
         storage.get_item_from_collection_by_id.return_value = entity
 
         with patch(
             "search.typesense_client.prepare_document_for_typesense",
             side_effect=Exception("denormalization boom"),
-        ), patch("search.typesense_client.get_collection_field_types", return_value={}), patch(
-            "resources.queues.log"
-        ) as mock_log:
-            # Must not propagate: a raised exception under auto-ack would
-            # silently drop the message and the entity would never be indexed.
-            self._call(
+        ), patch(
+            "search.typesense_client.get_collection_field_types", return_value={}
+        ), patch("resources.queues.log") as mock_log:
+            message = self._call(
+                {"data": {"location": "/entities/ent-1", "type": "work_word"}},
+                redelivered=False,
+            )
+
+        mock_log.error.assert_called_once()
+        message.nack.assert_called_once_with(requeue=True)
+        message.ack.assert_not_called()
+
+    def test_rejects_without_requeue_after_redelivery(self, storage, mapper):
+        entity = make_entity("ent-1", "work_word")
+        storage.get_item_from_collection_by_id.return_value = entity
+
+        with patch(
+            "search.typesense_client.prepare_document_for_typesense",
+            side_effect=Exception("still failing"),
+        ), patch(
+            "search.typesense_client.get_collection_field_types", return_value={}
+        ), patch("resources.queues.log") as mock_log:
+            message = self._call(
+                {"data": {"location": "/entities/ent-1", "type": "work_word"}},
+                redelivered=True,
+            )
+
+        mock_log.error.assert_called_once()
+        message.reject.assert_called_once_with(requeue=False)
+        message.ack.assert_not_called()
+
+    def test_nacks_when_upsert_returns_false(self, storage, mapper):
+        entity = make_entity("ent-1", "work_word")
+        storage.get_item_from_collection_by_id.return_value = entity
+
+        with patch(
+            "search.typesense_client.upsert_document", return_value=False
+        ), patch(
+            "search.typesense_client.prepare_document_for_typesense",
+            return_value={"id": "ent-1"},
+        ), patch(
+            "search.typesense_client.get_collection_field_types", return_value={}
+        ), patch("resources.queues.log") as mock_log:
+            message = self._call(
                 {"data": {"location": "/entities/ent-1", "type": "work_word"}}
             )
 
         mock_log.error.assert_called_once()
+        message.nack.assert_called_once_with(requeue=True)
+        message.ack.assert_not_called()
 
     def test_skips_malformed_message_no_location(self, storage):
         with patch("search.typesense_client.upsert_document") as mock_upsert:
-            self._call({"data": {"type": "work_word"}})
+            message = self._call({"data": {"type": "work_word"}})
 
             storage.get_item_from_collection_by_id.assert_not_called()
             mock_upsert.assert_not_called()
+            message.ack.assert_called_once()
 
     def test_skips_malformed_message_no_type(self, storage):
         with patch("search.typesense_client.upsert_document") as mock_upsert:
-            self._call({"data": {"location": "/entities/ent-1"}})
+            message = self._call({"data": {"location": "/entities/ent-1"}})
 
             storage.get_item_from_collection_by_id.assert_not_called()
             mock_upsert.assert_not_called()
+            message.ack.assert_called_once()
 
     def test_uses_correct_typesense_collection(self, storage, mapper):
         entity = make_entity("ent-1", "work_word")
@@ -158,7 +216,9 @@ class TestSyncEntityToTypesense:
             ts_collection="bibliographic", search_fields=["title"]
         )
 
-        with patch("search.typesense_client.upsert_document") as mock_upsert, patch(
+        with patch(
+            "search.typesense_client.upsert_document", return_value=True
+        ) as mock_upsert, patch(
             "search.typesense_client.prepare_document_for_typesense"
         ) as mock_prepare, patch(
             "search.typesense_client.get_collection_field_types", return_value={}
