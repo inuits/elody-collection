@@ -313,7 +313,7 @@ def build_filter_by(type_values, exact_match_filters=None):
     return " && ".join(parts) if parts else None
 
 
-def upsert_document(collection, doc, max_attempts=3):
+def upsert_document(collection, doc, max_attempts=10):
     """Upsert a document into Typesense, retrying transient failures.
 
     Returns True on success, False otherwise. A bounded retry with backoff
