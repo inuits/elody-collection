@@ -394,22 +394,38 @@ class TestDeleteDocument:
         mock_client = MagicMock()
 
         with patch.object(tc, "get_typesense_client", return_value=mock_client):
-            delete_document("entities", "ent-1")
+            assert delete_document("entities", "ent-1") is True
 
         mock_client.collections.__getitem__.return_value.documents.__getitem__.return_value.delete.assert_called_once()
 
     def test_skips_when_no_client(self):
         with patch.object(tc, "get_typesense_client", return_value=None):
-            delete_document("entities", "ent-1")
+            assert delete_document("entities", "ent-1") is False
 
-    def test_handles_exception(self):
+    def test_missing_document_counts_as_success(self):
+        class ObjectNotFound(Exception):
+            pass
+
         mock_client = MagicMock()
-        mock_client.collections.__getitem__.return_value.documents.__getitem__.return_value.delete.side_effect = Exception(
-            "not found"
+        mock_client.collections.__getitem__.return_value.documents.__getitem__.return_value.delete.side_effect = ObjectNotFound(
+            "404"
         )
 
         with patch.object(tc, "get_typesense_client", return_value=mock_client):
-            delete_document("entities", "ent-1")
+            assert delete_document("entities", "ent-1") is True
+
+    def test_returns_false_and_logs_error_after_exhausting_retries(self):
+        mock_client = MagicMock()
+        delete = mock_client.collections.__getitem__.return_value.documents.__getitem__.return_value.delete
+        delete.side_effect = Exception("write error")
+
+        with patch.object(
+            tc, "get_typesense_client", return_value=mock_client
+        ), patch.object(tc, "sleep"), patch.object(tc, "log") as mock_log:
+            assert delete_document("entities", "ent-1", max_attempts=3) is False
+
+        assert delete.call_count == 3
+        mock_log.error.assert_called_once()
 
 
 class TestEnsureCollection:

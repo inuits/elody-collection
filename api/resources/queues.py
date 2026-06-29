@@ -600,21 +600,43 @@ def sync_entity_to_typesense(message):
         queue_name=f"{queue_prefix}-delete_entity_from_typesense",
         routing_key=f"{routing_key_prefix}.entity_deleted",
     ),
+    full_message_object=True,
+    auto_ack=False,
 )
-def delete_entity_from_typesense(routing_key, body, message_id):
+def delete_entity_from_typesense(message):
+    # Manual ack, mirroring sync_entity_to_typesense: ack only after the delete
+    # succeeds, so a dropped event no longer leaves a deleted entity lingering in
+    # the search index. A missing document already counts as success (idempotent).
     from search.typesense_client import delete_document  # noqa: PLC0415
 
-    data = body["data"]
-    entity_id = data.get("entity_id") or data.get("_id")
-    entity_type = data.get("type", "")
-    if not entity_id:
-        log.warning("delete_entity_from_typesense: no entity_id in message")
-        return
+    entity_id = None
+    try:
+        data = message.json()["data"]
+        entity_id = data.get("entity_id") or data.get("_id")
+        entity_type = data.get("type", "")
+        if not entity_id:
+            log.warning("delete_entity_from_typesense: no entity_id in message")
+            message.ack()
+            return
 
-    config = get_object_configuration_mapper().get(entity_type)
-    ts_config = config.crud().get("typesense", {})
-    if not ts_config.get("enabled"):
-        return
+        config = get_object_configuration_mapper().get(entity_type)
+        ts_config = config.crud().get("typesense", {})
+        if not ts_config.get("enabled"):
+            message.ack()
+            return
 
-    ts_collection = ts_config.get("collection", "entities")
-    delete_document(ts_collection, entity_id)
+        ts_collection = ts_config.get("collection", "entities")
+        if not delete_document(ts_collection, entity_id):
+            raise RuntimeError(
+                f"Typesense delete failed for collection '{ts_collection}'"
+            )
+        message.ack()
+    except Exception as exception:
+        log.error(
+            f"Failed to delete entity {entity_id} from Typesense: "
+            f"{exception.__class__.__name__}: {exception}"
+        )
+        if message.redelivered:
+            message.reject(requeue=False)
+        else:
+            message.nack(requeue=True)

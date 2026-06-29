@@ -342,15 +342,34 @@ def upsert_document(collection, doc, max_attempts=10):
     return False
 
 
-def delete_document(collection, doc_id):
+def delete_document(collection, doc_id, max_attempts=3):
+    """Delete a document from Typesense, retrying transient failures.
+
+    Returns True on success, False otherwise. A document that is already absent
+    counts as success (delete is idempotent — the desired end state is reached).
+    When all attempts fail the failure is logged at ERROR level so the stale
+    document is visible and recoverable instead of silently lingering.
+    """
     client = get_typesense_client()
     if not client:
-        return
+        return False
 
-    try:
-        client.collections[collection].documents[doc_id].delete()
-    except Exception as e:
-        log.warning(f"Typesense delete failed for doc {doc_id}: {e}")
+    last_error = None
+    for attempt in range(1, max_attempts + 1):
+        try:
+            client.collections[collection].documents[doc_id].delete()
+            return True
+        except Exception as e:
+            if type(e).__name__ == "ObjectNotFound":
+                return True
+            last_error = e
+            if attempt < max_attempts:
+                sleep(min(0.5 * 2 ** (attempt - 1), 2))
+    log.error(
+        f"Typesense delete failed for doc {doc_id} in '{collection}' "
+        f"after {max_attempts} attempts: {last_error}"
+    )
+    return False
 
 
 def get_nested_value(obj, path):
