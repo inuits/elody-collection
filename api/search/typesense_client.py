@@ -1,5 +1,6 @@
 import threading
 from os import getenv
+from time import sleep
 
 from logging_elody.log import log
 
@@ -43,7 +44,9 @@ def get_typesense_client():
                             "protocol": "http",
                         }
                     ],
-                    "connection_timeout_seconds": 2,
+                    "connection_timeout_seconds": int(
+                        getenv("TYPESENSE_CONNECTION_TIMEOUT_SECONDS", 5)
+                    ),
                 }
             )
         except Exception as e:
@@ -310,16 +313,33 @@ def build_filter_by(type_values, exact_match_filters=None):
     return " && ".join(parts) if parts else None
 
 
-def upsert_document(collection, doc):
+def upsert_document(collection, doc, max_attempts=3):
+    """Upsert a document into Typesense, retrying transient failures.
+
+    Returns True on success, False otherwise. A bounded retry with backoff
+    smooths over transient hiccups (e.g. short connection timeouts); when all
+    attempts fail the failure is logged at ERROR level (not silently swallowed)
+    so the missed index is visible and recoverable instead of lost.
+    """
     client = get_typesense_client()
     if not client:
-        return
+        return False
 
-    try:
-        ensure_collection(collection)
-        client.collections[collection].documents.upsert(doc)
-    except Exception as e:
-        log.warning(f"Typesense upsert failed for doc {doc.get('id')}: {e}")
+    last_error = None
+    for attempt in range(1, max_attempts + 1):
+        try:
+            ensure_collection(collection)
+            client.collections[collection].documents.upsert(doc)
+            return True
+        except Exception as e:
+            last_error = e
+            if attempt < max_attempts:
+                sleep(min(0.5 * 2 ** (attempt - 1), 2))
+    log.error(
+        f"Typesense upsert failed for doc {doc.get('id')} in '{collection}' "
+        f"after {max_attempts} attempts: {last_error}"
+    )
+    return False
 
 
 def delete_document(collection, doc_id):

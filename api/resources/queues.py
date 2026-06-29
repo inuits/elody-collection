@@ -560,13 +560,23 @@ def sync_entity_to_typesense(routing_key, body, message_id):
     ts_collection = ts_config.get("collection", "entities")
     search_fields = ts_config.get("search_fields", [])
     facet_fields = ts_config.get("facet_fields", [])
-    doc = prepare_document_for_typesense(
-        entity,
-        search_fields,
-        facet_fields=facet_fields,
-        field_types=get_collection_field_types(ts_collection),
-    )
-    upsert_document(ts_collection, doc)
+    # Messages are auto-acked on delivery, so a raised exception here would
+    # silently drop the entity from the search index with no trace. Guard the
+    # indexing work and log failures at ERROR level so they stay visible and
+    # recoverable instead of being lost.
+    try:
+        doc = prepare_document_for_typesense(
+            entity,
+            search_fields,
+            facet_fields=facet_fields,
+            field_types=get_collection_field_types(ts_collection),
+        )
+        upsert_document(ts_collection, doc)
+    except Exception as exception:
+        log.error(
+            f"Failed to sync entity {entity_id} to Typesense collection "
+            f"'{ts_collection}': {exception.__class__.__name__}: {exception}"
+        )
 
 
 @get_rabbit().queue(

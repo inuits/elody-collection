@@ -119,6 +119,24 @@ class TestSyncEntityToTypesense:
             )
             mock_upsert.assert_called_once()
 
+    def test_does_not_raise_and_logs_error_when_indexing_fails(self, storage, mapper):
+        entity = make_entity("ent-1", "work_word")
+        storage.get_item_from_collection_by_id.return_value = entity
+
+        with patch(
+            "search.typesense_client.prepare_document_for_typesense",
+            side_effect=Exception("denormalization boom"),
+        ), patch("search.typesense_client.get_collection_field_types", return_value={}), patch(
+            "resources.queues.log"
+        ) as mock_log:
+            # Must not propagate: a raised exception under auto-ack would
+            # silently drop the message and the entity would never be indexed.
+            self._call(
+                {"data": {"location": "/entities/ent-1", "type": "work_word"}}
+            )
+
+        mock_log.error.assert_called_once()
+
     def test_skips_malformed_message_no_location(self, storage):
         with patch("search.typesense_client.upsert_document") as mock_upsert:
             self._call({"data": {"type": "work_word"}})

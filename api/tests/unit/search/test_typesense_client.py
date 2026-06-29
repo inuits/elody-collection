@@ -347,8 +347,9 @@ class TestUpsertDocument:
         with patch.object(
             tc, "get_typesense_client", return_value=mock_client
         ), patch.object(tc, "ensure_collection") as mock_ensure:
-            upsert_document("entities", doc)
+            result = upsert_document("entities", doc)
 
+        assert result is True
         mock_ensure.assert_called_once_with("entities")
         mock_client.collections.__getitem__.return_value.documents.upsert.assert_called_once_with(
             doc
@@ -356,18 +357,36 @@ class TestUpsertDocument:
 
     def test_skips_when_no_client(self):
         with patch.object(tc, "get_typesense_client", return_value=None):
-            upsert_document("entities", {"id": "ent-1"})
+            assert upsert_document("entities", {"id": "ent-1"}) is False
 
-    def test_handles_exception(self):
+    def test_retries_transient_failure_then_succeeds(self):
         mock_client = MagicMock()
-        mock_client.collections.__getitem__.return_value.documents.upsert.side_effect = Exception(
-            "write error"
-        )
+        upsert = mock_client.collections.__getitem__.return_value.documents.upsert
+        upsert.side_effect = [Exception("timeout"), None]
 
         with patch.object(
             tc, "get_typesense_client", return_value=mock_client
-        ), patch.object(tc, "ensure_collection"):
-            upsert_document("entities", {"id": "ent-1"})
+        ), patch.object(tc, "ensure_collection"), patch.object(tc, "sleep"):
+            result = upsert_document("entities", {"id": "ent-1"})
+
+        assert result is True
+        assert upsert.call_count == 2
+
+    def test_returns_false_and_logs_error_after_exhausting_retries(self):
+        mock_client = MagicMock()
+        upsert = mock_client.collections.__getitem__.return_value.documents.upsert
+        upsert.side_effect = Exception("write error")
+
+        with patch.object(
+            tc, "get_typesense_client", return_value=mock_client
+        ), patch.object(tc, "ensure_collection"), patch.object(
+            tc, "sleep"
+        ), patch.object(tc, "log") as mock_log:
+            result = upsert_document("entities", {"id": "ent-1"}, max_attempts=3)
+
+        assert result is False
+        assert upsert.call_count == 3
+        mock_log.error.assert_called_once()
 
 
 class TestDeleteDocument:
