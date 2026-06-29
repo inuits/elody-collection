@@ -272,10 +272,11 @@ class BaseFilterResource(BaseResource):
         distinct_keys = []
         for f in text_filters:
             key = f.get("key", "")
-            if isinstance(key, list):
-                key = key[0].split("|")[-1] if key else ""
-            if key:
-                filter_keys.append(key)
+            keys = key if isinstance(key, list) else [key]
+            for k in keys:
+                bare_key = k.split("|")[-1]
+                if bare_key:
+                    filter_keys.append(bare_key)
             distinct_by = f.get("distinct_by")
             if distinct_by:
                 distinct_keys.append(distinct_by)
@@ -460,14 +461,17 @@ class BaseFilterResource(BaseResource):
         ts_text_filters = []
         for f in text_filters:
             key = f.get("key", "")
-            if isinstance(key, list):
-                key = key[0].split("|")[-1] if key else ""
-            if key in search_fields:
+            keys = key if isinstance(key, list) else [key]
+            bare_keys = [k.split("|")[-1] for k in keys]
+            # Resolve via Typesense only when every key is indexed; otherwise a
+            # dropped OR branch would silently narrow results, so defer the whole
+            # filter to the MongoDB engine which handles multi-key OR correctly.
+            if bare_keys and all(k in search_fields for k in bare_keys):
                 ts_text_filters.append(f)
             else:
                 if f.get("operator") == "or":
                     log.warning(
-                        f"Text filter on non-indexed field '{key}' with operator 'or' "
+                        f"Text filter on non-indexed field(s) '{bare_keys}' with operator 'or' "
                         f"dropped — OR semantics not supported as "
                         f"remaining_filter. Add to search_fields config to fix."
                     )

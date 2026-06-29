@@ -528,6 +528,104 @@ class TestMultiKeyExactMatchFilter:
             assert resource.filter_engine_v2.filter.called
 
 
+class TestMultiKeyTextFilter:
+    """A multi-key (OR) text filter must search ALL keys in Typesense.
+
+    Regression: previously only key[0] survived in both the indexed-field gate
+    and the query_by builder, so an entity picker searching e.g. code + title
+    only ever queried the code field — searching by title returned nothing
+    (vlacc language picker on the expression create form).
+    """
+
+    LANGUAGE_KEYS = [
+        "vlacc:1|properties.code.value",
+        "vlacc:1|properties.title.value",
+    ]
+    SEARCH_FIELDS = ["properties.code.value", "properties.title.value"]
+
+    def test_all_keys_present_in_query_by(self, flask_app, resource):
+        with flask_app.test_request_context(
+            "/entities/filter?limit=20&skip=0",
+            method="POST",
+            content_type="application/json",
+        ):
+            query = [
+                {"type": "type", "value": "language", "match_exact": True},
+                {
+                    "type": "text",
+                    "key": self.LANGUAGE_KEYS,
+                    "value": "engels",
+                    "match_exact": False,
+                    "operator": "or",
+                },
+            ]
+            with patch("resources.base_filter_resource.typesense_search") as mock_ts:
+                mock_ts.return_value = make_ts_result(["id1"], 1)
+                with patch("resources.base_filter_resource.StorageManager") as mock_sm:
+                    mock_storage = MagicMock()
+                    mock_storage.db.__getitem__.return_value.find.return_value = [
+                        make_mongo_doc("id1")
+                    ]
+                    mock_storage._prepare_mongo_document.side_effect = (
+                        lambda doc, _: doc
+                    )
+                    mock_sm.return_value.get_db_engine.return_value = mock_storage
+
+                    resource._execute_typesense_accelerated_search(
+                        query,
+                        "entities",
+                        {
+                            "enabled": True,
+                            "collection": "entities",
+                            "search_fields": self.SEARCH_FIELDS,
+                        },
+                    )
+
+            # query_by is the 3rd positional arg to typesense_search.
+            query_by = mock_ts.call_args[0][2]
+            assert "properties_code_value" in query_by
+            assert "properties_title_value" in query_by
+
+    def test_non_indexed_key_falls_back_to_mongo(self, flask_app, resource):
+        """If any key of a multi-key text filter is not indexed, defer the whole
+        filter to the MongoDB engine rather than silently dropping an OR branch."""
+        with flask_app.test_request_context(
+            "/entities/filter?limit=20&skip=0",
+            method="POST",
+            content_type="application/json",
+        ):
+            query = [
+                {
+                    "type": "text",
+                    "key": [
+                        "vlacc:1|properties.code.value",
+                        "vlacc:1|properties.not_indexed.value",
+                    ],
+                    "value": "engels",
+                    "match_exact": False,
+                },
+            ]
+            with patch.object(
+                resource, "_execute_advanced_search_with_query_v2"
+            ) as mock_mongo:
+                mock_mongo.return_value = {
+                    "results": [],
+                    "count": 0,
+                    "skip": 0,
+                    "limit": 20,
+                }
+                resource._execute_typesense_accelerated_search(
+                    query,
+                    "entities",
+                    {
+                        "enabled": True,
+                        "collection": "entities",
+                        "search_fields": ["properties.code.value"],
+                    },
+                )
+                mock_mongo.assert_called_once_with(query, "entities")
+
+
 class TestTypesensePagination:
     """Test pagination behavior with Typesense."""
 
