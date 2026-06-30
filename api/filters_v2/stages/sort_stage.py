@@ -7,12 +7,13 @@ def build(
     order_by: str, asc: bool, filter_request_body: list[dict], storage
 ) -> list[dict]:
     if not order_by:
-        return []
+        return [{"$sort": {"_id": ASCENDING}}]
 
     key_order_map = {}
     keys = order_by.split(",")
     for key in keys:
         key_order_map.update({key: ASCENDING if asc else DESCENDING})
+    key_order_map["_id"] = ASCENDING
 
     sorting = (
         get_object_configuration_mapper()
@@ -26,7 +27,8 @@ def build(
         return [
             {
                 "$sort": {
-                    storage.get_sort_field(order_by): (ASCENDING if asc else DESCENDING)
+                    storage.get_sort_field(order_by): (ASCENDING if asc else DESCENDING),
+                    "_id": ASCENDING,
                 }
             }
         ]
