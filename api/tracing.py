@@ -1,12 +1,14 @@
 from contextlib import contextmanager
 from importlib import import_module
+from os import getenv
+
+from logging_elody.log import log
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import (
     BatchSpanProcessor,
 )
-from os import getenv
 
 
 class DummyTracer:
@@ -52,5 +54,5 @@ def init_mongo_instrumentation():
                     tracer_provider=provider, capture_statement=True
                 )
         except Exception as e:
-            print("WE'RE NOT INSTRUMENTING ACTUALLY", "\n\n\n", flush=True)
+            log.exception("Mongo instrumentation initialization failed", exc_info=e)
             raise e
