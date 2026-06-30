@@ -2364,3 +2364,50 @@ class TestSourceRelationLookupResolution:
         ) == ["W-A", "W-B"]
         # missing path → empty, no error
         assert resource._extract_nested_values({}, "a.b.c") == []
+
+
+class TestTypesenseGroupByGuard:
+    """group_by must only be set for facet fields.
+
+    Typesense rejects group_by on a non-facet field with a 400 ("should be a
+    facet field"), which aborted the whole search and silently fell back to
+    Mongo. Person search sends distinct_by=properties.name.value, but name is
+    not a facet, so results disappeared. The guard keeps the search running
+    ungrouped instead of grouping on a non-facet field.
+    """
+
+    CONFIG = {
+        "collection": "entities",
+        "search_fields": ["properties.name.value"],
+        "facet_fields": ["type"],
+    }
+
+    def _filter(self, distinct_by=None):
+        f = {"key": ["vlacc:1|properties.name.value"], "value": "jeroen"}
+        if distinct_by:
+            f["distinct_by"] = distinct_by
+        return f
+
+    def test_non_facet_distinct_by_is_not_grouped(self, resource):
+        *_, group_by = resource._build_typesense_query(
+            [self._filter(distinct_by="properties.name.value")],
+            ["person"],
+            self.CONFIG,
+        )
+        assert group_by is None
+
+    def test_facet_distinct_by_is_grouped(self, resource):
+        *_, group_by = resource._build_typesense_query(
+            [self._filter(distinct_by="type")],
+            ["person"],
+            self.CONFIG,
+        )
+        assert group_by == "type"
+
+    def test_no_distinct_by_means_no_group(self, resource):
+        *_, group_by = resource._build_typesense_query(
+            [self._filter()],
+            ["person"],
+            self.CONFIG,
+        )
+        assert group_by is None

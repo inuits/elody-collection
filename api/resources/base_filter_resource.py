@@ -290,7 +290,23 @@ class BaseFilterResource(BaseResource):
         if not search_terms:
             search_terms = "*"
         filter_by = build_filter_by(type_filter_values, exact_match_filters or [])
-        group_by = distinct_keys[0].replace(".", "_") if distinct_keys else None
+        # Typesense can only group_by a facet field. Passing a non-facet distinct
+        # field (e.g. properties.name.value, which is not faceted) makes the whole
+        # search fail with a 400 ("should be a facet field") and silently fall back
+        # to Mongo -- which is why e.g. the person picker returned nothing. Only
+        # group when the distinct field is actually a facet; otherwise run the
+        # search ungrouped instead of aborting it.
+        group_by = None
+        if distinct_keys:
+            facet_fields = typesense_config.get("facet_fields", [])
+            distinct_field = distinct_keys[0]
+            if distinct_field in facet_fields:
+                group_by = distinct_field.replace(".", "_")
+            else:
+                log.warning(
+                    f"Ignoring distinct_by '{distinct_field}' for Typesense "
+                    f"group_by: not a facet field"
+                )
         return ts_collection, query_by, search_terms, filter_by, group_by
 
     def _execute_typesense_search(
