@@ -1,5 +1,6 @@
-import pytest
 from unittest.mock import MagicMock, patch
+
+import pytest
 from flask import Flask
 
 
@@ -60,6 +61,26 @@ def test_patch_merges_incoming_with_existing_from_serializer(resource, flask_app
     keys = {r["key"] for r in relations}
     assert "VE-001" in keys
     assert "CO-001" in keys
+
+
+def test_patch_merges_incoming_with_existing_from_serializer_with_same_entity_on_multiple_relations(
+    resource, flask_app
+):
+    """Relations from properties.ref_* (serializer path) are preserved."""
+    incoming = [{"type": "refCompanies", "key": "ORG-001"}]
+    raw = {"_id": "PROD-001", "type": "production", "relations": []}
+    serialized = {
+        "_id": "PROD-001",
+        "type": "production",
+        "relations": [{"type": "refVenues", "key": "ORG-001"}],
+    }
+
+    relations = _run_patch(resource, flask_app, incoming, raw, serialized)
+    keys = {r["key"] for r in relations}
+    assert len(relations) == 2
+    assert "ORG-001" in keys
+    assert {"type": "refVenues", "key": "ORG-001"} in relations
+    assert {"type": "refCompanies", "key": "ORG-001"} in relations
 
 
 def test_patch_merges_incoming_with_existing_from_raw_relations(resource, flask_app):
