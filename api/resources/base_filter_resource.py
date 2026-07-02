@@ -1,6 +1,7 @@
 from configuration import get_object_configuration_mapper
 from filters_v2.filter_manager import FilterManager as FilterManagerV2
 from filters_v2.helpers.base_helper import get_distinct_by
+from filters_v2.mongo_filters import LISTING_COUNT_CAP
 from flask import after_this_request, request
 from flask_restful import abort
 from logging_elody.log import log
@@ -343,7 +344,15 @@ class BaseFilterResource(BaseResource):
 
     def _add_pagination_links(self, items, skip, limit, collection):
         """Add next/previous pagination links to response."""
-        if skip + limit < items.get("count", 0):
+        count = items.get("count", 0)
+        # A count above LISTING_COUNT_CAP is a sentinel, not the real total
+        # (see MongoFilters.__count): past the cap it can no longer tell
+        # whether more results exist, but a full page can.
+        count_is_capped = LISTING_COUNT_CAP > 0 and count > LISTING_COUNT_CAP
+        has_next = skip + limit < count or (
+            count_is_capped and len(items.get("results", [])) == limit
+        )
+        if has_next:
             items["next"] = f"/{collection}/filter?skip={skip + limit}&limit={limit}"
         if skip > 0:
             items["previous"] = (
