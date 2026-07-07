@@ -137,6 +137,34 @@ class TestGetNestedValue:
         obj = {"properties": {"title": []}}
         assert get_nested_value(obj, "properties.title.value") is None
 
+    def test_multi_valued_list_collects_all_elements(self):
+        obj = {
+            "properties": {
+                "isbn_group": {
+                    "value": [
+                        {"isbn": "9789049202798"},
+                        {"isbn": "9789049205416"},
+                    ]
+                }
+            }
+        }
+        assert get_nested_value(obj, "properties.isbn_group.value.isbn") == [
+            "9789049202798",
+            "9789049205416",
+        ]
+
+    def test_multi_valued_list_skips_elements_missing_the_key(self):
+        obj = {"tags": [{"name": "a"}, {"other": "x"}, {"name": "b"}]}
+        assert get_nested_value(obj, "tags.name") == ["a", "b"]
+
+    def test_multi_valued_list_of_scalars_at_leaf(self):
+        obj = {"properties": {"ean": {"value": ["111", "222"]}}}
+        assert get_nested_value(obj, "properties.ean.value") == ["111", "222"]
+
+    def test_nested_lists_are_flattened(self):
+        obj = {"groups": [{"codes": ["a", "b"]}, {"codes": ["c"]}]}
+        assert get_nested_value(obj, "groups.codes") == ["a", "b", "c"]
+
 
 class TestPrepareDocumentForTypesense:
     def test_basic_document(self):

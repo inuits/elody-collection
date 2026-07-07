@@ -382,10 +382,6 @@ def _descend(obj, keys):
         return obj
     if obj is None:
         return None
-    if isinstance(obj, list):
-        if not obj:
-            return None
-        obj = obj[0]
     if isinstance(obj, dict):
         return _descend(obj.get(keys[0]), keys[1:])
     if isinstance(obj, list):
@@ -398,7 +394,12 @@ def _descend(obj, keys):
                 collected.extend(x for x in v if x is not None)
             else:
                 collected.append(v)
-        return collected or None
+        if not collected:
+            return None
+        # A single value is unwrapped so list-wrapped scalar properties keep
+        # indexing into scalar-typed Typesense fields; only genuinely
+        # multi-valued fields (e.g. multiple ISBNs) yield a list.
+        return collected[0] if len(collected) == 1 else collected
     return None
 
 
