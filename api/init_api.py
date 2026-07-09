@@ -12,7 +12,6 @@ from resources.job import (
     InitJob,
     StartJob,
 )
-from resources.saved_search import SavedSearch, SavedSearchDetail
 from resources.share_link import ShareLink, ShareLinkDetail
 from resources.spec import AsyncAPISpec, OpenAPISpec
 from resources.tenant import Tenant
@@ -74,16 +73,6 @@ def init_api(app):
         FinishJobWithWarning,
         get_route_mapper().get(FinishJobWithWarning.__name__, "/job/warn/<string:id>"),
     )
-    api.add_resource(
-        SavedSearch, get_route_mapper().get(SavedSearch.__name__, "/saved_searches")
-    )
-    api.add_resource(
-        SavedSearchDetail,
-        get_route_mapper().get(
-            SavedSearchDetail.__name__, "/saved_searches/<string:id>"
-        ),
-    )
-
     api.add_resource(
         ShareLink, get_route_mapper().get(ShareLink.__name__, "/share_links")
     )
