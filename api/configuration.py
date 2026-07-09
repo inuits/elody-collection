@@ -1,11 +1,19 @@
+from __future__ import (
+    annotations,  # NOTE: thought this wasn't required from 3.13, but apparently got pushed back to 3.14
+)
+
 from importlib import import_module
+from typing import TYPE_CHECKING
 
 from object_configurations.object_configuration_mapper import ObjectConfigurationMapper
 
+if TYPE_CHECKING:
+    from storage.genericstore import GenericStorageManager
+_storage_mapper: dict[str, type[GenericStorageManager]] = {}
+
 _object_configuration_mapper = ObjectConfigurationMapper()
-_route_mapper = {}
-_collection_mapper = {}
-_storage_mapper = {}
+_route_mapper: dict[str, str] = {}
+_collection_mapper: dict[str, str] = {}
 _features = {
     "bulk_operations": {
         "delete": {},
@@ -62,22 +70,22 @@ def init_mappers():
         raise unknown_error
 
 
-def get_object_configuration_mapper():
+def get_object_configuration_mapper() -> ObjectConfigurationMapper:
     global _object_configuration_mapper
     return _object_configuration_mapper
 
 
-def get_route_mapper():
+def get_route_mapper() -> dict[str, str]:
     global _route_mapper
     return _route_mapper
 
 
-def get_collection_mapper():
+def get_collection_mapper() -> dict[str, str]:
     global _collection_mapper
     return _collection_mapper
 
 
-def get_storage_mapper():
+def get_storage_mapper() -> dict[str, type[GenericStorageManager]]:
     global _storage_mapper
     return _storage_mapper
 
