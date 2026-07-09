@@ -31,11 +31,11 @@ wheels = [
 
 [[package]]
 name = "aniso8601"
-version = "10.0.0"
+version = "10.0.1"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/f3/3f/dc8a28fa6dc72c13d8c158b01f8975f240e9e72c336cc1ae00f424e2d7ce/aniso8601-10.0.0.tar.gz", hash = "sha256:ff1d0fc2346688c62c0151547136ac30e322896ed8af316ef7602c47da9426cf", size = 47008, upload-time = "2025-01-10T02:04:14.186Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/8b/8d/52179c4e3f1978d3d9a285f98c706642522750ef343e9738286130423730/aniso8601-10.0.1.tar.gz", hash = "sha256:25488f8663dd1528ae1f54f94ac1ea51ae25b4d531539b8bc707fed184d16845", size = 47190, upload-time = "2025-04-18T17:29:42.995Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/72/bf/d5cde2cb7cdc2cb1770d974418d169a79c3187bd962cb752b9fd617848ca/aniso8601-10.0.0-py2.py3-none-any.whl", hash = "sha256:3c943422efaa0229ebd2b0d7d223effb5e7c89e24d2267ebe76c61a2d8e290cb", size = 52767, upload-time = "2025-01-10T02:04:11.77Z" },
+    { url = "https://files.pythonhosted.org/packages/59/75/e0e10dc7ed1408c28e03a6cb2d7a407f99320eb953f229d008a7a6d05546/aniso8601-10.0.1-py2.py3-none-any.whl", hash = "sha256:eb19717fd4e0db6de1aab06f12450ab92144246b257423fe020af5748c0cb89e", size = 52848, upload-time = "2025-04-18T17:29:41.492Z" },
 ]
 
 [[package]]
@@ -158,7 +158,7 @@ dev = [
 requires-dist = [
     { name = "amqpstorm", specifier = "==2.11.1" },
     { name = "amqpstorm-flask", specifier = "==0.6.1" },
-    { name = "aniso8601", specifier = "==10.0.0" },
+    { name = "aniso8601", specifier = "==10.0.1" },
     { name = "apscheduler", specifier = "==3.11.2" },
     { name = "attrs", specifier = "==25.4.0" },
     { name = "authlib", specifier = "==1.7.2" },
@@ -217,7 +217,7 @@ requires-dist = [
     { name = "sentry-sdk", extras = ["flask"], specifier = "==2.63.0" },
     { name = "six", specifier = "==1.17.0" },
     { name = "typesense", specifier = "==0.21.0" },
-    { name = "tzlocal", specifier = "==5.3.1" },
+    { name = "tzlocal", specifier = "==5.4.4" },
     { name = "urllib3", specifier = "==2.7.0" },
     { name = "werkzeug", specifier = "==3.1.6" },
     { name = "zipp", specifier = "==3.23.1" },
@@ -1298,14 +1298,14 @@ wheels = [
 
 [[package]]
 name = "tzlocal"
-version = "5.3.1"
+version = "5.4.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "tzdata", marker = "sys_platform == 'win32'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/8b/2e/c14812d3d4d9cd1773c6be938f89e5735a1f11a9f184ac3639b93cef35d5/tzlocal-5.3.1.tar.gz", hash = "sha256:cceffc7edecefea1f595541dbd6e990cb1ea3d19bf01b2809f362a03dd7921fd", size = 30761, upload-time = "2025-03-05T21:17:41.549Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/81/5b/879b2f932adfa7a053c360d50bc896c977fa6426109185f7c12ebdd0cb9d/tzlocal-5.4.4.tar.gz", hash = "sha256:8dbb8660838688a7b6ba4fed31d18dedf842afb4d47ca050d6d891c2c15f3be4", size = 31170, upload-time = "2026-06-29T08:03:40.026Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c2/14/e2a54fabd4f08cd7af1c07030603c3356b74da07f7cc056e600436edfa17/tzlocal-5.3.1-py3-none-any.whl", hash = "sha256:eb1a66c3ef5847adf7a834f1be0800581b683b5608e74f86ecbcef8ab91bb85d", size = 18026, upload-time = "2025-03-05T21:17:39.857Z" },
+    { url = "https://files.pythonhosted.org/packages/9e/a4/017a7a6cbe387d961a688ec31364ae60a5c4e22c96ae9921b79a947c855d/tzlocal-5.4.4-py3-none-any.whl", hash = "sha256:aae09f0126a8a86fa736be266eb4a471380d26a0de3bc14844e7821fee3e2a15", size = 18115, upload-time = "2026-06-29T08:03:38.666Z" },
 ]
 
 [[package]]
