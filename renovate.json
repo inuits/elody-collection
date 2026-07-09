@@ -104,7 +104,7 @@
         "six",
         "zipp"
       ],
-      "groupName": "Validation & Schemas"
+      "groupName": "Group Utility & Core tooling"
     },
     {
       "description": "Group Testing packages",
