@@ -1,16 +1,17 @@
 from datetime import datetime, timezone
-from elody.error_codes import ErrorCode, get_error_code, get_write
+from urllib.parse import quote
+
 from elody.csv import CSVMultiObject
+from elody.error_codes import ErrorCode, get_error_code, get_write
 from elody.exceptions import ColumnNotFoundException
+from elody.job import add_document_to_job, fail_job, finish_job, init_job, start_job
 from elody.util import get_raw_id
-from elody.job import init_job, start_job, finish_job, fail_job, add_document_to_job
 from flask import request
 from flask_restful import abort
 from inuits_policy_based_auth import RequestContext
 from policy_factory import authenticate, get_user_context
 from rabbit import get_rabbit
 from resources.base_resource import BaseResource
-from urllib.parse import quote
 
 
 class Batch(BaseResource):

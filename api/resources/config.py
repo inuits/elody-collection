@@ -1,7 +1,8 @@
+from logging import Logger
+
 from elody.util import read_json_as_dict
 from flask import request
 from inuits_policy_based_auth import RequestContext
-from logging import Logger
 from policy_factory import apply_policies, get_user_context
 from resources.base_resource import BaseResource
 

@@ -1,6 +1,7 @@
-from elody.util import Singleton
 from os import getenv
+
 from configuration import get_storage_mapper
+from elody.util import Singleton
 
 
 class StorageManager(metaclass=Singleton):

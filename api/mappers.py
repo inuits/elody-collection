@@ -1,9 +1,9 @@
 import csv
 import io
-import os
 import json
-import uuid
+import os
 import re
+import uuid
 
 from elody.util import get_item_metadata_value
 from rdflib import Graph

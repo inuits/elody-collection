@@ -1,3 +1,6 @@
+from os import getenv
+from time import monotonic
+
 from filters_v2.helpers.base_helper import (
     get_distinct_by,
     get_facets,
@@ -23,9 +26,7 @@ from filters_v2.stages import (
     sort_stage,
 )
 from logging_elody.log import log
-from os import getenv
 from storage.storagemanager import StorageManager
-from time import monotonic
 from tracing import get_tracer
 
 tracer = get_tracer()

@@ -1,8 +1,9 @@
 from os import path
-from sys import argv, path as sys_path
+from sys import argv
+from sys import path as sys_path
 
 sys_path.append(path.dirname(path.dirname(path.abspath(__file__))))
-from configuration import init_mappers, get_object_configuration_mapper
+from configuration import get_object_configuration_mapper, init_mappers
 from logging_elody.log import log
 
 

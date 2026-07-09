@@ -1,3 +1,5 @@
+from urllib.parse import parse_qs
+
 from configuration import get_features, get_object_configuration_mapper
 from elody.job import add_document_to_job, fail_job, finish_job, init_job, start_job
 from elody.policies.helpers import get_flat_item_and_object_lists
@@ -7,7 +9,6 @@ from policy_factory import authenticate, get_user_context
 from rabbit import get_rabbit
 from resources.base.document import Document
 from resources.generic_object import GenericObjectV2
-from urllib.parse import parse_qs
 from werkzeug.datastructures import ImmutableMultiDict
 from werkzeug.exceptions import BadRequest, Forbidden, MethodNotAllowed, NotAcceptable
 

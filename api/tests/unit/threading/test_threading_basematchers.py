@@ -1,7 +1,7 @@
 import threading
-import pytest
 from unittest.mock import patch
 
+import pytest
 from filters_v2.matchers.base_matchers import BaseMatchers
 
 

@@ -1,16 +1,17 @@
 from abc import ABC, abstractmethod
+from os import getenv
+from typing import Type
+
 from elody.error_codes import ErrorCode, get_error_code, get_read
 from filters.filter_matcher_mapping import FilterMatcherMapping
 from filters.matchers.matchers import BaseMatcher
-from filters.types.base_filter_type_query_generator import BaseFilterTypeQueryGenerator
 from filters.types.arango_filter_type_query_generator import (
     ArangoFilterTypeQueryGenerator,
 )
+from filters.types.base_filter_type_query_generator import BaseFilterTypeQueryGenerator
 from filters.types.mongo_filter_type_query_generator import (
     MongoFilterTypeQueryGenerator,
 )
-from os import getenv
-from typing import Type
 
 
 def get_filter(input_type: str):

@@ -1,9 +1,13 @@
-import mappers
+from urllib.parse import quote
 
-from elody.error_codes import ErrorCode, get_error_code, get_write
-from elody.exceptions import InvalidObjectException, NonUniqueException
+import mappers
 from elody.csv import CSVMultiObject
-from elody.exceptions import ColumnNotFoundException
+from elody.error_codes import ErrorCode, get_error_code, get_write
+from elody.exceptions import (
+    ColumnNotFoundException,
+    InvalidObjectException,
+    NonUniqueException,
+)
 from elody.util import (
     get_raw_id,
     mediafile_is_public,
@@ -25,7 +29,6 @@ from resources.generic_object import (
     GenericObjectMetadataKey,
     GenericObjectRelations,
 )
-from urllib.parse import quote
 
 
 class Entity(GenericObject):

@@ -1,9 +1,9 @@
 """Mock StorageManager and auth before any resource imports so tests can run cleanly."""
 
-import sys
 import os
-from unittest.mock import MagicMock, patch
+import sys
 from functools import wraps
+from unittest.mock import MagicMock, patch
 
 # Ensure /app/api is on the path (pytest rootdir is /app)
 _api_path = os.path.normpath(

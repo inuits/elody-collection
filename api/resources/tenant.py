@@ -1,5 +1,4 @@
 import mappers
-
 from configuration import get_object_configuration_mapper
 from flask import request
 from inuits_policy_based_auth import RequestContext

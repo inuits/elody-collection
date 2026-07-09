@@ -11,9 +11,10 @@ These tests cover:
 Run with: pytest test_app_context.py -vv
 """
 
-import pytest
 import threading
 import time
+
+import pytest
 
 
 class TestFallbackStorage:
@@ -321,7 +322,8 @@ class TestIntegration:
     def test_g_and_request_singletons(self):
         """Test that g and request are singleton instances."""
         from app_context import g, request
-        from app_context import g as g2, request as request2
+        from app_context import g as g2
+        from app_context import request as request2
 
         assert g is g2
         assert request is request2

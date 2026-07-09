@@ -1,16 +1,16 @@
+from elody.job import (
+    add_document_to_job,
+    fail_job,
+    finish_job,
+    finish_job_with_warning,
+    init_job,
+    start_job,
+)
 from flask import request
 from inuits_policy_based_auth import RequestContext
 from policy_factory import apply_policies
-from resources.base_resource import BaseResource
 from rabbit import get_rabbit
-from elody.job import (
-    start_job,
-    finish_job,
-    fail_job,
-    init_job,
-    finish_job_with_warning,
-    add_document_to_job,
-)
+from resources.base_resource import BaseResource
 
 
 class InitJob(BaseResource):

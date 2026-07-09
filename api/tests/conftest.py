@@ -2,9 +2,10 @@
 Pytest configuration and fixtures for app_context tests.
 """
 
-import pytest
 import sys
 import threading
+
+import pytest
 
 
 @pytest.fixture

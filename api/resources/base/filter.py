@@ -1,7 +1,6 @@
 from flask import g, request
 from inuits_policy_based_auth import RequestContext
-from policy_factory import authenticate
-from policy_factory import get_user_context
+from policy_factory import authenticate, get_user_context
 from resources.filter import FilterGenericObjectsV2
 
 

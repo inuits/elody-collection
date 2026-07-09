@@ -1,8 +1,9 @@
 # api/tests/unit/jobs/conftest.py
-import pytest
-from unittest.mock import MagicMock, patch
-from flask import Flask
 import sys
+from unittest.mock import MagicMock, patch
+
+import pytest
+from flask import Flask
 
 
 @pytest.fixture

@@ -1,7 +1,8 @@
-from configuration import get_object_configuration_mapper
 from copy import deepcopy
-from serialization.case_converter import camel_to_snake
 from typing import Any
+
+from configuration import get_object_configuration_mapper
+from serialization.case_converter import camel_to_snake
 
 
 class Serializer:

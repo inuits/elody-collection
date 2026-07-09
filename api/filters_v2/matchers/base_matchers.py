@@ -1,5 +1,6 @@
 from abc import ABC, ABCMeta, abstractmethod
 from contextvars import ContextVar
+
 from configuration import get_object_configuration_mapper
 
 _collection_ctx = ContextVar("collection", default="entities")

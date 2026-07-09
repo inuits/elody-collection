@@ -1,6 +1,6 @@
 """Unit tests for typesense_client functions."""
 
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import MagicMock, patch
 
 import search.typesense_client as tc
 from search.typesense_client import (

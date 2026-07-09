@@ -1,6 +1,7 @@
-import pytest
 from datetime import datetime
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
+
+import pytest
 
 
 def make_podiumnet_config():

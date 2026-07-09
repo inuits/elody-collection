@@ -4,8 +4,9 @@ Unit tests for Typesense accelerated search in BaseFilterResource.
 Tests pagination, multi-type filters, fallback behavior, and count consistency.
 """
 
-import pytest
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 
 def make_mongo_doc(doc_id, doc_type="work_word"):

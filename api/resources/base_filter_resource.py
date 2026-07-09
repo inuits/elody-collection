@@ -8,10 +8,17 @@ from logging_elody.log import log
 from resources.base_resource import BaseResource
 from search.typesense_client import (
     build_filter_by,
-    build_type_filter,
+)
+from search.typesense_client import (
     ensure_collection as typesense_ensure_collection,
+)
+from search.typesense_client import (
     group_values as typesense_group_values,
+)
+from search.typesense_client import (
     search as typesense_search,
+)
+from search.typesense_client import (
     search_all_ids as typesense_search_all_ids,
 )
 from storage.storagemanager import StorageManager

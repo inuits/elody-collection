@@ -1,7 +1,8 @@
 from datetime import datetime
+from re import IGNORECASE, compile
+
 from elody.util import interpret_flat_key
 from filters_v2.matchers.base_matchers import BaseMatchers
-from re import compile, IGNORECASE
 
 
 class MongoMatchers(BaseMatchers):

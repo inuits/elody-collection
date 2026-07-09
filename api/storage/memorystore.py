@@ -1,6 +1,6 @@
 import uuid
-
 from copy import deepcopy
+
 from storage.genericstore import GenericStorageManager
 
 

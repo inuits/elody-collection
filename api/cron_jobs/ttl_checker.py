@@ -1,5 +1,6 @@
-import os
 import logging
+import os
+
 from elody.util import get_raw_id, signal_mediafile_deleted
 from rabbit import get_rabbit
 from storage.storagemanager import StorageManager

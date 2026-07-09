@@ -1,4 +1,6 @@
 from copy import deepcopy
+from os import getenv
+
 from filters_v2.helpers.base_helper import (
     has_or_filter,
     parse_optional_filters,
@@ -11,7 +13,6 @@ from filters_v2.helpers.mongo_helper import (
 )
 from filters_v2.stages import lookup_stage
 from filters_v2.types.filter_types import get_filter
-from os import getenv
 
 
 def build(filter_request_body: list[dict], tidy_up_match: bool) -> list[dict]:

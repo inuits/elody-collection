@@ -1,3 +1,7 @@
+from copy import deepcopy
+from os import getenv
+from time import sleep
+
 from arango import (
     DocumentInsertError,
     DocumentReplaceError,
@@ -6,7 +10,6 @@ from arango import (
 from arango.client import ArangoClient
 from arango.http import DefaultHTTPClient
 from configuration import get_object_configuration_mapper
-from copy import deepcopy
 from elody.exceptions import NonUniqueException
 from elody.util import (
     custom_json_dumps,
@@ -16,11 +19,9 @@ from elody.util import (
     signal_entity_changed,
 )
 from logging_elody.log import log
-from os import getenv
 from policy_factory import get_user_context
 from rabbit import get_rabbit
 from storage.genericstore import GenericStorageManager
-from time import sleep
 
 
 class ArangoStorageManager(GenericStorageManager):

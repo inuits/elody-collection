@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
-from filters_v2.matchers.matchers import BaseMatcher
 from typing import Type
+
+from filters_v2.matchers.matchers import BaseMatcher
 
 
 class BaseFilterTypeQueryGenerator(ABC):

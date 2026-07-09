@@ -1,4 +1,5 @@
 from abc import ABC
+
 from filters_v2.matchers.matchers import (
     AnyMatcher,
     ContainsMatcher,

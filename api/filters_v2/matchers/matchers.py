@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
-from filters_v2.matchers.base_matchers import BaseMatchers
-from filters_v2.matchers.mongo_matchers import MongoMatchers
 from os import getenv
 from re import escape
+
+from filters_v2.matchers.base_matchers import BaseMatchers
+from filters_v2.matchers.mongo_matchers import MongoMatchers
 
 
 class BaseMatcher(ABC):

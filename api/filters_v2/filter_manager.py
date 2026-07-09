@@ -1,7 +1,8 @@
+from os import getenv
+
 from elody.util import Singleton
 from filters_v2.arango_wrapper import ArangoWrapper
 from filters_v2.mongo_filters import MongoFilters
-from os import getenv
 
 
 class FilterManager(metaclass=Singleton):

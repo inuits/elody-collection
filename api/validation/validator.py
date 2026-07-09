@@ -1,6 +1,7 @@
 from configuration import get_object_configuration_mapper
 from elody.error_codes import ErrorCode, get_error_code, get_write
-from jsonschema import ValidationError, validate as validate_json
+from jsonschema import ValidationError
+from jsonschema import validate as validate_json
 from logging_elody.log import log
 from resources.base_resource import BaseResource
 from werkzeug.exceptions import BadRequest

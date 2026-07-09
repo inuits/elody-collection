@@ -1,7 +1,8 @@
 """Unit tests for Typesense sync/delete queue handlers in queues.py."""
 
-import pytest
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 
 def make_entity(entity_id, entity_type="work_word"):

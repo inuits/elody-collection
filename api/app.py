@@ -1,24 +1,24 @@
 import json
+from collections import defaultdict
+from glob import glob
+from importlib import import_module
+from os import getenv, path
+from secrets import token_hex
 
 from apscheduler.schedulers.background import BackgroundScheduler
-from collections import defaultdict
 from configuration import get_features, get_route_mapper, init_mappers
 from elody.error_codes import ErrorCode, get_error_code, get_read
 from elody.exceptions import NotFoundException
 from elody.loader import load_apps, load_jobs
 from elody.util import CustomJSONEncoder, read_json_as_dict
-from flask import Flask, g, make_response, jsonify, Response, request
+from flask import Flask, Response, g, jsonify, make_response, request
 from flask.json.provider import DefaultJSONProvider
 from flask_swagger_ui import get_swaggerui_blueprint
-from glob import glob
 from health import init_health_check
-from importlib import import_module
 from logging_elody.log import log
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
-from os import getenv, path
-from policy_factory import init_policy_factory, get_user_context
-from rabbit import init_rabbit, get_rabbit
-from secrets import token_hex
+from policy_factory import get_user_context, init_policy_factory
+from rabbit import get_rabbit, init_rabbit
 from tracing import init_tracer
 from werkzeug.exceptions import Forbidden, HTTPException, NotFound, Unauthorized
 from werkzeug.middleware.proxy_fix import ProxyFix

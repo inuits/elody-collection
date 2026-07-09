@@ -1,4 +1,7 @@
 from abc import ABC, abstractmethod
+from os import getenv
+from typing import Any, Type
+
 from elody.error_codes import ErrorCode, get_error_code, get_read
 from filters_v2.filter_matcher_mapping import FilterMatcherMapping
 from filters_v2.matchers.matchers import BaseMatcher
@@ -8,8 +11,6 @@ from filters_v2.types.base_filter_type_query_generator import (
 from filters_v2.types.mongo_filter_type_query_generator import (
     MongoFilterTypeQueryGenerator,
 )
-from os import getenv
-from typing import Any, Type
 
 
 def get_filter(input_type: str):

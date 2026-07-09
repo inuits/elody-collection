@@ -1,19 +1,20 @@
 from abc import ABC
+
 from filters.matchers.matchers import (
-    IdMatcher,
-    ExactMatcher,
-    ContainsMatcher,
-    MinMatcher,
-    MaxMatcher,
-    MinIncludedMatcher,
-    MaxIncludedMatcher,
-    InBetweenMatcher,
     AnyMatcher,
-    NoneMatcher,
-    MetadataOnRelationExactMatcher,
-    MetadataOnRelationContainsMatcher,
-    AssetEngineExactMatcher,
     AssetEngineContainsMatcher,
+    AssetEngineExactMatcher,
+    ContainsMatcher,
+    ExactMatcher,
+    IdMatcher,
+    InBetweenMatcher,
+    MaxIncludedMatcher,
+    MaxMatcher,
+    MetadataOnRelationContainsMatcher,
+    MetadataOnRelationExactMatcher,
+    MinIncludedMatcher,
+    MinMatcher,
+    NoneMatcher,
 )
 
 

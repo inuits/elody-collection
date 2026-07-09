@@ -1,6 +1,7 @@
-from elody.error_codes import ErrorCode, get_error_code, get_write
-from configuration import get_object_configuration_mapper
 from copy import deepcopy
+
+from configuration import get_object_configuration_mapper
+from elody.error_codes import ErrorCode, get_error_code, get_write
 from logging_elody.log import log
 
 

@@ -1,7 +1,6 @@
 import pymongo
-
-from elody.error_codes import ErrorCode, get_error_code, get_read
 from configuration import get_object_configuration_mapper
+from elody.error_codes import ErrorCode, get_error_code, get_read
 from filters.filter_option import FilterOption
 from filters.matchers.base_matchers import BaseMatchers
 from filters.types.filter_types import get_filter

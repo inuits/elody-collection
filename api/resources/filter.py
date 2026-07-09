@@ -1,6 +1,6 @@
-import mappers
 import re
 
+import mappers
 from configuration import get_object_configuration_mapper, get_storage_mapper
 from filters_v2.filter_matcher_mapping import FilterMatcherMapping
 from filters_v2.helpers.base_helper import (
@@ -12,9 +12,8 @@ from flask import request
 from inuits_policy_based_auth import RequestContext
 from policy_factory import apply_policies, get_user_context
 from resources.base_filter_resource import BaseFilterResource
-from werkzeug.exceptions import BadRequest
-
 from tracing import get_tracer
+from werkzeug.exceptions import BadRequest
 
 tracer = get_tracer()
 

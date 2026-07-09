@@ -1,5 +1,6 @@
-import mappers
+from urllib.parse import quote
 
+import mappers
 from elody.error_codes import ErrorCode, get_error_code, get_write
 from elody.util import (
     get_raw_id,
@@ -18,7 +19,6 @@ from resources.generic_object import (
     GenericObjectMetadata,
     GenericObjectRelations,
 )
-from urllib.parse import quote
 
 
 class Mediafile(GenericObject):
