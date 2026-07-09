@@ -1,3 +1,9 @@
+<p align="center">
+  <a href="https://elody.eu"><img src="https://elody.eu/images/logo.svg" alt="Elody" width="96" /></a>
+</p>
+
+<p align="center">Part of <a href="https://elody.eu">Elody</a> — the open semantic data platform.</p>
+
 # Inuits DAMS Collection API
 
 This is the Inuits DAMS Collection API repository for the Inuits DAMS project. See https://gitlab.inuits.io/customers/coghent/dams/coghent-dams-common for general information.
