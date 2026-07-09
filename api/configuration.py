@@ -82,6 +82,6 @@ def get_storage_mapper():
     return _storage_mapper
 
 
-def get_features():
+def get_features() -> dict[str, dict[str, dict]]:
     global _features
     return _features

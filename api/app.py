@@ -1,8 +1,8 @@
 import json
 from collections import defaultdict
-from glob import glob
 from importlib import import_module
-from os import getenv, path
+from os import getenv
+from pathlib import Path
 from secrets import token_hex
 
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -58,7 +58,7 @@ def __process_resource_rules(rules):
 def load_sentry():
     def before_send(event, hint):
         if "exc_info" in hint:
-            exc_type, exc_value, tb = hint["exc_info"]
+            _exc_type, exc_value, _tb = hint["exc_info"]
             status_code = getattr(exc_value, "code", None)
 
             if status_code:
@@ -82,21 +82,18 @@ def load_sentry():
 
 def load_specs(app):
     resource_rules = []
-    resources_path = path.join(app.root_path, "resources")
-    for spec in get_features().get("specs", {}).keys():
-        specs_path = path.join(resources_path, spec)
-        resource_paths = glob(path.join(specs_path, "*.py"))
+    resources_path = Path(app.root_path) / "resources"
+    specs_dict = get_features().get("specs", {})
+    for spec in specs_dict.keys():
+        specs_path = resources_path / spec
+        resource_paths = list(specs_path.glob("*.py"))
         for sub_spec_module in get_features()["specs"][spec].keys():
-            resource_paths.extend(
-                glob(path.join(specs_path, f"{sub_spec_module}/*.py"))
-            )
+            resource_paths.extend(specs_path.glob(f"{sub_spec_module}/*.py"))
         for resource_path in resource_paths:
             try:
-                module_path = (
-                    resource_path.removeprefix(f"{app.root_path}/")
-                    .removesuffix(".py")
-                    .replace("/", ".")
-                )
+                rel_path = resource_path.relative_to(app.root_path)
+                no_ext_path = rel_path.with_suffix("")
+                module_path = ".".join(no_ext_path.parts)
                 module = import_module(module_path)
                 try:
                     app.register_blueprint(module.blueprint)
@@ -125,18 +122,24 @@ def load_app_resources():
     return resource_rules
 
 
-def init_app():
+def init_app_and_api():
+    from init_api import init_api
+
     app = Flask(__name__)
     app.config["RESTFUL_JSON"] = {"cls": CustomJSONEncoder}
     app.json = ElodyJSONProvider(app)
     app.wsgi_app = ProxyFix(app.wsgi_app, x_prefix=1)
     app.secret_key = getenv("SECRET_KEY", token_hex(16))
-    init_mappers()
     load_apps(app, None)
     resource_rules = load_specs(app)
     resource_rules.extend(load_app_resources())
     __process_resource_rules(resource_rules)
-    return app
+    init_rabbit(app)
+    register_swaggerui(app)
+    init_health_check(app, database_available, rabbit_available)
+    init_policy_factory()
+    api = init_api(app)
+    return app, api
 
 
 def init_scheduler():
@@ -172,21 +175,16 @@ def rabbit_available():
     return False, "Failed to reach RabbitMQ"
 
 
+init_mappers()
 load_sentry()
 tracer = init_tracer()
-app = init_app()
+app, api = init_app_and_api()
 FlaskInstrumentor().instrument_app(app)
 
 if scheduler := init_scheduler():
     load_jobs(scheduler, None)
-register_swaggerui(app)
-from init_api import init_api
 
-api = init_api(app)
 
-init_rabbit(app)
-init_health_check(app, database_available, rabbit_available)
-init_policy_factory()
 if getenv("ENABLE_METRICS", False) in ["True", "true", True]:
     register_exporter(app, api)
 
