@@ -388,6 +388,8 @@ def map_to_rdf_data(data, data_type, format):
 def __serialize_data_according_to_accept_header(
     data, data_type, to_format, accept_header, entity_type=None
 ):
+    if accept_header == "*/*":
+        accept_header = "application/json"
     if data_type == "entities":
         results = []
         for result in data["results"]:

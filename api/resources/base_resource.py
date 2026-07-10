@@ -23,6 +23,7 @@ from elody.util import (
     mediafile_is_public,
     parse_string_to_bool,
     signal_entity_changed,
+    CustomJSONEncoder,
 )
 from elody.validator import validate_json
 from flask import Response, g
@@ -263,11 +264,22 @@ class BaseResource(Resource):
         self, response_data, accept_header=None, status_code=200, spec="elody"
     ):
         if spec != "elody":
-            return response_data, status_code
+            return Response(response_data, status=status_code)
 
         match accept_header:
             case "application/json":
-                return response_data, status_code
+                return Response(
+                    json.dumps(response_data, cls=CustomJSONEncoder),
+                    status=status_code,
+                    mimetype="application/json",
+                )
+            case "*/*":
+                return Response(
+                    json.dumps(response_data, cls=CustomJSONEncoder),
+                    status=status_code,
+                    mimetype="application/json",
+                )
+
             case "application/ld+json":
                 return Response(
                     response_data, status=status_code, mimetype="application/ld+json"
@@ -300,7 +312,7 @@ class BaseResource(Resource):
         if not parse_string_to_bool(self.auto_create_tenants):
             return
         if self.tenant_defining_types and entity["type"] in self.tenant_defining_types:
-            tenant_id = f'tenant:{entity.get("_id", entity.get("id"))}'
+            tenant_id = f"tenant:{entity.get('_id', entity.get('id'))}"
             if not (tenant_label := self._get_tenant_label(entity)):
                 tenant_label = entity.get("_id", entity.get("id"))
             tenant = self.storage.save_item_to_collection(
@@ -383,7 +395,7 @@ class BaseResource(Resource):
     def _delete_tenant(self, entity):
         if self.tenant_defining_types and entity["type"] in self.tenant_defining_types:
             self.storage.delete_item_from_collection(
-                "entities", f'tenant:{entity["_id"]}'
+                "entities", f"tenant:{entity['_id']}"
             )
 
     def _get_children_from_mediafile(self, parent_mediafile, linked_mediafiles=None):
@@ -706,7 +718,7 @@ class BaseResource(Resource):
                     )
             if "primary_thumbnail_location" in entity:
                 entity["primary_thumbnail_location"] = (
-                    f'{self.image_api_url_ext}{entity["primary_thumbnail_location"]}'
+                    f"{self.image_api_url_ext}{entity['primary_thumbnail_location']}"
                 )
         return entities
 
@@ -726,7 +738,7 @@ class BaseResource(Resource):
                     )
             if "thumbnail_file_location" in mediafile:
                 mediafile["thumbnail_file_location"] = (
-                    f'{self.image_api_url_ext}{mediafile["thumbnail_file_location"]}'
+                    f"{self.image_api_url_ext}{mediafile['thumbnail_file_location']}"
                 )
         return mediafiles
 

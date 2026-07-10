@@ -54,9 +54,7 @@ class GenericObject(BaseResource):
             for filter in access_restricting_filters:
                 filters.update(filter)
         if storage_type == "http":
-            http_storage = get_storage_mapper().get(
-                "http"
-            )()  # pyright: ignore[reportOptionalCall]
+            http_storage = get_storage_mapper().get("http")()  # pyright: ignore[reportOptionalCall]
             collection_data = http_storage.get_items_from_collection(collection)
         else:
             collection_data = self.storage.get_items_from_collection(
@@ -339,9 +337,7 @@ class GenericObjectDetail(BaseResource):
         if storage_type != "http":
             item = self._check_if_collection_and_item_exists(collection, id)
         else:
-            http_storage = get_storage_mapper().get(
-                "http"
-            )()  # pyright: ignore[reportOptionalCall]
+            http_storage = get_storage_mapper().get("http")()  # pyright: ignore[reportOptionalCall]
             item = http_storage.get_item_from_collection_by_id(collection, id)
         return item
 
@@ -483,7 +479,7 @@ class GenericObjectDetailV2(BaseResource):
             ),
             accept_header,
             spec=spec,
-        )[0]
+        )
 
     @apply_policies(RequestContext(request))
     @validate("put", request)
@@ -509,20 +505,17 @@ class GenericObjectDetailV2(BaseResource):
             return str(error), 409
         signal_entity_changed(get_rabbit(), item)
         accept_header = request.headers.get("Accept")
-        return (
-            self._create_response_according_accept_header(
-                mappers.map_data_according_to_accept_header(
-                    item,
-                    accept_header,
-                    "entity",
-                    [],
-                    spec,
-                    request.args,
-                ),
+        return self._create_response_according_accept_header(
+            mappers.map_data_according_to_accept_header(
+                item,
                 accept_header,
-                spec=spec,
-            )[0],
-            200,
+                "entity",
+                [],
+                spec,
+                request.args,
+            ),
+            accept_header,
+            spec=spec,
         )
 
     @apply_policies(RequestContext(request))
