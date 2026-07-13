@@ -3,7 +3,7 @@ import io
 import json
 import re
 from copy import deepcopy
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from os import getenv
 from urllib.parse import quote
 
@@ -11,6 +11,7 @@ import mappers
 from configuration import get_object_configuration_mapper, get_storage_mapper
 from elody.csv import CSVSingleObject
 from elody.error_codes import ErrorCode, get_error_code, get_read, get_write
+from elody.exceptions import InvalidObjectException
 from elody.schemas import (
     entity_schema,
     key_value_store_schema,
@@ -23,10 +24,9 @@ from elody.util import (
     mediafile_is_public,
     parse_string_to_bool,
     signal_entity_changed,
-    CustomJSONEncoder,
 )
 from elody.validator import validate_json
-from flask import Response, g
+from flask import g
 from flask_restful import Resource, abort
 from policy_factory import get_user_context
 from rabbit import get_rabbit
@@ -233,7 +233,7 @@ class BaseResource(Resource):
         content = {
             "filename": filename,
             "type": "mediafile",
-            "date_created": datetime.now(timezone.utc),
+            "date_created": datetime.now(UTC),
             "version": 1,
             "thumbnail_file_location": f"/iiif/3/{filename}/full/,150/0/default.jpg",
             "original_file_location": f"/download/{filename}",
@@ -264,47 +264,20 @@ class BaseResource(Resource):
         self, response_data, accept_header=None, status_code=200, spec="elody"
     ):
         if spec != "elody":
-            return Response(response_data, status=status_code)
+            return response_data, status_code
 
         match accept_header:
-            case "application/json":
-                return Response(
-                    json.dumps(response_data, cls=CustomJSONEncoder),
-                    status=status_code,
-                    mimetype="application/json",
-                )
             case "*/*":
-                return Response(
-                    json.dumps(response_data, cls=CustomJSONEncoder),
-                    status=status_code,
-                    mimetype="application/json",
-                )
+                return response_data, status_code, {"Content-Type": "application/json"}
 
-            case "application/ld+json":
-                return Response(
-                    response_data, status=status_code, mimetype="application/ld+json"
-                )
-            case "application/n-triples":
-                return Response(
-                    response_data, status=status_code, mimetype="application/n-triples"
-                )
-            case "application/rdf+xml":
-                return Response(
-                    response_data, status=status_code, mimetype="application/rdf+xml"
-                )
-            case "text/csv":
-                return Response(response_data, status=status_code, mimetype="text/csv")
-            case "text/turtle":
-                return Response(
-                    response_data, status=status_code, mimetype="text/turtle"
-                )
             case "text/uri-list":
                 if not g.get("text_uri_list"):
-                    return Response(
-                        response_data, status=status_code, mimetype="text/uri-list"
-                    )
+                    return response_data, status_code
                 else:
-                    return g.get("text_uri_list", ""), status_code
+                    return (
+                        g.get("text_uri_list", ""),
+                        status_code,
+                    )
             case _:
                 return response_data, status_code
 
@@ -341,7 +314,7 @@ class BaseResource(Resource):
                 {
                     "key": "ttl",
                     "value": (
-                        datetime.now(tz=timezone.utc)
+                        datetime.now(tz=UTC)
                         + timedelta(
                             seconds=int(getenv("TICKET_LIFESPAN", 3600))
                             + int(getenv("TICKET_CLEANUP", 86400))
@@ -359,7 +332,7 @@ class BaseResource(Resource):
             ticket["exp"] = exp
         else:
             ticket["exp"] = (
-                datetime.now(tz=timezone.utc)
+                datetime.now(tz=UTC)
                 + timedelta(seconds=int(getenv("TICKET_LIFESPAN", 3600)))
             ).timestamp()
         if mediafile_id:
@@ -400,7 +373,7 @@ class BaseResource(Resource):
 
     def _get_children_from_mediafile(self, parent_mediafile, linked_mediafiles=None):
         if not linked_mediafiles:
-            linked_mediafiles = list()
+            linked_mediafiles = []
         relations = self.storage.get_collection_item_relations(
             "mediafiles", parent_mediafile["_id"]
         )
@@ -455,11 +428,13 @@ class BaseResource(Resource):
             return content
 
     def _get_date_from_object(self, object_dict, date_field):
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         if date_field not in object_dict:
             return now
         try:
-            return datetime.strptime(object_dict.get(date_field), "%Y-%m-%d %H:%M:%S")
+            return datetime.strptime(
+                object_dict.get(date_field), "%Y-%m-%d %H:%M:%S"
+            ).astimezone(UTC)
         except ValueError:
             if isinstance(object_dict.get(date_field), datetime):
                 return object_dict.get(date_field)
@@ -490,7 +465,7 @@ class BaseResource(Resource):
                 except ValueError:
                     raise BadRequest(
                         f"Invalid query parameter q={field}. Expected syntax is 'q=key==value'."
-                    )
+                    ) from ValueError
                 if key and value:
                     filters.append(
                         {
@@ -583,7 +558,7 @@ class BaseResource(Resource):
     def _get_objects_from_ids_in_body_or_query(self, collection, request, ids=None):
         if not ids:
             ids = self._get_ids_from_body_or_query(request)
-        objects = list()
+        objects = []
         for id in ids:
             objects.append(self._check_if_collection_and_item_exists(collection, id))
         return objects
@@ -839,7 +814,7 @@ class BaseResource(Resource):
         )
 
     def _update_date_updated_and_last_editor(self, collection, id):
-        content_date_updated = {"date_updated": datetime.now(timezone.utc)}
+        content_date_updated = {"date_updated": datetime.now(UTC)}
         content_last_editor_updated = {
             "last_editor": get_user_context().email or "default_uploader"
         }
