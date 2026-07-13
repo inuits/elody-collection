@@ -24,10 +24,15 @@ class ElodyMediafileDownloadUrls(BaseResource):
     def get(self, **kwargs):
         copyright_access = get_user_context().bag["copyright_access"]
         mediafile = self.resource.get(**kwargs)
-        if isinstance(mediafile, Response):
-            mediafile = mediafile.json
-        elif not isinstance(mediafile, dict):
-            return mediafile
+        match mediafile:
+            case Response(json=payload):
+                mediafile = payload
+            case (first_item, *_) if isinstance(mediafile, tuple):
+                mediafile = first_item
+            case dict():
+                pass
+            case _:
+                return mediafile
 
         config = get_object_configuration_mapper().get("mediafile")
         serialize = config.serialization(
