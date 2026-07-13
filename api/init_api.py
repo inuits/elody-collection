@@ -1,5 +1,5 @@
+from api_base import CustomApi
 from configuration import get_route_mapper
-from flask_restful import Api
 from resources.batch import Batch
 from resources.config import Config
 from resources.filter import FilterMatchers
@@ -19,7 +19,7 @@ from resources.ticket import Ticket, TicketDetail
 
 
 def init_api(app):
-    api = Api(app)
+    api = CustomApi(app)
 
     api.add_resource(
         AsyncAPISpec,

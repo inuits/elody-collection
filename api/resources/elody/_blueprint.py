@@ -1,8 +1,8 @@
+from api_base import CustomApi
 from flask import Blueprint, request
-from flask_restful import Api
 
 blueprint = Blueprint("elody", __name__)
-api = Api(blueprint)
+api = CustomApi(blueprint)
 
 
 @blueprint.before_request
