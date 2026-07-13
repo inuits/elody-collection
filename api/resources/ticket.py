@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from elody.error_codes import ErrorCode, get_error_code, get_write
 from flask import request
@@ -6,12 +6,12 @@ from flask_restful import abort
 from inuits_policy_based_auth import RequestContext
 from policy_factory import authenticate
 from resources.generic_object import (
-    GenericObject,
-    GenericObjectDetail,
+    GenericObjectDetailV2,
+    GenericObjectV2,
 )
 
 
-class Ticket(GenericObject):
+class Ticket(GenericObjectV2):
     @authenticate(RequestContext(request))
     def post(self):
         content = request.get_json()
@@ -25,10 +25,10 @@ class Ticket(GenericObject):
         return ticket_id, 201
 
 
-class TicketDetail(GenericObjectDetail):
+class TicketDetail(GenericObjectDetailV2):
     @authenticate(RequestContext(request))
     def get(self, id):
-        ticket = super().get("abstracts", id) or {}
-        is_expired = datetime.now(tz=timezone.utc).timestamp() >= float(ticket["exp"])
-        ticket["is_expired"] = is_expired
+        ticket = super().get("abstracts", id) or ({},)
+        is_expired = datetime.now(tz=UTC).timestamp() >= float(ticket[0]["exp"])
+        ticket[0]["is_expired"] = is_expired
         return ticket
