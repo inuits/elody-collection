@@ -3,6 +3,7 @@ from importlib import import_module
 from app_context import g
 from inuits_policy_based_auth import PolicyFactory, RequestContext
 from inuits_policy_based_auth.exceptions import NoUserContextException
+from logging_elody.log import log
 
 
 def init_policy_factory():
@@ -13,7 +14,7 @@ def init_policy_factory():
         permissions_module = import_module("apps.permissions")
         load_policies(
             _policy_factory,
-            None,
+            log,
             permissions_module.PERMISSIONS,
             permissions_module.PLACEHOLDERS,
         )
