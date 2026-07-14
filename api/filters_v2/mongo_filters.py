@@ -43,7 +43,7 @@ DISTINCT_TYPES_TTL_SECONDS = 300
 # The cap also bounds the navigable page count (frontend derives pages from the
 # count), so 1000 keeps ~50 pages of 20 reachable while staying ~1ms; users after
 # something deeper are expected to narrow the filter. Set 0 to never cap.
-LISTING_COUNT_CAP = int(getenv("LISTING_COUNT_CAP", 1000))
+LISTING_COUNT_CAP = int(getenv("LISTING_COUNT_CAP") or 0)
 
 
 def get_type_only_filter_values(match: list, group: list):

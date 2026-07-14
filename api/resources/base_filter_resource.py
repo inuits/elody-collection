@@ -8,17 +8,9 @@ from logging_elody.log import log
 from resources.base_resource import BaseResource
 from search.typesense_client import (
     build_filter_by,
-)
-from search.typesense_client import (
     ensure_collection as typesense_ensure_collection,
-)
-from search.typesense_client import (
     group_values as typesense_group_values,
-)
-from search.typesense_client import (
     search as typesense_search,
-)
-from search.typesense_client import (
     search_all_ids as typesense_search_all_ids,
 )
 from storage.storagemanager import StorageManager
@@ -192,7 +184,11 @@ class BaseFilterResource(BaseResource):
             # rewritten selection lands in the same matcher bucket as its OR
             # siblings — otherwise the union with a schema-specific sibling breaks.
             original_key = filter_criteria.get("key")
-            if isinstance(original_key, list) and original_key and "|" in original_key[0]:
+            if (
+                isinstance(original_key, list)
+                and original_key
+                and "|" in original_key[0]
+            ):
                 schema_prefix = original_key[0].split("|", 1)[0]
                 resolved_key = [f"{schema_prefix}|{local_field}"]
             else:
