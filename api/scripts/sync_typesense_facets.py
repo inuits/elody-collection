@@ -22,7 +22,16 @@ import sys
 from time import sleep
 
 # Field attributes worth carrying over when re-declaring a field as a facet.
-_PRESERVED_ATTRS = ("type", "optional", "infix", "sort", "locale", "stem", "index", "store")
+_PRESERVED_ATTRS = (
+    "type",
+    "optional",
+    "infix",
+    "sort",
+    "locale",
+    "stem",
+    "index",
+    "store",
+)
 
 
 def collect_facet_config():
@@ -121,7 +130,9 @@ def main(argv=None):
                 changed += 1
 
     if not args.dry_run:
-        print(f"\n{changed} field(s) faceted. Typesense re-indexes them in the background.")
+        print(
+            f"\n{changed} field(s) faceted. Typesense re-indexes them in the background."
+        )
 
 
 if __name__ == "__main__":

@@ -20,9 +20,7 @@ class TestAddPaginationLinks:
     collection = "things"
 
     def test_next_link_on_intermediate_page(self, resource):
-        items = resource._add_pagination_links(
-            _items(640, 20), 0, 20, self.collection
-        )
+        items = resource._add_pagination_links(_items(640, 20), 0, 20, self.collection)
         assert items["next"] == f"/{self.collection}/filter?skip=20&limit=20"
 
     def test_no_next_link_on_exact_last_page(self, resource):
@@ -33,14 +31,10 @@ class TestAddPaginationLinks:
         assert "next" not in items
 
     def test_previous_link_only_when_skipped(self, resource):
-        items = resource._add_pagination_links(
-            _items(640, 20), 40, 20, self.collection
-        )
+        items = resource._add_pagination_links(_items(640, 20), 40, 20, self.collection)
         assert items["previous"] == f"/{self.collection}/filter?skip=20&limit=20"
 
-        items = resource._add_pagination_links(
-            _items(640, 20), 0, 20, self.collection
-        )
+        items = resource._add_pagination_links(_items(640, 20), 0, 20, self.collection)
         assert "previous" not in items
 
 

@@ -13,7 +13,12 @@ class TestBuildChange:
         change = build_change("properties_x_value", None)
         assert change == {
             "fields": [
-                {"name": "properties_x_value", "type": "string", "facet": True, "optional": True}
+                {
+                    "name": "properties_x_value",
+                    "type": "string",
+                    "facet": True,
+                    "optional": True,
+                }
             ]
         }
 
@@ -29,14 +34,23 @@ class TestBuildChange:
         change = build_change("properties_material_type_value", current)
 
         # first drops the old declaration, then re-adds it
-        assert change["fields"][0] == {"name": "properties_material_type_value", "drop": True}
+        assert change["fields"][0] == {
+            "name": "properties_material_type_value",
+            "drop": True,
+        }
         readded = change["fields"][1]
         assert readded["name"] == "properties_material_type_value"
         assert readded["facet"] is True
 
     def test_existing_attributes_are_preserved(self):
         # infix search (and type) must survive the facet flip, not be reset.
-        current = {"name": "f", "type": "string", "facet": False, "infix": True, "optional": True}
+        current = {
+            "name": "f",
+            "type": "string",
+            "facet": False,
+            "infix": True,
+            "optional": True,
+        }
         readded = build_change("f", current)["fields"][1]
         assert readded["type"] == "string"
         assert readded["infix"] is True

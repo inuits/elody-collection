@@ -73,8 +73,7 @@ class TestBuildFilterBy:
             [], [(["properties_name_value", "properties_title_value"], ["a", "b"])]
         )
         assert (
-            result
-            == "(properties_name_value:=[a,b] || properties_title_value:=[a,b])"
+            result == "(properties_name_value:=[a,b] || properties_title_value:=[a,b])"
         )
 
     def test_multi_key_quotes_values_with_spaces(self):
@@ -83,8 +82,7 @@ class TestBuildFilterBy:
             [(["properties_name_value", "properties_title_value"], "Bogaerts, Theo")],
         )
         assert (
-            result
-            == "(properties_name_value:=`Bogaerts, Theo` || "
+            result == "(properties_name_value:=`Bogaerts, Theo` || "
             "properties_title_value:=`Bogaerts, Theo`)"
         )
 
@@ -94,8 +92,7 @@ class TestBuildFilterBy:
             [(["properties_name_value", "properties_title_value"], "Bladmuziek")],
         )
         assert (
-            result
-            == "type:[nomen,person] && "
+            result == "type:[nomen,person] && "
             "(properties_name_value:=Bladmuziek || properties_title_value:=Bladmuziek)"
         )
 
@@ -372,9 +369,10 @@ class TestUpsertDocument:
         mock_client = MagicMock()
         doc = {"id": "ent-1", "_id": "ent-1", "type": "work_word"}
 
-        with patch.object(
-            tc, "get_typesense_client", return_value=mock_client
-        ), patch.object(tc, "ensure_collection") as mock_ensure:
+        with (
+            patch.object(tc, "get_typesense_client", return_value=mock_client),
+            patch.object(tc, "ensure_collection") as mock_ensure,
+        ):
             result = upsert_document("entities", doc)
 
         assert result is True
@@ -392,9 +390,11 @@ class TestUpsertDocument:
         upsert = mock_client.collections.__getitem__.return_value.documents.upsert
         upsert.side_effect = [Exception("timeout"), None]
 
-        with patch.object(
-            tc, "get_typesense_client", return_value=mock_client
-        ), patch.object(tc, "ensure_collection"), patch.object(tc, "sleep"):
+        with (
+            patch.object(tc, "get_typesense_client", return_value=mock_client),
+            patch.object(tc, "ensure_collection"),
+            patch.object(tc, "sleep"),
+        ):
             result = upsert_document("entities", {"id": "ent-1"})
 
         assert result is True
@@ -405,11 +405,12 @@ class TestUpsertDocument:
         upsert = mock_client.collections.__getitem__.return_value.documents.upsert
         upsert.side_effect = Exception("write error")
 
-        with patch.object(
-            tc, "get_typesense_client", return_value=mock_client
-        ), patch.object(tc, "ensure_collection"), patch.object(
-            tc, "sleep"
-        ), patch.object(tc, "log") as mock_log:
+        with (
+            patch.object(tc, "get_typesense_client", return_value=mock_client),
+            patch.object(tc, "ensure_collection"),
+            patch.object(tc, "sleep"),
+            patch.object(tc, "log") as mock_log,
+        ):
             result = upsert_document("entities", {"id": "ent-1"}, max_attempts=3)
 
         assert result is False
@@ -444,12 +445,16 @@ class TestDeleteDocument:
 
     def test_returns_false_and_logs_error_after_exhausting_retries(self):
         mock_client = MagicMock()
-        delete = mock_client.collections.__getitem__.return_value.documents.__getitem__.return_value.delete
+        delete = (
+            mock_client.collections.__getitem__.return_value.documents.__getitem__.return_value.delete
+        )
         delete.side_effect = Exception("write error")
 
-        with patch.object(
-            tc, "get_typesense_client", return_value=mock_client
-        ), patch.object(tc, "sleep"), patch.object(tc, "log") as mock_log:
+        with (
+            patch.object(tc, "get_typesense_client", return_value=mock_client),
+            patch.object(tc, "sleep"),
+            patch.object(tc, "log") as mock_log,
+        ):
             assert delete_document("entities", "ent-1", max_attempts=3) is False
 
         assert delete.call_count == 3

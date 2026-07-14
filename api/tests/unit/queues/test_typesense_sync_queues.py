@@ -56,14 +56,18 @@ class TestSyncEntityToTypesense:
         entity = make_entity("ent-1", "work_word")
         storage.get_item_from_collection_by_id.return_value = entity
 
-        with patch(
-            "search.typesense_client.upsert_document", return_value=True
-        ) as mock_upsert, patch(
-            "search.typesense_client.prepare_document_for_typesense"
-        ) as mock_prepare, patch(
-            "search.typesense_client.get_collection_field_types",
-            return_value={"properties_code_value": "string"},
-        ) as mock_field_types:
+        with (
+            patch(
+                "search.typesense_client.upsert_document", return_value=True
+            ) as mock_upsert,
+            patch(
+                "search.typesense_client.prepare_document_for_typesense"
+            ) as mock_prepare,
+            patch(
+                "search.typesense_client.get_collection_field_types",
+                return_value={"properties_code_value": "string"},
+            ) as mock_field_types,
+        ):
             mock_prepare.return_value = {
                 "id": "ent-1",
                 "_id": "ent-1",
@@ -115,11 +119,14 @@ class TestSyncEntityToTypesense:
             collection="bibliographic_entities_actual"
         )
 
-        with patch(
-            "search.typesense_client.upsert_document", return_value=True
-        ) as mock_upsert, patch(
-            "search.typesense_client.prepare_document_for_typesense"
-        ) as mock_prepare:
+        with (
+            patch(
+                "search.typesense_client.upsert_document", return_value=True
+            ) as mock_upsert,
+            patch(
+                "search.typesense_client.prepare_document_for_typesense"
+            ) as mock_prepare,
+        ):
             mock_prepare.return_value = {"id": "ent-1"}
 
             self._call(
@@ -140,12 +147,16 @@ class TestSyncEntityToTypesense:
         entity = make_entity("ent-1", "work_word")
         storage.get_item_from_collection_by_id.return_value = entity
 
-        with patch(
-            "search.typesense_client.prepare_document_for_typesense",
-            side_effect=Exception("denormalization boom"),
-        ), patch(
-            "search.typesense_client.get_collection_field_types", return_value={}
-        ), patch("resources.queues.log") as mock_log:
+        with (
+            patch(
+                "search.typesense_client.prepare_document_for_typesense",
+                side_effect=Exception("denormalization boom"),
+            ),
+            patch(
+                "search.typesense_client.get_collection_field_types", return_value={}
+            ),
+            patch("resources.queues.log") as mock_log,
+        ):
             message = self._call(
                 {"data": {"location": "/entities/ent-1", "type": "work_word"}},
                 redelivered=False,
@@ -159,12 +170,16 @@ class TestSyncEntityToTypesense:
         entity = make_entity("ent-1", "work_word")
         storage.get_item_from_collection_by_id.return_value = entity
 
-        with patch(
-            "search.typesense_client.prepare_document_for_typesense",
-            side_effect=Exception("still failing"),
-        ), patch(
-            "search.typesense_client.get_collection_field_types", return_value={}
-        ), patch("resources.queues.log") as mock_log:
+        with (
+            patch(
+                "search.typesense_client.prepare_document_for_typesense",
+                side_effect=Exception("still failing"),
+            ),
+            patch(
+                "search.typesense_client.get_collection_field_types", return_value={}
+            ),
+            patch("resources.queues.log") as mock_log,
+        ):
             message = self._call(
                 {"data": {"location": "/entities/ent-1", "type": "work_word"}},
                 redelivered=True,
@@ -178,14 +193,17 @@ class TestSyncEntityToTypesense:
         entity = make_entity("ent-1", "work_word")
         storage.get_item_from_collection_by_id.return_value = entity
 
-        with patch(
-            "search.typesense_client.upsert_document", return_value=False
-        ), patch(
-            "search.typesense_client.prepare_document_for_typesense",
-            return_value={"id": "ent-1"},
-        ), patch(
-            "search.typesense_client.get_collection_field_types", return_value={}
-        ), patch("resources.queues.log") as mock_log:
+        with (
+            patch("search.typesense_client.upsert_document", return_value=False),
+            patch(
+                "search.typesense_client.prepare_document_for_typesense",
+                return_value={"id": "ent-1"},
+            ),
+            patch(
+                "search.typesense_client.get_collection_field_types", return_value={}
+            ),
+            patch("resources.queues.log") as mock_log,
+        ):
             message = self._call(
                 {"data": {"location": "/entities/ent-1", "type": "work_word"}}
             )
@@ -217,13 +235,17 @@ class TestSyncEntityToTypesense:
             ts_collection="bibliographic", search_fields=["title"]
         )
 
-        with patch(
-            "search.typesense_client.upsert_document", return_value=True
-        ) as mock_upsert, patch(
-            "search.typesense_client.prepare_document_for_typesense"
-        ) as mock_prepare, patch(
-            "search.typesense_client.get_collection_field_types", return_value={}
-        ) as mock_field_types:
+        with (
+            patch(
+                "search.typesense_client.upsert_document", return_value=True
+            ) as mock_upsert,
+            patch(
+                "search.typesense_client.prepare_document_for_typesense"
+            ) as mock_prepare,
+            patch(
+                "search.typesense_client.get_collection_field_types", return_value={}
+            ) as mock_field_types,
+        ):
             mock_prepare.return_value = {"id": "ent-1"}
 
             self._call({"data": {"location": "/entities/ent-1", "type": "work_word"}})
@@ -286,9 +308,10 @@ class TestDeleteEntityFromTypesense:
             mock_delete.assert_called_once_with("bibliographic", "ent-1")
 
     def test_nacks_and_requeues_on_failure(self, mapper):
-        with patch(
-            "search.typesense_client.delete_document", return_value=False
-        ), patch("resources.queues.log") as mock_log:
+        with (
+            patch("search.typesense_client.delete_document", return_value=False),
+            patch("resources.queues.log") as mock_log,
+        ):
             message = self._call(
                 {"data": {"entity_id": "ent-1", "type": "work_word"}},
                 redelivered=False,
@@ -299,9 +322,10 @@ class TestDeleteEntityFromTypesense:
         message.ack.assert_not_called()
 
     def test_rejects_without_requeue_after_redelivery(self, mapper):
-        with patch(
-            "search.typesense_client.delete_document", return_value=False
-        ), patch("resources.queues.log") as mock_log:
+        with (
+            patch("search.typesense_client.delete_document", return_value=False),
+            patch("resources.queues.log") as mock_log,
+        ):
             message = self._call(
                 {"data": {"entity_id": "ent-1", "type": "work_word"}},
                 redelivered=True,

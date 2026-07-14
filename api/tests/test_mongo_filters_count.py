@@ -97,6 +97,7 @@ def _make_filters(collection):
     mf._distinct_types_cache = {}
     return mf
 
+
 def _count(mf, match, group):
     # __count is name-mangled; output only matters for the empty-result fallback.
     return mf._MongoFilters__count("entities_actual", match, group, {"results": []})
@@ -104,7 +105,9 @@ def _count(mf, match, group):
 
 class TestCountDecision:
     def test_uses_estimated_count_when_filter_covers_all_types(self):
-        col = _FakeCollection(types={"work_word", "person"}, estimated=999, agg_count=42)
+        col = _FakeCollection(
+            types={"work_word", "person"}, estimated=999, agg_count=42
+        )
         mf = _make_filters(col)
         match = [{"$match": {"type": {"$in": ["work_word", "person", "extra_unused"]}}}]
 
@@ -204,4 +207,7 @@ class TestFilteredCountCap:
         result = _count(mf, [{"$match": {"type": {"$in": ["a"]}}}], [])
 
         assert result == 700712
-        assert col.last_pipeline == [{"$match": {"type": {"$in": ["a"]}}}, {"$count": "count"}]
+        assert col.last_pipeline == [
+            {"$match": {"type": {"$in": ["a"]}}},
+            {"$count": "count"},
+        ]

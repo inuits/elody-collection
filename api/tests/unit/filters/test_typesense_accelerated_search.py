@@ -74,11 +74,13 @@ def mock_config_mapper():
 
 @pytest.fixture
 def resource(mock_filter_engine, mock_storage, mock_config_mapper):
-    with patch("resources.base_filter_resource.FilterManagerV2") as mock_fm, patch(
-        "resources.base_filter_resource.StorageManager"
-    ) as mock_sm, patch(
-        "resources.base_filter_resource.get_object_configuration_mapper"
-    ) as mock_mapper:
+    with (
+        patch("resources.base_filter_resource.FilterManagerV2") as mock_fm,
+        patch("resources.base_filter_resource.StorageManager") as mock_sm,
+        patch(
+            "resources.base_filter_resource.get_object_configuration_mapper"
+        ) as mock_mapper,
+    ):
         mock_fm.return_value.get_filter_engine.return_value = mock_filter_engine
 
         mock_sm_instance = MagicMock()
@@ -647,11 +649,10 @@ class TestTypesensePagination:
             ]
             ids = [f"id{i}" for i in range(20)]
 
-            with patch(
-                "resources.base_filter_resource.typesense_search"
-            ) as mock_ts, patch(
-                "resources.base_filter_resource.StorageManager"
-            ) as mock_sm:
+            with (
+                patch("resources.base_filter_resource.typesense_search") as mock_ts,
+                patch("resources.base_filter_resource.StorageManager") as mock_sm,
+            ):
                 mock_ts.return_value = make_ts_result(ids, 50)
 
                 mock_storage = MagicMock()
@@ -763,11 +764,10 @@ class TestTypesensePagination:
                 ]
                 ids = [f"id{skip + i}" for i in range(num_ids)]
 
-                with patch(
-                    "resources.base_filter_resource.typesense_search"
-                ) as mock_ts, patch(
-                    "resources.base_filter_resource.StorageManager"
-                ) as mock_sm:
+                with (
+                    patch("resources.base_filter_resource.typesense_search") as mock_ts,
+                    patch("resources.base_filter_resource.StorageManager") as mock_sm,
+                ):
                     mock_ts.return_value = make_ts_result(ids, total)
 
                     mock_storage = MagicMock()
@@ -809,11 +809,10 @@ class TestTypesensePagination:
             ]
             ids = [f"id{i}" for i in range(20)]
 
-            with patch(
-                "resources.base_filter_resource.typesense_search"
-            ) as mock_ts, patch(
-                "resources.base_filter_resource.StorageManager"
-            ) as mock_sm:
+            with (
+                patch("resources.base_filter_resource.typesense_search") as mock_ts,
+                patch("resources.base_filter_resource.StorageManager") as mock_sm,
+            ):
                 mock_ts.return_value = make_ts_result(ids, 50)
 
                 mock_storage = MagicMock()
@@ -852,11 +851,10 @@ class TestTypesensePagination:
             ]
             ids = [f"id{i}" for i in range(5)]
 
-            with patch(
-                "resources.base_filter_resource.typesense_search"
-            ) as mock_ts, patch(
-                "resources.base_filter_resource.StorageManager"
-            ) as mock_sm:
+            with (
+                patch("resources.base_filter_resource.typesense_search") as mock_ts,
+                patch("resources.base_filter_resource.StorageManager") as mock_sm,
+            ):
                 mock_ts.return_value = make_ts_result(ids, 45)
 
                 mock_storage = MagicMock()
@@ -1021,11 +1019,10 @@ class TestTypesenseResultOrdering:
             # Typesense returns IDs in relevance order
             ts_ids = ["best_match", "good_match", "ok_match"]
 
-            with patch(
-                "resources.base_filter_resource.typesense_search"
-            ) as mock_ts, patch(
-                "resources.base_filter_resource.StorageManager"
-            ) as mock_sm:
+            with (
+                patch("resources.base_filter_resource.typesense_search") as mock_ts,
+                patch("resources.base_filter_resource.StorageManager") as mock_sm,
+            ):
                 mock_ts.return_value = make_ts_result(ts_ids, 3)
 
                 # MongoDB returns in different order
@@ -1081,11 +1078,12 @@ class TestTypesenseRemainingFilters:
                 },
             ]
 
-            with patch(
-                "resources.base_filter_resource.typesense_search_all_ids"
-            ) as mock_ts_all, patch(
-                "resources.base_filter_resource.typesense_search"
-            ) as mock_ts:
+            with (
+                patch(
+                    "resources.base_filter_resource.typesense_search_all_ids"
+                ) as mock_ts_all,
+                patch("resources.base_filter_resource.typesense_search") as mock_ts,
+            ):
                 mock_ts_all.return_value = make_ts_result(["id1", "id2", "id3"], 3)
 
                 resource._execute_typesense_accelerated_search(
@@ -1184,11 +1182,10 @@ class TestTypesenseCrossCollectionFiltering:
                 },
             ]
 
-            with patch(
-                "resources.base_filter_resource.typesense_search"
-            ) as mock_ts, patch(
-                "resources.base_filter_resource.StorageManager"
-            ) as mock_sm:
+            with (
+                patch("resources.base_filter_resource.typesense_search") as mock_ts,
+                patch("resources.base_filter_resource.StorageManager") as mock_sm,
+            ):
                 mock_ts.return_value = make_ts_result(["id1", "id2"], 2)
 
                 mock_storage = MagicMock()
@@ -1281,11 +1278,10 @@ class TestTypesenseCrossCollectionFiltering:
                 },
             ]
 
-            with patch(
-                "resources.base_filter_resource.typesense_search"
-            ) as mock_ts, patch(
-                "resources.base_filter_resource.StorageManager"
-            ) as mock_sm:
+            with (
+                patch("resources.base_filter_resource.typesense_search") as mock_ts,
+                patch("resources.base_filter_resource.StorageManager") as mock_sm,
+            ):
                 # Typesense returns 20 (both work_word and person matches)
                 ids = [f"id{i}" for i in range(20)]
                 mock_ts.return_value = make_ts_result(ids, 25)
@@ -1334,11 +1330,10 @@ class TestTypesenseCrossCollectionFiltering:
                 },
             ]
 
-            with patch(
-                "resources.base_filter_resource.typesense_search"
-            ) as mock_ts, patch(
-                "resources.base_filter_resource.StorageManager"
-            ) as mock_sm:
+            with (
+                patch("resources.base_filter_resource.typesense_search") as mock_ts,
+                patch("resources.base_filter_resource.StorageManager") as mock_sm,
+            ):
                 # 5 results on page 2 (offset=20), 45 total matches
                 page2_ids = [f"id{20+i}" for i in range(5)]
                 mock_ts.return_value = make_ts_result(page2_ids, 45)
@@ -1556,9 +1551,12 @@ class TestSmartFilterClassification:
                 },
             ]
 
-            with patch.object(
-                resource, "_execute_advanced_search_with_query_v2"
-            ) as mock_mongo, patch("resources.base_filter_resource.log") as mock_log:
+            with (
+                patch.object(
+                    resource, "_execute_advanced_search_with_query_v2"
+                ) as mock_mongo,
+                patch("resources.base_filter_resource.log") as mock_log,
+            ):
                 mock_mongo.return_value = {
                     "results": [],
                     "count": 0,
@@ -1606,11 +1604,12 @@ class TestSmartFilterClassification:
                 },
             ]
 
-            with patch(
-                "resources.base_filter_resource.typesense_search_all_ids"
-            ) as mock_ts_all, patch(
-                "resources.base_filter_resource.typesense_search"
-            ) as mock_ts:
+            with (
+                patch(
+                    "resources.base_filter_resource.typesense_search_all_ids"
+                ) as mock_ts_all,
+                patch("resources.base_filter_resource.typesense_search") as mock_ts,
+            ):
                 mock_ts_all.return_value = make_ts_result(["id1"], 1)
                 mock_filter_engine.filter.return_value = {
                     "results": [make_mongo_doc("id1")],
@@ -1656,11 +1655,10 @@ class TestSmartFilterClassification:
                 },
             ]
 
-            with patch(
-                "resources.base_filter_resource.typesense_search"
-            ) as mock_ts, patch(
-                "resources.base_filter_resource.StorageManager"
-            ) as mock_sm:
+            with (
+                patch("resources.base_filter_resource.typesense_search") as mock_ts,
+                patch("resources.base_filter_resource.StorageManager") as mock_sm,
+            ):
                 mock_ts.return_value = make_ts_result(["id1"], 1)
 
                 mock_storage = MagicMock()
@@ -1952,33 +1950,47 @@ class TestTypesenseAcceleratedSearchWithFacets:
         ts_result = {"ids": ["a"], "count": 1, "facets": ts_facets}
 
         with flask_app.test_request_context("/?skip=0&limit=20"):
-            with patch.object(
-                resource,
-                "_classify_filters_for_typesense",
-                return_value=([query[0]], [], [], []),
-            ), patch.object(
-                resource,
-                "_build_typesense_query",
-                return_value=("entities", "properties_name_value", "alice", None, None),
-            ), patch.object(
-                resource,
-                "_execute_typesense_search",
-                return_value=ts_result,
-            ), patch.object(
-                resource,
-                "_fetch_documents_from_mongo",
-                return_value=[make_mongo_doc("a")],
-            ), patch.object(
-                resource,
-                "_resolve_mongo_collections",
-                return_value=["entities_actual"],
-            ), patch.object(
-                resource,
-                "_add_cors_headers",
-            ), patch.object(
-                resource,
-                "_inject_api_urls_into_entities",
-                side_effect=lambda x: x,
+            with (
+                patch.object(
+                    resource,
+                    "_classify_filters_for_typesense",
+                    return_value=([query[0]], [], [], []),
+                ),
+                patch.object(
+                    resource,
+                    "_build_typesense_query",
+                    return_value=(
+                        "entities",
+                        "properties_name_value",
+                        "alice",
+                        None,
+                        None,
+                    ),
+                ),
+                patch.object(
+                    resource,
+                    "_execute_typesense_search",
+                    return_value=ts_result,
+                ),
+                patch.object(
+                    resource,
+                    "_fetch_documents_from_mongo",
+                    return_value=[make_mongo_doc("a")],
+                ),
+                patch.object(
+                    resource,
+                    "_resolve_mongo_collections",
+                    return_value=["entities_actual"],
+                ),
+                patch.object(
+                    resource,
+                    "_add_cors_headers",
+                ),
+                patch.object(
+                    resource,
+                    "_inject_api_urls_into_entities",
+                    side_effect=lambda x: x,
+                ),
             ):
                 result = resource._execute_typesense_accelerated_search(
                     query, "entities", ts_config
@@ -1999,21 +2011,32 @@ class TestTypesenseAcceleratedSearchWithFacets:
         }
 
         with flask_app.test_request_context("/?skip=0&limit=20"):
-            with patch.object(
-                resource,
-                "_classify_filters_for_typesense",
-                return_value=([query[0]], [], [], []),
-            ), patch.object(
-                resource,
-                "_build_typesense_query",
-                return_value=("entities", "properties_name_value", "test", None, None),
-            ), patch.object(
-                resource,
-                "_execute_typesense_search",
-                return_value={"ids": [], "count": 0, "facets": []},
-            ) as mock_ts_search, patch.object(
-                resource,
-                "_add_cors_headers",
+            with (
+                patch.object(
+                    resource,
+                    "_classify_filters_for_typesense",
+                    return_value=([query[0]], [], [], []),
+                ),
+                patch.object(
+                    resource,
+                    "_build_typesense_query",
+                    return_value=(
+                        "entities",
+                        "properties_name_value",
+                        "test",
+                        None,
+                        None,
+                    ),
+                ),
+                patch.object(
+                    resource,
+                    "_execute_typesense_search",
+                    return_value={"ids": [], "count": 0, "facets": []},
+                ) as mock_ts_search,
+                patch.object(
+                    resource,
+                    "_add_cors_headers",
+                ),
             ):
                 resource._execute_typesense_accelerated_search(
                     query, "entities", ts_config
@@ -2040,33 +2063,47 @@ class TestTypesenseAcceleratedSearchWithFacets:
         ts_result = {"ids": ["a"], "count": 1}
 
         with flask_app.test_request_context("/?skip=0&limit=20"):
-            with patch.object(
-                resource,
-                "_classify_filters_for_typesense",
-                return_value=([query[0]], [], [], []),
-            ), patch.object(
-                resource,
-                "_build_typesense_query",
-                return_value=("entities", "properties_name_value", "test", None, None),
-            ), patch.object(
-                resource,
-                "_execute_typesense_search",
-                return_value=ts_result,
-            ), patch.object(
-                resource,
-                "_fetch_documents_from_mongo",
-                return_value=[make_mongo_doc("a")],
-            ), patch.object(
-                resource,
-                "_resolve_mongo_collections",
-                return_value=["entities_actual"],
-            ), patch.object(
-                resource,
-                "_add_cors_headers",
-            ), patch.object(
-                resource,
-                "_inject_api_urls_into_entities",
-                side_effect=lambda x: x,
+            with (
+                patch.object(
+                    resource,
+                    "_classify_filters_for_typesense",
+                    return_value=([query[0]], [], [], []),
+                ),
+                patch.object(
+                    resource,
+                    "_build_typesense_query",
+                    return_value=(
+                        "entities",
+                        "properties_name_value",
+                        "test",
+                        None,
+                        None,
+                    ),
+                ),
+                patch.object(
+                    resource,
+                    "_execute_typesense_search",
+                    return_value=ts_result,
+                ),
+                patch.object(
+                    resource,
+                    "_fetch_documents_from_mongo",
+                    return_value=[make_mongo_doc("a")],
+                ),
+                patch.object(
+                    resource,
+                    "_resolve_mongo_collections",
+                    return_value=["entities_actual"],
+                ),
+                patch.object(
+                    resource,
+                    "_add_cors_headers",
+                ),
+                patch.object(
+                    resource,
+                    "_inject_api_urls_into_entities",
+                    side_effect=lambda x: x,
+                ),
             ):
                 result = resource._execute_typesense_accelerated_search(
                     query, "entities", ts_config
@@ -2112,17 +2149,22 @@ class TestTypesenseAcceleratedSearchWithFacets:
                 {"_id": "uuid-2", "identifiers": ["uuid-2", "PERS-456"]},
             ]
 
-            with patch(
-                "resources.base_filter_resource.typesense_search_all_ids"
-            ) as mock_ts_all, patch(
-                "resources.base_filter_resource.StorageManager"
-            ) as mock_sm_lookup, patch.object(
-                resource,
-                "_execute_advanced_search_with_query_v2",
-                return_value={"results": [make_mongo_doc("work-1")], "count": 1},
-            ) as mock_v2, patch.object(
-                resource,
-                "_add_cors_headers",
+            with (
+                patch(
+                    "resources.base_filter_resource.typesense_search_all_ids"
+                ) as mock_ts_all,
+                patch(
+                    "resources.base_filter_resource.StorageManager"
+                ) as mock_sm_lookup,
+                patch.object(
+                    resource,
+                    "_execute_advanced_search_with_query_v2",
+                    return_value={"results": [make_mongo_doc("work-1")], "count": 1},
+                ) as mock_v2,
+                patch.object(
+                    resource,
+                    "_add_cors_headers",
+                ),
             ):
                 mock_sm_lookup.return_value.get_db_engine.return_value = (
                     mock_mongo_storage
@@ -2191,25 +2233,37 @@ class TestTypesenseAcceleratedSearchWithFacets:
         }
 
         with flask_app.test_request_context("/?skip=0&limit=20"):
-            with patch.object(
-                resource,
-                "_classify_filters_for_typesense",
-                return_value=([query[0]], [], [], []),
-            ), patch.object(
-                resource,
-                "_build_typesense_query",
-                return_value=("entities", "properties_name_value", "test", None, None),
-            ), patch.object(
-                resource,
-                "_execute_typesense_search",
-                return_value=None,
-            ), patch.object(
-                resource,
-                "_add_cors_headers",
-            ), patch.object(
-                resource,
-                "_inject_api_urls_into_entities",
-                side_effect=lambda x: x,
+            with (
+                patch.object(
+                    resource,
+                    "_classify_filters_for_typesense",
+                    return_value=([query[0]], [], [], []),
+                ),
+                patch.object(
+                    resource,
+                    "_build_typesense_query",
+                    return_value=(
+                        "entities",
+                        "properties_name_value",
+                        "test",
+                        None,
+                        None,
+                    ),
+                ),
+                patch.object(
+                    resource,
+                    "_execute_typesense_search",
+                    return_value=None,
+                ),
+                patch.object(
+                    resource,
+                    "_add_cors_headers",
+                ),
+                patch.object(
+                    resource,
+                    "_inject_api_urls_into_entities",
+                    side_effect=lambda x: x,
+                ),
             ):
                 result = resource._execute_typesense_accelerated_search(
                     query, "entities", ts_config
@@ -2289,8 +2343,17 @@ class TestSourceRelationLookupResolution:
         resource = self._make_resource()
         # no marked lookup -> nothing resolved -> type filter preserved
         query = [
-            {"type": "selection", "key": "type", "value": ["work_word"], "match_exact": True},
-            {"type": "selection", "key": ["vlacc:1|properties.ref_related_works.value"], "value": "W-CUR"},
+            {
+                "type": "selection",
+                "key": "type",
+                "value": ["work_word"],
+                "match_exact": True,
+            },
+            {
+                "type": "selection",
+                "key": ["vlacc:1|properties.ref_related_works.value"],
+                "value": "W-CUR",
+            },
         ]
         new_query, did_resolve = resource._resolve_source_relation_lookups(query)
         assert did_resolve is False
@@ -2303,7 +2366,9 @@ class TestSourceRelationLookupResolution:
         with patch("resources.base_filter_resource.StorageManager") as mock_sm:
             mock_sm.return_value.get_db_engine.return_value = mock_storage
             resource = self._make_resource()
-            resource._resolve_source_relation_lookups([self._forward_lookup_filter("W-CUR")])
+            resource._resolve_source_relation_lookups(
+                [self._forward_lookup_filter("W-CUR")]
+            )
 
         query_arg = find.call_args[0][0]
         assert query_arg == {
@@ -2313,7 +2378,10 @@ class TestSourceRelationLookupResolution:
             ]
         }
         # source collection comes from the lookup config, not the queried collection
-        assert mock_storage.db.__getitem__.call_args[0][0] == "bibliographic_entities_actual"
+        assert (
+            mock_storage.db.__getitem__.call_args[0][0]
+            == "bibliographic_entities_actual"
+        )
 
     def test_no_source_doc_yields_empty_selection(self):
         mock_storage = MagicMock()

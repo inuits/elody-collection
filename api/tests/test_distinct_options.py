@@ -25,7 +25,12 @@ def _make_resource(monkeypatch, group_pairs):
 
 _QUERY = [
     {"type": "text", "value": "*", "distinct_by": "properties.material_type.value"},
-    {"type": "selection", "key": "type", "value": ["manifestation_word"], "match_exact": True},
+    {
+        "type": "selection",
+        "key": "type",
+        "value": ["manifestation_word"],
+        "match_exact": True,
+    },
 ]
 
 
@@ -36,8 +41,13 @@ class TestDistinctOptions:
         res = _make_resource(monkeypatch, pairs)
 
         out = res._execute_typesense_distinct_options(
-            _QUERY, "entities", {"collection": "entities"},
-            "properties.material_type.value", 0, 20, True,
+            _QUERY,
+            "entities",
+            {"collection": "entities"},
+            "properties.material_type.value",
+            0,
+            20,
+            True,
         )
 
         assert out["count"] == 3  # total distinct values, not the page size
@@ -49,8 +59,13 @@ class TestDistinctOptions:
         res = _make_resource(monkeypatch, pairs)
 
         out = res._execute_typesense_distinct_options(
-            _QUERY, "entities", {"collection": "entities"},
-            "properties.material_type.value", 1, 2, False,  # desc, skip 1, limit 2
+            _QUERY,
+            "entities",
+            {"collection": "entities"},
+            "properties.material_type.value",
+            1,
+            2,
+            False,  # desc, skip 1, limit 2
         )
 
         assert out["count"] == 4
@@ -59,30 +74,49 @@ class TestDistinctOptions:
 
     def test_falls_back_to_mongo_when_group_by_unavailable(self, monkeypatch):
         res = _make_resource(monkeypatch, None)  # group_values returns None
-        res._execute_advanced_search_with_query_v2 = (
-            lambda q, c: {"results": [], "count": 0, "_fallback": True}
-        )
+        res._execute_advanced_search_with_query_v2 = lambda q, c: {
+            "results": [],
+            "count": 0,
+            "_fallback": True,
+        }
 
         out = res._execute_typesense_distinct_options(
-            _QUERY, "entities", {"collection": "entities"},
-            "properties.material_type.value", 0, 20, True,
+            _QUERY,
+            "entities",
+            {"collection": "entities"},
+            "properties.material_type.value",
+            0,
+            20,
+            True,
         )
 
         assert out.get("_fallback") is True
 
     def test_falls_back_to_mongo_when_unexpressible_filter_present(self, monkeypatch):
         res = _make_resource(monkeypatch, [("A", "ia")])
-        res._execute_advanced_search_with_query_v2 = (
-            lambda q, c: {"results": [], "count": 0, "_fallback": True}
-        )
+        res._execute_advanced_search_with_query_v2 = lambda q, c: {
+            "results": [],
+            "count": 0,
+            "_fallback": True,
+        }
         # an exact-match selection filter Typesense would need to express
         query = _QUERY + [
-            {"type": "selection", "key": "properties.genre.value", "value": "x", "match_exact": True}
+            {
+                "type": "selection",
+                "key": "properties.genre.value",
+                "value": "x",
+                "match_exact": True,
+            }
         ]
 
         out = res._execute_typesense_distinct_options(
-            query, "entities", {"collection": "entities"},
-            "properties.material_type.value", 0, 20, True,
+            query,
+            "entities",
+            {"collection": "entities"},
+            "properties.material_type.value",
+            0,
+            20,
+            True,
         )
 
         assert out.get("_fallback") is True

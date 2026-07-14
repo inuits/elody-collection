@@ -14,19 +14,15 @@ def mock_dependencies():
     with patch("policy_factory.apply_policies") as mock_policy:
         mock_policy.side_effect = lambda *args, **kwargs: lambda func: func
 
-        with patch("elody.job.init_job", autospec=True) as mock_init_job, patch(
-            "elody.job.start_job", autospec=True
-        ) as mock_start_job, patch(
-            "elody.job.finish_job", autospec=True
-        ) as mock_finish_job, patch(
-            "elody.job.fail_job", autospec=True
-        ) as mock_fail_job, patch(
-            "elody.job.finish_job_with_warning", autospec=True
-        ) as mock_warn_job, patch(
-            "elody.job.add_document_to_job", autospec=True
-        ) as mock_add_doc, patch(
-            "rabbit.get_rabbit"
-        ) as mock_rabbit:
+        with (
+            patch("elody.job.init_job", autospec=True) as mock_init_job,
+            patch("elody.job.start_job", autospec=True) as mock_start_job,
+            patch("elody.job.finish_job", autospec=True) as mock_finish_job,
+            patch("elody.job.fail_job", autospec=True) as mock_fail_job,
+            patch("elody.job.finish_job_with_warning", autospec=True) as mock_warn_job,
+            patch("elody.job.add_document_to_job", autospec=True) as mock_add_doc,
+            patch("rabbit.get_rabbit") as mock_rabbit,
+        ):
             yield {
                 "rabbit": mock_rabbit,
                 "init_job": mock_init_job,
