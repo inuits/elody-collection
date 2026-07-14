@@ -53,7 +53,7 @@ def get_type_filter_value(filter_request_body: list[dict]) -> str:
     type_filter = [
         filter_criteria
         for filter_criteria in filter_request_body
-        if filter_criteria["type"] == "type"
+        if filter_criteria.get("type") == "type"
     ]
     return type_filter[0]["value"] if len(type_filter) > 0 else ""
 
@@ -62,7 +62,7 @@ def has_non_exact_match_filter(filter_request_body: list[dict]) -> bool:
     non_exact_match_filters = [
         filter_criteria
         for filter_criteria in filter_request_body
-        if not filter_criteria.get("match_exact") and filter_criteria["type"] != "type"
+        if not filter_criteria.get("match_exact") and filter_criteria.get("type") != "type"
     ]
     return len(non_exact_match_filters) > 0
 
