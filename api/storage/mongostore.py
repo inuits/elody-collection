@@ -702,7 +702,9 @@ class MongoStorageManager(GenericStorageManager):
             return list(self.db["history"].find(query, sort=[("timestamp", -1)]))
         return self.db["history"].find_one(query, sort=[("timestamp", -1)])
 
-    def get_mediafile_linked_entities(self, mediafile, linked_entities=[]):
+    def get_mediafile_linked_entities(self, mediafile, linked_entities=None):
+        if not linked_entities:
+            linked_entities = []
         relations = self.get_collection_item_relations("mediafiles", mediafile["_id"])
         for relation in relations:
             if relation.get("type") == "belongsTo":
