@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from urllib.parse import quote
 
 import mappers
@@ -115,7 +115,7 @@ class GenericObject(BaseResource):
         if user is not None:
             content["user"] = user
         if not date_created:
-            date_created = datetime.now(timezone.utc)
+            date_created = datetime.now(UTC)
         content["date_created"] = date_created
         content["date_updated"] = date_created
         content["version"] = version
@@ -171,7 +171,7 @@ class GenericObject(BaseResource):
                 if type in self.schemas_by_type:
                     self._abort_if_not_valid_json(type, content)
             if not date_updated:
-                date_updated = datetime.now(timezone.utc)
+                date_updated = datetime.now(UTC)
             item["date_updated"] = date_updated
             item["version"] = item.get("version", 0) + 1
             item["last_editor"] = get_user_context().email or "default_uploader"
@@ -374,7 +374,7 @@ class GenericObjectDetail(BaseResource):
             if type in self.schemas_by_type:
                 self._abort_if_not_valid_json(type, content)
         if not date_updated:
-            date_updated = datetime.now(timezone.utc)
+            date_updated = datetime.now(UTC)
         content["date_updated"] = date_updated
         content["date_created"] = (
             self._get_date_from_object(content, "date_created")
@@ -417,7 +417,7 @@ class GenericObjectDetail(BaseResource):
             if type in self.schemas_by_type:
                 self._abort_if_not_valid_json(type, content)
         if not date_updated:
-            date_updated = datetime.now(timezone.utc)
+            date_updated = datetime.now(UTC)
         content["date_updated"] = date_updated
         if version:
             content["version"] = collection_item.get("version", 0) + 1
@@ -571,7 +571,7 @@ class GenericObjectMetadata(BaseResource):
         item = self._check_if_collection_and_item_exists(collection, id)
         if fields is None:
             fields = {}
-        metadata = item.get("metadata", list())
+        metadata = item.get("metadata", [])
         accept_header = request.headers.get("Accept")
         return self._create_response_according_accept_header(
             mappers.map_data_according_to_accept_header(
