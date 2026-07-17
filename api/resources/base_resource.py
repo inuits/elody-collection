@@ -8,6 +8,7 @@ from os import getenv
 from urllib.parse import quote
 
 import mappers
+from app_context import g
 from configuration import get_object_configuration_mapper, get_storage_mapper
 from elody.csv import CSVSingleObject
 from elody.error_codes import ErrorCode, get_error_code, get_read, get_write
@@ -26,7 +27,6 @@ from elody.util import (
     signal_entity_changed,
 )
 from elody.validator import validate_json
-from flask import g
 from flask_restful import Resource, abort
 from policy_factory import get_user_context
 from rabbit import get_rabbit
