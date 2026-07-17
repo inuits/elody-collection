@@ -292,14 +292,6 @@ class GenericObjectV2(BaseFilterResource, BaseResource):
     ):
         if request.args.get("soft", 0, int):
             return "good", 200
-        # if not collection:
-        #     resolve_collections = get_user_context().bag["collection_resolver"]
-        #     collection = resolve_collections(content=content or request.json)
-        #     if len(collection) == 1:
-        #         collection = collection[0]
-        #     else:
-        #         collection = ""
-        # self._check_if_collection_name_exists(collection)
         accept_header = request.headers.get("Accept")
         content = self._get_content_according_content_type(
             request, collection, content, {}, spec, True
