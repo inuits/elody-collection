@@ -86,9 +86,15 @@ def load_specs(app):
     specs_dict = get_features().get("specs", {})
     for spec in specs_dict.keys():
         specs_path = resources_path / spec
-        resource_paths = list(specs_path.glob("*.py"))
+        resource_paths = [p for p in specs_path.glob("*.py") if p.name != "__init__.py"]
         for sub_spec_module in get_features()["specs"][spec].keys():
-            resource_paths.extend(specs_path.glob(f"{sub_spec_module}/*.py"))
+            resource_paths.extend(
+                [
+                    p
+                    for p in specs_path.glob(f"{sub_spec_module}/*.py")
+                    if p.name != "__init__.py"
+                ]
+            )
         for resource_path in resource_paths:
             try:
                 rel_path = resource_path.relative_to(app.root_path)
@@ -130,7 +136,7 @@ def init_app_and_api():
     app.json = ElodyJSONProvider(app)
     app.wsgi_app = ProxyFix(app.wsgi_app, x_prefix=1)
     app.secret_key = getenv("SECRET_KEY", token_hex(16))
-    load_apps(app, None)
+    load_apps(app, log)
     resource_rules = load_specs(app)
     resource_rules.extend(load_app_resources())
     __process_resource_rules(resource_rules)
