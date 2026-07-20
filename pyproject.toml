@@ -75,6 +75,7 @@ dependencies = [
 
 [tool.ty.environment]
 root = ["./api"]
+extra-paths = ["./stubs"]
 
 
 [tool.ruff.lint]
