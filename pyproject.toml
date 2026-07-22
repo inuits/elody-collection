@@ -34,7 +34,7 @@ dependencies = [
   "jinja2==3.1.6",
   "jsonschema==4.26.0",
   "jsonschema-specifications==2024.10.1",
-  "markupsafe==3.0.2",
+  "markupsafe==3.0.3",
   "opentelemetry-api==1.43.0",
   "opentelemetry-exporter-otlp-proto-http==1.43.0",
   "opentelemetry-instrumentation-flask==0.64b0",
@@ -68,7 +68,7 @@ dependencies = [
   "typesense==0.21.0",
   "tzlocal==5.4.4",
   "urllib3==2.7.0",
-  "werkzeug==3.1.6",
+  "werkzeug==3.1.8",
   "zipp==3.23.1",
 ]
 
