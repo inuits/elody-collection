@@ -1,7 +1,24 @@
 from abc import ABC, abstractmethod
+from datetime import date, datetime, timedelta
 from typing import Type
 
 from filters_v2.matchers.matchers import BaseMatcher
+
+
+def _as_day_range(value) -> dict | None:
+    """A bare date string (yyyy-mm-dd, no time-of-day) means "this calendar
+    day", not "this exact instant" - the frontend only ever sends a bare
+    date when its time picker is hidden, so this is an explicit signal
+    rather than a guess."""
+    if not isinstance(value, str):
+        return None
+    try:
+        day = date.fromisoformat(value)
+    except ValueError:
+        return None
+    day_start = datetime.combine(day, datetime.min.time())
+    day_end = day_start + timedelta(days=1, microseconds=-1)
+    return {"min": day_start.isoformat(), "max": day_end.isoformat()}
 
 
 class BaseFilterTypeQueryGenerator(ABC):
@@ -24,6 +41,14 @@ class BaseFilterTypeQueryGenerator(ABC):
     def generate_query_for_date_filter_type(
         self, matchers: dict[str, Type[BaseMatcher]], filter_criteria: dict
     ):
+        day_range = _as_day_range(filter_criteria["value"])
+        if day_range:
+            return self._apply_matchers(
+                matchers,
+                filter_criteria["key"],
+                day_range,
+                is_datetime_value=True,
+            )
         return self._apply_matchers(
             matchers,
             filter_criteria["key"],
