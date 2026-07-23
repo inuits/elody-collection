@@ -157,7 +157,7 @@ class BaseMatchers(ABC, metaclass=ThreadSafeMeta):
 
 
 class MatcherContext:
-    def __init__(self, collection, type_name, force_base):
+    def __init__(self, collection, type_name: str, force_base):
         self.collection = collection
         self.type_name = type_name
         self.force_base = force_base

@@ -1,7 +1,7 @@
 import re
 import time
 from copy import deepcopy
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from os import getenv
 from urllib.parse import quote_plus
 
@@ -60,7 +60,7 @@ class MongoStorageManager(GenericStorageManager):
             directConnection=bool(self.mongo_direct),
         )
         self.db = self.client[self.mongo_db_name].with_options(
-            CodecOptions(tz_aware=True, tzinfo=timezone.utc),
+            CodecOptions(tz_aware=True, tzinfo=UTC),
         )
         if apply_default_entities_index:
             self.db.entities.create_index("identifiers", unique=True)
@@ -455,7 +455,7 @@ class MongoStorageManager(GenericStorageManager):
         config = get_object_configuration_mapper().get(item["type"])
         pre_crud_hook = config.crud()["pre_crud_hook"]
         post_crud_hook = config.crud()["post_crud_hook"]
-        timestamp = datetime.now(timezone.utc)
+        timestamp = datetime.now(UTC)
         try:
             item = pre_crud_hook(
                 crud="delete",
@@ -490,7 +490,7 @@ class MongoStorageManager(GenericStorageManager):
         object_lists = config.document_info().get("object_lists", {})
         pre_crud_hook = config.crud()["pre_crud_hook"]
         post_crud_hook = config.crud()["post_crud_hook"]
-        timestamp = datetime.now(timezone.utc)
+        timestamp = datetime.now(UTC)
         for key, value in content.items():
             if not scope or key in scope:
                 if key in object_lists:
@@ -639,7 +639,7 @@ class MongoStorageManager(GenericStorageManager):
         )
 
     def get_empty_mediafiles_with_no_relations(self, hours=24):
-        threshold_date = datetime.now(timezone.utc) - timedelta(hours=hours)
+        threshold_date = datetime.now(UTC) - timedelta(hours=hours)
         query = {
             "original_filename": {"$exists": False},
             "date_created": {"$lt": threshold_date},
@@ -934,7 +934,7 @@ class MongoStorageManager(GenericStorageManager):
         unpatched_item = deepcopy(item)
 
         try:
-            timestamp = datetime.now(timezone.utc)
+            timestamp = datetime.now(UTC)
             item = patched_item or patch_document_content(
                 document=item,
                 content=content,
@@ -1022,7 +1022,7 @@ class MongoStorageManager(GenericStorageManager):
         unpatched_item = deepcopy(item)
 
         try:
-            timestamp = datetime.now(timezone.utc)
+            timestamp = datetime.now(UTC)
             item = patched_item or patch_document_content(
                 document=item,
                 content=content,
@@ -1161,7 +1161,7 @@ class MongoStorageManager(GenericStorageManager):
                     self.__verify_uniqueness(item)
                 pre_crud_hook = config.crud()["pre_crud_hook"]
                 post_crud_hook = config.crud()["post_crud_hook"]
-                timestamp = datetime.now(timezone.utc)
+                timestamp = datetime.now(UTC)
                 if not is_history:
                     item = pre_crud_hook(
                         crud="create", timestamp=timestamp, document=item

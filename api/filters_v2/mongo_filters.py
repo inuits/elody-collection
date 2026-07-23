@@ -1,3 +1,6 @@
+from configuration import get_object_configuration_mapper
+from copy import deepcopy
+from elody.util import signal_entity_changed
 from os import getenv
 from time import monotonic
 
@@ -92,10 +95,11 @@ class MongoFilters:
         return_cursor=False,
     ):
         entity_type = get_type_filter_value(filter_request_body)
+        entity_types = []
         if not entity_type:
-            entity_type = get_selection_type_filter_value(filter_request_body)
-            if len(entity_type) > 0:
-                entity_type = entity_type[0]
+            entity_types = get_selection_type_filter_value(filter_request_body)
+            if len(entity_types) > 0:
+                entity_type = entity_types[0]
         options_requesting_filter = get_options_requesting_filter(filter_request_body)
         force_base_nested_matcher_builder = bool(
             options_requesting_filter
@@ -123,8 +127,29 @@ class MongoFilters:
             if return_query_without_executing:
                 return pipeline
 
+            remaining_pipeline = pipeline[1:]
+            new_pipeline = [match[0]]
+            if len(entity_types) > 1:
+                collections = {
+                    get_object_configuration_mapper()
+                    .get(entity_type)
+                    .crud()["collection"]
+                    for entity_type in entity_types
+                }
+                if len(collections) > 1:
+                    try:
+                        collections.remove(collection)
+                    except KeyError:
+                        log.error("We really shouldn't get here hopefully")
+
+                    for coll in collections:
+                        new_pipeline.append(
+                            {"$unionWith": {"coll": coll, "pipeline": match}}
+                        )
+            new_pipeline.extend(remaining_pipeline)
+
             return self.__execute_aggregation_query(
-                pipeline,
+                new_pipeline,
                 match,
                 group,
                 skip,
@@ -180,6 +205,7 @@ class MongoFilters:
         facets_request,
         return_cursor=False,
     ):
+        print(f"{pipeline = }\n\n", flush=True)
         try:
             with tracer.start_as_current_span(
                 "base.MongoFilters.__execute_aggregation_query.aggregate"
