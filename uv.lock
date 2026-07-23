@@ -16,7 +16,7 @@ wheels = [
 
 [[package]]
 name = "amqpstorm-flask"
-version = "0.6.1"
+version = "0.6.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "amqpstorm" },
@@ -24,9 +24,9 @@ dependencies = [
     { name = "flask" },
     { name = "retry" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/46/5e/4ba705a51499050fce30bf8893c812a9e2a07f0adb307d32d42f1ae95f99/amqpstorm_flask-0.6.1.tar.gz", hash = "sha256:aeed5a5e84bf05ae79d4791766a3a0e0eac2ad5d61e1fe3de247f448b11973bd", size = 26523, upload-time = "2026-04-03T09:14:59.714Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/50/79/70509ce4c242ee136ac58b7d4b718cadd87211368a29c7628082f2e0bcbb/amqpstorm_flask-0.6.2.tar.gz", hash = "sha256:d6003d21c3ff7078816b23487e6df8612f0b09b622c3e7e2d61056885aa44c74", size = 26626, upload-time = "2026-07-14T10:35:13.465Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/9b/1a/ae75c6e7b53840dc4c6bad3f5a122382d53436a6bdcc408b0d8a6821cea8/amqpstorm_flask-0.6.1-py3-none-any.whl", hash = "sha256:6d81ffa9c862378815ff31c28214570855b345845fa16aa8044b832db2b9825a", size = 21457, upload-time = "2026-04-03T09:14:58.056Z" },
+    { url = "https://files.pythonhosted.org/packages/05/e3/940db0f4c3fbe0b63bdc806042f54bfb333dc921d4b751638613ea473fa3/amqpstorm_flask-0.6.2-py3-none-any.whl", hash = "sha256:f34d5eb6a2509bf45d15882b34212a9058163df934999e8d14d9662a4b7411b0", size = 21566, upload-time = "2026-07-14T10:35:12.375Z" },
 ]
 
 [[package]]
@@ -40,14 +40,14 @@ wheels = [
 
 [[package]]
 name = "apscheduler"
-version = "3.11.2"
+version = "3.11.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "tzlocal" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/07/12/3e4389e5920b4c1763390c6d371162f3784f86f85cd6d6c1bfe68eef14e2/apscheduler-3.11.2.tar.gz", hash = "sha256:2a9966b052ec805f020c8c4c3ae6e6a06e24b1bf19f2e11d91d8cca0473eef41", size = 108683, upload-time = "2025-12-22T00:39:34.884Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/8c/6b/eeff360196bb20b312c9e762a820fd1b2c6d809466c755ef57863478e454/apscheduler-3.11.3.tar.gz", hash = "sha256:cd2fcc9330039a81a5893472ad49facf23a6d5604cbe1d918c835c6de7834d5a", size = 110312, upload-time = "2026-06-28T19:39:22.493Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/9f/64/2e54428beba8d9992aa478bb8f6de9e4ecaa5f8f513bcfd567ed7fb0262d/apscheduler-3.11.2-py3-none-any.whl", hash = "sha256:ce005177f741409db4e4dd40a7431b76feb856b9dd69d57e0da49d6715bfd26d", size = 64439, upload-time = "2025-12-22T00:39:33.303Z" },
+    { url = "https://files.pythonhosted.org/packages/42/c9/8638db32514dbb9157b3d82680c6faea89283523edf9ed2415ea3884f2ae/apscheduler-3.11.3-py3-none-any.whl", hash = "sha256:bbeb2ec02d23d3c06a6c07ed7f0f3939ada6680eb121fae809a69bb42c537a30", size = 66024, upload-time = "2026-06-28T19:39:20.982Z" },
 ]
 
 [[package]]
@@ -157,9 +157,9 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "amqpstorm", specifier = "==2.11.1" },
-    { name = "amqpstorm-flask", specifier = "==0.6.1" },
+    { name = "amqpstorm-flask", specifier = "==0.6.2" },
     { name = "aniso8601", specifier = "==10.0.1" },
-    { name = "apscheduler", specifier = "==3.11.2" },
+    { name = "apscheduler", specifier = "==3.11.3" },
     { name = "attrs", specifier = "==25.4.0" },
     { name = "authlib", specifier = "==1.7.2" },
     { name = "blinker", specifier = "==1.9.0" },
@@ -167,7 +167,7 @@ requires-dist = [
     { name = "cffi", specifier = "==2.0.0" },
     { name = "charset-normalizer", specifier = "==3.4.7" },
     { name = "click", specifier = "==8.4.2" },
-    { name = "cloudevents", specifier = "==2.0.0" },
+    { name = "cloudevents", specifier = "==2.2.0" },
     { name = "cryptography", specifier = "==49.0.0" },
     { name = "decorator", specifier = "==5.3.1" },
     { name = "deprecation", specifier = "==2.1.0" },
@@ -193,7 +193,7 @@ requires-dist = [
     { name = "opentelemetry-sdk", specifier = "==1.43.0" },
     { name = "packaging", specifier = "==24.2" },
     { name = "pamqp", specifier = "==2.3.0" },
-    { name = "pika", specifier = "==1.3.2" },
+    { name = "pika", specifier = "==1.4.2" },
     { name = "prometheus-client", specifier = "==0.25.0" },
     { name = "prometheus-flask-exporter", specifier = "==0.23.2" },
     { name = "py", specifier = "==1.11.0" },
@@ -326,15 +326,15 @@ wheels = [
 
 [[package]]
 name = "cloudevents"
-version = "2.0.0"
+version = "2.2.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "deprecation" },
     { name = "python-dateutil" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/71/ee/22614a29a1754e6abd979eebfb5f5ecc8ffb6e4e267f3879f017bc5d5531/cloudevents-2.0.0.tar.gz", hash = "sha256:3224851b2ac902b868ed4bc1aa10772ada8cdf85f180322b12968d90a1dceef2", size = 46940, upload-time = "2026-03-24T16:22:20.214Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/45/fe/3bae2187abea2682a1079c5618e45baf4c9df7e35017e1b9b7940955db59/cloudevents-2.2.0.tar.gz", hash = "sha256:fc52440a1fecde882b3b745361e1c7dd4e044e71a6b719cfec2e2c0aa1a19fa3", size = 48380, upload-time = "2026-06-11T14:10:02.339Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/43/3a/4df9a7de0bbb30dc6c0f9f707602160ff269dd01a11127f237ef01232b13/cloudevents-2.0.0-py3-none-any.whl", hash = "sha256:babb257989a933b18312897c3bf3a7cc65e270831227822f2db10b50d1278546", size = 94592, upload-time = "2026-03-24T16:22:19.094Z" },
+    { url = "https://files.pythonhosted.org/packages/d0/d4/901b17ea39f4f1125fc92529cb842896309075406a78e13a7c544f0c5600/cloudevents-2.2.0-py3-none-any.whl", hash = "sha256:9ff8adff01b997d251d0fb54076557daa9906330e16afc1712a6447122f8f7a4", size = 98239, upload-time = "2026-06-11T14:10:01.059Z" },
 ]
 
 [[package]]
@@ -865,11 +865,11 @@ wheels = [
 
 [[package]]
 name = "pika"
-version = "1.3.2"
+version = "1.4.2"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/db/db/d4102f356af18f316c67f2cead8ece307f731dd63140e2c71f170ddacf9b/pika-1.3.2.tar.gz", hash = "sha256:b2a327ddddf8570b4965b3576ac77091b850262d34ce8c1d8cb4e4146aa4145f", size = 145029, upload-time = "2023-05-05T14:25:43.368Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/5c/06/a5e4589eccb22be5790bf1327e20c5387b64327daa40c4d857cf9265ec3c/pika-1.4.2.tar.gz", hash = "sha256:48d1f50297e76be4fc798fd5232d4d532d7a4758e51f7c0ae6c4004b9808a26b", size = 154365, upload-time = "2026-07-23T02:11:26.003Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f9/f3/f412836ec714d36f0f4ab581b84c491e3f42c6b5b97a6c6ed1817f3c16d0/pika-1.3.2-py3-none-any.whl", hash = "sha256:0779a7c1fafd805672796085560d290213a465e4f6f76a6fb19e378d8041a14f", size = 155415, upload-time = "2023-05-05T14:25:41.484Z" },
+    { url = "https://files.pythonhosted.org/packages/d0/82/3b047c707700e08539cde489475eb5eaca13550599baaa17a8da038003e7/pika-1.4.2-py3-none-any.whl", hash = "sha256:b1df7389cdffaa45856bd01ade4e81bd488e0e199c443faf0c7bea89015f373f", size = 165087, upload-time = "2026-07-23T02:11:24.712Z" },
 ]
 
 [[package]]
