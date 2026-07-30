@@ -6,7 +6,7 @@
 include:
   - project: 'inuits/gitlab-ci/pipeline-templates'
     ref: 'v4.2.0'
-    file: 
+    file:
       - 'pipelines/customers/deploy.yml'
       - 'jobs/docker/build-pip.yml'
 
@@ -38,3 +38,15 @@ uat:
 prod:
   rules:
     - when: never
+
+workflow:
+  rules:
+    - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
+      when: always
+
+build:
+  rules:
+    - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
+      when: always
+    - if: "$CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH"
+      when: manual
