@@ -66,6 +66,8 @@ class MongoStorageManager(GenericStorageManager):
             )
             dst_relation = relation.copy()
             dst_relation["type"] = self._map_entity_relation(relation["type"])
+            if not dst_relation.get("type"):
+                continue
             dst_relation["key"] = id
             dst_id = relation["key"]
             dst_content = [dst_relation]
@@ -379,6 +381,7 @@ class MongoStorageManager(GenericStorageManager):
     def add_relations_to_collection_item(
         self, collection, id, relations, parent=True, dst_collection=None
     ):
+        relations = [relation for relation in relations if relation.get("type")]
         self.add_sub_item_to_collection_item(collection, id, "relations", relations)
         self.__add_child_relations(id, relations, dst_collection)
         return relations
