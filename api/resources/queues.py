@@ -342,7 +342,7 @@ def create_job(routing_key, body, message_id):
     try:
         job = body["data"]
         config = get_object_configuration_mapper().get("job")
-        collection = config.crud()["collection"]
+        collection = config.crud().get("collection", "jobs")
         storage = StorageManager().get_db_engine()
         storage.save_item_to_collection_v2(collection, job, run_post_crud_hook=False)
 
@@ -539,6 +539,8 @@ def handle_mediafile_deleted(routing_key, body, message_id):  # noqa: PLR0912
     auto_ack=False,
 )
 def sync_entity_to_typesense(message):
+    if getenv("AMQP_MANAGER", "amqpstorm_flask") != "amqpstorm_flask":
+        return
     # Manual ack (auto_ack=False): the message is acknowledged only after the
     # entity is successfully indexed. This means a consumer disconnect mid-flight
     # re-queues the message instead of losing it (which auto-ack does), and an
@@ -608,6 +610,8 @@ def sync_entity_to_typesense(message):
     auto_ack=False,
 )
 def delete_entity_from_typesense(message):
+    if getenv("AMQP_MANAGER", "amqpstorm_flask") != "amqpstorm_flask":
+        return
     # Manual ack, mirroring sync_entity_to_typesense: ack only after the delete
     # succeeds, so a dropped event no longer leaves a deleted entity lingering in
     # the search index. A missing document already counts as success (idempotent).
