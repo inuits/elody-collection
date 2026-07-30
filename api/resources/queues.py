@@ -20,10 +20,14 @@ queue_type = getenv("QUEUE_TYPE")
 routing_key_prefix = getenv("ROUTING_KEY_PREFIX", "dams")
 
 
-def __argument_wrapper(*, queue_name, routing_key, single_active_consumer=False):
+def __argument_wrapper(
+    *, queue_name, routing_key, single_active_consumer=False, full_message_object=False
+):
     arguments = {"routing_key": routing_key}
     if getenv("AMQP_MANAGER", "amqpstorm_flask") == "amqpstorm_flask":
         arguments["queue_name"] = queue_name
+        if full_message_object:
+            arguments["full_message_object"] = full_message_object
         queue_arguments = {}
         if queue_type:
             queue_arguments.update({"x-queue-type": queue_type})
@@ -530,8 +534,8 @@ def handle_mediafile_deleted(routing_key, body, message_id):  # noqa: PLR0912
     **__argument_wrapper(
         queue_name=f"{queue_prefix}-sync_entity_to_typesense",
         routing_key=f"{routing_key_prefix}.entity_changed",
+        full_message_object=True,
     ),
-    full_message_object=True,
     auto_ack=False,
 )
 def sync_entity_to_typesense(message):
@@ -599,8 +603,8 @@ def sync_entity_to_typesense(message):
     **__argument_wrapper(
         queue_name=f"{queue_prefix}-delete_entity_from_typesense",
         routing_key=f"{routing_key_prefix}.entity_deleted",
+        full_message_object=True,
     ),
-    full_message_object=True,
     auto_ack=False,
 )
 def delete_entity_from_typesense(message):

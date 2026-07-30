@@ -62,7 +62,8 @@ def has_non_exact_match_filter(filter_request_body: list[dict]) -> bool:
     non_exact_match_filters = [
         filter_criteria
         for filter_criteria in filter_request_body
-        if not filter_criteria.get("match_exact") and filter_criteria.get("type") != "type"
+        if not filter_criteria.get("match_exact")
+        and filter_criteria.get("type") != "type"
     ]
     return len(non_exact_match_filters) > 0
 
