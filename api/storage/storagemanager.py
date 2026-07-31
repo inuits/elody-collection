@@ -11,7 +11,7 @@ class StorageManager(metaclass=Singleton):
 
     def _init_storage_managers(self):
         # Layers halen uit configuration.py
-        self.storage_manager = get_storage_mapper().get(self.storage_engine)()
+        self.storage_manager = get_storage_mapper()[self.storage_engine]()
 
     def get_db_engine(self):
         return self.storage_manager

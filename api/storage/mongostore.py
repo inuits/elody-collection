@@ -1,8 +1,9 @@
 import re
 import time
 from copy import deepcopy
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from os import getenv
+from typing import cast
 from urllib.parse import quote_plus
 
 from app_context import request
@@ -25,6 +26,7 @@ from pymongo.errors import DuplicateKeyError, WriteError
 from rabbit import get_rabbit
 from storage.genericstore import GenericStorageManager
 from tracing import get_tracer, init_mongo_instrumentation
+from util import get_boolean_env, get_int_env
 from werkzeug.exceptions import Conflict, PreconditionFailed
 
 tracer = get_tracer()
@@ -36,23 +38,19 @@ class MongoStorageManager(GenericStorageManager):
     def __init__(self, *, apply_default_entities_index=True):
         if getenv("DB_ENGINE", "mongo") != "mongo":
             return
-        if bool(getenv("INSTRUMENT_MONGODB", False)):
+        if get_boolean_env("INSTRUMENT_MONGODB", False):
             init_mongo_instrumentation()
-        self.mongo_direct = int(getenv("MONGODB_DIRECT", 0))
+        self.mongo_direct = get_int_env("MONGODB_DIRECT", 0)
         self.mongo_db_name = getenv("MONGODB_DB_NAME", "dams")
         self.mongo_hosts = getenv("MONGODB_HOSTS", "mongo").split(",")
-        self.mongo_port = int(getenv("MONGODB_PORT", 27017))
+        self.mongo_port = get_int_env("MONGODB_PORT", 27017)
         self.mongo_replica_set = getenv("MONGODB_REPLICA_SET")
         self.mongo_username = getenv("MONGODB_USERNAME")
         self.mongo_password = getenv("MONGODB_PASSWORD")
-        self.mongo_tls = getenv("MONGODB_TLS", False) in [True, "true", "True"]
+        self.mongo_tls = get_boolean_env("MONGODB_TLS", False)
         self.mongo_auth_source = getenv("MONGODB_AUTH_SOURCE", None)
         self.mongo_existing_connection_string = getenv("MONGODB_CONNECTION_STRING")
-        self.allow_disk_use = getenv("MONGODB_ALLOW_DISK_USE", False) in [
-            "True",
-            "true",
-            True,
-        ]
+        self.allow_disk_use = get_boolean_env("MONGODB_ALLOW_DISK_USE", False)
         self.read_preference = getenv("MONGODB_READ_PREFERENCE", "secondaryPreferred")
 
         self.client = MongoClient(
@@ -60,7 +58,7 @@ class MongoStorageManager(GenericStorageManager):
             directConnection=bool(self.mongo_direct),
         )
         self.db = self.client[self.mongo_db_name].with_options(
-            CodecOptions(tz_aware=True, tzinfo=timezone.utc),
+            CodecOptions(tz_aware=True, tzinfo=UTC),
         )
         if apply_default_entities_index:
             self.db.entities.create_index("identifiers", unique=True)
@@ -86,11 +84,11 @@ class MongoStorageManager(GenericStorageManager):
             )
 
     def __create_sortable_metadata(self, metadata):
-        sort = dict()
+        sort = {}
         for metadata_object in metadata:
             sort_key = metadata_object["key"]
             if sort_key not in sort:
-                sort[sort_key] = list()
+                sort[sort_key] = []
             sort[sort_key].append(
                 {key: value for key, value in metadata_object.items() if key != "key"},
             )
@@ -163,7 +161,7 @@ class MongoStorageManager(GenericStorageManager):
         return {"$or": [{"_id": {"$in": ids}}, {"identifiers": {"$in": ids}}]}
 
     def __get_items_from_collection_by_ids(self, collection, ids, sort=None, asc=True):
-        items = dict()
+        items = {}
         documents = self.db[collection].find(self.__get_ids_query(ids))
         if sort:
             documents.sort(
@@ -171,17 +169,17 @@ class MongoStorageManager(GenericStorageManager):
                 ASCENDING if asc else DESCENDING,
             )
         items["count"] = self.db[collection].count_documents(self.__get_ids_query(ids))
-        items["results"] = list()
+        items["results"] = []
         for document in documents:
             items["results"].append(self._prepare_mongo_document(document, True))
         return items
 
     def __replace_dictionary_keys(self, data, reversed):
         if type(data) is dict:
-            new_dict = dict()
+            new_dict = {}
             for key, value in data.items():
                 if type(value) is list:
-                    new_value = list()
+                    new_value = []
                     for object in value:
                         new_value.append(
                             self.__replace_dictionary_keys(object, reversed),
@@ -322,7 +320,7 @@ class MongoStorageManager(GenericStorageManager):
     ):
         count = self.get_collection_item_mediafiles_count(id)
         if not relation_properties:
-            relation_properties = dict()
+            relation_properties = {}
         primary_mediafile = mediafile_public or count == 0
         primary_thumbnail = mediafile_public or count == 0
         if mediafile_public:
@@ -337,25 +335,23 @@ class MongoStorageManager(GenericStorageManager):
             id,
             [
                 {
-                    **{
-                        "key": mediafile_id,
-                        "label": "hasMediafile",
-                        "type": "hasMediafile",
-                        "is_primary": primary_mediafile,
-                        "is_primary_thumbnail": primary_thumbnail,
-                        "metadata": [
+                    "key": mediafile_id,
+                    "label": "hasMediafile",
+                    "type": "hasMediafile",
+                    "is_primary": primary_mediafile,
+                    "is_primary_thumbnail": primary_thumbnail,
+                    "metadata": [
+                        {
+                            "key": "order",
+                            "value": count + 1,
+                        },
+                    ],
+                    "sort": {
+                        "order": [
                             {
-                                "key": "order",
                                 "value": count + 1,
                             },
                         ],
-                        "sort": {
-                            "order": [
-                                {
-                                    "value": count + 1,
-                                },
-                            ],
-                        },
                     },
                     **relation_properties,
                 },
@@ -431,8 +427,8 @@ class MongoStorageManager(GenericStorageManager):
 
         return any(relation.get("type") == relation_type for relation in relations)
 
-    def delete_collection_item_relations(self, collection, id, relations, parent=True):
-        for relation in relations:
+    def delete_collection_item_relations(self, collection, id, content, parent=True):
+        for relation in content:
             impacted_ids = [id, relation["key"]]
             types = [relation["type"], self._map_entity_relation(relation["type"])]
             self.db[collection].update_many(
@@ -458,7 +454,7 @@ class MongoStorageManager(GenericStorageManager):
         config = get_object_configuration_mapper().get(item["type"])
         pre_crud_hook = config.crud()["pre_crud_hook"]
         post_crud_hook = config.crud()["post_crud_hook"]
-        timestamp = datetime.now(timezone.utc)
+        timestamp = datetime.now(UTC)
         try:
             item = pre_crud_hook(
                 crud="delete",
@@ -481,7 +477,7 @@ class MongoStorageManager(GenericStorageManager):
                 log.info("Successfully deleted item", item)
         except Exception as error:
             log.exception(f"{error.__class__.__name__}: {error}", item, exc_info=error)
-            raise error
+            raise
 
     def delete_item_from_collection(self, collection, id):
         self._delete_impacted_relations(collection, id)
@@ -493,7 +489,7 @@ class MongoStorageManager(GenericStorageManager):
         object_lists = config.document_info().get("object_lists", {})
         pre_crud_hook = config.crud()["pre_crud_hook"]
         post_crud_hook = config.crud()["post_crud_hook"]
-        timestamp = datetime.now(timezone.utc)
+        timestamp = datetime.now(UTC)
         for key, value in content.items():
             if not scope or key in scope:
                 if key in object_lists:
@@ -527,17 +523,17 @@ class MongoStorageManager(GenericStorageManager):
             if error.code == 11000:
                 try:
                     duplicate_entry = (
-                        error.details.get("errmsg").split('"')[1].split(":")[-1]
+                        error.details.get("errmsg").split('"')[1].split(":")[-1]  # ty: ignore[unresolved-attribute]
                     )
-                except Exception:
-                    duplicate_entry = error.details.get("errmsg")
+                except Exception:  # noqa: BLE001
+                    duplicate_entry = error.details.get("errmsg")  # ty: ignore[unresolved-attribute]
                 raise NonUniqueException(
                     f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} | duplicate_entry:{duplicate_entry} - Following entry must be unique: {duplicate_entry}",
-                )
-            raise error
+                ) from DuplicateKeyError
+            raise
         except Exception as error:
             log.exception(f"{error.__class__.__name__}: {error}", item, exc_info=error)
-            raise error
+            raise
         return self._prepare_mongo_document(item, False, False)
 
     def delete_collection_item_mediafiles(self, collection, id):
@@ -545,9 +541,8 @@ class MongoStorageManager(GenericStorageManager):
         for mediafile in mediafiles:
             linked_entities = self.get_mediafile_linked_entities(mediafile)
             self.delete_item_from_collection("mediafiles", get_raw_id(mediafile))
-            if tenant_id := get_user_context().x_tenant.id:
-                if tenant_id != "tenant:super":
-                    mediafile["filename"] = f"{tenant_id}/{mediafile['filename']}"
+            if (tenant_id := get_user_context().x_tenant.id) != "tenant:super":
+                mediafile["filename"] = f"{tenant_id}/{mediafile['filename']}"
             signal_mediafile_deleted(get_rabbit(), mediafile, linked_entities)
 
     def drop_all_collections(self):
@@ -564,8 +559,9 @@ class MongoStorageManager(GenericStorageManager):
         asc=0,
         sort="order",
     ):
+        asc = bool(asc)
         item = self.get_item_from_collection_by_id(collection, id)
-        mediafiles = []
+        mediafiles: list[dict] = []
         documents = self.db["mediafiles"].find(
             {"relations.key": id},
             skip=skip,
@@ -588,7 +584,9 @@ class MongoStorageManager(GenericStorageManager):
                         if isinstance(sort_order, (int, float)):
                             data = {"id": relation.get("key"), "sort_order": sort_order}
                             mediafiles_sort.append(data)
-            sort_dict = {item["id"]: item["sort_order"] for item in mediafiles_sort}
+            sort_dict: dict[str, int] = {
+                item["id"]: item["sort_order"] for item in mediafiles_sort
+            }
             # Sort the results using the sort dictionary
             sorted_results = sorted(
                 mediafiles,
@@ -614,7 +612,7 @@ class MongoStorageManager(GenericStorageManager):
 
             def get_order(relation):
                 for meta in relation.get("metadata", []):
-                    if meta["key"] == "order":
+                    if meta["key"] == "order":  # noqa: SIM102 There might be instances where meta["value"] does not exist if key !=- order? I can't really think of any though
                         if isinstance(meta["value"], (int, float)):
                             return meta["value"]
                 return float("inf")
@@ -641,8 +639,8 @@ class MongoStorageManager(GenericStorageManager):
             asc=ascending,
         )
 
-    def get_empty_mediafiles_with_no_relations(self, hours=24):
-        threshold_date = datetime.now(timezone.utc) - timedelta(hours=hours)
+    def get_empty_mediafiles_with_no_relations(self, time=24):
+        threshold_date = datetime.now(UTC) - timedelta(hours=time)
         query = {
             "original_filename": {"$exists": False},
             "date_created": {"$lt": threshold_date},
@@ -698,7 +696,7 @@ class MongoStorageManager(GenericStorageManager):
                 ],
                 allowDiskUse=self.allow_disk_use,
             )
-            result = list(results)[0]
+            result = next(iter(results))
             del result["difference"]
             return result
         if all_entries:
@@ -762,11 +760,11 @@ class MongoStorageManager(GenericStorageManager):
         if "ids" in filters:
             return self.__get_items_from_collection_by_ids(
                 collection,
-                filters["ids"],
+                cast(dict, filters)["ids"],
                 sort,
                 asc,
             )
-        items = dict()
+        items = {}
         if fields or filters:
             query = {
                 "$and": [
@@ -789,7 +787,7 @@ class MongoStorageManager(GenericStorageManager):
                 ASCENDING if asc else DESCENDING,
             )
         items["count"] = count
-        items["results"] = list()
+        items["results"] = []
         for document in documents:
             items["results"].append(self._prepare_mongo_document(document, True))
         return items
@@ -806,7 +804,7 @@ class MongoStorageManager(GenericStorageManager):
     def get_metadata_values_for_collection_item_by_key(self, collection, key):
         if key in ["type"]:
             return self.db[collection].distinct(key)
-        distinct_values = list()
+        distinct_values = []
         aggregation = self.db[collection].aggregate(
             [
                 {"$match": {"metadata.key": key}},
@@ -822,8 +820,7 @@ class MongoStorageManager(GenericStorageManager):
             allowDiskUse=self.allow_disk_use,
         )
         for result in aggregation:
-            for distinct_value in result["distinctValues"]:
-                distinct_values.append(distinct_value)
+            distinct_values.extend(result["distinctValues"])
         return distinct_values
 
     def get_sort_field(self, field, relation_sort=False):
@@ -913,9 +910,9 @@ class MongoStorageManager(GenericStorageManager):
         except DuplicateKeyError as ex:
             if ex.code == 11000:
                 raise NonUniqueException(
-                    f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} - {ex.details.get('errmsg')}",
-                )
-            raise ex
+                    f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} - {ex.details.get('errmsg')}",  # ty: ignore[unresolved-attribute]
+                ) from DuplicateKeyError
+            raise
         return self.get_item_from_collection_by_id(collection, id)
 
     def patch_item_from_collection_v2(
@@ -937,7 +934,7 @@ class MongoStorageManager(GenericStorageManager):
         unpatched_item = deepcopy(item)
 
         try:
-            timestamp = datetime.now(timezone.utc)
+            timestamp = datetime.now(UTC)
             item = patched_item or patch_document_content(
                 document=item,
                 content=content,
@@ -989,17 +986,17 @@ class MongoStorageManager(GenericStorageManager):
             if error.code == 11000:
                 try:
                     duplicate_entry = (
-                        error.details.get("errmsg").split('"')[1].split(":")[-1]
+                        error.details.get("errmsg").split('"')[1].split(":")[-1]  # ty: ignore[unresolved-attribute]
                     )
-                except Exception:
-                    duplicate_entry = error.details.get("errmsg")
+                except Exception:  # noqa: BLE001
+                    duplicate_entry = error.details.get("errmsg")  # ty: ignore[unresolved-attribute]
                 raise NonUniqueException(
                     f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} | duplicate_entry:{duplicate_entry} - Following entry must be unique: {duplicate_entry}",
-                )
-            raise error
+                ) from error
+            raise
         except Exception as error:
             log.exception(f"{error.__class__.__name__}: {error}", item, exc_info=error)
-            raise error
+            raise
 
         if not self.is_dry_run():
             log.info("Successfully patched item", item)
@@ -1025,7 +1022,7 @@ class MongoStorageManager(GenericStorageManager):
         unpatched_item = deepcopy(item)
 
         try:
-            timestamp = datetime.now(timezone.utc)
+            timestamp = datetime.now(UTC)
             item = patched_item or patch_document_content(
                 document=item,
                 content=content,
@@ -1069,15 +1066,15 @@ class MongoStorageManager(GenericStorageManager):
                             "Optimistic concurrency failure. Target document version has changed.",
                         )
                 except WriteError as exception:
-                    if exception.details.get("code") == 66:
+                    if exception.details.get("code") == 66:  # ty: ignore[unresolved-attribute]
                         self.db[config.crud()["collection"]].delete_one(
                             self._get_id_query(unpatched_item["_id"]),
                         )
                         self.db[collection].insert_one(item)
                     else:
-                        raise exception
-                except Exception as exception:
-                    raise exception
+                        raise
+                except Exception:  # TODO (tim.standaert): If we're only trying to not do writeErrors, shouldn't we just drop thi exception? # noqa
+                    raise
                 if run_post_crud_hook:
                     post_crud_hook(
                         crud="update",
@@ -1092,23 +1089,27 @@ class MongoStorageManager(GenericStorageManager):
             if error.code == 11000:
                 try:
                     duplicate_entry = (
-                        error.details.get("errmsg").split('"')[1].split(":")[-1]
+                        error.details.get("errmsg").split('"')[1].split(":")[-1]  # ty: ignore[unresolved-attribute]
                     )
-                except Exception:
-                    duplicate_entry = error.details.get("errmsg")
+                except Exception:  # noqa: BLE001
+                    duplicate_entry = error.details.get("errmsg")  # ty: ignore[unresolved-attribute]
                 raise NonUniqueException(
                     f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} | duplicate_entry:{duplicate_entry} - Following entry must be unique: {duplicate_entry}",
-                )
-            raise error
+                ) from error
+            raise
         except Exception as error:
             log.exception(f"{error.__class__.__name__}: {error}", item, exc_info=error)
-            raise error
+            raise
 
         if not self.is_dry_run():
             log.info("Successfully put item", item)
         return self._prepare_mongo_document(item, False, False)
 
-    def reindex_mediafile_parents(self, mediafile=None, parents=None):
+    def reindex_mediafile_parents(
+        self, mediafile: dict | None = None, parents: list | None = None
+    ):
+        if not parents:
+            parents = []
         if mediafile:
             parents = self.get_mediafile_linked_entities(mediafile)
         for item in parents:
@@ -1135,9 +1136,9 @@ class MongoStorageManager(GenericStorageManager):
         except DuplicateKeyError as ex:
             if ex.code == 11000:
                 raise NonUniqueException(
-                    f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} - {ex.details.get('errmsg')}",
-                )
-            raise ex
+                    f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} - {ex.details.get('errmsg')}",  # ty: ignore[unresolved-attribute]
+                ) from ex
+            raise
         return (
             item_id
             if only_return_id
@@ -1164,7 +1165,7 @@ class MongoStorageManager(GenericStorageManager):
                     self.__verify_uniqueness(item)
                 pre_crud_hook = config.crud()["pre_crud_hook"]
                 post_crud_hook = config.crud()["post_crud_hook"]
-                timestamp = datetime.now(timezone.utc)
+                timestamp = datetime.now(UTC)
                 if not is_history:
                     item = pre_crud_hook(
                         crud="create", timestamp=timestamp, document=item
@@ -1193,10 +1194,10 @@ class MongoStorageManager(GenericStorageManager):
                     if error.code == 11000:
                         try:
                             duplicate_entry = (
-                                error.details.get("errmsg").split('"')[1].split(":")[-1]
+                                error.details.get("errmsg").split('"')[1].split(":")[-1]  # ty: ignore[unresolved-attribute]
                             )
-                        except Exception:
-                            duplicate_entry = error.details.get("errmsg")
+                        except Exception:  # noqa: BLE001
+                            duplicate_entry = error.details.get("errmsg")  # ty: ignore[unresolved-attribute]
                         exception = NonUniqueException(
                             f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} | duplicate_entry:{duplicate_entry} - Following entry must be unique: {duplicate_entry}",
                         )
@@ -1214,10 +1215,9 @@ class MongoStorageManager(GenericStorageManager):
                     item,
                     exc_info=error,
                 )
-                raise error
-        if errors:
-            if len(errors) == len(items) or self.is_dry_run():
-                raise errors[-1]
+                raise
+        if errors and (len(errors) == len(items) or self.is_dry_run()):
+            raise errors[-1]
         return self._prepare_mongo_document(item, True, to_format="elody")
 
     def set_primary_field_collection_item(self, collection, id, mediafile_id, field):
@@ -1300,9 +1300,9 @@ class MongoStorageManager(GenericStorageManager):
         except DuplicateKeyError as ex:
             if ex.code == 11000:
                 raise NonUniqueException(
-                    f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} - {ex.details.get('errmsg')}",
-                )
-            raise ex
+                    f"{get_error_code(ErrorCode.DUPLICATE_ENTRY, get_write())} - {ex.details.get('errmsg')}",  # ty: ignore[unresolved-attribute]
+                ) from ex
+            raise
         return self.get_item_from_collection_by_id(collection, id)
 
     def get_collection_item_mediafiles_count(self, id):
