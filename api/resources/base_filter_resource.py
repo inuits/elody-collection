@@ -405,6 +405,8 @@ class BaseFilterResource(BaseResource):
     ):
         order_by = request.args.get("order_by", None) if request else None
         asc = bool(request.args.get("asc", 1, int)) if request else 1
+        # Set on demand (user clicks the "<cap>+" total) to bypass the count cap.
+        exact_count = bool(request.args.get("exact_count", 0, int)) if request else False
         if request:
             skip = skip if skip is not None else request.args.get("skip", 0, int)
             limit = limit if limit is not None else request.args.get("limit", 20, int)
@@ -418,7 +420,7 @@ class BaseFilterResource(BaseResource):
             abort(500, message="Failed to init search engine")
 
         items = self.filter_engine_v2.filter(
-            query, skip, limit, collection, order_by, asc
+            query, skip, limit, collection, order_by, asc, exact_count=exact_count
         )
         return self._add_pagination_links(items, skip, limit, collection)
 
@@ -435,6 +437,7 @@ class BaseFilterResource(BaseResource):
         limit = request.args.get("limit", 20, int) if request else 20
         order_by = request.args.get("order_by", None) if request else None
         asc = bool(request.args.get("asc", 1, int)) if request else 1
+        exact_count = bool(request.args.get("exact_count", 0, int)) if request else False
 
         # Filter-dropdown options (distinct_by) on a faceted field come from a
         # Typesense facet instead of a Mongo $group scan over the whole collection.
@@ -570,7 +573,13 @@ class BaseFilterResource(BaseResource):
                 }
             )
             items = self.filter_engine_v2.filter(
-                remaining_filters, skip, limit, collection, order_by, asc
+                remaining_filters,
+                skip,
+                limit,
+                collection,
+                order_by,
+                asc,
+                exact_count=exact_count,
             )
         else:
             mongo_collections = self._resolve_mongo_collections(
