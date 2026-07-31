@@ -90,6 +90,7 @@ class MongoFilters:
         return_query_without_executing=False,
         tidy_up_match=True,
         return_cursor=False,
+        exact_count=False,
     ):
         entity_type = get_type_filter_value(filter_request_body)
         if not entity_type:
@@ -132,6 +133,7 @@ class MongoFilters:
                 options_requesting_filter,
                 facets_request,
                 return_cursor,
+                exact_count,
             )
 
     def __build_aggregation_query(
@@ -179,6 +181,7 @@ class MongoFilters:
         options_requesting_filter,
         facets_request,
         return_cursor=False,
+        exact_count=False,
     ):
         try:
             with tracer.start_as_current_span(
@@ -211,6 +214,7 @@ class MongoFilters:
             skip,
             limit,
             options_requesting_filter,
+            exact_count,
         )
 
     @tracer.start_as_current_span("base.MongoFilters.__get_items")
@@ -222,6 +226,7 @@ class MongoFilters:
         skip,
         limit,
         options_requesting_filter=None,
+        exact_count=False,
     ):
         items = {"results": [], "count": 0, "facets": output.get("facets", [])}
 
@@ -256,7 +261,9 @@ class MongoFilters:
         else:
             items["skip"] = skip
             items["limit"] = limit
-            items["count"] = self.__count(BaseMatchers.collection, match, group, output)
+            items["count"] = self.__count(
+                BaseMatchers.collection, match, group, output, exact_count
+            )
             for document in output["results"]:
                 items["results"].append(
                     self.storage._prepare_mongo_document(document, True)
@@ -264,7 +271,7 @@ class MongoFilters:
 
         return items
 
-    def __count(self, collection, match, group, output):
+    def __count(self, collection, match, group, output, exact_count=False):
         """Count matching documents, avoiding a full scan for large result sets.
 
         Two short-circuits keep this off the hot path:
@@ -274,6 +281,11 @@ class MongoFilters:
           matching key, which dominates the request on large filters. Cap it with
           a ``$limit`` before ``$count`` so the scan stops early; a returned count
           above the cap means "<cap>+". Disable with LISTING_COUNT_CAP=0.
+
+        ``exact_count`` (set on demand when the user clicks the "<cap>+" total)
+        drops the cap so ``$count`` runs to the true total. The whole-collection
+        estimate short-circuit stays in place regardless — running a real
+        count_documents there buys negligible accuracy for real cost.
         """
         type_values = get_type_only_filter_values(match, group)
         if type_values is not None:
@@ -281,7 +293,8 @@ class MongoFilters:
             if collection_types and collection_types <= set(type_values):
                 return self.storage.db[collection].estimated_document_count()
 
-        cap_stage = [{"$limit": LISTING_COUNT_CAP + 1}] if LISTING_COUNT_CAP > 0 else []
+        cap_active = LISTING_COUNT_CAP > 0 and not exact_count
+        cap_stage = [{"$limit": LISTING_COUNT_CAP + 1}] if cap_active else []
         count = self.storage.db[collection].aggregate(
             [*match, *group, *cap_stage, {"$count": "count"}],
             allowDiskUse=self.storage.allow_disk_use,

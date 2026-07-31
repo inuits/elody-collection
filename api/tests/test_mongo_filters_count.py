@@ -98,9 +98,11 @@ def _make_filters(collection):
     return mf
 
 
-def _count(mf, match, group):
+def _count(mf, match, group, exact_count=False):
     # __count is name-mangled; output only matters for the empty-result fallback.
-    return mf._MongoFilters__count("entities_actual", match, group, {"results": []})
+    return mf._MongoFilters__count(
+        "entities_actual", match, group, {"results": []}, exact_count
+    )
 
 
 class TestCountDecision:
@@ -160,9 +162,10 @@ class TestCountDecision:
 
 
 class TestFilteredCountCap:
-    def test_filtered_count_pipeline_has_limit_cap_before_count(self):
+    def test_filtered_count_pipeline_has_limit_cap_before_count(self, monkeypatch):
         import filters_v2.mongo_filters as mf_mod
 
+        monkeypatch.setattr(mf_mod, "LISTING_COUNT_CAP", 1000)
         col = _FakeCollection(types={"a", "b", "c"}, estimated=999, agg_count=101)
         mf = _make_filters(col)
         match = [{"$match": {"type": {"$in": ["a", "b"]}}}]  # narrower -> filtered
@@ -211,3 +214,52 @@ class TestFilteredCountCap:
             {"$match": {"type": {"$in": ["a"]}}},
             {"$count": "count"},
         ]
+
+
+class TestExactCountOnDemand:
+    """exact_count=True bypasses the cap so a user can fetch the true total."""
+
+    def test_exact_count_omits_limit_stage_and_returns_true_total(self, monkeypatch):
+        # Cap is active, but exact_count must bypass it and run to the true total.
+        import filters_v2.mongo_filters as mf_mod
+
+        monkeypatch.setattr(mf_mod, "LISTING_COUNT_CAP", 1000)
+        col = _FakeCollection(types={"a", "b", "c"}, estimated=999, agg_count=700712)
+        mf = _make_filters(col)
+        match = [{"$match": {"type": {"$in": ["a"]}}}]  # narrower -> filtered
+
+        result = _count(mf, match, [], exact_count=True)
+
+        # No $limit cap: the aggregation runs to the true total.
+        assert result == 700712
+        assert col.last_pipeline == [
+            {"$match": {"type": {"$in": ["a"]}}},
+            {"$count": "count"},
+        ]
+
+    def test_capped_by_default_still_applies_without_flag(self, monkeypatch):
+        import filters_v2.mongo_filters as mf_mod
+
+        monkeypatch.setattr(mf_mod, "LISTING_COUNT_CAP", 1000)
+        col = _FakeCollection(types={"a", "b", "c"}, estimated=999, agg_count=700712)
+        mf = _make_filters(col)
+
+        _count(mf, [{"$match": {"type": {"$in": ["a"]}}}], [], exact_count=False)
+
+        assert col.last_pipeline[-2:] == [
+            {"$limit": mf_mod.LISTING_COUNT_CAP + 1},
+            {"$count": "count"},
+        ]
+
+    def test_exact_count_still_uses_estimate_for_whole_collection(self):
+        # Whole-collection short-circuit stays O(1) even when exact is requested;
+        # running a real count_documents there buys negligible accuracy for real cost.
+        col = _FakeCollection(types={"a", "b"}, estimated=5_000_000, agg_count=101)
+        mf = _make_filters(col)
+
+        result = _count(
+            mf, [{"$match": {"type": {"$in": ["a", "b"]}}}], [], exact_count=True
+        )
+
+        assert result == 5_000_000
+        assert col.aggregate_calls == 0
