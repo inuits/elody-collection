@@ -24,9 +24,6 @@ class ArangoWrapper:
         asc=True,
         exact_count=False,
     ):
-        # ponytail: exact_count is a no-op on Arango — its count is coupled to the
-        # results query via full_count=True, so on-demand exact counting is deferred
-        # (see plan "Deferred"). Accepted here so the shared caller can pass it.
         mongo_pipeline: list[dict] = MongoFilters().filter(
             filter_request_body, skip, limit, collection, order_by, asc, True, False
         )  # pyright: ignore

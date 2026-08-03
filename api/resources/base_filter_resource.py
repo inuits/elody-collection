@@ -405,7 +405,6 @@ class BaseFilterResource(BaseResource):
     ):
         order_by = request.args.get("order_by", None) if request else None
         asc = bool(request.args.get("asc", 1, int)) if request else 1
-        # Set on demand (user clicks the "<cap>+" total) to bypass the count cap.
         exact_count = bool(request.args.get("exact_count", 0, int)) if request else False
         if request:
             skip = skip if skip is not None else request.args.get("skip", 0, int)
