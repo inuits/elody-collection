@@ -4,9 +4,9 @@
 
 <p align="center">Part of <a href="https://elody.eu">Elody</a> — the open semantic data platform.</p>
 
-# Inuits DAMS Collection API
+# Elody Collection API
 
-This is the Inuits DAMS Collection API repository for the Inuits DAMS project. See https://gitlab.inuits.io/customers/coghent/dams/coghent-dams-common for general information.
+This is the Elody Collection API repository for the Elody project. See https://github.com/inuits/elody-common for general information.
 
 ## Local setup
 
