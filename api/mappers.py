@@ -180,6 +180,16 @@ def map_data_according_to_accept_header(
                 )
             except AttributeError:
                 return map_to_csv(data, data_type, fields, exclude_non_editable_fields)
+        case "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+            if not data["results"]:
+                return b""
+            return __serialize_data_according_to_accept_header(
+                data["results"],
+                "csv",
+                "applicationvndopenxmlformatsofficedocumentspreadsheetmlsheet",
+                accept_header,
+                data["results"][0]["type"],
+            )
         case "text/turtle":
             data = __serialize_data_according_to_accept_header(
                 data, data_type, to_format, accept_header

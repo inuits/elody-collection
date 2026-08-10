@@ -31,6 +31,17 @@ def output_csv(data, code, headers=None):
     return _string_responder(data, code, headers, "text/csv")
 
 
+_MIMETYPE_XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+
+def output_xlsx(data, code, headers=None):
+    resp = make_response(data, code)
+    resp.mimetype = _MIMETYPE_XLSX
+    if headers:
+        resp.headers.extend(headers)
+    return resp
+
+
 def output_turtle(data, code, headers=None):
     return _string_responder(data, code, headers, "text/turtle")
 
@@ -50,5 +61,6 @@ class CustomApi(Api):
         self.representations["application/n-triples"] = output_n_triples
         self.representations["application/rdf+xml"] = output_rdf_xml
         self.representations["text/csv"] = output_csv
+        self.representations[_MIMETYPE_XLSX] = output_xlsx
         self.representations["text/turtle"] = output_turtle
         self.representations["text/uri-list"] = output_uri_list

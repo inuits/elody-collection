@@ -405,7 +405,9 @@ class BaseFilterResource(BaseResource):
     ):
         order_by = request.args.get("order_by", None) if request else None
         asc = bool(request.args.get("asc", 1, int)) if request else 1
-        exact_count = bool(request.args.get("exact_count", 0, int)) if request else False
+        exact_count = (
+            bool(request.args.get("exact_count", 0, int)) if request else False
+        )
         if request:
             skip = skip if skip is not None else request.args.get("skip", 0, int)
             limit = limit if limit is not None else request.args.get("limit", 20, int)
@@ -436,7 +438,9 @@ class BaseFilterResource(BaseResource):
         limit = request.args.get("limit", 20, int) if request else 20
         order_by = request.args.get("order_by", None) if request else None
         asc = bool(request.args.get("asc", 1, int)) if request else 1
-        exact_count = bool(request.args.get("exact_count", 0, int)) if request else False
+        exact_count = (
+            bool(request.args.get("exact_count", 0, int)) if request else False
+        )
 
         # Filter-dropdown options (distinct_by) on a faceted field come from a
         # Typesense facet instead of a Mongo $group scan over the whole collection.
