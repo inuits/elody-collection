@@ -56,6 +56,7 @@ class ElodyDocumentMediafiles(BaseResource):
         store_relations_on_mediafile,
         mediafile_relation_type,
         technical_origin_relation_type_template,
+        mediafile_placeholder_type=False,
         **kwargs,
     ):
         mediafile = g.get("content") or request.get_json()
@@ -75,10 +76,10 @@ class ElodyDocumentMediafiles(BaseResource):
         #         if entity.ocr_locked:
         #             raise ValueError("Cannot modify: entity is OCR locked.")
 
+        flat_document = self.__get_flat_document(id, **kwargs)
         if mediafile.get("technical_origin") == "ocr":
             original_headers = dict(request.headers)
             request.headers = Headers({**request.headers, "Accept": "application/json"})
-            flat_document = self.__get_flat_document(id, **kwargs)
             if flat_document["type"] == "mediafile":
                 for asset_ref in flat_document.get("ref_assets", []):
                     flat_asset = self.__get_flat_document(asset_ref, **kwargs)
@@ -88,22 +89,29 @@ class ElodyDocumentMediafiles(BaseResource):
                 raise Conflict("OCR is locked for this entity.")
             request.headers = Headers(original_headers)
 
-        get_relations = lambda key: [
-            *(mediafile.get("relations", []) if key == id else []),
-            {
-                **relation_metadata,
-                "key": key,
-                "type": (
-                    mediafile_relation_type
-                    if mediafile.get("technical_origin", "original")
-                    in ["original", "download"]
-                    else technical_origin_relation_type_template.replace(
-                        "TECHNICAL_ORIGIN",
-                        mediafile["technical_origin"].title(),
-                    )
-                ),
-            },
-        ]
+        def get_relations(key):
+            return [
+                *(mediafile.get("relations", []) if key == id else []),
+                {
+                    **relation_metadata,
+                    "key": key,
+                    "type": (
+                        (
+                            mediafile_relation_type.replace(
+                                "TYPE", flat_document["type"].capitalize()
+                            )
+                            if mediafile_placeholder_type
+                            else mediafile_relation_type
+                        )
+                        if mediafile.get("technical_origin", "original")
+                        in ["original", "download"]
+                        else technical_origin_relation_type_template.replace(
+                            "TECHNICAL_ORIGIN",
+                            mediafile["technical_origin"].title(),
+                        )
+                    ),
+                },
+            ]
 
         if store_relations_on_mediafile:
             mediafile["relations"] = get_relations(id)
@@ -128,6 +136,8 @@ class ElodyDocumentMediafiles(BaseResource):
         document = self.document_resource.get(id=id, **kwargs)
         if isinstance(document, Response):
             document = document.json
+        elif isinstance(document, tuple):
+            document = document[0]
         flat_document, _ = get_flat_item_and_object_lists(document)
         return flat_document
 
