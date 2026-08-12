@@ -103,6 +103,24 @@ def _transform_facets(facet_counts):
     return result
 
 
+def _group_has_value(group_key) -> bool:
+    if not group_key:
+        return False
+    values = group_key if isinstance(group_key, list) else [group_key]
+    return any(value is not None and str(value).strip() != "" for value in values)
+
+
+def _ids_from_grouped_hits(result) -> tuple[list, int]:
+    ids, skipped = [], 0
+    for group in result.get("grouped_hits", []):
+        hits = group.get("hits") or []
+        if not hits or not _group_has_value(group.get("group_key")):
+            skipped += 1
+            continue
+        ids.append(hits[0]["document"]["_id"])
+    return ids, skipped
+
+
 def search(
     collection,
     query,
@@ -137,15 +155,12 @@ def search(
             search_params["group_limit"] = 1
 
         result = client.collections[collection].documents.search(search_params)
+        skipped_groups = 0
         if group_by and "grouped_hits" in result:
-            ids = [
-                g["hits"][0]["document"]["_id"]
-                for g in result["grouped_hits"]
-                if g.get("hits")
-            ]
+            ids, skipped_groups = _ids_from_grouped_hits(result)
         else:
             ids = [hit["document"]["_id"] for hit in result["hits"]]
-        response = {"ids": ids, "count": result["found"]}
+        response = {"ids": ids, "count": max(0, result["found"] - skipped_groups)}
         if facet_by:
             response["facets"] = _transform_facets(result.get("facet_counts", []))
         return response
@@ -183,6 +198,8 @@ def search_all_ids(collection, query, query_by, filter_by=None, group_by=None):
         page = 1
         per_page = 250
         total = None
+        seen = 0
+        skipped_groups = 0
 
         while True:
             search_params = {
@@ -202,20 +219,20 @@ def search_all_ids(collection, query, query_by, filter_by=None, group_by=None):
                 total = result["found"]
 
             if group_by and "grouped_hits" in result:
-                ids = [
-                    g["hits"][0]["document"]["_id"]
-                    for g in result["grouped_hits"]
-                    if g.get("hits")
-                ]
+                ids, skipped = _ids_from_grouped_hits(result)
+                skipped_groups += skipped
+                page_size = len(result["grouped_hits"])
             else:
                 ids = [hit["document"]["_id"] for hit in result["hits"]]
+                page_size = len(ids)
             all_ids.extend(ids)
+            seen += page_size
 
-            if len(all_ids) >= total or len(ids) < per_page:
+            if seen >= total or page_size < per_page:
                 break
             page += 1
 
-        return {"ids": all_ids, "count": total}
+        return {"ids": all_ids, "count": max(0, total - skipped_groups)}
     except Exception as e:
         if "Could not find a field named" in str(e) and query_by:
             missing = str(e).split("`")[1] if "`" in str(e) else ""
@@ -255,7 +272,7 @@ def group_values(collection, field, filter_by=None, max_groups=250):
         for group in result.get("grouped_hits", []):
             keys = group.get("group_key") or []
             hits = group.get("hits") or []
-            if keys and hits:
+            if hits and _group_has_value(keys):
                 pairs.append((keys[0], hits[0]["document"]["_id"]))
         return pairs
     except Exception as e:

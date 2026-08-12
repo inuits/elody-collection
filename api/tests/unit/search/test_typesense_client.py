@@ -8,6 +8,7 @@ from search.typesense_client import (
     build_type_filter,
     delete_document,
     get_nested_value,
+    group_values,
     prepare_document_for_typesense,
     search,
     search_all_ids,
@@ -21,6 +22,20 @@ def _make_hit(doc_id):
 
 def _make_search_result(ids, found):
     return {"hits": [_make_hit(i) for i in ids], "found": found}
+
+
+def _make_grouped_result(groups, found):
+    """Shape a group_by response: ``groups`` is a list of (group_key, [ids]).
+
+    With group_by, Typesense reports the number of groups as ``found``.
+    """
+    return {
+        "grouped_hits": [
+            {"group_key": group_key, "hits": [_make_hit(i) for i in ids]}
+            for group_key, ids in groups
+        ],
+        "found": found,
+    }
 
 
 class TestBuildTypeFilter:
@@ -362,6 +377,149 @@ class TestSearchAllIds:
 
         with patch.object(tc, "get_typesense_client", return_value=mock_client):
             assert search_all_ids("entities", "mars", "name") is None
+
+
+class TestSearchGroupBy:
+    """A distinct_by dropdown groups by the field, so only groups that carry an
+    actual value are distinct values: ``value: "*"`` means "field has a value"
+    (Mongo: ``$nin: [None, ""]``). Typesense buckets the documents that lack the
+    field under an empty group key — that bucket is not an option.
+    """
+
+    def test_returns_one_representative_id_per_group(self):
+        mock_client = MagicMock()
+        mock_client.collections.__getitem__.return_value.documents.search.return_value = _make_grouped_result(
+            [(["Fictie"], ["a", "a2"]), (["Non-fictie"], ["b"])], 2
+        )
+
+        with patch.object(tc, "get_typesense_client", return_value=mock_client):
+            result = search("entities", "*", "literary_type", group_by="literary_type")
+
+        assert result == {"ids": ["a", "b"], "count": 2}
+
+    def test_skips_group_of_documents_without_a_value(self):
+        mock_client = MagicMock()
+        mock_client.collections.__getitem__.return_value.documents.search.return_value = _make_grouped_result(
+            [([], ["no_value"]), (["Fictie"], ["a"]), (["Non-fictie"], ["b"])], 3
+        )
+
+        with patch.object(tc, "get_typesense_client", return_value=mock_client):
+            result = search("entities", "*", "literary_type", group_by="literary_type")
+
+        assert result == {"ids": ["a", "b"], "count": 2}
+
+    def test_skips_group_with_blank_value(self):
+        mock_client = MagicMock()
+        mock_client.collections.__getitem__.return_value.documents.search.return_value = _make_grouped_result(
+            [([""], ["empty"]), (["   "], ["blank"]), (["Fictie"], ["a"])], 3
+        )
+
+        with patch.object(tc, "get_typesense_client", return_value=mock_client):
+            result = search("entities", "*", "literary_type", group_by="literary_type")
+
+        assert result == {"ids": ["a"], "count": 1}
+
+    def test_skips_group_without_hits(self):
+        mock_client = MagicMock()
+        mock_client.collections.__getitem__.return_value.documents.search.return_value = _make_grouped_result(
+            [(["Fictie"], []), (["Non-fictie"], ["b"])], 2
+        )
+
+        with patch.object(tc, "get_typesense_client", return_value=mock_client):
+            result = search("entities", "*", "literary_type", group_by="literary_type")
+
+        assert result == {"ids": ["b"], "count": 1}
+
+    def test_count_never_goes_negative(self):
+        mock_client = MagicMock()
+        mock_client.collections.__getitem__.return_value.documents.search.return_value = _make_grouped_result(
+            [([], ["no_value"])], 0
+        )
+
+        with patch.object(tc, "get_typesense_client", return_value=mock_client):
+            result = search("entities", "*", "literary_type", group_by="literary_type")
+
+        assert result == {"ids": [], "count": 0}
+
+    def test_ungrouped_response_is_unaffected(self):
+        mock_client = MagicMock()
+        mock_client.collections.__getitem__.return_value.documents.search.return_value = _make_search_result(
+            ["a", "b"], 2
+        )
+
+        with patch.object(tc, "get_typesense_client", return_value=mock_client):
+            result = search("entities", "*", "literary_type", group_by="literary_type")
+
+        assert result == {"ids": ["a", "b"], "count": 2}
+
+
+class TestSearchAllIdsGroupBy:
+    def test_skips_group_of_documents_without_a_value(self):
+        mock_client = MagicMock()
+        mock_client.collections.__getitem__.return_value.documents.search.return_value = _make_grouped_result(
+            [([], ["no_value"]), (["Fictie"], ["a"])], 2
+        )
+
+        with patch.object(tc, "get_typesense_client", return_value=mock_client):
+            result = search_all_ids(
+                "entities", "*", "literary_type", group_by="literary_type"
+            )
+
+        assert result == {"ids": ["a"], "count": 1}
+
+    def test_pagination_is_not_cut_short_by_a_skipped_group(self):
+        """A full page stays a full page for the loop: dropping the no-value group
+        must not read as "last page" and truncate the remaining groups."""
+        mock_client = MagicMock()
+        page1 = [([], ["no_value"])] + [
+            ([f"value{i}"], [f"id{i}"]) for i in range(249)
+        ]
+        page2 = [([f"value{250 + i}"], [f"id{250 + i}"]) for i in range(50)]
+        mock_client.collections.__getitem__.return_value.documents.search.side_effect = [
+            _make_grouped_result(page1, 300),
+            _make_grouped_result(page2, 300),
+        ]
+
+        with patch.object(tc, "get_typesense_client", return_value=mock_client):
+            result = search_all_ids(
+                "entities", "*", "literary_type", group_by="literary_type"
+            )
+
+        assert len(result["ids"]) == 299
+        assert result["count"] == 299
+
+
+class TestGroupValues:
+    def test_returns_value_and_representative_id_per_group(self):
+        mock_client = MagicMock()
+        mock_client.collections.__getitem__.return_value.documents.search.return_value = _make_grouped_result(
+            [(["Fictie"], ["a"]), (["Non-fictie"], ["b"])], 2
+        )
+
+        with patch.object(tc, "get_typesense_client", return_value=mock_client):
+            pairs = group_values("entities", "literary_type")
+
+        assert pairs == [("Fictie", "a"), ("Non-fictie", "b")]
+
+    def test_skips_groups_without_a_value(self):
+        mock_client = MagicMock()
+        mock_client.collections.__getitem__.return_value.documents.search.return_value = _make_grouped_result(
+            [([], ["no_value"]), ([""], ["empty"]), (["Fictie"], ["a"])], 3
+        )
+
+        with patch.object(tc, "get_typesense_client", return_value=mock_client):
+            pairs = group_values("entities", "literary_type")
+
+        assert pairs == [("Fictie", "a")]
+
+    def test_returns_none_on_exception(self):
+        mock_client = MagicMock()
+        mock_client.collections.__getitem__.return_value.documents.search.side_effect = Exception(
+            "not a facet field"
+        )
+
+        with patch.object(tc, "get_typesense_client", return_value=mock_client):
+            assert group_values("entities", "literary_type") is None
 
 
 class TestUpsertDocument:
