@@ -102,7 +102,7 @@ ignore = [
 
 [dependency-groups]
 dev = [
-  "coverage==7.15.2",
+  "coverage==7.15.4",
   "iniconfig==2.3.0",
   "pluggy==1.6.0",
   "pytest==9.1.1",
