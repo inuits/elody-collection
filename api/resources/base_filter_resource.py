@@ -33,6 +33,8 @@ class BaseFilterResource(BaseResource):
         for f in query:
             is_text_search = (
                 not f.get("match_exact")
+                and not f.get("match_not")
+                and not f.get("regex")
                 and f.get("value")
                 and isinstance(f.get("value"), str)
             )

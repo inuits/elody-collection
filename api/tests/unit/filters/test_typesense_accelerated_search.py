@@ -2433,3 +2433,200 @@ class TestSourceRelationLookupResolution:
         ) == ["W-A", "W-B"]
         # missing path → empty, no error
         assert resource._extract_nested_values({}, "a.b.c") == []
+
+
+class TestNegatedAndRegexFiltersDeferredToMongo:
+    """Typesense has no substring-negation operator and searches a regex pattern
+    as a literal term, so `match_not` and `regex` filters must be deferred to the
+    MongoDB engine (ContainsNotMatcher / RegexMatcher) instead of being silently
+    run as a positive full-text search."""
+
+    def test_match_not_selection_is_not_a_text_filter(self, flask_app, resource):
+        with flask_app.test_request_context(
+            "/entities/filter?limit=20&skip=0",
+            method="POST",
+            content_type="application/json",
+        ):
+            query = [
+                {
+                    "type": "selection",
+                    "key": ["vlacc:1|properties.original_headtitle.value"],
+                    "value": "wilder",
+                    "match_exact": False,
+                    "match_not": True,
+                },
+            ]
+
+            text, _, exact, remaining = resource._classify_filters_for_typesense(query)
+
+            assert text == []
+            assert exact == []
+            assert len(remaining) == 1
+            assert remaining[0]["match_not"] is True
+
+    def test_match_not_text_is_not_a_text_filter(self, flask_app, resource):
+        with flask_app.test_request_context(
+            "/entities/filter?limit=20&skip=0",
+            method="POST",
+            content_type="application/json",
+        ):
+            query = [
+                {
+                    "type": "text",
+                    "key": ["vlacc:1|properties.name.value"],
+                    "value": "mozart",
+                    "match_exact": False,
+                    "match_not": True,
+                },
+            ]
+
+            text, _, _, remaining = resource._classify_filters_for_typesense(query)
+
+            assert text == []
+            assert len(remaining) == 1
+
+    def test_regex_filter_is_not_a_text_filter(self, flask_app, resource):
+        with flask_app.test_request_context(
+            "/entities/filter?limit=20&skip=0",
+            method="POST",
+            content_type="application/json",
+        ):
+            query = [
+                {
+                    "type": "text",
+                    "key": ["vlacc:1|properties.name.value"],
+                    "value": "^wil",
+                    "match_exact": False,
+                    "regex": True,
+                },
+            ]
+
+            text, _, _, remaining = resource._classify_filters_for_typesense(query)
+
+            assert text == []
+            assert len(remaining) == 1
+            assert remaining[0]["regex"] is True
+
+    def test_match_not_with_explicit_false_still_uses_typesense(
+        self, flask_app, resource
+    ):
+        """`match_not: False` is the normal positive search - it must not be
+        pushed off the Typesense fast path."""
+        with flask_app.test_request_context(
+            "/entities/filter?limit=20&skip=0",
+            method="POST",
+            content_type="application/json",
+        ):
+            query = [
+                {
+                    "type": "selection",
+                    "key": ["vlacc:1|properties.name.value"],
+                    "value": "mozart",
+                    "match_exact": False,
+                    "match_not": False,
+                },
+            ]
+
+            text, _, _, remaining = resource._classify_filters_for_typesense(query)
+
+            assert len(text) == 1
+            assert remaining == []
+
+    def test_match_not_only_query_runs_entirely_on_mongo(
+        self, flask_app, resource, mock_filter_engine
+    ):
+        """A match_not filter plus a type filter leaves nothing for Typesense, so
+        the whole original query goes to the Mongo engine."""
+        with flask_app.test_request_context(
+            "/entities/filter?limit=20&skip=0",
+            method="POST",
+            content_type="application/json",
+        ):
+            query = [
+                {
+                    "type": "selection",
+                    "key": ["vlacc:1|properties.original_headtitle.value"],
+                    "value": "wilder",
+                    "match_exact": False,
+                    "match_not": True,
+                },
+                {
+                    "type": "selection",
+                    "key": "type",
+                    "value": ["work_word", "work_serial"],
+                    "match_exact": True,
+                },
+            ]
+
+            with (
+                patch("resources.base_filter_resource.typesense_search") as mock_ts,
+                patch(
+                    "resources.base_filter_resource.typesense_search_all_ids"
+                ) as mock_ts_all,
+            ):
+                resource._execute_typesense_accelerated_search(
+                    query,
+                    "entities",
+                    {
+                        "enabled": True,
+                        "collection": "entities",
+                        "search_fields": ["properties.original_headtitle.value"],
+                    },
+                )
+
+                mock_ts.assert_not_called()
+                mock_ts_all.assert_not_called()
+                # The unmodified query - negation included - reaches Mongo.
+                passed_filters = mock_filter_engine.filter.call_args[0][0]
+                assert any(f.get("match_not") for f in passed_filters)
+
+    def test_match_not_alongside_positive_text_filter_is_applied_by_mongo(
+        self, flask_app, resource, mock_filter_engine
+    ):
+        """Typesense resolves the positive term; Mongo applies the negation on top
+        of the returned ids."""
+        with flask_app.test_request_context(
+            "/entities/filter?limit=20&skip=0",
+            method="POST",
+            content_type="application/json",
+        ):
+            query = [
+                {
+                    "type": "text",
+                    "key": ["vlacc:1|properties.original_headtitle.value"],
+                    "value": "huis",
+                    "match_exact": False,
+                },
+                {
+                    "type": "selection",
+                    "key": ["vlacc:1|properties.original_headtitle.value"],
+                    "value": "wilder",
+                    "match_exact": False,
+                    "match_not": True,
+                },
+            ]
+
+            with patch(
+                "resources.base_filter_resource.typesense_search_all_ids"
+            ) as mock_ts_all:
+                mock_ts_all.return_value = make_ts_result(["id1", "id2"], 2)
+
+                resource._execute_typesense_accelerated_search(
+                    query,
+                    "entities",
+                    {
+                        "enabled": True,
+                        "collection": "entities",
+                        "search_fields": ["properties.original_headtitle.value"],
+                    },
+                )
+
+                # Only the positive term is sent to Typesense.
+                assert mock_ts_all.call_args[0][1] == "huis"
+
+                passed_filters = mock_filter_engine.filter.call_args[0][0]
+                assert any(f.get("match_not") for f in passed_filters)
+                id_filter = next(
+                    f for f in passed_filters if f.get("key") == "_id"
+                )
+                assert id_filter["value"] == ["id1", "id2"]
