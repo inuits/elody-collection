@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from datetime import date, datetime, timedelta
-from typing import Type
 
 from filters_v2.matchers.matchers import BaseMatcher
 
@@ -24,7 +23,7 @@ def _as_day_range(value) -> dict | None:
 class BaseFilterTypeQueryGenerator(ABC):
     @abstractmethod
     def generate_query_for_text_filter_type(
-        self, matchers: dict[str, Type[BaseMatcher]], filter_criteria: dict
+        self, matchers: dict[str, type[BaseMatcher]], filter_criteria: dict
     ):
         return self._apply_matchers(
             matchers,
@@ -39,7 +38,7 @@ class BaseFilterTypeQueryGenerator(ABC):
 
     @abstractmethod
     def generate_query_for_date_filter_type(
-        self, matchers: dict[str, Type[BaseMatcher]], filter_criteria: dict
+        self, matchers: dict[str, type[BaseMatcher]], filter_criteria: dict
     ):
         day_range = _as_day_range(filter_criteria["value"])
         if day_range:
@@ -59,7 +58,7 @@ class BaseFilterTypeQueryGenerator(ABC):
 
     @abstractmethod
     def generate_query_for_number_filter_type(
-        self, matchers: dict[str, Type[BaseMatcher]], filter_criteria: dict
+        self, matchers: dict[str, type[BaseMatcher]], filter_criteria: dict
     ):
         return self._apply_matchers(
             matchers,
@@ -71,7 +70,7 @@ class BaseFilterTypeQueryGenerator(ABC):
 
     @abstractmethod
     def generate_query_for_selection_filter_type(
-        self, matchers: dict[str, Type[BaseMatcher]], filter_criteria: dict
+        self, matchers: dict[str, type[BaseMatcher]], filter_criteria: dict
     ):
         return self._apply_matchers(
             matchers,
@@ -80,11 +79,12 @@ class BaseFilterTypeQueryGenerator(ABC):
             match_exact=filter_criteria.get("match_exact"),
             match_not=filter_criteria.get("match_not"),
             inner_exact_matches=filter_criteria.get("inner_exact_matches", {}),
+            and_condition=filter_criteria.get("and_condition", False),
         )
 
     @abstractmethod
     def generate_query_for_boolean_filter_type(
-        self, matchers: dict[str, Type[BaseMatcher]], filter_criteria: dict
+        self, matchers: dict[str, type[BaseMatcher]], filter_criteria: dict
     ):
         return self._apply_matchers(
             matchers,
@@ -95,7 +95,7 @@ class BaseFilterTypeQueryGenerator(ABC):
 
     @abstractmethod
     def generate_query_for_geo_filter_type(
-        self, matchers: dict[str, Type[BaseMatcher]], filter_criteria: dict
+        self, matchers: dict[str, type[BaseMatcher]], filter_criteria: dict
     ):
         return self._apply_matchers(
             matchers,
@@ -105,7 +105,7 @@ class BaseFilterTypeQueryGenerator(ABC):
 
     @abstractmethod
     def generate_query_for_type_filter_type(
-        self, matchers: dict[str, Type[BaseMatcher]], filter_criteria: dict
+        self, matchers: dict[str, type[BaseMatcher]], filter_criteria: dict
     ):
         return self._apply_matchers(
             matchers,
@@ -116,7 +116,7 @@ class BaseFilterTypeQueryGenerator(ABC):
 
     def _apply_matchers(
         self,
-        matchers: dict[str, Type[BaseMatcher]],
+        matchers: dict[str, type[BaseMatcher]],
         key: str | list[str],
         value,
         **kwargs,

@@ -11,9 +11,7 @@ class BaseMatcher(ABC):
         self.matcher_engine: BaseMatchers = {
             "arango": MongoMatchers,
             "mongo": MongoMatchers,
-        }.get(
-            getenv("DB_ENGINE", "mongo")
-        )()  # type: ignore
+        }.get(getenv("DB_ENGINE", "mongo"))()  # type: ignore
 
     @abstractmethod
     def match(self, key: str | list[str], value, **kwargs) -> dict | str | list | None:
@@ -36,6 +34,7 @@ class ExactMatcher(BaseMatcher):
                 kwargs.get("is_datetime_value", False),
                 kwargs.get("aggregation", ""),
                 kwargs.get("inner_exact_matches", {}),
+                kwargs.get("and_condition", False),
             )
 
 

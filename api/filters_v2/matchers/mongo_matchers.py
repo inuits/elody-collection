@@ -12,10 +12,16 @@ class MongoMatchers(BaseMatchers):
         value,
         is_datetime_value=False,
         aggregation="",
-        inner_exact_matches={},
+        inner_exact_matches: dict | None = None,
+        and_condition=False,
     ):
+        if not inner_exact_matches:
+            inner_exact_matches = {}
         if isinstance(value, list):
-            value = {"$in": value}
+            if not and_condition:
+                value = {"$in": value}
+            else:
+                value = {"$all": value}
         elif is_datetime_value:
             value = self.__get_datetime_query_value(value)
             return self.__contains_range_match(key, value)
@@ -29,16 +35,25 @@ class MongoMatchers(BaseMatchers):
             object_lists, keys_info, value, inner_exact_matches=inner_exact_matches
         )
 
-    def contains(self, key, value, inner_exact_matches={}):
+    def contains(self, key, value, inner_exact_matches: dict | None = None):
+        if not inner_exact_matches:
+            inner_exact_matches = {}
+
         match_value = {"$regex": value, "$options": "i"}
         return self.__contains_range_match(key, match_value, inner_exact_matches)
 
-    def contains_not(self, key, value, inner_exact_matches={}):
+    def contains_not(self, key, value, inner_exact_matches: dict | None = None):
+        if not inner_exact_matches:
+            inner_exact_matches = {}
+
         match_value = {"$not": compile(value, IGNORECASE)}
         return self.__contains_range_match(key, match_value, inner_exact_matches)
 
-    # TODO: Error checking on the regex options
-    def regex(self, key, value, inner_exact_matches={}, options=""):
+    # TODO: Error checking on the regex options  # noqa: FIX002
+    def regex(self, key, value, inner_exact_matches: dict | None = None, options=""):
+        if not inner_exact_matches:
+            inner_exact_matches = {}
+
         match_value = {"$regex": value, "$options": options}
         return self.__contains_range_match(key, match_value, inner_exact_matches)
 
@@ -85,7 +100,10 @@ class MongoMatchers(BaseMatchers):
 
         return self.__contains_range_match(key, {"$gte": min, "$lte": max})
 
-    def any(self, key, inner_exact_matches={}):
+    def any(self, key, inner_exact_matches: dict | None = None):
+        if not inner_exact_matches:
+            inner_exact_matches = {}
+
         return self.__any_none_match(key, "ANY_MATCH", inner_exact_matches)
 
     def none(self, key):
@@ -104,12 +122,17 @@ class MongoMatchers(BaseMatchers):
                             value[operator],
                         ]
                     }
-                    for operator in value.keys()
+                    for operator in value
                 ]
             }
         }
 
-    def __contains_range_match(self, key: str, value, inner_exact_matches={}):
+    def __contains_range_match(
+        self, key: str, value, inner_exact_matches: dict | None = None
+    ):
+        if not inner_exact_matches:
+            inner_exact_matches = {}
+
         object_lists = BaseMatchers.get_object_lists()
         keys_info = interpret_flat_key(key, object_lists)
         build_nested_matcher = BaseMatchers.get_base_nested_matcher_builder()
@@ -117,7 +140,12 @@ class MongoMatchers(BaseMatchers):
             object_lists, keys_info, value, inner_exact_matches=inner_exact_matches
         )
 
-    def __any_none_match(self, key: str, value: str, inner_exact_matches={}):
+    def __any_none_match(
+        self, key: str, value: str, inner_exact_matches: dict | None = None
+    ):
+        if not inner_exact_matches:
+            inner_exact_matches = {}
+
         object_lists = BaseMatchers.get_object_lists()
         keys_info = interpret_flat_key(key, object_lists)
         build_nested_matcher = BaseMatchers.get_base_nested_matcher_builder()

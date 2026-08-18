@@ -69,26 +69,33 @@ class BaseMatchers(ABC, metaclass=ThreadSafeMeta):
     def exact(
         self,
         key: str,
-        value: str | int | float | bool | list[str],
+        value: str | float | bool | list[str],
         is_datetime_value: bool = False,
         aggregation: str = "",
-        inner_exact_matches: dict = {},
+        inner_exact_matches: dict | None = None,
+        and_condition: bool = False,
     ) -> dict:
         pass
 
     @abstractmethod
-    def contains(self, key: str, value: str, inner_exact_matches: dict = {}) -> dict:
+    def contains(
+        self, key: str, value: str, inner_exact_matches: dict | None = None
+    ) -> dict:
         pass
 
     @abstractmethod
     def contains_not(
-        self, key: str, value: str, inner_exact_matches: dict = {}
+        self, key: str, value: str, inner_exact_matches: dict | None = None
     ) -> dict:
         pass
 
     @abstractmethod
     def regex(
-        self, key: str, value: str, inner_exact_matches: dict = {}, options: str = ""
+        self,
+        key: str,
+        value: str,
+        inner_exact_matches: dict | None = None,
+        options: str = "",
     ) -> dict:
         pass
 
@@ -144,7 +151,7 @@ class BaseMatchers(ABC, metaclass=ThreadSafeMeta):
         pass
 
     @abstractmethod
-    def any(self, key: str, inner_exact_matches: dict = {}) -> dict:
+    def any(self, key: str, inner_exact_matches: dict | None = None) -> dict:
         pass
 
     @abstractmethod
