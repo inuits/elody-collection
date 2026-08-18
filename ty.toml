@@ -1,0 +1,4 @@
+
+[environment]
+root = ["./api"]
+extra-paths = ["./stubs"]
