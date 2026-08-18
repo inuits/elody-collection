@@ -1,12 +1,14 @@
 from collections.abc import Callable
 from typing import Any, TypedDict
 
-CreatorReturnType = dict[str, str | dict[str, list[dict[str, str]]]]
-ElodyDocumentSerializationReturnType = dict[str, str | dict[str, list[dict[str, str]]]]
-SerializeToElodyReturnType = dict[str, str | dict[str, list[dict[str, str]]]]
-DocumentContentPatcherReturnType = dict[str, str | dict[str, list[dict[str, str]]]]
-PreCrudHookReturnType = dict[str, str | dict[str, list[dict[str, str]]]]
-PostCrudHookReturnType = None
+type CreatorReturnType = dict[str, str | dict[str, list[dict[str, str]]]]
+type ElodyDocumentSerializationReturnType = dict[
+    str, str | dict[str, list[dict[str, str]]]
+]
+type SerializeToElodyReturnType = dict[str, str | dict[str, list[dict[str, str]]]]
+type DocumentContentPatcherReturnType = dict[str, str | dict[str, list[dict[str, str]]]]
+type PreCrudHookReturnType = dict[str, str | dict[str, list[dict[str, str]]]]
+type PostCrudHookReturnType = None
 
 class CrudDict(TypedDict):
     creator: Callable[..., CreatorReturnType]
@@ -16,6 +18,7 @@ class CrudDict(TypedDict):
     post_crud_hook: Callable[..., PostCrudHookReturnType]
     pre_crud_hook: Callable[..., PreCrudHookReturnType]
     content_changes_checker: Callable[..., bool]
+    nested_matcher_builder: Callable[..., dict]
 
 class DocumentInfoDict(TypedDict):
     etag_key: str
