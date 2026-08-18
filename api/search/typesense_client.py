@@ -158,9 +158,18 @@ def search(
         skipped_groups = 0
         if group_by and "grouped_hits" in result:
             ids, skipped_groups = _ids_from_grouped_hits(result)
+            highlights = {}
         else:
             ids = [hit["document"]["_id"] for hit in result["hits"]]
-        response = {"ids": ids, "count": max(0, result["found"] - skipped_groups)}
+            highlights = {
+                hit["document"]["_id"]: hit.get("highlight", {})
+                for hit in result["hits"]
+            }
+        response = {
+            "ids": ids,
+            "count": max(0, result["found"] - skipped_groups),
+            "highlights": highlights,
+        }
         if facet_by:
             response["facets"] = _transform_facets(result.get("facet_counts", []))
         return response
@@ -195,6 +204,7 @@ def search_all_ids(collection, query, query_by, filter_by=None, group_by=None):
 
     try:
         all_ids = []
+        all_highlights = {}
         page = 1
         per_page = 250
         total = None
@@ -224,6 +234,12 @@ def search_all_ids(collection, query, query_by, filter_by=None, group_by=None):
                 page_size = len(result["grouped_hits"])
             else:
                 ids = [hit["document"]["_id"] for hit in result["hits"]]
+                all_highlights.update(
+                    {
+                        hit["document"]["_id"]: hit.get("highlight", {})
+                        for hit in result["hits"]
+                    }
+                )
                 page_size = len(ids)
             all_ids.extend(ids)
             seen += page_size
@@ -232,7 +248,11 @@ def search_all_ids(collection, query, query_by, filter_by=None, group_by=None):
                 break
             page += 1
 
-        return {"ids": all_ids, "count": max(0, total - skipped_groups)}
+        return {
+            "ids": all_ids,
+            "count": max(0, total - skipped_groups),
+            "highlights": all_highlights,
+        }
     except Exception as e:
         if "Could not find a field named" in str(e) and query_by:
             missing = str(e).split("`")[1] if "`" in str(e) else ""

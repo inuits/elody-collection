@@ -564,6 +564,7 @@ class BaseFilterResource(BaseResource):
             return self._execute_advanced_search_with_query_v2(query, collection)
 
         matching_ids, total_count = ts_result["ids"], ts_result["count"]
+        highlights = ts_result.get("highlights")
 
         if not matching_ids:
             return {"results": [], "count": total_count, "skip": skip, "limit": limit}
@@ -586,6 +587,8 @@ class BaseFilterResource(BaseResource):
                 asc,
                 exact_count=exact_count,
             )
+            if highlights:
+                items["highlights"] = highlights
         else:
             mongo_collections = self._resolve_mongo_collections(
                 type_filter_values, collection
@@ -599,6 +602,8 @@ class BaseFilterResource(BaseResource):
             }
             if "facets" in ts_result:
                 items["facets"] = ts_result["facets"]
+            if highlights:
+                items["highlights"] = highlights
 
         self._add_cors_headers()
         return self._add_pagination_links(items, skip, limit, collection)
