@@ -11,9 +11,7 @@ class BaseMatcher(ABC):
         self.matcher_engine: BaseMatchers = {
             "arango": MongoMatchers,
             "mongo": MongoMatchers,
-        }.get(
-            getenv("DB_ENGINE", "mongo")
-        )()  # type: ignore
+        }.get(getenv("DB_ENGINE", "mongo"))()  # type: ignore
 
     @abstractmethod
     def match(self, key: str | list[str], value, **kwargs) -> dict | str | list | None:

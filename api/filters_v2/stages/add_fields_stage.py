@@ -40,7 +40,7 @@ def compose_key_for_value(flat_key: str, add_fields: list[dict]) -> str:
     key = list(add_fields[0]["$addFields"].keys())[0]
     object_list = add_fields[0]["$addFields"][key]["$filter"]["as"]
     object_list_lookup_prefix = __get_object_list_lookup_prefix(flat_key)
-    return f"{key}.{flat_key.removeprefix(f'{object_list_lookup_prefix}{object_list}.{key.removeprefix('__')}.')}"
+    return f"{key}.{flat_key.removeprefix(f'{object_list_lookup_prefix}{object_list}.{key.removeprefix("__")}.')}"
 
 
 def __get_object_list_lookup_prefix(flat_key: str):

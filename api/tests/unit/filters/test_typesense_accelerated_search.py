@@ -127,8 +127,8 @@ class TestTypesenseFilterClassification:
                         make_mongo_doc("id1"),
                         make_mongo_doc("id2"),
                     ]
-                    mock_storage._prepare_mongo_document.side_effect = (
-                        lambda doc, _: doc
+                    mock_storage._prepare_mongo_document.side_effect = lambda doc, _: (
+                        doc
                     )
                     mock_sm.return_value.get_db_engine.return_value = mock_storage
 
@@ -471,8 +471,8 @@ class TestMultiKeyExactMatchFilter:
                     mock_storage.db.__getitem__.return_value.find.return_value = [
                         make_mongo_doc("id1")
                     ]
-                    mock_storage._prepare_mongo_document.side_effect = (
-                        lambda doc, _: doc
+                    mock_storage._prepare_mongo_document.side_effect = lambda doc, _: (
+                        doc
                     )
                     mock_sm.return_value.get_db_engine.return_value = mock_storage
 
@@ -569,8 +569,8 @@ class TestMultiKeyTextFilter:
                     mock_storage.db.__getitem__.return_value.find.return_value = [
                         make_mongo_doc("id1")
                     ]
-                    mock_storage._prepare_mongo_document.side_effect = (
-                        lambda doc, _: doc
+                    mock_storage._prepare_mongo_document.side_effect = lambda doc, _: (
+                        doc
                     )
                     mock_sm.return_value.get_db_engine.return_value = mock_storage
 
@@ -774,8 +774,8 @@ class TestTypesensePagination:
                     mock_storage.db.__getitem__.return_value.find.return_value = [
                         make_mongo_doc(id) for id in ids
                     ]
-                    mock_storage._prepare_mongo_document.side_effect = (
-                        lambda doc, _: doc
+                    mock_storage._prepare_mongo_document.side_effect = lambda doc, _: (
+                        doc
                     )
                     mock_sm.return_value.get_db_engine.return_value = mock_storage
 
@@ -789,9 +789,9 @@ class TestTypesensePagination:
                         },
                     )
 
-                assert (
-                    result["count"] == total
-                ), f"Count should be {total} at skip={skip}, got {result['count']}"
+                assert result["count"] == total, (
+                    f"Count should be {total} at skip={skip}, got {result['count']}"
+                )
 
     def test_next_link_present_when_more_results(self, flask_app, resource):
         with flask_app.test_request_context(
@@ -1335,7 +1335,7 @@ class TestTypesenseCrossCollectionFiltering:
                 patch("resources.base_filter_resource.StorageManager") as mock_sm,
             ):
                 # 5 results on page 2 (offset=20), 45 total matches
-                page2_ids = [f"id{20+i}" for i in range(5)]
+                page2_ids = [f"id{20 + i}" for i in range(5)]
                 mock_ts.return_value = make_ts_result(page2_ids, 45)
 
                 mock_storage = MagicMock()
@@ -2626,7 +2626,5 @@ class TestNegatedAndRegexFiltersDeferredToMongo:
 
                 passed_filters = mock_filter_engine.filter.call_args[0][0]
                 assert any(f.get("match_not") for f in passed_filters)
-                id_filter = next(
-                    f for f in passed_filters if f.get("key") == "_id"
-                )
+                id_filter = next(f for f in passed_filters if f.get("key") == "_id")
                 assert id_filter["value"] == ["id1", "id2"]

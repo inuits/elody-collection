@@ -81,10 +81,10 @@ class ArangoFilters:
                 LET {result_set} = (
                     FOR doc IN {collection_or_result_set}
                         {
-                            f'FILTER doc.type IN {item_types}'
-                            if collection_or_result_set == "entities" and len(item_types) > 0
-                            else ""
-                        }
+                f"FILTER doc.type IN {item_types}"
+                if collection_or_result_set == "entities" and len(item_types) > 0
+                else ""
+            }
                         {generated_query}
                         {return_statement}
                 )
@@ -108,7 +108,7 @@ class ArangoFilters:
                     FILTER meta.key == "{order_by}"
                     RETURN meta
                 )
-                {f'SORT sortField {"ASC" if asc else "DESC"}' if order_by else ""}
+                {f"SORT sortField {'ASC' if asc else 'DESC'}" if order_by else ""}
                 LIMIT @skip, @limit
                 RETURN result._key
         """

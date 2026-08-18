@@ -54,9 +54,7 @@ class ArangoWrapper:
 
     def __execute_query(self, aql, collection, skip, limit, options_requesting_filter):
         try:
-            documents = self.storage.db.aql.execute(
-                aql, full_count=True
-            )  # pyright: ignore
+            documents = self.storage.db.aql.execute(aql, full_count=True)  # pyright: ignore
         except Exception as exception:
             log.exception(
                 f"{exception.__class__.__name__}: {exception}",
@@ -93,8 +91,8 @@ class ArangoWrapper:
     def _handle_match_stage(
         self, match, aql, *, element_name="document", operator="FILTER", index=0, **_
     ):
-        get_filter_prefix = (
-            lambda operator, index: f"\n{'FILTER (' if operator.endswith('(') else 'FILTER' if index == 0 else operator}"
+        get_filter_prefix = lambda operator, index: (
+            f"\n{'FILTER (' if operator.endswith('(') else 'FILTER' if index == 0 else operator}"
         )
 
         for key, value in match.items():

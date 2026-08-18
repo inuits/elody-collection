@@ -322,7 +322,7 @@ class TestSearchAllIds:
     def test_paginates_multiple_pages(self):
         mock_client = MagicMock()
         page1_ids = [f"id{i}" for i in range(250)]
-        page2_ids = [f"id{250+i}" for i in range(50)]
+        page2_ids = [f"id{250 + i}" for i in range(50)]
 
         mock_client.collections.__getitem__.return_value.documents.search.side_effect = [
             _make_search_result(page1_ids, 300),
@@ -471,9 +471,7 @@ class TestSearchAllIdsGroupBy:
         """A full page stays a full page for the loop: dropping the no-value group
         must not read as "last page" and truncate the remaining groups."""
         mock_client = MagicMock()
-        page1 = [([], ["no_value"])] + [
-            ([f"value{i}"], [f"id{i}"]) for i in range(249)
-        ]
+        page1 = [([], ["no_value"])] + [([f"value{i}"], [f"id{i}"]) for i in range(249)]
         page2 = [([f"value{250 + i}"], [f"id{250 + i}"]) for i in range(50)]
         mock_client.collections.__getitem__.return_value.documents.search.side_effect = [
             _make_grouped_result(page1, 300),
@@ -603,9 +601,7 @@ class TestDeleteDocument:
 
     def test_returns_false_and_logs_error_after_exhausting_retries(self):
         mock_client = MagicMock()
-        delete = (
-            mock_client.collections.__getitem__.return_value.documents.__getitem__.return_value.delete
-        )
+        delete = mock_client.collections.__getitem__.return_value.documents.__getitem__.return_value.delete
         delete.side_effect = Exception("write error")
 
         with (

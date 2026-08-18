@@ -394,16 +394,16 @@ class EntityMediafilesCreate(GenericObjectDetail):
         entity = super().get_object_detail("entities", id)
         content = request.get_json()
         self._abort_if_not_valid_json("mediafile", content)
-        content["original_file_location"] = f'/download/{content["filename"]}'
+        content["original_file_location"] = f"/download/{content['filename']}"
         content["thumbnail_file_location"] = (
-            f'/iiif/3/{content["filename"]}/full/,150/0/default.jpg'
+            f"/iiif/3/{content['filename']}/full/,150/0/default.jpg"
         )
         content["user"] = get_user_context().email or "default_uploader"
         content["date_created"] = self._get_date_from_object(content, "date_created")
         content["date_updated"] = self._get_date_from_object(content, "date_updated")
         content["version"] = 1
         mediafile = self.storage.save_item_to_collection("mediafiles", content)
-        upload_location = f'{self.storage_api_url}/upload/{content["filename"]}?id={get_raw_id(mediafile)}'
+        upload_location = f"{self.storage_api_url}/upload/{content['filename']}?id={get_raw_id(mediafile)}"
         self.storage.add_mediafile_to_collection_item(
             "entities",
             get_raw_id(entity),

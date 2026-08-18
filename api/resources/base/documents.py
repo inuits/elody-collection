@@ -136,7 +136,7 @@ class Documents(GenericObjectV2):
                 "metadata.title.value", flat_document.get("metadata.name.value")
             )
             child_job_id = init_job(
-                f"Delete {document['type']}{f' \"{title}\"' if title else ''} | {flat_document.get('metadata.external_identifier.value', id)}",
+                f"Delete {document['type']}{f' "{title}"' if title else ''} | {flat_document.get('metadata.external_identifier.value', id)}",
                 "Delete item",
                 get_rabbit=get_rabbit,
                 user_email=get_user_context().email,

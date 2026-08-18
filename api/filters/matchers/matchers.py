@@ -11,9 +11,7 @@ class BaseMatcher(ABC):
         self.matcher_engine: BaseMatchers = {
             "arango": ArangoMatchers,
             "mongo": MongoMatchers,
-        }.get(
-            getenv("DB_ENGINE", "arango")
-        )()  # type: ignore
+        }.get(getenv("DB_ENGINE", "arango"))()  # type: ignore
 
     @abstractmethod
     def match(

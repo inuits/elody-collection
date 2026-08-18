@@ -636,7 +636,7 @@ class ArangoStorageManager(GenericStorageManager):
                 {extra_query}
                 {title_filter}
                 {publication_status_filter}
-                {f'SORT c.{sort} {"ASC" if asc else "DESC"}' if sort else ""}
+                {f"SORT c.{sort} {'ASC' if asc else 'DESC'}" if sort else ""}
                 LIMIT @skip, @limit
                 RETURN c
         """
@@ -938,7 +938,7 @@ class ArangoStorageManager(GenericStorageManager):
         changed_ids = set()
         for edge_type in ["isIn", "components"]:
             for edge in self.db.aql.execute(
-                f'FOR i IN {edge_type} FILTER i._from == \'{entity["_id"]}\' OR i._to == \'{entity["_id"]}\' RETURN i'
+                f"FOR i IN {edge_type} FILTER i._from == '{entity['_id']}' OR i._to == '{entity['_id']}' RETURN i"
             ):
                 if edge["key"] == entity["_id"] and edge["value"] != new_value:
                     edge["value"] = new_value

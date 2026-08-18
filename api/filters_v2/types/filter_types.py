@@ -39,9 +39,7 @@ class BaseFilterType(ABC):
         self.filter_type_engine: BaseFilterTypeQueryGenerator = {
             "arango": MongoFilterTypeQueryGenerator,
             "mongo": MongoFilterTypeQueryGenerator,
-        }.get(
-            getenv("DB_ENGINE", "mongo")
-        )()  # type: ignore
+        }.get(getenv("DB_ENGINE", "mongo"))()  # type: ignore
         self.matchers: dict[str, Type[BaseMatcher]] = {}
 
     @abstractmethod
