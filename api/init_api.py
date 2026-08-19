@@ -10,6 +10,7 @@ from resources.job import (
     FinishJob,
     FinishJobWithWarning,
     InitJob,
+    JobStatus,
     StartJob,
 )
 from resources.share_link import ShareLink, ShareLinkDetail
@@ -47,6 +48,9 @@ def init_api(app):
         get_route_mapper().get(OpenAPISpec.__name__, "/spec/dams-collection-api.json"),
     )
 
+    api.add_resource(
+        JobStatus, get_route_mapper().get(JobStatus.__name__, "/job/status/<string:id>")
+    )
     api.add_resource(
         InitJob,
         get_route_mapper().get(InitJob.__name__, "/job/init"),
