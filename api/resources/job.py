@@ -1,3 +1,4 @@
+from configuration import get_object_configuration_mapper
 from elody.job import (
     add_document_to_job,
     fail_job,
@@ -6,11 +7,30 @@ from elody.job import (
     init_job,
     start_job,
 )
+from elody.util import get_item_metadata_value
 from flask import request
 from inuits_policy_based_auth import RequestContext
 from policy_factory import apply_policies
 from rabbit import get_rabbit
 from resources.base_resource import BaseResource
+
+
+class JobStatus(BaseResource):
+    # FIXME: before deploying fix the permissions on this endpoint
+    # @apply_policies(RequestContext(request))
+    def get(self, id):
+
+        job_config = get_object_configuration_mapper().get("job")
+
+        collection = job_config.crud()["collection"]
+
+        job = self._check_if_collection_and_item_exists(collection, id)
+
+        if not job:
+            return "job not found", 404
+
+        status = get_item_metadata_value(job, "status")
+        return {"status": status}, 200
 
 
 class InitJob(BaseResource):
