@@ -11,7 +11,7 @@ class ElodyDocumentMetadata(BaseResource):
         self.resource = Document()
 
     def patch(self, **kwargs):
-        g.content = {"metadata": request.get_json()}
+        g.content = g.get("content") or {"metadata": request.get_json()}
         response = self.resource.patch(**kwargs)
         if isinstance(response, tuple):
             return response
