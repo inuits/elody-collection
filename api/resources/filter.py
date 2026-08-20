@@ -1,7 +1,7 @@
 import re
 
 import mappers
-from configuration import get_object_configuration_mapper, get_storage_mapper
+from configuration import get_object_configuration_mapper
 from filters_v2.filter_matcher_mapping import FilterMatcherMapping
 from filters_v2.helpers.base_helper import (
     get_options_requesting_filter,
@@ -12,6 +12,7 @@ from flask import request
 from inuits_policy_based_auth import RequestContext
 from policy_factory import apply_policies, get_user_context
 from resources.base_filter_resource import BaseFilterResource
+from storage.routing import get_external_storage, uses_external_storage
 from tracing import get_tracer
 from werkzeug.exceptions import BadRequest
 
@@ -88,14 +89,13 @@ class FilterEntitiesV2(BaseFilterResource):
             .crud()
             .get("collection", "entities")
         )
-        if storage_type == "http":
-            http_storage = get_storage_mapper().get("http")
+        if uses_external_storage(storage_type):
             filter = config.serialization(
                 f"{spec}_filter", f"{config.SCHEMA_TYPE}_filter"
             )
             filters = filter(query)
-            entities = http_storage.get_items_from_collection(
-                self, collection, filters=filters
+            entities = get_external_storage(storage_type).get_items_from_collection(
+                collection, filters=filters
             )
         else:
             entities = self._execute_advanced_search_with_query_v2(query, "entities")
@@ -257,17 +257,15 @@ class FilterGenericObjectsV2(BaseFilterResource):
             "collection" if not request.args.get("history") else "collection_history"
         )
         storage_type = config.crud()["storage_type"]
-        if storage_type != "http":
+        is_external = uses_external_storage(storage_type)
+        if not is_external:
             self._check_if_collection_name_exists(collection)
         accept_header = request.headers.get("Accept")
         access_restricting_filters = get_user_context().access_restrictions.filters
         if access_restricting_filters:
             for filter in access_restricting_filters:
                 query.insert(0, filter)
-        if storage_type == "http":
-            http_storage = get_storage_mapper().get(
-                "http"
-            )()  # pyright: ignore[reportOptionalCall]
+        if is_external:
             filter = config.serialization(
                 f"{spec}_filter", f"{config.SCHEMA_TYPE}_filter"
             )
@@ -276,7 +274,7 @@ class FilterGenericObjectsV2(BaseFilterResource):
             limit = request.args.get("limit", 20, int)
             order_by = request.args.get("order_by")
             asc = request.args.get("asc", 0, int)
-            items = http_storage.get_items_from_collection(
+            items = get_external_storage(storage_type).get_items_from_collection(
                 collection,
                 filters=filters,
                 skip=skip,

@@ -121,18 +121,22 @@ class Entity(GenericObject):
         if not linked_data_request:
             self._abort_if_not_valid_json("entity", entity)
         try:
+            # Routed by type: an entity type kept in an external store -- a
+            # pipeline in the triple store -- is created there rather than in
+            # the database it is merely addressed through.
+            storage, collection = self._storage_for(entity, "entities")
             entity_relations = entity.get("relations", [])
             if entity_relations:
                 entity.pop("relations")
-                entity = self.storage.save_item_to_collection("entities", entity)
-                self.storage.add_relations_to_collection_item(
-                    "entities", get_raw_id(entity), entity_relations
+                entity = storage.save_item_to_collection(collection, entity)
+                storage.add_relations_to_collection_item(
+                    collection, get_raw_id(entity), entity_relations
                 )
-                entity = self.storage.get_item_from_collection_by_id(
-                    "entities", get_raw_id(entity)
+                entity = storage.get_item_from_collection_by_id(
+                    collection, get_raw_id(entity)
                 )
             else:
-                entity = self.storage.save_item_to_collection("entities", entity)
+                entity = storage.save_item_to_collection(collection, entity)
             if accept_header == "text/uri-list":
                 response = ""
             else:

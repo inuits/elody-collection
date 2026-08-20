@@ -8,7 +8,7 @@ from os import getenv
 from urllib.parse import quote
 
 import mappers
-from configuration import get_object_configuration_mapper, get_storage_mapper
+from configuration import get_object_configuration_mapper
 from elody.csv import CSVSingleObject
 from elody.error_codes import ErrorCode, get_error_code, get_read, get_write
 from elody.exceptions import InvalidObjectException
@@ -31,6 +31,12 @@ from flask_restful import Resource, abort
 from policy_factory import get_user_context
 from rabbit import get_rabbit
 from serialization.serialize import serialize
+from storage.routing import (
+    external_members_of,
+    get_external_storage,
+    storage_for,
+    uses_external_storage,
+)
 from storage.storagemanager import StorageManager
 from tracing import get_tracer
 from werkzeug.exceptions import BadRequest
@@ -105,6 +111,12 @@ class BaseResource(Resource):
     def _abort_if_item_doesnt_exist(self, collection, id):
         if item := self.storage.get_item_from_collection_by_id(collection, id):
             return item
+        # The route's collection can hold types kept in an external store -- a
+        # pipeline is addressed under /entities but lives in the triple store --
+        # and this is where every path that reads before writing finds its
+        # document, so the fallback belongs here rather than at each of them.
+        if item := self._find_externally_stored_item(collection, id):
+            return item
         abort(
             404,
             message=f"{get_error_code(ErrorCode.ITEM_NOT_FOUND_IN_COLLECTION, get_read())} | id:{id} | collection:{collection} - Item with id {id} doesn't exist in collection {collection}",
@@ -125,7 +137,8 @@ class BaseResource(Resource):
             )
 
     def _add_relations_to_metadata(self, entity, collection="entities", sort_by=None):
-        relations = self.storage.get_collection_item_relations(
+        storage, collection = self._storage_for(entity, collection)
+        relations = storage.get_collection_item_relations(
             collection, get_raw_id(entity), exclude=["story_box_visits"]
         )
         if not relations:
@@ -175,19 +188,22 @@ class BaseResource(Resource):
             for collection in collections:
                 config = get_object_configuration_mapper().get(collection)
                 storage_type = config.crud()["storage_type"]
-                if storage_type == "http":
-                    http_storage = get_storage_mapper().get("http")()
-                    if item := http_storage.get_item_from_collection_by_id(
-                        collection, id
-                    ):
-                        get_user_context().bag["item_being_processed"] = deepcopy(item)
-                        return item
-                else:
-                    if item := self.storage.get_item_from_collection_by_id(
-                        collection, id
-                    ):
-                        get_user_context().bag["item_being_processed"] = deepcopy(item)
-                        return item
+                storage = (
+                    get_external_storage(storage_type)
+                    if uses_external_storage(storage_type)
+                    else self.storage
+                )
+                if item := storage.get_item_from_collection_by_id(collection, id):
+                    get_user_context().bag["item_being_processed"] = deepcopy(item)
+                    return item
+            # The resolver lists the collections a document could be in, which
+            # is the database's view of the world; a type kept in an external
+            # store is in none of them, but it declared which of these routes
+            # it is reached through. Asked last, so the ordinary lookup is
+            # unaffected.
+            if item := self._find_externally_stored_item(collections, id):
+                get_user_context().bag["item_being_processed"] = deepcopy(item)
+                return item
             else:
                 abort(
                     404,
@@ -740,8 +756,13 @@ class BaseResource(Resource):
         )
 
     def _set_entity_mediafile_and_thumbnail(self, entity):
-        mediafiles = self.storage.get_collection_item_mediafiles(
-            "entities", get_raw_id(entity)
+        # Routed by type like the rest of the detail path: an entity kept in an
+        # external store has no row in the database to read mediafiles off, and
+        # asking anyway used to fail on the missing document rather than answer
+        # "no mediafiles".
+        storage, collection = self._storage_for(entity, "entities")
+        mediafiles = storage.get_collection_item_mediafiles(
+            collection, get_raw_id(entity)
         )
         for mediafile in mediafiles:
             if mediafile.get("is_primary", False):
@@ -813,11 +834,49 @@ class BaseResource(Resource):
             "entities", f"tenant:{get_raw_id(entity)}", metadata
         )
 
-    def _update_date_updated_and_last_editor(self, collection, id):
+    def _storage_for(self, item=None, collection=None, document_type=None):
+        """`(storage, collection)` for the document a request is about.
+
+        A route names a collection, and `entities` holds every type a client
+        has; only the document itself says which engine serves it. Reads have
+        resolved externally stored types this way for a while -- this is the
+        same resolution for the paths that write, so a type kept in an external
+        store is not silently written to the database instead.
+        """
+        return storage_for(
+            document_type=document_type or (item or {}).get("type"),
+            collection=collection,
+            default=self.storage,
+        )
+
+    def _find_externally_stored_item(self, collections, id):
+        """The item, if an external type routed through one of these has it.
+
+        Asked only after the database has said no, and only about types that
+        declared `crud()["routed_through"]` for one of these collections -- so
+        for a client that declared none, this is an empty loop and the ordinary
+        404 costs nothing extra.
+        """
+        if isinstance(collections, str) or collections is None:
+            collections = [collections]
+        for collection in collections:
+            for storage_type, name in external_members_of(collection):
+                try:
+                    item = get_external_storage(
+                        storage_type
+                    ).get_item_from_collection_by_id(name, id)
+                except Exception:
+                    continue
+                if item:
+                    return item
+        return None
+
+    def _update_date_updated_and_last_editor(self, collection, id, item=None):
         content_date_updated = {"date_updated": datetime.now(UTC)}
         content_last_editor_updated = {
             "last_editor": get_user_context().email or "default_uploader"
         }
-        return self.storage.patch_item_from_collection(
+        storage, collection = self._storage_for(item, collection)
+        return storage.patch_item_from_collection(
             collection, id, {**content_date_updated, **content_last_editor_updated}
         )

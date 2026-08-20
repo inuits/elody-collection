@@ -47,6 +47,7 @@ def init_mappers():
         from storage.httpstore import HttpStorageManager
         from storage.memorystore import MemoryStorageManager
         from storage.mongostore import MongoStorageManager
+        from storage.sparqlstore import SparqlStorageManager
 
         _object_configuration_mapper = ObjectConfigurationMapper()
         _route_mapper = {}
@@ -56,6 +57,7 @@ def init_mappers():
             "memory": MemoryStorageManager,
             "mongo": MongoStorageManager,
             "http": HttpStorageManager,
+            "sparql": SparqlStorageManager,
         }
 
         log.error(
