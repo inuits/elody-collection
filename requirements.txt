@@ -35,7 +35,7 @@ opentelemetry-instrumentation-flask==0.65b0 # For some reason renovate does not 
 opentelemetry-instrumentation-pymongo==0.65b0 # For some reason renovate does not pick this one up
 opentelemetry-sdk==1.44.0
 packaging==24.2
-pamqp==2.3.0
+pamqp==4.0.1
 pika==1.3.2
 prometheus_client==0.26.0
 prometheus_flask_exporter==0.23.2
