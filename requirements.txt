@@ -47,7 +47,7 @@ pymongo==4.10.1
 pyparsing==3.3.2
 python-arango==7.9.1
 python-dateutil==2.9.0.post0
-pytz==2025.2
+pytz==2026.3.post1
 rabbitmq-pika-flask==1.2.35
 rdflib==7.6.0
 referencing==0.37.0
