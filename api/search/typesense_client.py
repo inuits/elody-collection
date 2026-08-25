@@ -57,7 +57,7 @@ def get_typesense_client():
     return _client
 
 
-def ensure_collection(collection, facet_fields=None):
+def ensure_collection(collection, facet_fields=None, infix_fields=None):
     """Ensure a Typesense collection exists with auto schema detection."""
     if collection in _ensured_collections:
         return
@@ -73,9 +73,24 @@ def ensure_collection(collection, facet_fields=None):
         except Exception:
             try:
                 fields = [{"name": ".*", "type": "auto"}]
+                flat_infix = {
+                    field_path.replace(".", "_") for field_path in infix_fields or []
+                }
+                flat_facet = set()
                 for field_path in facet_fields or []:
                     flat_key = field_path.replace(".", "_")
+                    flat_facet.add(flat_key)
                     fields.append({"name": flat_key, "type": "auto", "facet": True})
+                for flat_key in flat_infix:
+                    if flat_key not in flat_facet:
+                        fields.append(
+                            {
+                                "name": flat_key,
+                                "type": "string",
+                                "infix": True,
+                                "optional": True,
+                            }
+                        )
                 client.collections.create(
                     {
                         "name": collection,
@@ -127,11 +142,65 @@ _MARK_CLOSE = "</mark>"
 _SNIPPET_CONTEXT_CHARS = 60
 
 
-def _center_on_mark(text):
+def _narrow_mark(text, query):
+    """Narrow each ``<mark>token</mark>`` block to just the query substring.
+
+    Typesense infix matching wraps the *entire* token that contains the query
+    substring (e.g. query ``bnt`` → ``<mark>erbntay</mark>``).  This helper
+    rewrites every such block to ``prefix<mark>match</mark>suffix`` using the
+    original casing of the token, matching case-insensitively on the first
+    occurrence of the first found query term inside that block.
+
+    If the wrapped content already equals the term (exact/prefix match), or if
+    the term is not found inside the token, the block is left unchanged.
+    Returns ``text`` unchanged when ``query`` is falsy or ``"*"``.
+    """
+    if not query or query == "*":
+        return text
+    terms = [t for t in query.split() if t]
+    if not terms:
+        return text
+
+    out = []
+    pos = 0
+    while True:
+        start = text.find(_MARK_OPEN, pos)
+        if start == -1:
+            out.append(text[pos:])
+            break
+        end = text.find(_MARK_CLOSE, start)
+        if end == -1:
+            out.append(text[pos:])
+            break
+        out.append(text[pos:start])
+        token = text[start + len(_MARK_OPEN) : end]
+        token_lower = token.lower()
+
+        narrowed = False
+        for term in terms:
+            term_lower = term.lower()
+            idx = token_lower.find(term_lower)
+            if idx != -1 and len(token) > len(term):
+                prefix = token[:idx]
+                match = token[idx : idx + len(term)]
+                suffix = token[idx + len(term) :]
+                out.append(prefix + _MARK_OPEN + match + _MARK_CLOSE + suffix)
+                narrowed = True
+                break
+        if not narrowed:
+            out.append(_MARK_OPEN + token + _MARK_CLOSE)
+
+        pos = end + len(_MARK_CLOSE)
+
+    return "".join(out)
+
+
+def _center_on_mark(text, query=None):
     """Clamp ``text`` to a short window centered on the first <mark> block.
 
     1. Extract only the line(s) containing a <mark> tag (split on newline).
-    2. Within that line, keep at most ``_SNIPPET_CONTEXT_CHARS`` characters of
+    2. Narrow each <mark> block to just the query substring (infix narrowing).
+    3. Within that line, keep at most ``_SNIPPET_CONTEXT_CHARS`` characters of
        plain text on each side of the mark block, prepending / appending ``...``
        when content was trimmed.
 
@@ -143,6 +212,9 @@ def _center_on_mark(text):
     if not mark_lines:
         return text
     line = "\n".join(mark_lines)
+
+    if query:
+        line = _narrow_mark(line, query)
 
     first_mark = line.index(_MARK_OPEN)
     last_mark_end = line.rindex(_MARK_CLOSE) + len(_MARK_CLOSE)
@@ -159,13 +231,14 @@ def _center_on_mark(text):
     return before + mark_block + after
 
 
-def _snippet_highlights(hit):
+def _snippet_highlights(hit, query=None):
     """Reduce a Typesense hit's highlight map to centered snippet-only entries.
 
     For each matched field, takes the ``snippet`` Typesense returns (which may be
     the entire field value when the field is below Typesense's snippet_threshold),
-    extracts only the line(s) containing the ``<mark>`` match, and clamps to a
-    short context window around it. Fields with no usable text are excluded.
+    extracts only the line(s) containing the ``<mark>`` match, narrows the mark
+    to the query substring for infix hits, and clamps to a short context window
+    around it. Fields with no usable text are excluded.
     """
     result = {}
     for field, data in hit.get("highlight", {}).items():
@@ -173,8 +246,25 @@ def _snippet_highlights(hit):
             continue
         text = data.get("snippet") or data.get("value", "")
         if text:
-            result[field] = {"snippet": _center_on_mark(text)}
+            result[field] = {"snippet": _center_on_mark(text, query)}
     return result
+
+
+def _build_infix_param(query_by, infix_fields):
+    """Build the per-field ``infix`` list aligned to ``query_by``.
+
+    Returns a comma-joined string where each position matches the corresponding
+    field in ``query_by``: ``"always"`` for infix-enabled fields, ``"off"`` for
+    the rest. Returns ``None`` when no field requires infix so the param is
+    omitted entirely for callers without infix configured.
+    """
+    if not infix_fields:
+        return None
+    flat_infix = {f.replace(".", "_") for f in infix_fields}
+    parts = [
+        "always" if field in flat_infix else "off" for field in query_by.split(",")
+    ]
+    return ",".join(parts) if any(p == "always" for p in parts) else None
 
 
 def search(
@@ -187,6 +277,7 @@ def search(
     offset=None,
     facet_by=None,
     group_by=None,
+    infix_fields=None,
 ):
     client = get_typesense_client()
     if not client:
@@ -199,6 +290,9 @@ def search(
             "per_page": per_page,
             "highlight_fields": query_by,
         }
+        infix_param = _build_infix_param(query_by, infix_fields)
+        if infix_param:
+            search_params["infix"] = infix_param
         if offset is not None:
             search_params["offset"] = offset
         else:
@@ -219,7 +313,7 @@ def search(
         else:
             ids = [hit["document"]["_id"] for hit in result["hits"]]
             highlights = {
-                hit["document"]["_id"]: _snippet_highlights(hit)
+                hit["document"]["_id"]: _snippet_highlights(hit, query)
                 for hit in result["hits"]
             }
         response = {
@@ -248,12 +342,15 @@ def search(
                     offset,
                     facet_by,
                     group_by,
+                    infix_fields=infix_fields,
                 )
         log.warning(f"Typesense search failed, falling back to MongoDB: {e}")
         return None
 
 
-def search_all_ids(collection, query, query_by, filter_by=None, group_by=None):
+def search_all_ids(
+    collection, query, query_by, filter_by=None, group_by=None, infix_fields=None
+):
     """Fetch all matching IDs from Typesense by paginating through results."""
     client = get_typesense_client()
     if not client:
@@ -267,6 +364,7 @@ def search_all_ids(collection, query, query_by, filter_by=None, group_by=None):
         total = None
         seen = 0
         skipped_groups = 0
+        infix_param = _build_infix_param(query_by, infix_fields)
 
         while True:
             search_params = {
@@ -276,6 +374,8 @@ def search_all_ids(collection, query, query_by, filter_by=None, group_by=None):
                 "page": page,
                 "highlight_fields": query_by,
             }
+            if infix_param:
+                search_params["infix"] = infix_param
             if filter_by:
                 search_params["filter_by"] = filter_by
             if group_by:
@@ -294,7 +394,7 @@ def search_all_ids(collection, query, query_by, filter_by=None, group_by=None):
                 ids = [hit["document"]["_id"] for hit in result["hits"]]
                 all_highlights.update(
                     {
-                        hit["document"]["_id"]: _snippet_highlights(hit)
+                        hit["document"]["_id"]: _snippet_highlights(hit, query)
                         for hit in result["hits"]
                     }
                 )
@@ -319,7 +419,14 @@ def search_all_ids(collection, query, query_by, filter_by=None, group_by=None):
                 log.warning(
                     f"Retrying search_all_ids without missing field '{missing}'"
                 )
-                return search_all_ids(collection, query, filtered, filter_by, group_by)
+                return search_all_ids(
+                    collection,
+                    query,
+                    filtered,
+                    filter_by,
+                    group_by,
+                    infix_fields=infix_fields,
+                )
         log.warning(f"Typesense search_all_ids failed, falling back to MongoDB: {e}")
         return None
 

@@ -546,6 +546,7 @@ def sync_entity_to_typesense(message):
     # as a last resort -- so a transient hiccup no longer silently drops an
     # entity from the search index.
     from search.typesense_client import (  # noqa: PLC0415
+        ensure_collection,
         get_collection_field_types,
         prepare_document_for_typesense,
         upsert_document,
@@ -575,6 +576,11 @@ def sync_entity_to_typesense(message):
             return
 
         ts_collection = ts_config.get("collection", "entities")
+        ensure_collection(
+            ts_collection,
+            facet_fields=ts_config.get("facet_fields", []),
+            infix_fields=ts_config.get("infix_fields", []),
+        )
         doc = prepare_document_for_typesense(
             entity,
             ts_config.get("search_fields", []),

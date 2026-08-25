@@ -272,7 +272,11 @@ class BaseFilterResource(BaseResource):
     ):
         """Build Typesense search parameters from classified filters."""
         ts_collection = typesense_config.get("collection", "entities")
-        typesense_ensure_collection(ts_collection)
+        typesense_ensure_collection(
+            ts_collection,
+            facet_fields=typesense_config.get("facet_fields", []),
+            infix_fields=typesense_config.get("infix_fields", []),
+        )
         search_fields = typesense_config.get("search_fields", [])
         filter_keys = []
         distinct_keys = []
@@ -297,7 +301,8 @@ class BaseFilterResource(BaseResource):
             search_terms = "*"
         filter_by = build_filter_by(type_filter_values, exact_match_filters or [])
         group_by = distinct_keys[0].replace(".", "_") if distinct_keys else None
-        return ts_collection, query_by, search_terms, filter_by, group_by
+        infix_fields = typesense_config.get("infix_fields", [])
+        return ts_collection, query_by, search_terms, filter_by, group_by, infix_fields
 
     def _execute_typesense_search(
         self,
@@ -310,6 +315,7 @@ class BaseFilterResource(BaseResource):
         limit,
         facet_by=None,
         group_by=None,
+        infix_fields=None,
     ):
         """Execute Typesense search with fallback. Returns None if unavailable."""
         if has_remaining:
@@ -319,6 +325,7 @@ class BaseFilterResource(BaseResource):
                 query_by,
                 filter_by=filter_by,
                 group_by=group_by,
+                infix_fields=infix_fields,
             )
         return typesense_search(
             ts_collection,
@@ -329,6 +336,7 @@ class BaseFilterResource(BaseResource):
             offset=skip,
             facet_by=facet_by,
             group_by=group_by,
+            infix_fields=infix_fields,
         )
 
     def _fetch_documents_from_mongo(self, matching_ids, collections):
@@ -532,7 +540,7 @@ class BaseFilterResource(BaseResource):
                     resolved_query, target_collection
                 )
             return self._execute_advanced_search_with_query_v2(query, collection)
-        ts_collection, query_by, search_terms, filter_by, group_by = (
+        ts_collection, query_by, search_terms, filter_by, group_by, infix_fields = (
             self._build_typesense_query(
                 text_filters,
                 type_filter_values,
@@ -558,6 +566,7 @@ class BaseFilterResource(BaseResource):
             limit,
             facet_by=facet_by,
             group_by=group_by,
+            infix_fields=infix_fields,
         )
         if ts_result is None:
             log.info("Typesense unavailable, falling back to MongoDB")
