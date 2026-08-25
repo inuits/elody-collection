@@ -122,6 +122,61 @@ def _ids_from_grouped_hits(result) -> tuple[list, int]:
     return ids, skipped
 
 
+_MARK_OPEN = "<mark>"
+_MARK_CLOSE = "</mark>"
+_SNIPPET_CONTEXT_CHARS = 60
+
+
+def _center_on_mark(text):
+    """Clamp ``text`` to a short window centered on the first <mark> block.
+
+    1. Extract only the line(s) containing a <mark> tag (split on newline).
+    2. Within that line, keep at most ``_SNIPPET_CONTEXT_CHARS`` characters of
+       plain text on each side of the mark block, prepending / appending ``...``
+       when content was trimmed.
+
+    This guarantees the output shape is ``...<mark>match</mark>...`` regardless
+    of whether Typesense returned a windowed snippet or the full field value
+    (which it does when the field is below its ``snippet_threshold``).
+    """
+    mark_lines = [line for line in text.split("\n") if _MARK_OPEN in line]
+    if not mark_lines:
+        return text
+    line = "\n".join(mark_lines)
+
+    first_mark = line.index(_MARK_OPEN)
+    last_mark_end = line.rindex(_MARK_CLOSE) + len(_MARK_CLOSE)
+
+    before = line[:first_mark]
+    after = line[last_mark_end:]
+    mark_block = line[first_mark:last_mark_end]
+
+    if len(before) > _SNIPPET_CONTEXT_CHARS:
+        before = "..." + before[-_SNIPPET_CONTEXT_CHARS:]
+    if len(after) > _SNIPPET_CONTEXT_CHARS:
+        after = after[:_SNIPPET_CONTEXT_CHARS] + "..."
+
+    return before + mark_block + after
+
+
+def _snippet_highlights(hit):
+    """Reduce a Typesense hit's highlight map to centered snippet-only entries.
+
+    For each matched field, takes the ``snippet`` Typesense returns (which may be
+    the entire field value when the field is below Typesense's snippet_threshold),
+    extracts only the line(s) containing the ``<mark>`` match, and clamps to a
+    short context window around it. Fields with no usable text are excluded.
+    """
+    result = {}
+    for field, data in hit.get("highlight", {}).items():
+        if not isinstance(data, dict):
+            continue
+        text = data.get("snippet") or data.get("value", "")
+        if text:
+            result[field] = {"snippet": _center_on_mark(text)}
+    return result
+
+
 def search(
     collection,
     query,
@@ -142,6 +197,7 @@ def search(
             "q": query,
             "query_by": query_by,
             "per_page": per_page,
+            "highlight_fields": query_by,
         }
         if offset is not None:
             search_params["offset"] = offset
@@ -163,7 +219,7 @@ def search(
         else:
             ids = [hit["document"]["_id"] for hit in result["hits"]]
             highlights = {
-                hit["document"]["_id"]: hit.get("highlight", {})
+                hit["document"]["_id"]: _snippet_highlights(hit)
                 for hit in result["hits"]
             }
         response = {
@@ -218,6 +274,7 @@ def search_all_ids(collection, query, query_by, filter_by=None, group_by=None):
                 "query_by": query_by,
                 "per_page": per_page,
                 "page": page,
+                "highlight_fields": query_by,
             }
             if filter_by:
                 search_params["filter_by"] = filter_by
@@ -237,7 +294,7 @@ def search_all_ids(collection, query, query_by, filter_by=None, group_by=None):
                 ids = [hit["document"]["_id"] for hit in result["hits"]]
                 all_highlights.update(
                     {
-                        hit["document"]["_id"]: hit.get("highlight", {})
+                        hit["document"]["_id"]: _snippet_highlights(hit)
                         for hit in result["hits"]
                     }
                 )
