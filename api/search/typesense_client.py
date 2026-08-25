@@ -1,3 +1,4 @@
+import re
 import threading
 from os import getenv
 from time import sleep
@@ -471,6 +472,25 @@ def get_collection_field_types(collection):
     return field_types
 
 
+def _strip_tags(value):
+    """Recursively strip HTML/XML tags from string values before Typesense indexing.
+
+    - ``str``: replaces ``<br>`` / ``<br/>`` / ``<br />`` variants with a newline,
+      then removes all remaining ``<...>`` markup, then collapses non-newline
+      whitespace runs on each line and strips leading/trailing whitespace.
+    - ``list``: applies stripping to each element recursively.
+    - Anything else: returned unchanged.
+    """
+    if isinstance(value, list):
+        return [_strip_tags(v) for v in value]
+    if isinstance(value, str):
+        with_newlines = re.sub(r"<br\s*/?>", "\n", value, flags=re.IGNORECASE)
+        stripped = re.sub(r"<[^>]*>", "", with_newlines)
+        lines = [re.sub(r"[ \t]+", " ", line).strip() for line in stripped.split("\n")]
+        return "\n".join(lines).strip()
+    return value
+
+
 def _coerce_value_to_field_type(value, field_type):
     """Coerce ``value`` to match an existing Typesense field's cardinality.
 
@@ -510,11 +530,12 @@ def prepare_document_for_typesense(
         flat_key = field_path.replace(".", "_")
         field_type = (field_types or {}).get(flat_key)
         if field_type:
-            doc[flat_key] = _coerce_value_to_field_type(value, field_type)
+            coerced = _coerce_value_to_field_type(value, field_type)
         elif isinstance(value, list):
-            doc[flat_key] = [v if isinstance(v, str) else str(v) for v in value]
+            coerced = [v if isinstance(v, str) else str(v) for v in value]
         elif isinstance(value, str):
-            doc[flat_key] = value
+            coerced = value
         else:
-            doc[flat_key] = str(value)
+            coerced = str(value)
+        doc[flat_key] = _strip_tags(coerced)
     return doc
