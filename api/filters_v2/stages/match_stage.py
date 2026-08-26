@@ -55,14 +55,15 @@ def __construct_match(filter_request_body: list[dict], tidy_up_match: bool):
         )
 
     if document_field_filters:
-        matchers_per_schema, lookup = {"general": []}, []
+        matchers_per_schema, lookup, nested_lookups = {"general": []}, [], []
         for matchers_per_schema, filter_criteria in __construct_matchers_per_schema(
-            document_field_filters, restricted_keys, matchers_per_schema
+            document_field_filters, restricted_keys, matchers_per_schema, nested_lookups
         ):
             lookup = lookup_stage.build(filter_criteria=filter_criteria, lookups=lookup)
         match.extend(
             [
                 *lookup,
+                *__stages_not_in_pipeline(nested_lookups, lookup),
                 {
                     "$match": unify_matchers_per_schema_into_one_match(
                         matchers_per_schema, tidy_up_match
@@ -71,8 +72,9 @@ def __construct_match(filter_request_body: list[dict], tidy_up_match: bool):
             ]
         )
     if virtual_field_filters:
+        nested_lookups = []
         for matchers_per_schema, filter_criteria in __construct_matchers_per_schema(
-            virtual_field_filters, restricted_keys
+            virtual_field_filters, restricted_keys, nested_lookups=nested_lookups
         ):
             lookup = lookup_stage.build(filter_criteria=filter_criteria)
             if lookup_already_exists_in_pipeline(lookup, match):
@@ -81,6 +83,7 @@ def __construct_match(filter_request_body: list[dict], tidy_up_match: bool):
             match.extend(
                 [
                     *lookup,
+                    *__stages_not_in_pipeline(nested_lookups, [*match, *lookup]),
                     {
                         "$match": unify_matchers_per_schema_into_one_match(
                             matchers_per_schema, tidy_up_match
@@ -88,14 +91,45 @@ def __construct_match(filter_request_body: list[dict], tidy_up_match: bool):
                     },
                 ]
             )
+            nested_lookups.clear()
 
     return match
+
+
+def __stages_not_in_pipeline(stages: list[dict], pipeline: list[dict]) -> list[dict]:
+    return [stage for stage in stages if stage not in pipeline]
+
+
+def __extract_or_matcher(match: list[dict], nested_lookups: list[dict] | None):
+    """
+    Split a nested or-pipeline into the condition to OR into the parent match, and
+    the stages that condition depends on. A nested filter on a relation
+    (`key@type-key` in a permission restriction) puts $lookup/$unwind in front of
+    its $match, so the $match is not necessarily the first stage, and those
+    lookups have to be hoisted into the parent pipeline or the condition can
+    never match.
+    """
+    conditions = [stage["$match"] for stage in match if "$match" in stage]
+    if nested_lookups is not None:
+        # $unwind is left behind on purpose: a $match on a dotted path traverses
+        # the looked-up array by itself, while unwinding in the parent pipeline
+        # would repeat a document once per looked-up relation.
+        # ponytail: assumes the hoisted lookups preserve null and empty arrays,
+        # which the permission-generated ones always do. A nested or-filter on a
+        # lookup that does not would need its own $expr-based branch.
+        nested_lookups.extend(
+            stage for stage in match if not {"$match", "$unwind"} & stage.keys()
+        )
+    if not conditions:
+        return None
+    return conditions[0] if len(conditions) == 1 else {"$and": conditions}
 
 
 def __construct_matchers_per_schema(
     filter_request_body: list[dict],
     restricted_keys: list,
     initial_matchers_per_schema: dict = {},
+    nested_lookups: list[dict] | None = None,
 ):
     matchers_per_schema = deepcopy(initial_matchers_per_schema)
     for filter_criteria in filter_request_body:
@@ -120,13 +154,16 @@ def __construct_matchers_per_schema(
             matchers_per_schema["general"].append({"type": {"$in": item_types}})
 
         if or_filter_request_body := filter_criteria.get("or", []):
-            match = build(or_filter_request_body, False)
-            for schema, matchers in matchers_per_schema.items():
-                if matchers and (
-                    (len(matchers_per_schema.keys()) > 1 and schema != "general")
-                    or (len(matchers_per_schema.keys()) == 1)
-                ):
-                    matchers.append({"OR_MATCHER": match[0]["$match"]})
+            or_matcher = __extract_or_matcher(
+                build(or_filter_request_body, False), nested_lookups
+            )
+            if or_matcher:
+                for schema, matchers in matchers_per_schema.items():
+                    if matchers and (
+                        (len(matchers_per_schema.keys()) > 1 and schema != "general")
+                        or (len(matchers_per_schema.keys()) == 1)
+                    ):
+                        matchers.append({"OR_MATCHER": or_matcher})
 
         yield matchers_per_schema, filter_criteria
 
