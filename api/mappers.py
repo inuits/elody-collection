@@ -179,6 +179,15 @@ def map_data_according_to_accept_header(
                     data["results"][0]["type"],
                 )
             except AttributeError:
+                # No client specific csv serializer: map_to_csv only understands
+                # elody documents, so normalize client schemas first.
+                try:
+                    data["results"] = [
+                        serialize(result, type=result.get("type"), to_format="elody")
+                        for result in data["results"]
+                    ]
+                except AttributeError:
+                    pass
                 return map_to_csv(data, data_type, fields, exclude_non_editable_fields)
         case "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
             if not data["results"]:

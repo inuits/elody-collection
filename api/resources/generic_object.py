@@ -274,9 +274,11 @@ class GenericObjectV2(BaseFilterResource, BaseResource):
                 get_user_context().access_restrictions.post_request_hook(items),
                 accept_header,
                 "entities",
-                [],
+                [*request.args.getlist("field"), *request.args.getlist("field[]")],
                 spec,
                 request.args,
+                request.args.get("exclude_non_editable_fields", "false").lower()
+                in ["true", "1"],
             ),
             accept_header,
             spec=spec,
