@@ -16,6 +16,12 @@ from inuits_policy_based_auth.contexts.user_context import (  # pyright: ignore
 from storage.storagemanager import StorageManager  # pyright: ignore
 
 
+MERGE_PATH = regex.compile("^(/[^/]+/v[0-9]+)?/[^/]+/[^/]+/merge$")
+INBOUND_REFERENCE_COUNT_PATH = regex.compile(
+    "^(/[^/]+/v[0-9]+)?/[^/]+/[^/]+/inbound-reference-count$"
+)
+
+
 class MergePolicy(BaseAuthorizationPolicy):
     """A merge updates the survivor and deletes the victim.
 
@@ -27,32 +33,44 @@ class MergePolicy(BaseAuthorizationPolicy):
         self, policy_context: PolicyContext, user_context: UserContext, request_context
     ):
         request: Request = request_context.http_request
-        if not regex.match("^(/[^/]+/v[0-9]+)?/[^/]+/[^/]+/merge$", request.path):
+        if MERGE_PATH.match(request.path):
+            requirements = self.__merge_requirements(user_context, request)
+        elif INBOUND_REFERENCE_COUNT_PATH.match(request.path):
+            requirements = [(self.__item(user_context, request.view_args), "read")]
+        else:
             return policy_context
-
-        survivor = get_item(StorageManager(), user_context.bag, request.view_args)
-        victim = get_item(
-            StorageManager(), user_context.bag, {"id": self.__victim_id(request)}
-        )
 
         for role in user_context.x_tenant.roles:
             permissions = get_permissions(role, user_context)
             if not permissions:
                 continue
 
-            policy_context.access_verdict = bool(
-                handle_single_item_request(
-                    user_context, survivor, permissions, "update"
-                )
-                and handle_single_item_request(
-                    user_context, victim, permissions, "delete"
-                )
+            policy_context.access_verdict = all(
+                handle_single_item_request(user_context, item, permissions, permission)
+                for item, permission in requirements
             )
             if policy_context.access_verdict:
                 return policy_context
 
         return policy_context
 
+    def __merge_requirements(self, user_context: UserContext, request: Request):
+        requirements = [(self.__item(user_context, request.view_args), "update")]
+        # A body without a victim is malformed rather than unauthorized: let the
+        # request through to the handler, which answers 400.
+        if victim_id := self.__victim_id(request):
+            requirements.append(
+                (self.__item(user_context, {"id": victim_id}), "delete")
+            )
+        return requirements
+
+    def __item(self, user_context: UserContext, view_args):
+        return get_item(StorageManager(), user_context.bag, view_args)
+
     def __victim_id(self, request: Request):
-        content = g.get("content") or request.get_json(silent=True) or {}
+        # The resources a merge calls into reuse g.content for their own payload
+        # shape, so only a mapping can be the merge body.
+        content = g.get("content")
+        if not isinstance(content, dict):
+            content = request.get_json(silent=True) or {}
         return content.get("victim_id")
