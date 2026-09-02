@@ -29,7 +29,10 @@ def assert_mergeable(survivor, victim):
 class MergeResource(GenericObjectDetailV2):
     """POST /<collection>/<survivor_id>/merge
 
-    Body: {"victim_id": ..., "metadata": [...], "relations": [...]}
+    Body: {"victim_id": ..., "metadata": [...]}
+
+    Only metadata is chosen by the caller. Relations are unioned by the merge
+    itself: a list of authors cannot be reconciled by picking one of the two.
     """
 
     def merge(self, survivor_id, spec):
@@ -42,11 +45,13 @@ class MergeResource(GenericObjectDetailV2):
         victim = self._check_if_collection_and_item_exists(None, victim_id)
         assert_mergeable(survivor, victim)
 
-        self._apply_chosen_values(survivor_id, spec, content, survivor["type"])
+        self._apply_chosen_metadata(survivor_id, spec, content)
 
-        # If-Match guards the survivor the caller fetched, not the unrelated
-        # documents that happen to reference the victim.
+        # If-Match guards the survivor the caller fetched, not the survivor as
+        # the merge leaves it, nor the unrelated documents referencing the
+        # victim.
         request.environ.pop("HTTP_IF_MATCH", None)
+        self._carry_over_relations(survivor_id, victim_id, spec, victim["type"])
         repointed = self._repoint_inbound_references(
             victim_id, survivor_id, victim["type"]
         )
@@ -61,7 +66,7 @@ class MergeResource(GenericObjectDetailV2):
             "repointed_references": repointed,
         }, 200
 
-    def _apply_chosen_values(self, survivor_id, spec, content, document_type):
+    def _apply_chosen_metadata(self, survivor_id, spec, content):
         if metadata := content.get("metadata"):
             super().patch(
                 collection=None,
@@ -69,20 +74,17 @@ class MergeResource(GenericObjectDetailV2):
                 content={"metadata": metadata},
                 spec=spec,
             )
-        if relations := content.get("relations"):
-            self._put_relations(
-                survivor_id, spec, self._writable_relations(relations, document_type)
-            )
 
-    def _writable_relations(self, relations, document_type):
-        """Relations the survivor itself stores. A client that keeps some
-        relations on the entity at the other end overrides this to drop them —
-        the repoint step already carries those over."""
-        return relations
+    def _carry_over_relations(self, survivor_id, victim_id, spec, document_type):
+        """Adds the victim's own relations to the survivor's.
 
-    def _put_relations(self, survivor_id, spec, relations):
+        No default: dropping them silently would lose exactly the links the
+        merge exists to preserve, while still reporting success. Implement it
+        against the client's own relations resource.
+        """
         raise NotImplementedError(
-            "Implement relation writing for this client's relations resource."
+            "Implement relation carry-over for this client's relations resource "
+            "before enabling merge."
         )
 
     def _delete_victim(self, victim_id, spec):
@@ -112,9 +114,6 @@ class InboundReferenceCountResource(GenericObjectDetailV2):
         document = self._check_if_collection_and_item_exists(None, id)
         return {
             "count": self._count_inbound_references(id, document["type"]),
-            "automatic_relation_types": self._automatic_relation_types(
-                document["type"]
-            ),
         }, 200
 
     def _count_inbound_references(self, id, document_type):
@@ -122,9 +121,3 @@ class InboundReferenceCountResource(GenericObjectDetailV2):
             "Implement inbound-reference counting for this client's relation "
             "storage model."
         )
-
-    def _automatic_relation_types(self, document_type):
-        """Relation types the merge repoints by itself, so the user is never
-        offered a choice over them. Empty unless a client stores relations on
-        the entity at the other end."""
-        return []
