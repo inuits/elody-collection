@@ -66,8 +66,6 @@ def repoint_inbound_references(storage, victim_id, survivor_id, document_type):
         if content is None:
             continue
 
-        # The document's own schema, not the request spec: a route can serve
-        # a shape other than the stored one.
         storage.patch_item_from_collection_v2(
             collection, document, content, document["schema"]["type"]
         )
