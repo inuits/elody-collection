@@ -47,7 +47,9 @@ class MergeResource(GenericObjectDetailV2):
         # If-Match guards the survivor the caller fetched, not the unrelated
         # documents that happen to reference the victim.
         request.environ.pop("HTTP_IF_MATCH", None)
-        repointed = self._repoint_inbound_references(victim_id, survivor_id)
+        repointed = self._repoint_inbound_references(
+            victim_id, survivor_id, victim["type"]
+        )
 
         # Deleted last, so a failure part-way through leaves a correct survivor
         # and a recoverable duplicate rather than orphaned references.
@@ -86,7 +88,7 @@ class MergeResource(GenericObjectDetailV2):
     def _delete_victim(self, victim_id, spec):
         Document().delete(id=victim_id, spec=spec)
 
-    def _repoint_inbound_references(self, victim_id, survivor_id):
+    def _repoint_inbound_references(self, victim_id, survivor_id, document_type):
         """Points every reference to the victim at the survivor instead, and
         returns how many documents were rewritten.
 
@@ -109,13 +111,13 @@ class InboundReferenceCountResource(GenericObjectDetailV2):
     def inbound_reference_count(self, id):
         document = self._check_if_collection_and_item_exists(None, id)
         return {
-            "count": self._count_inbound_references(id),
+            "count": self._count_inbound_references(id, document["type"]),
             "automatic_relation_types": self._automatic_relation_types(
                 document["type"]
             ),
         }, 200
 
-    def _count_inbound_references(self, id):
+    def _count_inbound_references(self, id, document_type):
         raise NotImplementedError(
             "Implement inbound-reference counting for this client's relation "
             "storage model."
