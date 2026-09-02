@@ -56,8 +56,6 @@ class MergePolicy(BaseAuthorizationPolicy):
 
     def __merge_requirements(self, user_context: UserContext, request: Request):
         requirements = [(self.__item(user_context, request.view_args), "update")]
-        # A body without a victim is malformed rather than unauthorized: let the
-        # request through to the handler, which answers 400.
         if victim_id := self.__victim_id(request):
             requirements.append(
                 (self.__item(user_context, {"id": victim_id}), "delete")
@@ -68,8 +66,6 @@ class MergePolicy(BaseAuthorizationPolicy):
         return get_item(StorageManager(), user_context.bag, view_args)
 
     def __victim_id(self, request: Request):
-        # The resources a merge calls into reuse g.content for their own payload
-        # shape, so only a mapping can be the merge body.
         content = g.get("content")
         if not isinstance(content, dict):
             content = request.get_json(silent=True) or {}

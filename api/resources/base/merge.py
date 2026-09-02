@@ -27,14 +27,6 @@ def assert_mergeable(survivor, victim):
 
 
 class MergeResource(GenericObjectDetailV2):
-    """POST /<collection>/<survivor_id>/merge
-
-    Body: {"victim_id": ..., "metadata": [...]}
-
-    Only metadata is chosen by the caller. Relations are unioned by the merge
-    itself: a list of authors cannot be reconciled by picking one of the two.
-    """
-
     def merge(self, survivor_id, spec):
         content = request.get_json()
         victim_id = content.get("victim_id")
@@ -47,17 +39,12 @@ class MergeResource(GenericObjectDetailV2):
 
         self._apply_chosen_metadata(survivor_id, spec, content)
 
-        # If-Match guards the survivor the caller fetched, not the survivor as
-        # the merge leaves it, nor the unrelated documents referencing the
-        # victim.
         request.environ.pop("HTTP_IF_MATCH", None)
         self._carry_over_relations(survivor_id, victim_id, spec, victim["type"])
         repointed = self._repoint_inbound_references(
             victim_id, survivor_id, victim["type"]
         )
 
-        # Deleted last, so a failure part-way through leaves a correct survivor
-        # and a recoverable duplicate rather than orphaned references.
         self._delete_victim(victim_id, spec)
 
         return {
@@ -76,12 +63,6 @@ class MergeResource(GenericObjectDetailV2):
             )
 
     def _carry_over_relations(self, survivor_id, victim_id, spec, document_type):
-        """Adds the victim's own relations to the survivor's.
-
-        No default: dropping them silently would lose exactly the links the
-        merge exists to preserve, while still reporting success. Implement it
-        against the client's own relations resource.
-        """
         raise NotImplementedError(
             "Implement relation carry-over for this client's relations resource "
             "before enabling merge."
@@ -91,13 +72,6 @@ class MergeResource(GenericObjectDetailV2):
         Document().delete(id=victim_id, spec=spec)
 
     def _repoint_inbound_references(self, victim_id, survivor_id, document_type):
-        """Points every reference to the victim at the survivor instead, and
-        returns how many documents were rewritten.
-
-        No default: a no-op would silently orphan every inbound reference while
-        reporting a successful merge. Implement it against the client's own
-        relation storage model.
-        """
         raise NotImplementedError(
             "Implement inbound-reference repointing for this client's relation "
             "storage model before enabling merge."
@@ -105,11 +79,6 @@ class MergeResource(GenericObjectDetailV2):
 
 
 class InboundReferenceCountResource(GenericObjectDetailV2):
-    """GET /<collection>/<id>/inbound-reference-count
-
-    Informational only: what a merge would handle on its own for this entity.
-    """
-
     def inbound_reference_count(self, id):
         document = self._check_if_collection_and_item_exists(None, id)
         return {
