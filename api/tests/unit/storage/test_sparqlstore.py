@@ -6,6 +6,8 @@ subject it finds to that configuration's serializer. So these tests assert the
 queries it builds and the shape it hands over -- never a particular vocabulary.
 """
 
+import json
+import re
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -16,6 +18,7 @@ _api_path = Path(__file__).resolve().parents[3]
 if str(_api_path) not in sys.path:
     sys.path.insert(0, str(_api_path))
 
+RDF_TYPE = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"
 GRAPH = "http://example.org/graphs/errors"
 TARGET = "http://open-services.net/ns/core#Error"
 ID_PRED = "http://mu.semte.ch/vocabularies/core/uuid"
@@ -61,9 +64,23 @@ COUNT_RESULT = '{"results": {"bindings": [{"count": {"value": "2"}}]}}'
 # The page query returns subjects in the order the endpoint chose. Deliberately
 # not alphabetical, so a manager that re-sorted by IRI would be caught.
 PAGE_RESULT = """{"results": {"bindings": [
-    {"s": {"value": "http://example.org/alerts/b"}},
-    {"s": {"value": "http://example.org/alerts/a"}}
+    {"s": {"type": "uri", "value": "http://example.org/alerts/b"}, "id": {"value": "b"}},
+    {"s": {"type": "uri", "value": "http://example.org/alerts/a"}, "id": {"value": "a"}}
 ]}}"""
+
+# What a page looks like when the resource is a blank node: the threshold
+# monitor writes each alert on one, so this is the shape of a real alert page
+# rather than a hypothetical.
+BNODE_PAGE_RESULT = """{"results": {"bindings": [
+    {"s": {"type": "bnode", "value": "b0"}, "id": {"value": "c"}}
+]}}"""
+
+BNODE_ALERT = """
+@prefix oslc: <http://open-services.net/ns/core#> .
+@prefix mu:   <http://mu.semte.ch/vocabularies/core/> .
+
+[] a oslc:Error ; mu:uuid "c" ; oslc:message "raised on a blank node" .
+"""
 
 
 def _response(text, status_code=200):
@@ -71,6 +88,76 @@ def _response(text, status_code=200):
     response.status_code = status_code
     response.text = text
     return response
+
+
+def _endpoint(data_ttl):
+    """A stand-in endpoint that actually answers what it is asked.
+
+    The fixed-response router below is enough for asserting query text, but it
+    answers the properties CONSTRUCT whatever that query says -- so it cannot
+    tell a query that names its resources correctly from one that does not.
+    This one resolves the query against the data, which is what makes "the
+    resource could not be named back" a test failure rather than a surprise in
+    production.
+    """
+    from rdflib import Graph, URIRef
+
+    graph = Graph()
+    graph.parse(data=data_ttl, format="turtle")
+    id_pred = URIRef(ID_PRED)
+    sort_pred = URIRef(SORT_PRED)
+    resources = [
+        (subject, str(graph.value(subject, id_pred)))
+        for subject in set(graph.subjects(URIRef(RDF_TYPE), URIRef(TARGET)))
+        if graph.value(subject, id_pred) is not None
+    ]
+    resources.sort(key=lambda pair: str(graph.value(pair[0], sort_pred) or ""))
+
+    def selected(query):
+        """The resources a properties query names, the way an endpoint reads it."""
+        ids = re.findall(r'VALUES \?id \{([^}]*)\}', query)
+        if ids:
+            wanted = set(re.findall(r'"([^"]*)"', ids[0]))
+            return [pair for pair in resources if pair[1] in wanted]
+        iris = re.findall(r"VALUES \?s \{([^}]*)\}", query)
+        if iris:
+            wanted = set(re.findall(r"<([^>]*)>", iris[0]))
+            # a blank node is not addressable: no IRI in the query can match it
+            return [
+                pair
+                for pair in resources
+                if isinstance(pair[0], URIRef) and str(pair[0]) in wanted
+            ]
+        return list(resources)
+
+    def respond(url, data=None, headers=None, **kwargs):
+        query = (data or {}).get("query", "").lstrip()
+        if query.startswith("SELECT (COUNT"):
+            counted = resources if ID_PRED in query else list(resources)
+            return _response(
+                '{"results": {"bindings": [{"count": {"value": "%d"}}]}}'
+                % len(counted)
+            )
+        if query.startswith("SELECT"):
+            bindings = []
+            for subject, identifier in resources:
+                binding = {
+                    "s": {
+                        "type": "uri" if isinstance(subject, URIRef) else "bnode",
+                        "value": str(subject),
+                    }
+                }
+                if "?id" in query:
+                    binding["id"] = {"value": identifier}
+                bindings.append(binding)
+            return _response('{"results": {"bindings": %s}}' % json.dumps(bindings))
+        out = Graph()
+        for subject, _ in selected(query):
+            for predicate, object in graph.predicate_objects(subject):
+                out.add((subject, predicate, object))
+        return _response(out.serialize(format="turtle"))
+
+    return respond
 
 
 def _router(construct=TWO_ALERTS, count=COUNT_RESULT, page=PAGE_RESULT):
@@ -165,6 +252,29 @@ class TestListing:
             result = store.get_items_from_collection("alerts")
         assert [item["_id"] for item in result["results"]] == ["c"]
 
+    def test_a_resource_on_a_blank_node_is_listed(self, store, passthrough_serialize):
+        """The count and the results have to agree.
+
+        Counting a resource the listing then drops is worse than not having it:
+        the page is short, the paging arithmetic is wrong, and nothing says
+        why. Alerts from the threshold monitor arrive on blank nodes, so this
+        was every real alert.
+        """
+        with patch(
+            "storage.sparqlstore.requests.post", side_effect=_endpoint(BNODE_ALERT)
+        ):
+            result = store.get_items_from_collection("alerts")
+        assert [item["_id"] for item in result["results"]] == ["c"]
+        assert result["count"] == 1
+
+    def test_the_count_matches_what_a_page_of_blank_nodes_returns(
+        self, store, passthrough_serialize
+    ):
+        mixed = TWO_ALERTS + BNODE_ALERT
+        with patch("storage.sparqlstore.requests.post", side_effect=_endpoint(mixed)):
+            result = store.get_items_from_collection("alerts", limit=20)
+        assert len(result["results"]) == result["count"] == 3
+
     def test_a_subject_without_an_identifier_is_skipped(self, store):
         anonymous = """
         @prefix oslc: <http://open-services.net/ns/core#> .
@@ -202,15 +312,36 @@ class TestTheQueriesItBuilds:
         assert "OFFSET 40" in page
         assert "?s ?p ?o" not in page
 
-    def test_the_properties_are_fetched_for_exactly_the_selected_subjects(self, store):
-        # ...and the CONSTRUCT is then restricted to those subjects, carrying
+    def test_the_properties_are_fetched_for_exactly_the_selected_resources(self, store):
+        # ...and the CONSTRUCT is then restricted to those resources, carrying
         # no bounds of its own, so every one of them arrives whole.
         construct = self._of_kind(store, "CONSTRUCT")
-        assert "VALUES ?s" in construct
-        assert "<http://example.org/alerts/a>" in construct
-        assert "<http://example.org/alerts/b>" in construct
+        assert "VALUES ?id" in construct
+        assert '"a"' in construct
+        assert '"b"' in construct
         assert "LIMIT" not in construct
         assert "OFFSET" not in construct
+
+    def test_the_page_and_the_properties_join_on_the_identifier(self, store):
+        """Not on the subject node, which a blank node cannot supply.
+
+        A resource is asked for by the identifying property it declares. The
+        subject of an alert the threshold monitor writes is a blank node, and
+        a blank node label from one query's results names nothing in the next
+        -- so joining on it returned a page of resources whose properties
+        could never be fetched.
+        """
+        page = self._of_kind(store, "SELECT ?s")
+        construct = self._of_kind(store, "CONSTRUCT")
+        assert "?id" in page
+        assert f"<{ID_PRED}>" in page
+        assert f"<{ID_PRED}>" in construct
+        assert "VALUES ?s" not in construct
+
+    def test_the_count_only_counts_resources_the_listing_could_return(self, store):
+        """Otherwise the count promises rows the listing cannot produce."""
+        count = self._of_kind(store, "SELECT (COUNT")
+        assert f"<{ID_PRED}>" in count
 
     def test_it_sorts_on_the_configured_property_without_requiring_it(self, store):
         page = self._of_kind(store, "SELECT ?s")
@@ -723,6 +854,121 @@ class TestSubDocumentEdits:
             relations = graph_store.get_collection_item_relations("pipelines", "one")
 
         assert [r["key"] for r in relations] == ["b", "a"]
+
+    def test_two_uses_of_one_thing_are_two_relations(self, graph_store):
+        """A relation is identified, not compared byte for byte.
+
+        A pipeline step is a *use* of a component, so the same component can be
+        added twice -- the toolchain's own reference definition has two
+        `LogProcessorJs` steps. Two such relations are identical until one is
+        configured, and whole-entry equality dropped the second: the step was
+        gone before the serializer ever saw it, which is what made "add this
+        component again" look impossible.
+        """
+        document = {"_id": "one", "type": "pipeline", "relations": []}
+        serialize, put, get, written = self._store_with(graph_store, document)
+        step = {
+            "key": "local--logger",
+            "type": "hasProcessor",
+            "metadata": [{"key": "instance", "value": "logprocessorjs"}],
+        }
+        second = {
+            "key": "local--logger",
+            "type": "hasProcessor",
+            "metadata": [{"key": "instance", "value": "logprocessorjs-2"}],
+        }
+        with serialize, put, get:
+            graph_store.add_relations_to_collection_item(
+                "pipelines", "one", [step, second]
+            )
+
+        relations = written[-1]["relations"]
+        assert len(relations) == 2
+        assert [r["key"] for r in relations] == ["local--logger", "local--logger"]
+
+    def test_re_adding_the_same_relation_is_still_idempotent(self, graph_store):
+        """What the equality check was there for: a retried add, not a second use."""
+        step = {
+            "key": "local--logger",
+            "type": "hasProcessor",
+            "metadata": [{"key": "instance", "value": "logprocessorjs"}],
+        }
+        document = {"_id": "one", "type": "pipeline", "relations": [step]}
+        serialize, put, get, written = self._store_with(graph_store, document)
+        with serialize, put, get:
+            graph_store.add_relations_to_collection_item("pipelines", "one", [step])
+
+        assert len(written[-1]["relations"]) == 1
+
+    def test_an_unidentified_repeat_is_still_one_relation(self, graph_store):
+        """No instance to tell them apart: nothing here can invent one.
+
+        Two indistinguishable relations stay one, and giving a step its
+        identity is the job of whoever knows what a step is -- the pipeline's
+        configuration hook, before the write reaches the store.
+        """
+        document = {"_id": "one", "type": "pipeline", "relations": []}
+        serialize, put, get, written = self._store_with(graph_store, document)
+        bare = {"key": "local--logger", "type": "hasProcessor", "metadata": []}
+        with serialize, put, get:
+            graph_store.add_relations_to_collection_item(
+                "pipelines", "one", [bare, dict(bare)]
+            )
+
+        assert len(written[-1]["relations"]) == 1
+
+    def test_the_collection_can_identify_what_it_adds(self, graph_store, monkeypatch):
+        """Whole-entry equality is the engine's last resort, not its rule.
+
+        Two entries a *collection* considers different -- two uses of one
+        component in a pipeline -- are indistinguishable to a store until
+        something says what tells them apart. The collection's configuration
+        is that something, so it is asked before the merge; a collection that
+        does not answer keeps the old behaviour exactly.
+        """
+        document = {"_id": "one", "type": "pipeline", "relations": []}
+        serialize, put, get, written = self._store_with(graph_store, document)
+
+        class Configuration:
+            def identify_sub_items(self, *, sub_item, existing, content):
+                assert sub_item == "relations"
+                for index, entry in enumerate(content, start=len(existing) + 1):
+                    entry.setdefault("metadata", []).append(
+                        {"key": "instance", "value": f"step-{index}"}
+                    )
+                return content
+
+        monkeypatch.setattr(
+            "storage.sparqlstore.get_object_configuration_mapper",
+            lambda: type("Mapper", (), {"get": staticmethod(lambda _: Configuration())})(),
+        )
+        def bare():
+            # a fresh metadata list per entry: a shallow copy would share it
+            return {"key": "local--logger", "type": "hasProcessor", "metadata": []}
+
+        with serialize, put, get:
+            graph_store.add_relations_to_collection_item(
+                "pipelines", "one", [bare(), bare()]
+            )
+
+        relations = written[-1]["relations"]
+        assert len(relations) == 2
+        assert [
+            m["value"] for r in relations for m in r["metadata"] if m["key"] == "instance"
+        ] == ["step-1", "step-2"]
+
+    def test_a_collection_that_says_nothing_behaves_as_before(self, graph_store):
+        document = {"_id": "one", "type": "pipeline", "relations": []}
+        serialize, put, get, written = self._store_with(graph_store, document)
+        def bare():
+            return {"key": "local--logger", "type": "hasProcessor", "metadata": []}
+
+        with serialize, put, get:
+            graph_store.add_relations_to_collection_item(
+                "pipelines", "one", [bare(), bare()]
+            )
+
+        assert len(written[-1]["relations"]) == 1
 
     def test_adding_metadata_appends_without_duplicating(self, graph_store):
         document = {

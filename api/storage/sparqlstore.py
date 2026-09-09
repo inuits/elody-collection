@@ -111,17 +111,17 @@ class SparqlStorageManager(GenericStorageManager):
         # Order is decided here and nowhere else: a CONSTRUCT returns a graph,
         # which is a set of triples with no order at all, so the sequence has
         # to be carried over from the query that chose the page.
-        iris = self._page_subjects(config, skip, limit, identifiers, asc)
-        if iris is None:
+        page = self._page_identifiers(config, skip, limit, identifiers, asc)
+        if page is None:
             return empty
-        if not iris:
+        if not page:
             return {**empty, "count": count if count is not None else 0}
 
-        graph = self._construct(config, self._properties_query(config, iris))
+        graph = self._construct(config, self._properties_query(config, page))
         if graph is None:
             return empty
 
-        results = self._to_documents(graph, collection, config, order=iris)
+        results = self._to_documents(graph, collection, config, order=page)
         return {
             "results": results,
             # A CONSTRUCT that returned nothing still has a real total behind
@@ -346,39 +346,52 @@ class SparqlStorageManager(GenericStorageManager):
         )
 
     def _count_query(self, config, identifiers) -> str:
+        """How many resources of this class the collection holds.
+
+        The identifying property is required, the same way the page requires
+        it: a resource that declares none cannot become an entity, so counting
+        it would promise a row the listing can never produce.
+        """
         return (
             "SELECT (COUNT(DISTINCT ?s) AS ?count)\n"
             "WHERE {\n"
             f"  GRAPH <{config['graph']}> {{\n"
-            f"    ?s a <{config['target_class']}> .\n"
+            f"    ?s a <{config['target_class']}> ;\n"
+            f"       <{config['identifier_predicate']}> ?id .\n"
             f"{self._values_clause(config, identifiers)}"
             "  }\n"
             "}"
         )
 
     def _page_query(self, config, skip, limit, identifiers, asc) -> str:
-        """Which subjects are on this page, in order.
+        """Which resources are on this page, in order.
 
-        Selecting subjects rather than triples is what keeps a resource whole:
-        LIMIT on a CONSTRUCT would bound triples and cut the last one in half.
-        The sort property is OPTIONAL so a resource lacking it still appears,
-        and is projected because ORDER BY may only use projected variables.
+        Selecting resources rather than triples is what keeps one whole: LIMIT
+        on a CONSTRUCT would bound triples and cut the last one in half. The
+        sort property is OPTIONAL so a resource lacking it still appears, and
+        is projected because ORDER BY may only use projected variables.
+
+        The identifying property is projected too, and it is what the
+        properties query then asks for -- see `_properties_query`. Ordering is
+        by it rather than by the subject for the same reason: a blank node's
+        label is not a name anything else can use.
         """
         sort_predicate = config.get("sort_predicate")
         if sort_predicate and not self._unsafe_iri(sort_predicate):
             sort_pattern = f"    OPTIONAL {{ ?s <{sort_predicate}> ?sort }}\n"
-            projection = "?s ?sort"
-            order_by = f"ORDER BY {'ASC' if asc else 'DESC'}(?sort) ?s"
+            projection = "?s ?id ?sort"
+            order_by = f"ORDER BY {'ASC' if asc else 'DESC'}(?sort) ?id"
         else:
             sort_pattern = ""
-            projection = "?s"
-            order_by = "ORDER BY ?s"
+            projection = "?s ?id"
+            order_by = "ORDER BY ?id"
 
         return (
             f"SELECT {projection}\n"
             "WHERE {\n"
             f"  GRAPH <{config['graph']}> {{\n"
-            f"    ?s a <{config['target_class']}> .\n"
+            f"    ?s a <{config['target_class']}> ;\n"
+            f"       <{config['identifier_predicate']}> ?id .\n"
             f"{self._values_clause(config, identifiers)}"
             f"{sort_pattern}"
             "  }\n"
@@ -387,14 +400,24 @@ class SparqlStorageManager(GenericStorageManager):
             f"OFFSET {int(skip)} LIMIT {int(limit)}"
         )
 
-    def _properties_query(self, config, iris) -> str:
-        """Every property of exactly these subjects."""
-        values = " ".join(f"<{iri}>" for iri in iris)
+    def _properties_query(self, config, identifiers) -> str:
+        """Every property of exactly the resources with these identifiers.
+
+        Addressed by the identifying property rather than by subject, because
+        a subject is not always addressable: an `oslc:Error` written by the
+        threshold monitor is a blank node, and a blank node label read out of
+        one query's results names nothing in the next -- which silently
+        returned no properties, and so no row, for every such resource.
+        """
+        values = " ".join(f'"{id}"' for id in identifiers)
         return (
             "CONSTRUCT { ?s ?p ?o }\n"
             "WHERE {\n"
-            f"  VALUES ?s {{ {values} }}\n"
-            f"  GRAPH <{config['graph']}> {{ ?s ?p ?o }}\n"
+            f"  GRAPH <{config['graph']}> {{\n"
+            f"    ?s <{config['identifier_predicate']}> ?id ;\n"
+            "       ?p ?o .\n"
+            f"    VALUES ?id {{ {values} }}\n"
+            "  }\n"
             "}"
         )
 
@@ -623,12 +646,42 @@ class SparqlStorageManager(GenericStorageManager):
 
     def add_sub_item_to_collection_item(self, collection, id, sub_item, content):
         existing = self.get_collection_item_sub_item(collection, id, sub_item) or []
+        content = self._identified_sub_items(collection, sub_item, existing, content)
         merged = list(existing)
         for entry in content or []:
             if entry not in merged:
                 merged.append(entry)
         self.patch_item_from_collection(collection, id, {sub_item: merged})
         return content
+
+    def _identified_sub_items(self, collection, sub_item, existing, content):
+        """Let the collection say what tells two of these entries apart.
+
+        Equal entries are one entry, which is what keeps a retried add from
+        duplicating -- but "equal" is the store's reading, and a collection may
+        know better. A pipeline step is a *use* of a component, so two uses of
+        one component are two steps that happen to be identical until one of
+        them is configured; a store cannot see that on its own, and dropping
+        the second lost a step before anything else in the stack saw it.
+
+        So the collection's configuration is asked first, and may return the
+        entries with whatever distinguishes them written in. A configuration
+        that does not answer -- which is all of them but the pipelines -- keeps
+        the old behaviour untouched.
+        """
+        try:
+            configuration = get_object_configuration_mapper().get(collection)
+            identify = getattr(configuration, "identify_sub_items", None)
+            if identify is None:
+                return content
+            identified = identify(
+                sub_item=sub_item, existing=existing, content=content
+            )
+        except Exception as error:
+            # a configuration that cannot answer must not fail the write
+            log.warning(f"Could not identify {sub_item} for {collection}: {error}")
+            return content
+        return identified if identified is not None else content
 
     def add_relations_to_collection_item(
         self, collection, id, relations, parent=True, dst_collection=None
@@ -820,8 +873,8 @@ class SparqlStorageManager(GenericStorageManager):
             return None
         return graph
 
-    def _page_subjects(self, config, skip, limit, identifiers, asc) -> list[str] | None:
-        """The subject IRIs on this page, in the order the endpoint returned them."""
+    def _page_identifiers(self, config, skip, limit, identifiers, asc) -> list[str] | None:
+        """The identifiers on this page, in the order the endpoint returned them."""
         body = self._ask(
             config,
             self._page_query(config, skip, limit, identifiers, asc),
@@ -835,14 +888,21 @@ class SparqlStorageManager(GenericStorageManager):
             log.warning(f"SPARQL subject page could not be read: {error}")
             return None
 
-        iris = []
+        found = []
         for binding in bindings:
-            iri = binding.get("s", {}).get("value")
+            identifier = binding.get("id", {}).get("value")
             # A resource with a repeated sort property would appear twice;
             # keep the first occurrence so the page stays the promised length.
-            if iri and iri not in iris and not self._unsafe_iri(iri):
-                iris.append(iri)
-        return iris
+            if not identifier or identifier in found:
+                continue
+            if not SAFE_IDENTIFIER.match(str(identifier)):
+                # It came from the store rather than from a request, but it is
+                # about to be interpolated into one, and an identifier the
+                # detail route would refuse is not one a listing should offer.
+                log.debug(f"Skipping unusable SPARQL identifier: {identifier!r}")
+                continue
+            found.append(identifier)
+        return found
 
     def _count(self, config, identifiers) -> int | None:
         body = self._ask(
@@ -869,7 +929,17 @@ class SparqlStorageManager(GenericStorageManager):
         identifier_predicate = URIRef(config["identifier_predicate"])
         present = set(graph.subjects())
         if order:
-            ordered = [URIRef(iri) for iri in order if URIRef(iri) in present]
+            # `order` is a list of identifiers, which is what the page query
+            # returns: a subject may be a blank node, whose label the paging
+            # query and this graph do not necessarily agree on.
+            by_identifier = {}
+            for subject in present:
+                identifier = graph.value(subject, identifier_predicate)
+                if identifier is not None:
+                    by_identifier.setdefault(str(identifier), subject)
+            ordered = [
+                by_identifier[id] for id in order if id in by_identifier
+            ]
             ordered += sorted(present - set(ordered), key=str)
         else:
             ordered = sorted(present, key=str)
