@@ -462,15 +462,20 @@ class GenericObjectDetailV2(BaseResource):
             return "good", 200
         item = self._check_if_collection_and_item_exists(collection, id)
         accept_header = request.headers.get("Accept")
+        data = mappers.map_data_according_to_accept_header(
+            item,
+            accept_header,
+            "entity",
+            [],
+            spec,
+            request.args,
+        )
+        if merge_evaluation_strategy := request.args.get("merge_evaluation"):
+            from resources.base.merge_evaluation import attach_merge_evaluation
+            data = attach_merge_evaluation(data, item, merge_evaluation_strategy)
+
         return self._create_response_according_accept_header(
-            mappers.map_data_according_to_accept_header(
-                item,
-                accept_header,
-                "entity",
-                [],
-                spec,
-                request.args,
-            ),
+            data,
             accept_header,
             spec=spec,
         )
