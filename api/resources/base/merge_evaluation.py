@@ -2,12 +2,20 @@
 
 Requested on a regular document GET as `?merge_evaluation=<strategy>`.
 
-A client declares strategies of its own in one `crud()` key:
+A client declares strategies of its own in one `crud()` key, and which of its
+properties can never change in another:
 
     "merge_survivor_evaluators": {"myStrategy": lambda document, **_: verdict}
+    "immutable_properties": lambda document_type, document, **_: [
+        {"key": "vlacc_number", "identity_value": "465088"}
+    ]
 
 A verdict is `{"status": ..., "score": int, "details": dict}`. The status is what
-the user is shown; the score is what candidates are ranked on.
+the user is shown; the score is what candidates are ranked on. Immutable
+properties travel with it, each with the `identity_value` it contributes to the
+document's identity. A property with no identity value bears no identity and may
+be carried from one record to the other; one with an identity value may only be
+carried when both records agree on it.
 """
 
 from copy import deepcopy
@@ -16,6 +24,7 @@ from configuration import get_object_configuration_mapper
 from werkzeug.exceptions import BadRequest
 
 SURVIVOR_EVALUATORS = "merge_survivor_evaluators"
+SEEDING_PROPERTIES = "seeding_properties"
 
 STATUS_VALID = "valid"
 STATUS_INVALID = "invalid"
@@ -77,11 +86,39 @@ def survivor_evaluator(document_type, strategy):
     )
 
 
+def seeding_properties(document):
+    document_type = document["type"]
+    declared = (
+        get_object_configuration_mapper()
+        .get(document_type)
+        .crud()
+        .get(SEEDING_PROPERTIES)
+    )
+    if not declared:
+        return []
+    result = [
+        _as_immutable_seeding_field(property)
+        for property in declared(document_type=document_type, document=document)
+    ]
+    return result
+
+
+def _as_immutable_seeding_field(property):
+    if isinstance(property, str):
+        return {"key": property, "identity_value": None}
+    return {
+        "key": property["key"],
+        "identity_value": property.get("identity_value"),
+    }
+
+
 def evaluate_merge_candidate(document, strategy):
-    evaluator = survivor_evaluator(document["type"], strategy)
+    document_type = document["type"]
+    evaluator = survivor_evaluator(document_type, strategy)
     return {
         "strategy": strategy,
         **evaluator(document=document, strategy=strategy),
+        "immutable_fields": seeding_properties(document),
     }
 
 

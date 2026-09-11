@@ -11,6 +11,7 @@ from resources.base.merge_evaluation import (
     evaluate_identifier_integrity,
     evaluate_merge_candidate,
     expected_generated_id,
+    immutable_properties,
     survivor_evaluator,
 )
 
@@ -280,3 +281,102 @@ class TestAttachMergeEvaluation:
             attach_merge_evaluation(
                 {"id": STALE, "type": "nomen"}, nomen(STALE, "Digitalisering"), "nonsense"
             )
+
+
+class TestImmutableProperties:
+    def test_reports_what_the_configuration_declares(self, configuration):
+        configuration(
+            immutable_properties=lambda **_: [
+                {"key": "title", "identity_value": "digitalisering"},
+            ]
+        )
+
+        assert immutable_properties(nomen(STALE, "Digitalisering")) == [
+            {"key": "title", "identity_value": "digitalisering"},
+        ]
+
+    def test_is_empty_when_a_configuration_declares_nothing(self, configuration):
+        configuration(creation_preparer=nomen_preparer)
+
+        assert immutable_properties(nomen(STALE, "Digitalisering")) == []
+
+    def test_hands_the_document_to_the_declaration(self, configuration):
+        """The identity value depends on the stored value, not just the type."""
+        seen = {}
+
+        def record(document_type, document, **_):
+            seen.update(document_type=document_type, document=document)
+            return []
+
+        configuration(immutable_properties=record)
+        document = nomen(STALE, "Digitalisering")
+        immutable_properties(document)
+
+        assert seen["document_type"] == "nomen"
+        assert seen["document"] == document
+
+    def test_normalises_a_bare_key_into_the_declared_shape(self, configuration):
+        """A property with no identity value bears no identity, so it may move."""
+        configuration(immutable_properties=lambda **_: ["internal_memo"])
+
+        assert immutable_properties(nomen(STALE, "Digitalisering")) == [
+            {"key": "internal_memo", "identity_value": None},
+        ]
+
+    def test_fills_in_a_missing_identity_value(self, configuration):
+        configuration(immutable_properties=lambda **_: [{"key": "internal_memo"}])
+
+        assert immutable_properties(nomen(STALE, "Digitalisering")) == [
+            {"key": "internal_memo", "identity_value": None},
+        ]
+
+
+class TestAttachedImmutableFields:
+    def test_travels_alongside_the_verdict(self, configuration):
+        configuration(
+            creation_preparer=nomen_preparer,
+            immutable_properties=lambda **_: [
+                {"key": "title", "identity_value": "digitalisering"},
+            ],
+        )
+
+        data = attach_merge_evaluation(
+            {"id": STALE, "type": "nomen"},
+            nomen(STALE, "Digitalisering"),
+            "identifierIntegrity",
+        )
+
+        assert data["merge_evaluation"]["immutable_fields"] == [
+            {"key": "title", "identity_value": "digitalisering"},
+        ]
+
+    def test_is_reported_even_when_nothing_is_immutable(self, configuration):
+        configuration(creation_preparer=nomen_preparer)
+
+        data = attach_merge_evaluation(
+            {"id": STALE, "type": "nomen"},
+            nomen(STALE, "Digitalisering"),
+            "identifierIntegrity",
+        )
+
+        assert data["merge_evaluation"]["immutable_fields"] == []
+
+    def test_does_not_let_a_strategy_overwrite_it(self, configuration):
+        def sneaky(**_):
+            return {
+                "status": STATUS_VALID,
+                "score": 1,
+                "details": {},
+                "immutable_fields": ["nonsense"],
+            }
+
+        configuration(
+            merge_survivor_evaluators={"custom": sneaky},
+            immutable_properties=lambda **_: [{"key": "title", "identity_value": "x"}],
+        )
+
+        evaluation = evaluate_merge_candidate(nomen(STALE, "Digitalisering"), "custom")
+
+        assert evaluation["immutable_fields"] == [
+            {"key": "title", "identity_value": "x"},
+        ]
