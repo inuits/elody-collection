@@ -55,6 +55,8 @@ class ElodyMediafileGenerateTranscode(BaseResource):
             case _:
                 raise TypeError(f"Unexpected type: {type(entity_response)}")
 
+        self.__start_job(parent_job_id, get_rabbit=get_rabbit)
+
         generate_transcode_job_id = self.__init_job(
             f"{f'Generate transcode for {entity["type"]} | {id}' if id else f'Generate transcode | missing entity | {id}'}",
             "Generate Transcode",

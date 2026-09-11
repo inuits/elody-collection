@@ -35,8 +35,6 @@ class ElodyMediafilesGenerateTranscode(BaseResource):
             track_async_children=True,
         )
 
-        self.__start_job(parent_generate_transcode_job_id, get_rabbit=get_rabbit)
-
         for id in identifiers:
             self.__set_request(id, "PATCH")
             self.resource.patch(
