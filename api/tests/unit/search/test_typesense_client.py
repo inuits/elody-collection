@@ -307,6 +307,39 @@ class TestSearch:
             assert search("entities", "mars", "name") is None
 
 
+    def test_omits_highlight_fields_for_wildcard_query(self):
+        mock_client = MagicMock()
+        mock_client.collections.__getitem__.return_value.documents.search.return_value = _make_search_result(
+            [], 0
+        )
+
+        with patch.object(tc, "get_typesense_client", return_value=mock_client):
+            search("entities", "*", "name,title,description")
+
+        params = (
+            mock_client.collections.__getitem__.return_value.documents.search.call_args[
+                0
+            ][0]
+        )
+        assert "highlight_fields" not in params
+
+    def test_includes_highlight_fields_for_text_query(self):
+        mock_client = MagicMock()
+        mock_client.collections.__getitem__.return_value.documents.search.return_value = _make_search_result(
+            [], 0
+        )
+
+        with patch.object(tc, "get_typesense_client", return_value=mock_client):
+            search("entities", "mars", "name,title")
+
+        params = (
+            mock_client.collections.__getitem__.return_value.documents.search.call_args[
+                0
+            ][0]
+        )
+        assert params["highlight_fields"] == "name,title"
+
+
 class TestSearchAllIds:
     def test_single_page(self):
         mock_client = MagicMock()
@@ -377,6 +410,39 @@ class TestSearchAllIds:
 
         with patch.object(tc, "get_typesense_client", return_value=mock_client):
             assert search_all_ids("entities", "mars", "name") is None
+
+
+    def test_omits_highlight_fields_for_wildcard_query(self):
+        mock_client = MagicMock()
+        mock_client.collections.__getitem__.return_value.documents.search.return_value = _make_search_result(
+            [], 0
+        )
+
+        with patch.object(tc, "get_typesense_client", return_value=mock_client):
+            search_all_ids("entities", "*", "name,title,description")
+
+        params = (
+            mock_client.collections.__getitem__.return_value.documents.search.call_args[
+                0
+            ][0]
+        )
+        assert "highlight_fields" not in params
+
+    def test_includes_highlight_fields_for_text_query(self):
+        mock_client = MagicMock()
+        mock_client.collections.__getitem__.return_value.documents.search.return_value = _make_search_result(
+            [], 0
+        )
+
+        with patch.object(tc, "get_typesense_client", return_value=mock_client):
+            search_all_ids("entities", "mars", "name,title")
+
+        params = (
+            mock_client.collections.__getitem__.return_value.documents.search.call_args[
+                0
+            ][0]
+        )
+        assert params["highlight_fields"] == "name,title"
 
 
 class TestSearchGroupBy:
