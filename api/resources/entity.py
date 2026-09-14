@@ -147,7 +147,7 @@ class Entity(GenericObject):
                 )
                 if accept_header == "text/uri-list":
                     ticket_id = self._create_ticket(mediafile_filename)
-                    response += f"{self.storage_api_url}/upload-with-ticket/{quote(mediafile_filename)}?id={get_raw_id(mediafile)}&ticket_id={ticket_id}\n"
+                    response += f"{self.storage_api_url_for_caller}/upload-with-ticket/{quote(mediafile_filename)}?id={get_raw_id(mediafile)}&ticket_id={ticket_id}\n"
         self._create_tenant(entity)
         signal_entity_changed(get_rabbit(), entity)
         return self._create_response_according_accept_header(
@@ -347,7 +347,7 @@ class EntityMediafiles(GenericObjectDetail, GenericObject):
             )
             if accept_header == "text/uri-list":
                 ticket_id = self._create_ticket(mediafile["filename"])
-                response += f"{self.storage_api_url}/upload-with-ticket/{quote(mediafile['filename'])}?id={get_raw_id(mediafile)}&ticket_id={ticket_id}\n"
+                response += f"{self.storage_api_url_for_caller}/upload-with-ticket/{quote(mediafile['filename'])}?id={get_raw_id(mediafile)}&ticket_id={ticket_id}\n"
             else:
                 response.append(mediafile)
         signal_mediafiles_added_for_entity(get_rabbit(), entity, mediafiles)
@@ -403,7 +403,7 @@ class EntityMediafilesCreate(GenericObjectDetail):
         content["date_updated"] = self._get_date_from_object(content, "date_updated")
         content["version"] = 1
         mediafile = self.storage.save_item_to_collection("mediafiles", content)
-        upload_location = f"{self.storage_api_url}/upload/{content['filename']}?id={get_raw_id(mediafile)}"
+        upload_location = f"{self.storage_api_url_for_caller}/upload/{content['filename']}?id={get_raw_id(mediafile)}"
         self.storage.add_mediafile_to_collection_item(
             "entities",
             get_raw_id(entity),

@@ -26,7 +26,7 @@ from elody.util import (
     signal_entity_changed,
 )
 from elody.validator import validate_json
-from flask import g
+from flask import g, request
 from flask_restful import Resource, abort
 from policy_factory import get_user_context
 from rabbit import get_rabbit
@@ -60,6 +60,17 @@ class BaseResource(Resource):
             self.tenant_defining_types.split(",") if self.tenant_defining_types else []
         )
         self.auto_create_tenants = getenv("AUTO_CREATE_TENANTS", False)
+
+    @property
+    def storage_api_url_for_caller(self):
+        # in-cluster services identify themselves; only a browser needs the
+        # public gateway url, and reaching it from inside the cluster hairpins
+        base_url = (
+            self.storage_api_url
+            if request.headers.get("X-From-Service")
+            else self.storage_api_url_ext
+        )
+        return base_url.removesuffix("/")
 
     def _group_user_relations_by_idp_role_status(
         self, user_relations, roles_per_tenant
