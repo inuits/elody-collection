@@ -41,7 +41,7 @@ dependencies = [
   "opentelemetry-instrumentation-pymongo==0.65b0",
   "opentelemetry-sdk==1.44.0",
   "packaging==24.2",
-  "pamqp==2.3.0",
+  "pamqp==4.0.1",
   "pika==1.3.2",
   "prometheus-client==0.26.0",
   "prometheus-flask-exporter==0.23.2",
