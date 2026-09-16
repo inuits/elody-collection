@@ -308,18 +308,28 @@ class SparqlStorageManager(GenericStorageManager):
             return {}
 
     def _is_usable(self, config, collection) -> bool:
-        missing = [
-            key
-            for key in ("endpoint", "graph", "target_class", "identifier_predicate")
-            if not config.get(key)
-        ]
+        """Endpoint and class are required; a resource must be addressable.
+
+        A store we control identifies a resource by a literal
+        (`identifier_predicate`) and scopes it in a named graph. A public
+        source such as Wikidata offers neither: the resource is named by its
+        IRI alone (`identifier_prefix`) and lives in the default graph, so the
+        graph is optional and either way of addressing is enough.
+        """
+        missing = [key for key in ("endpoint", "target_class") if not config.get(key)]
+        if not config.get("identifier_predicate") and not config.get("identifier_prefix"):
+            missing.append("identifier_predicate or identifier_prefix")
         if missing:
             log.debug(
                 f"Collection {collection} has no usable sparql configuration, "
                 f"missing: {', '.join(missing) or 'everything'}"
             )
             return False
-        return not any(self._unsafe_iri(config[key]) for key in ("graph", "target_class"))
+        return not any(
+            self._unsafe_iri(config[key])
+            for key in ("graph", "target_class", "type_predicate", "identifier_prefix")
+            if config.get(key)
+        )
 
     @staticmethod
     def _unsafe_iri(iri) -> bool:
@@ -336,9 +346,72 @@ class SparqlStorageManager(GenericStorageManager):
 
     # -- queries ----------------------------------------------------------
 
+    # How a source names its resources and where they live decides the shape
+    # of every query below: `_scope` wraps a pattern in the named graph when
+    # there is one, `_typed` types a resource through the configured
+    # predicate, `_identified` binds ?id from the literal or from the IRI.
+
+    @staticmethod
+    def _by_iri(config) -> bool:
+        return bool(config.get("identifier_prefix"))
+
+    @staticmethod
+    def _scope(config, pattern: str) -> str:
+        graph = config.get("graph")
+        if not graph:
+            return pattern
+        return f"  GRAPH <{graph}> {{\n{pattern}  }}\n"
+
+    @staticmethod
+    def _typed(config) -> str:
+        predicate = config.get("type_predicate")
+        return f"<{predicate}>" if predicate else "a"
+
+    def _identified(self, config) -> str:
+        """The pattern that binds ?id for a resource ?s."""
+        if self._by_iri(config):
+            prefix = config["identifier_prefix"]
+            return (
+                f'    FILTER(STRSTARTS(STR(?s), "{prefix}"))\n'
+                f'    BIND(STRAFTER(STR(?s), "{prefix}") AS ?id)\n'
+            )
+        return f"    ?s <{config['identifier_predicate']}> ?id .\n"
+
+    def _required(self, config) -> str:
+        """A resource lacking the required property is not a row."""
+        predicate = config.get("required_predicate")
+        if not predicate or self._unsafe_iri(predicate):
+            return ""
+        return f"    ?s <{predicate}> ?required .\n{self._language_filter(config, '?required')}"
+
+    @staticmethod
+    def _language_filter(config, variable: str) -> str:
+        language = str(config.get("language") or "").strip()
+        if not language or not re.match(r"^[A-Za-z-]{2,10}$", language):
+            return ""
+        return (
+            f'    FILTER(!isLiteral({variable}) || LANG({variable}) = "" '
+            f'|| LANG({variable}) = "{language}")\n'
+        )
+
+    def _properties_filter(self, config) -> str:
+        """Only the configured predicates, if any are configured."""
+        predicates = [
+            str(p) for p in (config.get("properties") or []) if not self._unsafe_iri(p)
+        ]
+        if not predicates:
+            return ""
+        return f"    VALUES ?p {{ {' '.join(f'<{p}>' for p in predicates)} }}\n"
+
+    def _iri(self, config, identifier: str) -> str:
+        return f"<{config['identifier_prefix']}{identifier}>"
+
     def _values_clause(self, config, identifiers) -> str:
         if not identifiers:
             return ""
+        if self._by_iri(config):
+            iris = " ".join(self._iri(config, id) for id in identifiers)
+            return f"    VALUES ?s {{ {iris} }}\n"
         literals = " ".join(f'"{id}"' for id in identifiers)
         return (
             f"    ?s <{config['identifier_predicate']}> ?requested .\n"
@@ -352,14 +425,16 @@ class SparqlStorageManager(GenericStorageManager):
         it: a resource that declares none cannot become an entity, so counting
         it would promise a row the listing can never produce.
         """
+        pattern = (
+            f"    ?s {self._typed(config)} <{config['target_class']}> .\n"
+            f"{self._identified(config)}"
+            f"{self._required(config)}"
+            f"{self._values_clause(config, identifiers)}"
+        )
         return (
             "SELECT (COUNT(DISTINCT ?s) AS ?count)\n"
             "WHERE {\n"
-            f"  GRAPH <{config['graph']}> {{\n"
-            f"    ?s a <{config['target_class']}> ;\n"
-            f"       <{config['identifier_predicate']}> ?id .\n"
-            f"{self._values_clause(config, identifiers)}"
-            "  }\n"
+            f"{self._scope(config, pattern)}"
             "}"
         )
 
@@ -378,7 +453,10 @@ class SparqlStorageManager(GenericStorageManager):
         """
         sort_predicate = config.get("sort_predicate")
         if sort_predicate and not self._unsafe_iri(sort_predicate):
-            sort_pattern = f"    OPTIONAL {{ ?s <{sort_predicate}> ?sort }}\n"
+            sort_pattern = (
+                f"    OPTIONAL {{ ?s <{sort_predicate}> ?sort "
+                f"{self._language_filter(config, '?sort').strip()} }}\n"
+            )
             projection = "?s ?id ?sort"
             order_by = f"ORDER BY {'ASC' if asc else 'DESC'}(?sort) ?id"
         else:
@@ -386,15 +464,17 @@ class SparqlStorageManager(GenericStorageManager):
             projection = "?s ?id"
             order_by = "ORDER BY ?id"
 
+        pattern = (
+            f"    ?s {self._typed(config)} <{config['target_class']}> .\n"
+            f"{self._identified(config)}"
+            f"{self._required(config)}"
+            f"{self._values_clause(config, identifiers)}"
+            f"{sort_pattern}"
+        )
         return (
             f"SELECT {projection}\n"
             "WHERE {\n"
-            f"  GRAPH <{config['graph']}> {{\n"
-            f"    ?s a <{config['target_class']}> ;\n"
-            f"       <{config['identifier_predicate']}> ?id .\n"
-            f"{self._values_clause(config, identifiers)}"
-            f"{sort_pattern}"
-            "  }\n"
+            f"{self._scope(config, pattern)}"
             "}\n"
             f"{order_by}\n"
             f"OFFSET {int(skip)} LIMIT {int(limit)}"
@@ -409,28 +489,43 @@ class SparqlStorageManager(GenericStorageManager):
         one query's results names nothing in the next -- which silently
         returned no properties, and so no row, for every such resource.
         """
-        values = " ".join(f'"{id}"' for id in identifiers)
+        if self._by_iri(config):
+            iris = " ".join(self._iri(config, id) for id in identifiers)
+            pattern = f"    ?s ?p ?o .\n    VALUES ?s {{ {iris} }}\n"
+        else:
+            values = " ".join(f'"{id}"' for id in identifiers)
+            pattern = (
+                f"    ?s <{config['identifier_predicate']}> ?id ;\n"
+                "       ?p ?o .\n"
+                f"    VALUES ?id {{ {values} }}\n"
+            )
+        pattern += self._properties_filter(config) + self._language_filter(config, "?o")
         return (
             "CONSTRUCT { ?s ?p ?o }\n"
             "WHERE {\n"
-            f"  GRAPH <{config['graph']}> {{\n"
-            f"    ?s <{config['identifier_predicate']}> ?id ;\n"
-            "       ?p ?o .\n"
-            f"    VALUES ?id {{ {values} }}\n"
-            "  }\n"
+            f"{self._scope(config, pattern)}"
             "}"
         )
 
     def _item_query(self, config, id) -> str:
+        if self._by_iri(config):
+            pattern = (
+                f"    ?s {self._typed(config)} <{config['target_class']}> ;\n"
+                "       ?p ?o .\n"
+                f"    VALUES ?s {{ {self._iri(config, id)} }}\n"
+            )
+        else:
+            pattern = (
+                f"    ?s {self._typed(config)} <{config['target_class']}> ;\n"
+                f"       <{config['identifier_predicate']}> ?id ;\n"
+                "       ?p ?o .\n"
+                f'    FILTER(str(?id) = "{id}")\n'
+            )
+        pattern += self._properties_filter(config) + self._language_filter(config, "?o")
         return (
             "CONSTRUCT { ?s ?p ?o }\n"
             "WHERE {\n"
-            f"  GRAPH <{config['graph']}> {{\n"
-            f"    ?s a <{config['target_class']}> ;\n"
-            f"       <{config['identifier_predicate']}> ?id ;\n"
-            "       ?p ?o .\n"
-            f'    FILTER(str(?id) = "{id}")\n'
-            "  }\n"
+            f"{self._scope(config, pattern)}"
             "}"
         )
 
@@ -798,11 +893,15 @@ class SparqlStorageManager(GenericStorageManager):
     # -- transport --------------------------------------------------------
 
     def _ask(self, config, query, accept):
+        headers = {"Accept": accept}
+        if config.get("user_agent"):
+            # public endpoints (Wikidata among them) ask every client to say who it is
+            headers["User-Agent"] = str(config["user_agent"])
         try:
             response = requests.post(
                 config["endpoint"],
                 data={"query": query},
-                headers={"Accept": accept},
+                headers=headers,
                 timeout=TIMEOUT,
             )
         except requests.exceptions.RequestException as error:
@@ -926,7 +1025,18 @@ class SparqlStorageManager(GenericStorageManager):
         itself has none. Subjects the graph holds but the order does not are
         appended, so nothing is silently lost.
         """
-        identifier_predicate = URIRef(config["identifier_predicate"])
+        identifier_predicate = (
+            None if self._by_iri(config) else URIRef(config["identifier_predicate"])
+        )
+        prefix = str(config.get("identifier_prefix") or "")
+
+        def identifier_of(subject):
+            if identifier_predicate is not None:
+                value = graph.value(subject, identifier_predicate)
+                return None if value is None else str(value)
+            iri = str(subject)
+            return iri[len(prefix):] if iri.startswith(prefix) and len(iri) > len(prefix) else None
+
         present = set(graph.subjects())
         if order:
             # `order` is a list of identifiers, which is what the page query
@@ -934,7 +1044,7 @@ class SparqlStorageManager(GenericStorageManager):
             # query and this graph do not necessarily agree on.
             by_identifier = {}
             for subject in present:
-                identifier = graph.value(subject, identifier_predicate)
+                identifier = identifier_of(subject)
                 if identifier is not None:
                     by_identifier.setdefault(str(identifier), subject)
             ordered = [
@@ -949,15 +1059,18 @@ class SparqlStorageManager(GenericStorageManager):
             properties: dict[str, list[str]] = {}
             for predicate, object in graph.predicate_objects(subject):
                 properties.setdefault(str(predicate), []).append(str(object))
-            if not properties.get(str(identifier_predicate)):
-                # Without the identifying property there is nothing to address
-                # the resource by, so it cannot become an entity.
-                log.debug(f"Skipping {subject}: no <{identifier_predicate}>")
+            identifier = identifier_of(subject)
+            if identifier is None:
+                # Without an identifier there is nothing to address the
+                # resource by, so it cannot become an entity.
+                log.debug(f"Skipping {subject}: not addressable")
                 continue
             try:
                 documents.append(
                     serialize(
-                        {"iri": str(subject), "properties": properties},
+                        # the identifier is handed over too, so a serializer
+                        # for an IRI-named source does not have to re-derive it
+                        {"iri": str(subject), "identifier": identifier, "properties": properties},
                         type=collection,
                         to_format="elody",
                         from_format="sparql",
