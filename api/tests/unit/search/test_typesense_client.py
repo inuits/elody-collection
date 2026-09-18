@@ -224,7 +224,9 @@ class TestSearch:
         with patch.object(tc, "get_typesense_client", return_value=mock_client):
             result = search("entities", "mars", "name")
 
-        assert result == {"ids": ["a", "b"], "count": 2}
+        assert result["ids"] == ["a", "b"]
+        assert result["count"] == 2
+        assert set(result["highlights"]) == set(["a", "b"])
 
     def test_uses_offset_when_provided(self):
         mock_client = MagicMock()
@@ -350,7 +352,9 @@ class TestSearchAllIds:
         with patch.object(tc, "get_typesense_client", return_value=mock_client):
             result = search_all_ids("entities", "mars", "name")
 
-        assert result == {"ids": ["a", "b", "c"], "count": 3}
+        assert result["ids"] == ["a", "b", "c"]
+        assert result["count"] == 3
+        assert set(result["highlights"]) == set(["a", "b", "c"])
 
     def test_paginates_multiple_pages(self):
         mock_client = MagicMock()
@@ -461,7 +465,9 @@ class TestSearchGroupBy:
         with patch.object(tc, "get_typesense_client", return_value=mock_client):
             result = search("entities", "*", "literary_type", group_by="literary_type")
 
-        assert result == {"ids": ["a", "b"], "count": 2}
+        assert result["ids"] == ["a", "b"]
+        assert result["count"] == 2
+        assert result["highlights"] == {}
 
     def test_skips_group_of_documents_without_a_value(self):
         mock_client = MagicMock()
@@ -472,7 +478,9 @@ class TestSearchGroupBy:
         with patch.object(tc, "get_typesense_client", return_value=mock_client):
             result = search("entities", "*", "literary_type", group_by="literary_type")
 
-        assert result == {"ids": ["a", "b"], "count": 2}
+        assert result["ids"] == ["a", "b"]
+        assert result["count"] == 2
+        assert result["highlights"] == {}
 
     def test_skips_group_with_blank_value(self):
         mock_client = MagicMock()
@@ -483,7 +491,7 @@ class TestSearchGroupBy:
         with patch.object(tc, "get_typesense_client", return_value=mock_client):
             result = search("entities", "*", "literary_type", group_by="literary_type")
 
-        assert result == {"ids": ["a"], "count": 1}
+        assert result == {"ids": ["a"], "count": 1, "highlights": {}}
 
     def test_skips_group_without_hits(self):
         mock_client = MagicMock()
@@ -494,7 +502,7 @@ class TestSearchGroupBy:
         with patch.object(tc, "get_typesense_client", return_value=mock_client):
             result = search("entities", "*", "literary_type", group_by="literary_type")
 
-        assert result == {"ids": ["b"], "count": 1}
+        assert result == {"ids": ["b"], "count": 1, "highlights": {}}
 
     def test_count_never_goes_negative(self):
         mock_client = MagicMock()
@@ -505,7 +513,7 @@ class TestSearchGroupBy:
         with patch.object(tc, "get_typesense_client", return_value=mock_client):
             result = search("entities", "*", "literary_type", group_by="literary_type")
 
-        assert result == {"ids": [], "count": 0}
+        assert result == {"ids": [], "count": 0, "highlights": {}}
 
     def test_ungrouped_response_is_unaffected(self):
         mock_client = MagicMock()
@@ -516,7 +524,9 @@ class TestSearchGroupBy:
         with patch.object(tc, "get_typesense_client", return_value=mock_client):
             result = search("entities", "*", "literary_type", group_by="literary_type")
 
-        assert result == {"ids": ["a", "b"], "count": 2}
+        assert result["ids"] == ["a", "b"]
+        assert result["count"] == 2
+        assert set(result["highlights"]) == set(["a", "b"])
 
 
 class TestSearchAllIdsGroupBy:
@@ -531,7 +541,7 @@ class TestSearchAllIdsGroupBy:
                 "entities", "*", "literary_type", group_by="literary_type"
             )
 
-        assert result == {"ids": ["a"], "count": 1}
+        assert result == {"ids": ["a"], "count": 1, "highlights": {}}
 
     def test_pagination_is_not_cut_short_by_a_skipped_group(self):
         """A full page stays a full page for the loop: dropping the no-value group

@@ -1965,6 +1965,8 @@ class TestTypesenseAcceleratedSearchWithFacets:
                         "alice",
                         None,
                         None,
+                        [],
+                        {},
                     ),
                 ),
                 patch.object(
@@ -2026,6 +2028,8 @@ class TestTypesenseAcceleratedSearchWithFacets:
                         "test",
                         None,
                         None,
+                        [],
+                        {},
                     ),
                 ),
                 patch.object(
@@ -2078,6 +2082,8 @@ class TestTypesenseAcceleratedSearchWithFacets:
                         "test",
                         None,
                         None,
+                        [],
+                        {},
                     ),
                 ),
                 patch.object(
@@ -2248,6 +2254,8 @@ class TestTypesenseAcceleratedSearchWithFacets:
                         "test",
                         None,
                         None,
+                        [],
+                        {},
                     ),
                 ),
                 patch.object(
