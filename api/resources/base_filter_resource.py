@@ -302,7 +302,31 @@ class BaseFilterResource(BaseResource):
         filter_by = build_filter_by(type_filter_values, exact_match_filters or [])
         group_by = distinct_keys[0].replace(".", "_") if distinct_keys else None
         infix_fields = typesense_config.get("infix_fields", [])
-        return ts_collection, query_by, search_terms, filter_by, group_by, infix_fields
+        search_options = self._build_search_options(typesense_config)
+        return (
+            ts_collection,
+            query_by,
+            search_terms,
+            filter_by,
+            group_by,
+            infix_fields,
+            search_options,
+        )
+
+    @staticmethod
+    def _build_search_options(typesense_config):
+        """Collect the optional typo / token-drop tuning from the config.
+
+        ``no_typo_fields`` lists fields that must never fuzzy-match (identifiers);
+        ``drop_tokens_threshold`` = 0 keeps AND semantics for multi-word queries
+        instead of letting Typesense drop words until something matches.
+        """
+        options = {}
+        if typesense_config.get("no_typo_fields"):
+            options["no_typo_fields"] = typesense_config["no_typo_fields"]
+        if typesense_config.get("drop_tokens_threshold") is not None:
+            options["drop_tokens_threshold"] = typesense_config["drop_tokens_threshold"]
+        return options
 
     def _execute_typesense_search(
         self,
@@ -316,8 +340,14 @@ class BaseFilterResource(BaseResource):
         facet_by=None,
         group_by=None,
         infix_fields=None,
+        search_options=None,
     ):
         """Execute Typesense search with fallback. Returns None if unavailable."""
+        search_options = search_options or {}
+        tuning = {
+            "no_typo_fields": search_options.get("no_typo_fields"),
+            "drop_tokens_threshold": search_options.get("drop_tokens_threshold"),
+        }
         if has_remaining:
             return typesense_search_all_ids(
                 ts_collection,
@@ -326,6 +356,7 @@ class BaseFilterResource(BaseResource):
                 filter_by=filter_by,
                 group_by=group_by,
                 infix_fields=infix_fields,
+                **tuning,
             )
         return typesense_search(
             ts_collection,
@@ -337,6 +368,7 @@ class BaseFilterResource(BaseResource):
             facet_by=facet_by,
             group_by=group_by,
             infix_fields=infix_fields,
+            **tuning,
         )
 
     def _fetch_documents_from_mongo(self, matching_ids, collections):
@@ -540,13 +572,19 @@ class BaseFilterResource(BaseResource):
                     resolved_query, target_collection
                 )
             return self._execute_advanced_search_with_query_v2(query, collection)
-        ts_collection, query_by, search_terms, filter_by, group_by, infix_fields = (
-            self._build_typesense_query(
-                text_filters,
-                type_filter_values,
-                typesense_config,
-                exact_match_filters=ts_exact_match_filters,
-            )
+        (
+            ts_collection,
+            query_by,
+            search_terms,
+            filter_by,
+            group_by,
+            infix_fields,
+            search_options,
+        ) = self._build_typesense_query(
+            text_filters,
+            type_filter_values,
+            typesense_config,
+            exact_match_filters=ts_exact_match_filters,
         )
 
         facet_fields = typesense_config.get("facet_fields", [])
@@ -567,6 +605,7 @@ class BaseFilterResource(BaseResource):
             facet_by=facet_by,
             group_by=group_by,
             infix_fields=infix_fields,
+            search_options=search_options,
         )
         if ts_result is None:
             log.info("Typesense unavailable, falling back to MongoDB")

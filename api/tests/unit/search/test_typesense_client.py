@@ -896,3 +896,114 @@ class TestPrepareDocumentWithFacetFields:
             entity, [], facet_fields=["properties.ref_genre.value"]
         )
         assert "properties_ref_genre_value" not in result
+
+
+class TestBuildNumTyposParam:
+    def test_none_when_no_fields_configured(self):
+        assert tc._build_num_typos_param("a,b", []) is None
+        assert tc._build_num_typos_param("a,b", None) is None
+
+    def test_zero_for_listed_fields_default_for_the_rest(self):
+        query_by = "properties_isbn_group_value_isbn,properties_title_value"
+        assert (
+            tc._build_num_typos_param(query_by, ["properties.isbn_group.value.isbn"])
+            == "0,2"
+        )
+
+    def test_none_when_no_query_field_is_listed(self):
+        assert tc._build_num_typos_param("properties_title_value", ["identifiers"]) is None
+
+    def test_every_query_field_listed(self):
+        assert tc._build_num_typos_param("identifiers,_id", ["identifiers", "_id"]) == "0,0"
+
+
+def _search_params(mock_client, call_index=0):
+    return mock_client.collections.__getitem__.return_value.documents.search.call_args_list[
+        call_index
+    ][0][0]
+
+
+class TestSearchTypoAndTokenDropOptions:
+    def _client(self, results):
+        mock_client = MagicMock()
+        mock_client.collections.__getitem__.return_value.documents.search.side_effect = (
+            results
+        )
+        return mock_client
+
+    def test_omits_options_when_not_configured(self):
+        client = self._client([_make_search_result([], 0)])
+        with patch.object(tc, "get_typesense_client", return_value=client):
+            search("entities", "mars", "name")
+        params = _search_params(client)
+        assert "num_typos" not in params
+        assert "drop_tokens_threshold" not in params
+
+    def test_passes_num_typos_for_no_typo_fields(self):
+        client = self._client([_make_search_result([], 0)])
+        with patch.object(tc, "get_typesense_client", return_value=client):
+            search(
+                "entities",
+                "9789000000000",
+                "properties_isbn_group_value_isbn,properties_title_value",
+                no_typo_fields=["properties.isbn_group.value.isbn"],
+            )
+        assert _search_params(client)["num_typos"] == "0,2"
+
+    def test_passes_drop_tokens_threshold_even_when_zero(self):
+        client = self._client([_make_search_result([], 0)])
+        with patch.object(tc, "get_typesense_client", return_value=client):
+            search("entities", "mars venus", "name", drop_tokens_threshold=0)
+        assert _search_params(client)["drop_tokens_threshold"] == 0
+
+    def test_retry_without_missing_field_realigns_num_typos(self):
+        client = self._client(
+            [
+                Exception(
+                    "Could not find a field named `properties_title_value` in the schema."
+                ),
+                _make_search_result(["a"], 1),
+            ]
+        )
+        with patch.object(tc, "get_typesense_client", return_value=client):
+            result = search(
+                "entities",
+                "9789000000000",
+                "properties_isbn_group_value_isbn,properties_title_value",
+                no_typo_fields=["properties.isbn_group.value.isbn"],
+                drop_tokens_threshold=0,
+            )
+        assert result["ids"] == ["a"]
+        retry = _search_params(client, 1)
+        assert retry["query_by"] == "properties_isbn_group_value_isbn"
+        assert retry["num_typos"] == "0"
+        assert retry["drop_tokens_threshold"] == 0
+
+    def test_search_all_ids_passes_options(self):
+        client = self._client([_make_search_result(["a"], 1)])
+        with patch.object(tc, "get_typesense_client", return_value=client):
+            search_all_ids(
+                "entities",
+                "mars",
+                "identifiers,name",
+                no_typo_fields=["identifiers"],
+                drop_tokens_threshold=0,
+            )
+        params = _search_params(client)
+        assert params["num_typos"] == "0,2"
+        assert params["drop_tokens_threshold"] == 0
+
+    def test_search_all_ids_retry_realigns_num_typos(self):
+        client = self._client(
+            [
+                Exception("Could not find a field named `name` in the schema."),
+                _make_search_result(["a"], 1),
+            ]
+        )
+        with patch.object(tc, "get_typesense_client", return_value=client):
+            search_all_ids(
+                "entities", "mars", "identifiers,name", no_typo_fields=["identifiers"]
+            )
+        retry = _search_params(client, 1)
+        assert retry["query_by"] == "identifiers"
+        assert retry["num_typos"] == "0"

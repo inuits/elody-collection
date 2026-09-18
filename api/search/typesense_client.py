@@ -267,6 +267,36 @@ def _build_infix_param(query_by, infix_fields):
     return ",".join(parts) if any(p == "always" for p in parts) else None
 
 
+TYPESENSE_DEFAULT_NUM_TYPOS = 2
+
+
+def _build_num_typos_param(query_by, no_typo_fields):
+    """Build the per-field ``num_typos`` list aligned to ``query_by``.
+
+    Identifier-like fields (ISBN, EAN, entity ids, ...) must never fuzzy-match:
+    a zero-hit ISBN search would otherwise return the "nearest" ISBN. Returns
+    ``"0"`` for fields in ``no_typo_fields`` and the Typesense default for the
+    rest, or ``None`` when no query field is affected so the param is omitted.
+    """
+    if not no_typo_fields:
+        return None
+    flat_no_typo = {f.replace(".", "_") for f in no_typo_fields}
+    parts = [
+        "0" if field in flat_no_typo else str(TYPESENSE_DEFAULT_NUM_TYPOS)
+        for field in query_by.split(",")
+    ]
+    return ",".join(parts) if "0" in parts else None
+
+
+def _apply_search_options(search_params, query_by, no_typo_fields, drop_tokens_threshold):
+    """Add the optional typo / token-drop tuning to ``search_params`` in place."""
+    num_typos = _build_num_typos_param(query_by, no_typo_fields)
+    if num_typos:
+        search_params["num_typos"] = num_typos
+    if drop_tokens_threshold is not None:
+        search_params["drop_tokens_threshold"] = drop_tokens_threshold
+
+
 def search(
     collection,
     query,
@@ -278,6 +308,8 @@ def search(
     facet_by=None,
     group_by=None,
     infix_fields=None,
+    no_typo_fields=None,
+    drop_tokens_threshold=None,
 ):
     client = get_typesense_client()
     if not client:
@@ -294,6 +326,9 @@ def search(
         infix_param = _build_infix_param(query_by, infix_fields)
         if infix_param:
             search_params["infix"] = infix_param
+        _apply_search_options(
+            search_params, query_by, no_typo_fields, drop_tokens_threshold
+        )
         if offset is not None:
             search_params["offset"] = offset
         else:
@@ -344,13 +379,22 @@ def search(
                     facet_by,
                     group_by,
                     infix_fields=infix_fields,
+                    no_typo_fields=no_typo_fields,
+                    drop_tokens_threshold=drop_tokens_threshold,
                 )
         log.warning(f"Typesense search failed, falling back to MongoDB: {e}")
         return None
 
 
 def search_all_ids(
-    collection, query, query_by, filter_by=None, group_by=None, infix_fields=None
+    collection,
+    query,
+    query_by,
+    filter_by=None,
+    group_by=None,
+    infix_fields=None,
+    no_typo_fields=None,
+    drop_tokens_threshold=None,
 ):
     """Fetch all matching IDs from Typesense by paginating through results."""
     client = get_typesense_client()
@@ -378,6 +422,9 @@ def search_all_ids(
                 search_params["highlight_fields"] = query_by
             if infix_param:
                 search_params["infix"] = infix_param
+            _apply_search_options(
+                search_params, query_by, no_typo_fields, drop_tokens_threshold
+            )
             if filter_by:
                 search_params["filter_by"] = filter_by
             if group_by:
@@ -428,6 +475,8 @@ def search_all_ids(
                     filter_by,
                     group_by,
                     infix_fields=infix_fields,
+                    no_typo_fields=no_typo_fields,
+                    drop_tokens_threshold=drop_tokens_threshold,
                 )
         log.warning(f"Typesense search_all_ids failed, falling back to MongoDB: {e}")
         return None

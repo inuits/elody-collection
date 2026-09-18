@@ -2628,3 +2628,105 @@ class TestNegatedAndRegexFiltersDeferredToMongo:
                 assert any(f.get("match_not") for f in passed_filters)
                 id_filter = next(f for f in passed_filters if f.get("key") == "_id")
                 assert id_filter["value"] == ["id1", "id2"]
+
+
+class TestTypoToleranceAndTokenDropOptions:
+    """``no_typo_fields`` / ``drop_tokens_threshold`` from the typesense config
+    must reach the Typesense client so identifier searches never return a
+    "nearest" match and multi-word queries keep AND semantics."""
+
+    TEXT_FILTER = {
+        "type": "text",
+        "key": ["vlacc:1|properties.isbn_group.value.isbn"],
+        "value": "9789000000000",
+        "match_exact": False,
+    }
+
+    def test_build_query_exposes_search_options_from_config(self, resource):
+        config = {
+            "collection": "entities",
+            "search_fields": ["properties.isbn_group.value.isbn"],
+            "no_typo_fields": ["properties.isbn_group.value.isbn"],
+            "drop_tokens_threshold": 0,
+        }
+        with patch("resources.base_filter_resource.typesense_ensure_collection"):
+            *_, search_options = resource._build_typesense_query(
+                [self.TEXT_FILTER], [], config
+            )
+        assert search_options == {
+            "no_typo_fields": ["properties.isbn_group.value.isbn"],
+            "drop_tokens_threshold": 0,
+        }
+
+    def test_build_query_search_options_empty_when_not_configured(self, resource):
+        config = {"collection": "entities", "search_fields": ["properties.name.value"]}
+        with patch("resources.base_filter_resource.typesense_ensure_collection"):
+            *_, search_options = resource._build_typesense_query(
+                [self.TEXT_FILTER], [], config
+            )
+        assert search_options == {}
+
+    def test_execute_forwards_options_to_typesense_search(self, resource):
+        with patch("resources.base_filter_resource.typesense_search") as mock_ts:
+            mock_ts.return_value = make_ts_result([], 0)
+            resource._execute_typesense_search(
+                "entities",
+                "9789000000000",
+                "properties_isbn_group_value_isbn",
+                None,
+                False,
+                0,
+                20,
+                search_options={
+                    "no_typo_fields": ["properties.isbn_group.value.isbn"],
+                    "drop_tokens_threshold": 0,
+                },
+            )
+        kwargs = mock_ts.call_args.kwargs
+        assert kwargs["no_typo_fields"] == ["properties.isbn_group.value.isbn"]
+        assert kwargs["drop_tokens_threshold"] == 0
+
+    def test_execute_forwards_options_to_search_all_ids(self, resource):
+        with patch(
+            "resources.base_filter_resource.typesense_search_all_ids"
+        ) as mock_ts:
+            mock_ts.return_value = make_ts_result([], 0)
+            resource._execute_typesense_search(
+                "entities",
+                "9789000000000",
+                "properties_isbn_group_value_isbn",
+                None,
+                True,
+                0,
+                20,
+                search_options={"drop_tokens_threshold": 0},
+            )
+        kwargs = mock_ts.call_args.kwargs
+        assert kwargs["drop_tokens_threshold"] == 0
+        assert kwargs["no_typo_fields"] is None
+
+    def test_accelerated_search_passes_options_end_to_end(self, flask_app, resource):
+        with flask_app.test_request_context(
+            "/entities/filter?limit=20&skip=0",
+            method="POST",
+            content_type="application/json",
+        ):
+            with (
+                patch("resources.base_filter_resource.typesense_search") as mock_ts,
+                patch("resources.base_filter_resource.typesense_ensure_collection"),
+            ):
+                mock_ts.return_value = make_ts_result([], 0)
+                resource._execute_typesense_accelerated_search(
+                    [self.TEXT_FILTER],
+                    "entities",
+                    {
+                        "enabled": True,
+                        "collection": "entities",
+                        "search_fields": ["properties.isbn_group.value.isbn"],
+                        "no_typo_fields": ["properties.isbn_group.value.isbn"],
+                        "drop_tokens_threshold": 0,
+                    },
+                )
+            kwargs = mock_ts.call_args.kwargs
+            assert kwargs["no_typo_fields"] == ["properties.isbn_group.value.isbn"]
+            assert kwargs["drop_tokens_threshold"] == 0
