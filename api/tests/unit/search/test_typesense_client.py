@@ -1017,3 +1017,36 @@ class TestSearchTypoAndTokenDropOptions:
         retry = _search_params(client, 1)
         assert retry["query_by"] == "identifiers"
         assert retry["num_typos"] == "0"
+
+
+class TestGetCollectionFieldTypesRefresh:
+    def _client(self, fields):
+        client = MagicMock()
+        client.collections.__getitem__.return_value.retrieve.return_value = {
+            "fields": fields
+        }
+        return client
+
+    def test_cached_value_is_reused(self):
+        client = self._client([{"name": "a", "type": "string"}])
+        tc._field_types_cache.pop("c", None)
+        with patch.object(tc, "get_typesense_client", return_value=client):
+            first = tc.get_collection_field_types("c")
+            client.collections.__getitem__.return_value.retrieve.return_value = {
+                "fields": [{"name": "a", "type": "string"}, {"name": "b", "type": "string[]"}]
+            }
+            second = tc.get_collection_field_types("c")
+        assert first == second == {"a": "string"}
+
+    def test_refresh_bypasses_cache(self):
+        client = self._client([{"name": "a", "type": "string"}])
+        tc._field_types_cache.pop("c", None)
+        with patch.object(tc, "get_typesense_client", return_value=client):
+            tc.get_collection_field_types("c")
+            client.collections.__getitem__.return_value.retrieve.return_value = {
+                "fields": [{"name": "a", "type": "string"}, {"name": "b", "type": "string[]"}]
+            }
+            refreshed = tc.get_collection_field_types("c", refresh=True)
+            cached_after = tc.get_collection_field_types("c")
+        assert refreshed == {"a": "string", "b": "string[]"}
+        assert cached_after == refreshed

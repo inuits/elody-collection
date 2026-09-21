@@ -656,9 +656,13 @@ def _descend(obj, keys):
     return None
 
 
-def get_collection_field_types(collection):
+def get_collection_field_types(collection, refresh=False):
     """Return ``{flat_field_name: type}`` for the concretely-typed fields of a
     Typesense collection.
+
+    ``refresh=True`` bypasses the cache: an ``auto`` schema locks field types as
+    documents arrive, so a bulk indexer that hits a cardinality conflict needs
+    the types the collection has settled on *since* the run started.
 
     Wildcard (``.*``) and ``auto`` fields are omitted: they impose no cardinality
     constraint, so values for them never need coercion. Cached per collection and
@@ -666,7 +670,7 @@ def get_collection_field_types(collection):
     Returns an empty dict when Typesense is unavailable or the collection does not
     exist yet, in which case callers leave values untouched.
     """
-    if collection in _field_types_cache:
+    if not refresh and collection in _field_types_cache:
         return _field_types_cache[collection]
     client = get_typesense_client()
     if not client:
