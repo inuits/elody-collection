@@ -30,7 +30,8 @@ class JobStatus(BaseResource):
             return "job not found", 404
 
         status = get_item_metadata_value(job, "status")
-        return {"status": status}, 200
+        info = get_item_metadata_value(job, "info")
+        return {"status": status, "info": info}, 200
 
 
 class InitJob(BaseResource):

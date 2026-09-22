@@ -90,3 +90,34 @@ def test_warn_job(client, mock_dependencies):
         info_message="Process slow but successful",
         get_rabbit=mock_dependencies["rabbit"],
     )
+
+
+def test_job_status_returns_status_and_info(client):
+    """Test GET /job/status/<id> exposes the failure reason alongside the status"""
+    from unittest.mock import patch
+
+    job = {
+        "metadata": [
+            {"key": "status", "value": "failed"},
+            {"key": "info", "value": "W4012 - Production has no mediafiles"},
+        ]
+    }
+
+    with (
+        patch("resources.job.get_object_configuration_mapper") as mock_mapper,
+        patch(
+            "resources.base_resource.BaseResource._check_if_collection_and_item_exists",
+            return_value=job,
+        ),
+    ):
+        mock_mapper.return_value.get.return_value.crud.return_value = {
+            "collection": "jobs"
+        }
+
+        response = client.get("/job/status/job_123")
+
+    assert response.status_code == 200
+    assert response.json == {
+        "status": "failed",
+        "info": "W4012 - Production has no mediafiles",
+    }
