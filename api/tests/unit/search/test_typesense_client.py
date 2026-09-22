@@ -1050,3 +1050,243 @@ class TestGetCollectionFieldTypesRefresh:
             cached_after = tc.get_collection_field_types("c")
         assert refreshed == {"a": "string", "b": "string[]"}
         assert cached_after == refreshed
+
+
+class TestResolveRelatedEntityIds:
+    """Relation matching resolves a token to the related entities' identifiers.
+
+    The search is typo-tolerant (it goes through ``q``), which is what keeps
+    fuzzy matching alive even though the relation filter itself is exact.
+    """
+
+    def _client_returning(self, found, hits):
+        client = MagicMock()
+        client.collections.__getitem__.return_value.documents.search.return_value = {
+            "found": found,
+            "hits": hits,
+        }
+        return client
+
+    def test_returns_the_identifiers_of_matching_entities(self):
+        client = self._client_returning(
+            2,
+            [
+                {"document": {"identifiers": ["uuid-1", "PERS-1"]}},
+                {"document": {"identifiers": ["uuid-2", "PERS-2"]}},
+            ],
+        )
+        with patch.object(tc, "get_typesense_client", return_value=client):
+            ids = tc.resolve_related_entity_ids(
+                "entities", "rowling", "properties_name_value", ["person"]
+            )
+
+        assert ids == ["uuid-1", "PERS-1", "uuid-2", "PERS-2"]
+
+    def test_deduplicates_identifiers(self):
+        client = self._client_returning(
+            2,
+            [
+                {"document": {"identifiers": ["uuid-1"]}},
+                {"document": {"identifiers": ["uuid-1"]}},
+            ],
+        )
+        with patch.object(tc, "get_typesense_client", return_value=client):
+            assert tc.resolve_related_entity_ids(
+                "entities", "x", "properties_name_value", ["person"]
+            ) == ["uuid-1"]
+
+    def test_a_token_matching_too_many_entities_is_undiscriminating(self):
+        # 'de' matches tens of thousands of related entities. None is distinct from
+        # an empty list: the caller drops the token from the query instead of
+        # narrowing it to the entity's own metadata.
+        client = self._client_returning(5000, [])
+        with patch.object(tc, "get_typesense_client", return_value=client):
+            assert (
+                tc.resolve_related_entity_ids(
+                    "entities", "de", "properties_name_value", ["person"], cap=500
+                )
+                is None
+            )
+
+    def test_a_token_matching_no_entity_returns_an_empty_list(self):
+        # A rare word still deserves a text-only clause, so it must not be
+        # reported as undiscriminating.
+        client = self._client_returning(0, [])
+        with patch.object(tc, "get_typesense_client", return_value=client):
+            assert (
+                tc.resolve_related_entity_ids(
+                    "entities", "zzznotexist", "properties_name_value", ["person"]
+                )
+                == []
+            )
+
+    def test_filters_positively_on_the_related_entity_types(self):
+        # A negative type filter measured 7.5x slower than a positive one.
+        client = self._client_returning(0, [])
+        with patch.object(tc, "get_typesense_client", return_value=client):
+            tc.resolve_related_entity_ids(
+                "entities", "x", "properties_name_value", ["person", "genre"]
+            )
+
+        params = client.collections.__getitem__.return_value.documents.search.call_args[
+            0
+        ][0]
+        assert params["filter_by"] == "type:[person,genre]"
+        assert params["q"] == "x"
+
+    def test_returns_nothing_when_typesense_is_unavailable(self):
+        with patch.object(tc, "get_typesense_client", return_value=None):
+            assert (
+                tc.resolve_related_entity_ids(
+                    "entities", "x", "properties_name_value", ["person"]
+                )
+                == []
+            )
+
+    def test_a_failing_search_never_breaks_the_query(self):
+        client = MagicMock()
+        client.collections.__getitem__.return_value.documents.search.side_effect = (
+            Exception("boom")
+        )
+        with patch.object(tc, "get_typesense_client", return_value=client):
+            assert (
+                tc.resolve_related_entity_ids(
+                    "entities", "x", "properties_name_value", ["person"]
+                )
+                == []
+            )
+
+
+class TestMultiSearchOne:
+    """Relation filters exceed the 4000-char GET limit, so they go over POST."""
+
+    def test_sends_the_collection_inside_the_search_body(self):
+        client = MagicMock()
+        client.multi_search.perform.return_value = {"results": [{"found": 3}]}
+        with patch.object(tc, "get_typesense_client", return_value=client):
+            result = tc.multi_search_one("entities", {"q": "*", "filter_by": "a:`b`"})
+
+        body = client.multi_search.perform.call_args[0][0]
+        assert body["searches"][0]["collection"] == "entities"
+        assert body["searches"][0]["filter_by"] == "a:`b`"
+        assert result == {"found": 3}
+
+    def test_returns_none_when_typesense_is_unavailable(self):
+        with patch.object(tc, "get_typesense_client", return_value=None):
+            assert tc.multi_search_one("entities", {"q": "*"}) is None
+
+    def test_an_error_in_the_result_returns_none(self):
+        client = MagicMock()
+        client.multi_search.perform.return_value = {
+            "results": [{"error": "`filter_by` has too many operations."}]
+        }
+        with patch.object(tc, "get_typesense_client", return_value=client):
+            assert tc.multi_search_one("entities", {"q": "*"}) is None
+
+
+class TestMultiSearchAllIds:
+    """A relation-aware search combined with other active filters needs every
+    matching id, not one page of them."""
+
+    def test_pages_until_every_id_is_collected(self):
+        pages = [
+            {"found": 3, "hits": [{"document": {"_id": "a"}}, {"document": {"_id": "b"}}]},
+            {"found": 3, "hits": [{"document": {"_id": "c"}}]},
+        ]
+        with patch.object(tc, "multi_search_one", side_effect=pages) as one:
+            result = tc.multi_search_all_ids("entities", {"q": "*"}, per_page=2)
+
+        assert result == {"ids": ["a", "b", "c"], "count": 3}
+        assert one.call_args_list[0][0][1]["page"] == 1
+        assert one.call_args_list[1][0][1]["page"] == 2
+
+    def test_stops_at_the_cap_instead_of_paging_forever(self):
+        page = {"found": 10000, "hits": [{"document": {"_id": "a"}}]}
+        with patch.object(tc, "multi_search_one", return_value=page):
+            result = tc.multi_search_all_ids(
+                "entities", {"q": "*"}, per_page=1, max_ids=3
+            )
+
+        assert len(result["ids"]) == 3
+
+    def test_a_rejected_query_returns_none(self):
+        with patch.object(tc, "multi_search_one", return_value=None):
+            assert tc.multi_search_all_ids("entities", {"q": "*"}) is None
+
+    def test_no_hits_yields_an_empty_result(self):
+        with patch.object(
+            tc, "multi_search_one", return_value={"found": 0, "hits": []}
+        ):
+            assert tc.multi_search_all_ids("entities", {"q": "*"}) == {
+                "ids": [],
+                "count": 0,
+            }
+
+
+class TestResolveRelatedEntityIdsPaging:
+    """The cap bounds how many related entities may match, not how many are
+    read. Reading only the first page silently drops related entities beyond it, so
+    a token whose entity sits on page two stops matching.
+    """
+
+    def _client_paging(self, found, pages):
+        client = MagicMock()
+        client.collections.__getitem__.return_value.documents.search.side_effect = [
+            {"found": found, "hits": [{"document": {"identifiers": [i]}} for i in page]}
+            for page in pages
+        ]
+        return client
+
+    def test_pages_until_every_match_is_read(self):
+        client = self._client_paging(3, [["a", "b"], ["c"]])
+        with patch.object(tc, "get_typesense_client", return_value=client):
+            ids = tc.resolve_related_entity_ids(
+                "entities", "charlotte", "properties_name_value", ["person"],
+                cap=1000, per_page=2,
+            )
+
+        assert ids == ["a", "b", "c"]
+
+    def test_requests_consecutive_pages(self):
+        client = self._client_paging(3, [["a", "b"], ["c"]])
+        with patch.object(tc, "get_typesense_client", return_value=client):
+            tc.resolve_related_entity_ids(
+                "entities", "charlotte", "properties_name_value", ["person"],
+                cap=1000, per_page=2,
+            )
+
+        calls = client.collections.__getitem__.return_value.documents.search.call_args_list
+        assert [c[0][0]["page"] for c in calls] == [1, 2]
+
+    def test_paging_is_bounded_by_the_cap(self):
+        # The cap is a bail-out, not a read limit: a token over it resolves to
+        # nothing, so paging can never run past cap/per_page requests.
+        client = self._client_paging(6, [["a", "b"], ["c", "d"], ["e", "f"]])
+        with patch.object(tc, "get_typesense_client", return_value=client):
+            ids = tc.resolve_related_entity_ids(
+                "entities", "charlotte", "properties_name_value", ["person"],
+                cap=6, per_page=2,
+            )
+
+        assert ids == ["a", "b", "c", "d", "e", "f"]
+        assert (
+            client.collections.__getitem__.return_value.documents.search.call_count == 3
+        )
+
+    def test_a_token_over_the_cap_is_undiscriminating(self):
+        client = self._client_paging(5000, [[]])
+        with patch.object(tc, "get_typesense_client", return_value=client):
+            assert tc.resolve_related_entity_ids(
+                "entities", "de", "properties_name_value", ["person"], cap=1000
+            ) is None
+
+    def test_a_single_page_of_results_needs_one_request(self):
+        client = self._client_paging(2, [["a", "b"]])
+        with patch.object(tc, "get_typesense_client", return_value=client):
+            ids = tc.resolve_related_entity_ids(
+                "entities", "shoesmith", "properties_name_value", ["person"],
+                cap=1000, per_page=250,
+            )
+
+        assert ids == ["a", "b"]
+        assert client.collections.__getitem__.return_value.documents.search.call_count == 1

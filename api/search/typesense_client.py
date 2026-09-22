@@ -758,3 +758,109 @@ def prepare_document_for_typesense(
             coerced = str(value)
         doc[flat_key] = _strip_tags(coerced)
     return doc
+
+
+def resolve_related_entity_ids(
+    collection, token, query_by, related_entity_types, cap=500, per_page=250
+):
+    """Identifiers of the related entities whose label matches ``token``.
+
+    This runs through ``q``, so it is typo-tolerant: fuzzy matching survives on
+    the relation side even though the relation filter itself matches exactly.
+
+    Returns ``None`` — distinct from an empty list — when the token matches more
+    than ``cap`` entities. It then says nothing about relations, and the caller
+    drops it from the query rather than narrowing to the entity's own metadata.
+
+    Filtering positively on the related entity types is deliberate — excluding the
+    bibliographic types instead measured 7.5x slower.
+    """
+    client = get_typesense_client()
+    if not client:
+        return []
+    params = {
+        "q": token,
+        "query_by": query_by,
+        "per_page": per_page,
+        "include_fields": "identifiers",
+    }
+    if related_entity_types:
+        params["filter_by"] = f"type:[{','.join(related_entity_types)}]"
+
+    identifiers = []
+    matched = 0
+    page = 1
+    while True:
+        try:
+            result = client.collections[collection].documents.search(
+                {**params, "page": page}
+            )
+        except Exception as e:
+            log.warning(f"Typesense related entity lookup for '{token}' failed: {e}")
+            return []
+        if result.get("found", 0) > cap:
+            return None
+        hits = result.get("hits", [])
+        for hit in hits:
+            for identifier in hit.get("document", {}).get("identifiers", []):
+                if identifier not in identifiers:
+                    identifiers.append(identifier)
+        matched += len(hits)
+        # The cap bounds how many entities may match, not how many are read: a
+        # token whose entity sits past the first page would otherwise stop
+        # matching altogether.
+        if not hits or matched >= min(result.get("found", 0), cap):
+            break
+        page += 1
+    return identifiers
+
+
+def multi_search_one(collection, params):
+    """Run a single search over ``/multi_search``.
+
+    A relation-aware ``filter_by`` runs well past the 4000 character limit the
+    GET search endpoint imposes, so it has to be sent as a POST body.
+    """
+    client = get_typesense_client()
+    if not client:
+        return None
+    try:
+        response = client.multi_search.perform(
+            {"searches": [{**params, "collection": collection}]}, {}
+        )
+    except Exception as e:
+        log.warning(f"Typesense multi_search failed: {e}")
+        return None
+    results = response.get("results") or []
+    if not results:
+        return None
+    result = results[0]
+    if result.get("error"):
+        log.warning(f"Typesense multi_search rejected the query: {result['error']}")
+        return None
+    return result
+
+
+def multi_search_all_ids(collection, params, per_page=250, max_ids=10000):
+    """Every matching ``_id`` for a ``/multi_search`` query, by paging.
+
+    Needed when other filters still have to run in MongoDB: those are applied to
+    the ids Typesense matched, so a single page would silently truncate them.
+    """
+    ids = []
+    page = 1
+    count = 0
+    while True:
+        result = multi_search_one(
+            collection,
+            {**params, "per_page": per_page, "page": page, "include_fields": "_id"},
+        )
+        if result is None:
+            return None
+        count = result.get("found", 0)
+        hits = result.get("hits", [])
+        ids.extend(hit["document"]["_id"] for hit in hits)
+        if not hits or len(ids) >= min(count, max_ids):
+            break
+        page += 1
+    return {"ids": ids[:max_ids], "count": count}

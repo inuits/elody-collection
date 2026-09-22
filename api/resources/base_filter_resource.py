@@ -6,10 +6,18 @@ from flask import after_this_request, request
 from flask_restful import abort
 from logging_elody.log import log
 from resources.base_resource import BaseResource
+from search.relation_search import (
+    MAX_FILTER_OPS,
+    build_relation_search_params,
+)
 from search.typesense_client import (
     build_filter_by,
     ensure_collection as typesense_ensure_collection,
+    get_collection_field_types,
     group_values as typesense_group_values,
+    multi_search_all_ids,
+    multi_search_one,
+    resolve_related_entity_ids,
     search as typesense_search,
     search_all_ids as typesense_search_all_ids,
 )
@@ -313,6 +321,78 @@ class BaseFilterResource(BaseResource):
             search_options,
         )
 
+    def _relation_aware_search(
+        self,
+        text_filters,
+        type_filter_values,
+        typesense_config,
+        exact_match_filters,
+        has_remaining,
+        skip,
+        limit,
+    ):
+        """Resolve a simple search that matches a token against the entity's own
+        metadata *or* one of its relations, with the tokens ANDed.
+
+        Both sides live in one ``filter_by``: ``q`` cannot be OR-ed against a
+        filter, so the text side has to sit in the filter as well. Relations are
+        read as stored reference ids, so nothing is denormalized into the index.
+
+        Returns ``None`` whenever the search cannot be served this way — no
+        relation keys configured, a key the collection does not hold, a filter
+        past the server's operation budget, or simply no hits — and the caller
+        then runs the ordinary ``q`` based search unchanged.
+        """
+        relation_filter = next(
+            (f for f in text_filters if f.get("relation_keys")), None
+        )
+        if relation_filter is None or len(text_filters) != 1:
+            return None
+
+        ts_collection = typesense_config.get("collection", "entities")
+        related_entity_types = typesense_config.get("related_entity_types") or []
+        related_entity_fields = typesense_config.get("related_entity_label_fields") or []
+        if not related_entity_types or not related_entity_fields:
+            return None
+
+        keys = relation_filter.get("key") or []
+        keys = keys if isinstance(keys, list) else [keys]
+        cap = typesense_config.get("related_entity_match_cap", 500)
+        query_by = ",".join(f.replace(".", "_") for f in related_entity_fields)
+
+        params = build_relation_search_params(
+            relation_filter.get("value", ""),
+            keys,
+            relation_filter["relation_keys"],
+            set(get_collection_field_types(ts_collection)),
+            lambda token: resolve_related_entity_ids(
+                ts_collection, token, query_by, related_entity_types, cap=cap
+            ),
+            base_filter=build_filter_by(type_filter_values, exact_match_filters or []),
+            max_ops=typesense_config.get("filter_by_max_ops", MAX_FILTER_OPS),
+        )
+        if params is None:
+            return None
+
+        if has_remaining:
+            # The other filters still run in MongoDB against these ids, so a
+            # single page would silently truncate them.
+            result = multi_search_all_ids(ts_collection, params)
+            if not result or not result["ids"]:
+                return None
+            return result
+
+        page = multi_search_one(
+            ts_collection,
+            {**params, "per_page": limit, "offset": skip, "include_fields": "_id"},
+        )
+        if not page or not page.get("hits"):
+            return None
+        return {
+            "ids": [hit["document"]["_id"] for hit in page["hits"]],
+            "count": page.get("found", 0),
+        }
+
     @staticmethod
     def _build_search_options(typesense_config):
         """Collect the optional typo / token-drop tuning from the config.
@@ -572,41 +652,51 @@ class BaseFilterResource(BaseResource):
                     resolved_query, target_collection
                 )
             return self._execute_advanced_search_with_query_v2(query, collection)
-        (
-            ts_collection,
-            query_by,
-            search_terms,
-            filter_by,
-            group_by,
-            infix_fields,
-            search_options,
-        ) = self._build_typesense_query(
+        ts_result = self._relation_aware_search(
             text_filters,
             type_filter_values,
             typesense_config,
-            exact_match_filters=ts_exact_match_filters,
-        )
-
-        facet_fields = typesense_config.get("facet_fields", [])
-        facet_by = (
-            ",".join(f.replace(".", "_") for f in facet_fields)
-            if facet_fields
-            else None
-        )
-
-        ts_result = self._execute_typesense_search(
-            ts_collection,
-            search_terms,
-            query_by,
-            filter_by,
+            ts_exact_match_filters,
             bool(remaining_filters),
             skip,
             limit,
-            facet_by=facet_by,
-            group_by=group_by,
-            infix_fields=infix_fields,
-            search_options=search_options,
         )
+        if ts_result is None:
+            (
+                ts_collection,
+                query_by,
+                search_terms,
+                filter_by,
+                group_by,
+                infix_fields,
+                search_options,
+            ) = self._build_typesense_query(
+                text_filters,
+                type_filter_values,
+                typesense_config,
+                exact_match_filters=ts_exact_match_filters,
+            )
+
+            facet_fields = typesense_config.get("facet_fields", [])
+            facet_by = (
+                ",".join(f.replace(".", "_") for f in facet_fields)
+                if facet_fields
+                else None
+            )
+
+            ts_result = self._execute_typesense_search(
+                ts_collection,
+                search_terms,
+                query_by,
+                filter_by,
+                bool(remaining_filters),
+                skip,
+                limit,
+                facet_by=facet_by,
+                group_by=group_by,
+                infix_fields=infix_fields,
+                search_options=search_options,
+            )
         if ts_result is None:
             log.info("Typesense unavailable, falling back to MongoDB")
             return self._execute_advanced_search_with_query_v2(query, collection)
