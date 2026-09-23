@@ -1845,6 +1845,46 @@ class TestResolveMongoCollections:
             result = resource._resolve_mongo_collections(["unknown_type"], "entities")
         assert result == {"entities"}
 
+    def test_unregistered_type_falls_back_to_default(self, resource):
+        """An unregistered type resolves to NoneConfiguration, whose crud() has no
+        "collection" key. That returns None instead of raising, so the collection
+        name must still fall back to the default."""
+        with patch(
+            "resources.base_filter_resource.get_object_configuration_mapper"
+        ) as mock_mapper:
+            none_config = MagicMock()
+            none_config.crud.return_value = {"storage_type": "db"}
+            mock_mapper.return_value.get.return_value = none_config
+
+            result = resource._resolve_mongo_collections(
+                ["zizoDomein"], "entities_actual"
+            )
+        assert result == {"entities_actual"}
+
+    def test_mixed_known_and_unregistered_types_never_yield_none(self, resource):
+        """A frontend-only subtype alongside a real type must not put None in the
+        set: pymongo rejects it with "name must be an instance of str"."""
+        with patch(
+            "resources.base_filter_resource.get_object_configuration_mapper"
+        ) as mock_mapper:
+
+            def mock_get(t):
+                config = MagicMock()
+                config.crud.return_value = (
+                    {"collection": "entities_actual"}
+                    if t == "zizo"
+                    else {"storage_type": "db"}
+                )
+                return config
+
+            mock_mapper.return_value.get.side_effect = mock_get
+
+            result = resource._resolve_mongo_collections(
+                ["zizo", "zizoDomein", "zizoKast"], "entities_actual"
+            )
+        assert None not in result
+        assert result == {"entities_actual"}
+
 
 class TestFetchDocumentsFromMongo:
     """Unit tests for _fetch_documents_from_mongo helper."""
@@ -1865,6 +1905,20 @@ class TestFetchDocumentsFromMongo:
             )
 
         assert [r["_id"] for r in results] == ["c", "a", "b"]
+
+    def test_skips_collections_without_a_name(self, resource):
+        with patch("resources.base_filter_resource.StorageManager") as mock_sm:
+            mock_storage = MagicMock()
+            mock_col = MagicMock()
+            mock_col.find.return_value = []
+            mock_storage.db.__getitem__.return_value = mock_col
+            mock_sm.return_value.get_db_engine.return_value = mock_storage
+
+            resource._fetch_documents_from_mongo(["id1"], {"entities_actual", None})
+
+        db_calls = mock_storage.db.__getitem__.call_args_list
+        queried = {call[0][0] for call in db_calls}
+        assert queried == {"entities_actual"}
 
     def test_fetches_from_multiple_collections(self, resource):
         with patch("resources.base_filter_resource.StorageManager") as mock_sm:

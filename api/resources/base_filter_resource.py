@@ -80,9 +80,10 @@ class BaseFilterResource(BaseResource):
             mapper = get_object_configuration_mapper()
             for t in type_filter_values:
                 try:
-                    collections.add(mapper.get(t).crud().get("collection"))
+                    collection = mapper.get(t).crud().get("collection")
                 except Exception:
-                    collections.add(default_collection)
+                    collection = None
+                collections.add(collection or default_collection)
         return collections or {default_collection}
 
     def _resolve_lookup_via_typesense(self, filter_obj, typesense_config):
@@ -462,6 +463,8 @@ class BaseFilterResource(BaseResource):
         }
         documents = []
         for col in collections:
+            if not col:
+                continue
             documents.extend(storage.db[col].find(id_query))
         id_order = {doc_id: i for i, doc_id in enumerate(matching_ids)}
         documents.sort(key=lambda doc: id_order.get(doc["_id"], float("inf")))
