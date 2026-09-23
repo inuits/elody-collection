@@ -2792,3 +2792,94 @@ class TestTypoToleranceAndTokenDropOptions:
             kwargs = mock_ts.call_args.kwargs
             assert kwargs["no_typo_fields"] == ["properties.isbn_group.value.isbn"]
             assert kwargs["drop_tokens_threshold"] == 0
+
+
+class TestWildcardQueryBy:
+    SEARCH_FIELDS = [
+        "properties.title.value",
+        "properties.ref_series.value",
+        "properties.ref_uniform_titles.value",
+    ]
+    TS_CONFIG = {
+        "enabled": True,
+        "collection": "entities",
+        "search_fields": SEARCH_FIELDS,
+        "no_typo_fields": ["properties.ref_series.value"],
+    }
+
+    def _build(self, resource, text_filters, exact_match_filters=None):
+        with patch("resources.base_filter_resource.typesense_ensure_collection"):
+            return resource._build_typesense_query(
+                text_filters,
+                ["work_word"],
+                self.TS_CONFIG,
+                exact_match_filters=exact_match_filters,
+            )
+
+    def test_filter_only_query_does_not_send_all_search_fields(self, resource):
+        _, query_by, search_terms, filter_by, *_ = self._build(
+            resource,
+            [],
+            [
+                (
+                    ["properties_ref_series_value", "properties_ref_uniform_titles_value"],
+                    ["T-1"],
+                )
+            ],
+        )
+
+        assert search_terms == "*"
+        assert query_by == ""
+        assert "properties_ref_series_value:=T-1" in filter_by
+
+    def test_text_query_without_keys_still_searches_all_search_fields(self, resource):
+        _, query_by, search_terms, *_ = self._build(
+            resource, [{"type": "text", "key": "", "value": "mars"}]
+        )
+
+        assert search_terms == "mars"
+        assert query_by == (
+            "properties_title_value,properties_ref_series_value,"
+            "properties_ref_uniform_titles_value"
+        )
+
+    def test_filter_only_request_passes_empty_query_by_to_typesense(
+        self, flask_app, resource
+    ):
+        with flask_app.test_request_context(
+            "/entities/filter?limit=20&skip=0",
+            method="POST",
+            content_type="application/json",
+        ):
+            query = [
+                {
+                    "type": "selection",
+                    "key": "type",
+                    "value": ["work_word"],
+                    "match_exact": True,
+                },
+                {
+                    "type": "selection",
+                    "key": [
+                        "vlacc:1|properties.ref_series.value",
+                        "vlacc:1|properties.ref_uniform_titles.value",
+                    ],
+                    "value": ["T-1"],
+                    "match_exact": True,
+                    "operator": "or",
+                },
+            ]
+            with (
+                patch("resources.base_filter_resource.typesense_ensure_collection"),
+                patch("resources.base_filter_resource.typesense_search") as mock_ts,
+            ):
+                mock_ts.return_value = make_ts_result([], 0)
+                resource._execute_typesense_accelerated_search(
+                    query, "entities", self.TS_CONFIG
+                )
+
+            assert mock_ts.call_args[0][1] == "*"
+            assert mock_ts.call_args[0][2] == ""
+            assert "properties_ref_uniform_titles_value:=T-1" in (
+                mock_ts.call_args.kwargs["filter_by"]
+            )

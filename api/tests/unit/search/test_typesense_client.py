@@ -342,6 +342,33 @@ class TestSearch:
         assert params["highlight_fields"] == "name,title"
 
 
+    def test_omits_query_by_and_derived_params_when_query_by_is_empty(self):
+        mock_client = MagicMock()
+        mock_client.collections.__getitem__.return_value.documents.search.return_value = _make_search_result(
+            [], 0
+        )
+
+        with patch.object(tc, "get_typesense_client", return_value=mock_client):
+            search(
+                "entities",
+                "*",
+                "",
+                filter_by="type:=work_word",
+                infix_fields=["name"],
+                no_typo_fields=["name"],
+            )
+
+        params = (
+            mock_client.collections.__getitem__.return_value.documents.search.call_args[
+                0
+            ][0]
+        )
+        assert "query_by" not in params
+        assert "num_typos" not in params
+        assert "infix" not in params
+        assert params["filter_by"] == "type:=work_word"
+
+
 class TestSearchAllIds:
     def test_single_page(self):
         mock_client = MagicMock()
@@ -447,6 +474,33 @@ class TestSearchAllIds:
             ][0]
         )
         assert params["highlight_fields"] == "name,title"
+
+
+    def test_omits_query_by_and_derived_params_when_query_by_is_empty(self):
+        mock_client = MagicMock()
+        mock_client.collections.__getitem__.return_value.documents.search.return_value = _make_search_result(
+            [], 0
+        )
+
+        with patch.object(tc, "get_typesense_client", return_value=mock_client):
+            search_all_ids(
+                "entities",
+                "*",
+                "",
+                filter_by="type:=work_word",
+                infix_fields=["name"],
+                no_typo_fields=["name"],
+            )
+
+        params = (
+            mock_client.collections.__getitem__.return_value.documents.search.call_args[
+                0
+            ][0]
+        )
+        assert "query_by" not in params
+        assert "num_typos" not in params
+        assert "infix" not in params
+        assert params["filter_by"] == "type:=work_word"
 
 
 class TestSearchGroupBy:

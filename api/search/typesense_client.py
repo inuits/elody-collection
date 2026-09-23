@@ -318,9 +318,10 @@ def search(
     try:
         search_params = {
             "q": query,
-            "query_by": query_by,
             "per_page": per_page,
         }
+        if query_by:
+            search_params["query_by"] = query_by
         if query != "*":
             search_params["highlight_fields"] = query_by
         infix_param = _build_infix_param(query_by, infix_fields)
@@ -414,10 +415,11 @@ def search_all_ids(
         while True:
             search_params = {
                 "q": query,
-                "query_by": query_by,
                 "per_page": per_page,
                 "page": page,
             }
+            if query_by:
+                search_params["query_by"] = query_by
             if query != "*":
                 search_params["highlight_fields"] = query_by
             if infix_param:

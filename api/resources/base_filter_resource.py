@@ -299,15 +299,17 @@ class BaseFilterResource(BaseResource):
             distinct_by = f.get("distinct_by")
             if distinct_by:
                 distinct_keys.append(distinct_by)
-        if filter_keys:
-            query_by = ",".join(dict.fromkeys(k.replace(".", "_") for k in filter_keys))
-        else:
-            query_by = ",".join(field.replace(".", "_") for field in search_fields)
         search_terms = " ".join(
             f.get("value", "") for f in text_filters if f.get("value")
         )
         if not search_terms:
             search_terms = "*"
+        if filter_keys:
+            query_by = ",".join(dict.fromkeys(k.replace(".", "_") for k in filter_keys))
+        elif search_terms == "*":
+            query_by = ""
+        else:
+            query_by = ",".join(field.replace(".", "_") for field in search_fields)
         filter_by = build_filter_by(type_filter_values, exact_match_filters or [])
         group_by = distinct_keys[0].replace(".", "_") if distinct_keys else None
         infix_fields = typesense_config.get("infix_fields", [])
