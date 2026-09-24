@@ -57,7 +57,7 @@ def get_typesense_client():
     return _client
 
 
-def ensure_collection(collection, facet_fields=None, infix_fields=None):
+def ensure_collection(collection, facet_fields=None, infix_fields=None, array_fields=None):
     """Ensure a Typesense collection exists with auto schema detection."""
     if collection in _ensured_collections:
         return
@@ -76,20 +76,40 @@ def ensure_collection(collection, facet_fields=None, infix_fields=None):
                 flat_infix = {
                     field_path.replace(".", "_") for field_path in infix_fields or []
                 }
+                flat_array = [
+                    field_path.replace(".", "_") for field_path in array_fields or []
+                ]
                 flat_facet = set()
                 for field_path in facet_fields or []:
                     flat_key = field_path.replace(".", "_")
                     flat_facet.add(flat_key)
-                    fields.append({"name": flat_key, "type": "auto", "facet": True})
+                    if flat_key in flat_array:
+                        fields.append(
+                            {
+                                "name": flat_key,
+                                "type": "string[]",
+                                "facet": True,
+                                "optional": True,
+                            }
+                        )
+                    else:
+                        fields.append(
+                            {"name": flat_key, "type": "auto", "facet": True}
+                        )
                 for flat_key in flat_infix:
                     if flat_key not in flat_facet:
                         fields.append(
                             {
                                 "name": flat_key,
-                                "type": "string",
+                                "type": "string[]" if flat_key in flat_array else "string",
                                 "infix": True,
                                 "optional": True,
                             }
+                        )
+                for flat_key in dict.fromkeys(flat_array):
+                    if flat_key not in flat_facet and flat_key not in flat_infix:
+                        fields.append(
+                            {"name": flat_key, "type": "string[]", "optional": True}
                         )
                 client.collections.create(
                     {

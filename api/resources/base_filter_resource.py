@@ -285,6 +285,7 @@ class BaseFilterResource(BaseResource):
             ts_collection,
             facet_fields=typesense_config.get("facet_fields", []),
             infix_fields=typesense_config.get("infix_fields", []),
+            array_fields=typesense_config.get("array_fields", []),
         )
         search_fields = typesense_config.get("search_fields", [])
         filter_keys = []

@@ -788,6 +788,77 @@ class TestEnsureCollection:
 
         tc._ensured_collections.discard("new_col")
 
+    def test_declares_array_fields_as_string_arrays(self):
+        mock_client = MagicMock()
+        mock_client.collections.__getitem__.return_value.retrieve.side_effect = (
+            Exception("404")
+        )
+
+        tc._ensured_collections.discard("array_col")
+
+        with patch.object(tc, "get_typesense_client", return_value=mock_client):
+            tc.ensure_collection(
+                "array_col", array_fields=["properties.isbn_group.value.isbn"]
+            )
+
+        mock_client.collections.create.assert_called_once_with(
+            {
+                "name": "array_col",
+                "fields": [
+                    {"name": ".*", "type": "auto"},
+                    {
+                        "name": "properties_isbn_group_value_isbn",
+                        "type": "string[]",
+                        "optional": True,
+                    },
+                ],
+            }
+        )
+
+        tc._ensured_collections.discard("array_col")
+
+    def test_array_fields_keep_their_facet_and_infix_flags(self):
+        mock_client = MagicMock()
+        mock_client.collections.__getitem__.return_value.retrieve.side_effect = (
+            Exception("404")
+        )
+
+        tc._ensured_collections.discard("array_flags_col")
+
+        with patch.object(tc, "get_typesense_client", return_value=mock_client):
+            tc.ensure_collection(
+                "array_flags_col",
+                facet_fields=["properties.isbn_group.value.isbn"],
+                infix_fields=["properties.ean_group.value.ean"],
+                array_fields=[
+                    "properties.isbn_group.value.isbn",
+                    "properties.ean_group.value.ean",
+                ],
+            )
+
+        mock_client.collections.create.assert_called_once_with(
+            {
+                "name": "array_flags_col",
+                "fields": [
+                    {"name": ".*", "type": "auto"},
+                    {
+                        "name": "properties_isbn_group_value_isbn",
+                        "type": "string[]",
+                        "facet": True,
+                        "optional": True,
+                    },
+                    {
+                        "name": "properties_ean_group_value_ean",
+                        "type": "string[]",
+                        "infix": True,
+                        "optional": True,
+                    },
+                ],
+            }
+        )
+
+        tc._ensured_collections.discard("array_flags_col")
+
     def test_skips_when_already_exists(self):
         mock_client = MagicMock()
 

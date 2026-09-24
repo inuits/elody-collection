@@ -2720,6 +2720,23 @@ class TestTypoToleranceAndTokenDropOptions:
             "drop_tokens_threshold": 0,
         }
 
+    def test_build_query_passes_array_fields_to_ensure_collection(self, resource):
+        config = {
+            "collection": "entities",
+            "search_fields": ["properties.isbn_group.value.isbn"],
+            "array_fields": ["properties.isbn_group.value.isbn"],
+        }
+        with patch(
+            "resources.base_filter_resource.typesense_ensure_collection"
+        ) as mock_ensure:
+            resource._build_typesense_query([self.TEXT_FILTER], [], config)
+        mock_ensure.assert_called_once_with(
+            "entities",
+            facet_fields=[],
+            infix_fields=[],
+            array_fields=["properties.isbn_group.value.isbn"],
+        )
+
     def test_build_query_search_options_empty_when_not_configured(self, resource):
         config = {"collection": "entities", "search_fields": ["properties.name.value"]}
         with patch("resources.base_filter_resource.typesense_ensure_collection"):

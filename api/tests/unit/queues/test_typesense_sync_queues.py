@@ -91,6 +91,32 @@ class TestSyncEntityToTypesense:
             message.ack.assert_called_once()
             message.nack.assert_not_called()
 
+    def test_passes_array_fields_to_ensure_collection(self, storage, mapper):
+        config = make_mock_config()
+        config.crud.return_value["typesense"]["array_fields"] = [
+            "properties.isbn_group.value.isbn"
+        ]
+        mapper.get.return_value = config
+        storage.get_item_from_collection_by_id.return_value = make_entity("ent-1")
+
+        with (
+            patch("search.typesense_client.upsert_document", return_value=True),
+            patch(
+                "search.typesense_client.prepare_document_for_typesense",
+                return_value={"id": "ent-1"},
+            ),
+            patch("search.typesense_client.get_collection_field_types", return_value={}),
+            patch("search.typesense_client.ensure_collection") as mock_ensure,
+        ):
+            self._call({"data": {"location": "/entities/ent-1", "type": "work_word"}})
+
+        mock_ensure.assert_called_once_with(
+            "entities",
+            facet_fields=[],
+            infix_fields=[],
+            array_fields=["properties.isbn_group.value.isbn"],
+        )
+
     def test_skips_when_typesense_not_enabled(self, storage, mapper):
         mapper.get.return_value = make_mock_config(ts_enabled=False)
 

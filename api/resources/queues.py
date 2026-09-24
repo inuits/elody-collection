@@ -580,6 +580,7 @@ def sync_entity_to_typesense(message):
             ts_collection,
             facet_fields=ts_config.get("facet_fields", []),
             infix_fields=ts_config.get("infix_fields", []),
+            array_fields=ts_config.get("array_fields", []),
         )
         doc = prepare_document_for_typesense(
             entity,
