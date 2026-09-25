@@ -7,7 +7,9 @@ A client declares only the shape of its references, in two `crud()` keys:
 """
 
 from configuration import get_object_configuration_mapper
+from elody.util import signal_entity_changed
 from flask import request
+from rabbit import get_rabbit
 from resources.base.document import Document
 from resources.generic_object import GenericObjectDetailV2
 from werkzeug.exceptions import BadRequest, Conflict
@@ -66,9 +68,10 @@ def repoint_inbound_references(storage, victim_id, survivor_id, document_type):
         if content is None:
             continue
 
-        storage.patch_item_from_collection_v2(
+        patched = storage.patch_item_from_collection_v2(
             collection, document, content, document["schema"]["type"]
         )
+        signal_entity_changed(get_rabbit(), patched)
         repointed += 1
 
     return repointed

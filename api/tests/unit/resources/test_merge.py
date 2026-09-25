@@ -84,6 +84,7 @@ class FakeStorage:
 
     def patch_item_from_collection_v2(self, collection, item, content, spec):
         self.patches.append((collection, item, content, spec))
+        return {**item, **content}
 
 
 def fake_repointer(*, document, victim_id, survivor_id, **_):
@@ -110,6 +111,17 @@ def configuration_with(**crud):
             return FakeConfiguration()
 
     return FakeMapper
+
+
+@pytest.fixture(autouse=True)
+def signals(monkeypatch):
+    sent = []
+    monkeypatch.setattr("resources.base.merge.get_rabbit", lambda: "rabbit")
+    monkeypatch.setattr(
+        "resources.base.merge.signal_entity_changed",
+        lambda mq_client, entity: sent.append((mq_client, entity)),
+    )
+    return sent
 
 
 @pytest.fixture
@@ -266,6 +278,39 @@ class TestRepointInboundReferences:
 
         assert repoint_inbound_references(storage, VICTIM, SURVIVOR, "person") == 0
         assert storage.patches == []
+
+    def test_signals_each_repointed_document_so_it_is_reindexed(self, signals):
+        storage = FakeStorage(
+            {
+                "entities": [work_referencing(VICTIM, id="E-1")],
+                "bibliographic_entities": [work_referencing(VICTIM, id="W-1")],
+            }
+        )
+
+        repoint_inbound_references(storage, VICTIM, SURVIVOR, "person")
+
+        assert [(client, entity["id"]) for client, entity in signals] == [
+            ("rabbit", "E-1"),
+            ("rabbit", "W-1"),
+        ]
+
+    def test_signals_the_document_as_it_was_patched(self, signals):
+        storage = FakeStorage({"bibliographic_entities": [work_referencing(VICTIM)]})
+
+        repoint_inbound_references(storage, VICTIM, SURVIVOR, "person")
+
+        ((_, entity),) = signals
+        assert entity["properties"]["ref_authors"]["value"] == [SURVIVOR]
+
+    def test_signals_nothing_for_a_document_the_rewriter_declines(self, signals):
+        untouched = work_referencing(VICTIM)
+        untouched["properties"] = {}
+        storage = FakeStorage({"bibliographic_entities": [untouched]})
+        storage.db["bibliographic_entities"].find = lambda _query: [untouched]
+
+        repoint_inbound_references(storage, VICTIM, SURVIVOR, "person")
+
+        assert signals == []
 
     def test_writes_nothing_when_there_is_nothing_to_repoint(self):
         storage = FakeStorage()
