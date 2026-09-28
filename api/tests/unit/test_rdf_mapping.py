@@ -6,6 +6,7 @@ from rdflib import Graph, Literal, URIRef
 from mappers import (
     build_linked_data_node,
     get_linked_data_base_uri,
+    get_linked_data_vocabulary,
     map_entity_to_rdf_data,
 )
 
@@ -42,6 +43,33 @@ def base_uri(monkeypatch):
 
 def test_base_uri_falls_back_to_the_frontend_url():
     assert get_linked_data_base_uri() == BASE
+
+
+def test_empty_env_values_are_treated_as_unset(monkeypatch):
+    monkeypatch.setenv("ELODY_LD_BASE_URI", "")
+    monkeypatch.setenv("DAMS_FRONTEND_URL", "")
+    monkeypatch.setenv("ELODY_LD_CONTEXT", "")
+
+    assert get_linked_data_base_uri() == "https://elody.eu"
+    assert get_linked_data_vocabulary() == "https://elody.eu/"
+
+
+def test_relative_env_values_are_rejected(monkeypatch):
+    monkeypatch.setenv("DAMS_FRONTEND_URL", "/")
+    monkeypatch.setenv("ELODY_LD_CONTEXT", "/vocab")
+
+    assert get_linked_data_base_uri() == "https://elody.eu"
+    assert get_linked_data_vocabulary() == "https://elody.eu/"
+
+
+def test_never_emits_relative_or_file_uris(monkeypatch):
+    monkeypatch.setenv("DAMS_FRONTEND_URL", "")
+    monkeypatch.setenv("ELODY_LD_CONTEXT", "")
+    graph = graph_for([PRODUCTION])
+
+    for subject, predicate, object in graph:
+        for term in (subject, predicate, object):
+            assert not str(term).startswith("file:")
 
 
 def test_explicit_base_uri_overrides_the_frontend_url(monkeypatch):

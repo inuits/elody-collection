@@ -358,11 +358,26 @@ IRI_SAFE_KEY = re.compile(r"^[A-Za-z_][A-Za-z0-9_.\-]*$")
 PUBLISHED_ENTITY_FIELDS = ("_id", "id", "identifiers", "document_version")
 
 
+LINKED_DATA_FALLBACK_URI = "https://elody.eu/"
+
+
+def first_absolute_uri(*candidates):
+    for candidate in candidates:
+        candidate = (candidate or "").strip()
+        if candidate.startswith("http://") or candidate.startswith("https://"):
+            return candidate
+    return LINKED_DATA_FALLBACK_URI
+
+
+def get_linked_data_vocabulary():
+    return first_absolute_uri(os.getenv("ELODY_LD_CONTEXT"))
+
+
 def get_linked_data_base_uri():
-    return (
-        os.getenv("ELODY_LD_BASE_URI")
-        or os.getenv("DAMS_FRONTEND_URL")
-        or os.getenv("ELODY_LD_CONTEXT", "https://elody.eu/")
+    return first_absolute_uri(
+        os.getenv("ELODY_LD_BASE_URI"),
+        os.getenv("DAMS_FRONTEND_URL"),
+        os.getenv("ELODY_LD_CONTEXT"),
     ).rstrip("/")
 
 
@@ -396,7 +411,7 @@ def build_linked_data_node(object):
 
 
 def map_entity_to_rdf_data(objects, format):
-    ELODY_CONTEXT = {"@vocab": os.getenv("ELODY_LD_CONTEXT", "https://elody.eu/")}
+    ELODY_CONTEXT = {"@vocab": get_linked_data_vocabulary()}
     graph = Graph()
     for object in objects or []:
         if "data" in object:
