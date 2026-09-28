@@ -62,6 +62,14 @@ def test_relative_env_values_are_rejected(monkeypatch):
     assert get_linked_data_vocabulary() == "https://elody.eu/"
 
 
+def test_scheme_without_a_host_is_rejected(monkeypatch):
+    monkeypatch.setenv("DAMS_FRONTEND_URL", "https://")
+    monkeypatch.setenv("ELODY_LD_CONTEXT", "http:///")
+
+    assert get_linked_data_base_uri() == "https://elody.eu"
+    assert get_linked_data_vocabulary() == "https://elody.eu/"
+
+
 def test_never_emits_relative_or_file_uris(monkeypatch):
     monkeypatch.setenv("DAMS_FRONTEND_URL", "")
     monkeypatch.setenv("ELODY_LD_CONTEXT", "")

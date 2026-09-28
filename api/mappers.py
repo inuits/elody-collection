@@ -364,8 +364,9 @@ LINKED_DATA_FALLBACK_URI = "https://elody.eu/"
 def first_absolute_uri(*candidates):
     for candidate in candidates:
         candidate = (candidate or "").strip()
-        if candidate.startswith("http://") or candidate.startswith("https://"):
-            return candidate
+        for scheme in ("http://", "https://"):
+            if candidate.startswith(scheme) and candidate[len(scheme) :].strip("/"):
+                return candidate
     return LINKED_DATA_FALLBACK_URI
 
 
