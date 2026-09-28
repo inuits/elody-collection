@@ -41,17 +41,35 @@ class Validator(BaseResource):
                 strategy, validator = (
                     get_object_configuration_mapper().get(content["type"]).validation()
                 )
+                compiled_validator = (
+                    get_object_configuration_mapper()
+                    .get(content["type"])
+                    .document_info()
+                    .get("compiled_schema")
+                    or None
+                )
                 apply_strategy = getattr(self, f"apply_{strategy}_strategy")
-                apply_strategy(validator, content, http_method=http_method, item=item)
+                apply_strategy(
+                    validator,
+                    content,
+                    http_method=http_method,
+                    item=item,
+                    compiled_validator=compiled_validator,
+                )
                 return function(*args, **kwargs)
 
             return wrapper
 
         return decorator
 
-    def apply_schema_strategy(self, validator, content, **_):
+    def apply_schema_strategy(
+        self, validator, content, *, compiled_validator=None, **_
+    ):
         try:
-            validate_json(content, validator)
+            if compiled_validator:
+                compiled_validator(content)
+            else:
+                validate_json(content, validator)
         except ValidationError as error:
             schema = validator
             error_type = error.schema_path.pop()
@@ -72,7 +90,7 @@ class Validator(BaseResource):
                 schema.get("_customAttributes", {})  # pyright: ignore
                 .get("errorMessages", {})
                 .get(error_type, error.message)
-            )
+            ) from error
 
     def apply_function_strategy(self, validator, content, http_method, item, **_):
         try:
@@ -83,4 +101,4 @@ class Validator(BaseResource):
                 content,
                 exc_info=bad_request,
             )
-            raise bad_request
+            raise
