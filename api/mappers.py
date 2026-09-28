@@ -5,6 +5,8 @@ import os
 import re
 import uuid
 
+from urllib.parse import quote
+
 from elody.util import get_item_metadata_value
 from rdflib import Graph
 from serialization.serialize import serialize
@@ -351,14 +353,56 @@ def cast_to_boolean(value):
     return value
 
 
+IRI_SAFE_KEY = re.compile(r"^[A-Za-z_][A-Za-z0-9_.\-]*$")
+
+PUBLISHED_ENTITY_FIELDS = ("_id", "id", "identifiers", "document_version")
+
+
+def get_linked_data_base_uri():
+    return (
+        os.getenv("ELODY_LD_BASE_URI")
+        or os.getenv("DAMS_FRONTEND_URL")
+        or os.getenv("ELODY_LD_CONTEXT", "https://elody.eu/")
+    ).rstrip("/")
+
+
+def build_entity_uri(identifier):
+    return f"{get_linked_data_base_uri()}/{quote(str(identifier), safe='')}"
+
+
+def build_linked_data_node(object):
+    node = {"@id": build_entity_uri(object.get("id") or object.get("_id"))}
+    if object.get("type"):
+        node["@type"] = object["type"]
+    for field in PUBLISHED_ENTITY_FIELDS:
+        if field in object:
+            node[field] = object[field]
+
+    for metadata in object.get("metadata") or []:
+        key = str(metadata.get("key", ""))
+        value = metadata.get("value")
+        if value is None or not IRI_SAFE_KEY.match(key):
+            continue
+        node.setdefault(key, []).append(value)
+
+    for relation in object.get("relations") or []:
+        key = str(relation.get("type", ""))
+        related = relation.get("key")
+        if related is None or not IRI_SAFE_KEY.match(key):
+            continue
+        node.setdefault(key, []).append({"@id": build_entity_uri(related)})
+
+    return node
+
+
 def map_entity_to_rdf_data(objects, format):
     ELODY_CONTEXT = {"@vocab": os.getenv("ELODY_LD_CONTEXT", "https://elody.eu/")}
     graph = Graph()
-    for object in objects:
+    for object in objects or []:
         if "data" in object:
             object = object["data"]
-        object.pop("audit", None)
-        data = json.dumps({"@context": ELODY_CONTEXT, "@graph": [object]})
+        node = build_linked_data_node(object)
+        data = json.dumps({"@context": ELODY_CONTEXT, "@graph": [node]})
         graph.parse(data=data, format="json-ld")
     return graph.serialize(format=format)
 
