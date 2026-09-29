@@ -2,6 +2,7 @@ from flask import g, request
 from inuits_policy_based_auth import RequestContext
 from policy_factory import authenticate
 from resources.base.document import Document
+from resources.base.relations import merge_relation_metadata
 from resources.base_resource import BaseResource
 from resources.elody._blueprint import api
 from serialization.serialize import serialize
@@ -56,6 +57,9 @@ class ElodyDocumentRelations(BaseResource):
         if not document:
             document = self._check_if_collection_and_item_exists(None, id)
             document = serialize(document, type=document.get("type"), to_format=spec)
+        g.content = merge_relation_metadata(
+            document.get("relations") or [], g.get("content") or []
+        )
         document["relations"] = [
             (
                 {**content, "sort": {}, "value": None}
