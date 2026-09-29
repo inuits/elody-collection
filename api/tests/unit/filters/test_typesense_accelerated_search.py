@@ -629,6 +629,82 @@ class TestMultiKeyTextFilter:
                 mock_mongo.assert_called_once_with(query, "entities")
 
 
+class TestRepeatedTextFilterValues:
+    SEARCH_FIELDS = [
+        "properties.title.value",
+        "properties.non_preferred_title.value",
+        "properties.authority_record_number.value",
+    ]
+
+    def _search(self, flask_app, resource, filters):
+        with flask_app.test_request_context(
+            "/entities/filter?limit=20&skip=0",
+            method="POST",
+            content_type="application/json",
+        ):
+            query = [{"type": "type", "value": "genre", "match_exact": True}] + [
+                {
+                    "type": "text",
+                    "key": [f"vlacc:1|{key}"],
+                    "value": value,
+                    "match_exact": False,
+                    "operator": "or",
+                }
+                for key, value in filters
+            ]
+            with patch("resources.base_filter_resource.typesense_search") as mock_ts:
+                mock_ts.return_value = make_ts_result([], 0)
+                resource._execute_typesense_accelerated_search(
+                    query,
+                    "entities",
+                    {
+                        "enabled": True,
+                        "collection": "entities",
+                        "search_fields": self.SEARCH_FIELDS,
+                    },
+                )
+            return mock_ts.call_args[0]
+
+    def test_same_value_on_several_keys_is_searched_once(self, flask_app, resource):
+        args = self._search(
+            flask_app,
+            resource,
+            [(key, "boekbesprek") for key in self.SEARCH_FIELDS],
+        )
+
+        assert args[1] == "boekbesprek"
+        assert args[2].split(",") == [
+            "properties_title_value",
+            "properties_non_preferred_title_value",
+            "properties_authority_record_number_value",
+        ]
+
+    def test_different_values_are_all_kept_in_order(self, flask_app, resource):
+        args = self._search(
+            flask_app,
+            resource,
+            [
+                ("properties.title.value", "harry"),
+                ("properties.authority_record_number.value", "123"),
+            ],
+        )
+
+        assert args[1] == "harry 123"
+
+    def test_a_later_repeat_does_not_reorder(self, flask_app, resource):
+        args = self._search(
+            flask_app,
+            resource,
+            [
+                ("properties.title.value", "a"),
+                ("properties.non_preferred_title.value", "b"),
+                ("properties.authority_record_number.value", "a"),
+            ],
+        )
+
+        assert args[1] == "a b"
+
+
 class TestTypesensePagination:
     """Test pagination behavior with Typesense."""
 

@@ -301,7 +301,7 @@ class BaseFilterResource(BaseResource):
             if distinct_by:
                 distinct_keys.append(distinct_by)
         search_terms = " ".join(
-            f.get("value", "") for f in text_filters if f.get("value")
+            dict.fromkeys(f.get("value") for f in text_filters if f.get("value"))
         )
         if not search_terms:
             search_terms = "*"
