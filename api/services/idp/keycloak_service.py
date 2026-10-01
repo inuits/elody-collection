@@ -31,9 +31,20 @@ class KeycloakService(BaseIdpService):
         )
         self._idp_name = "keycloak"
 
+    def _find_user_id(self, serialized_user: dict):
+        return self._keycloak_admin.get_user_id(serialized_user["username"]) or next(
+            iter(
+                self._keycloak_admin.get_users(
+                    query={"email": serialized_user["email"], "max": 1, "exact": True}
+                )
+            ),
+            {},
+        ).get("id")
+
     def create_user(
         self, user: ElodyEntity, serializer: type[ToKeycloakSerializer]
     ) -> str:
+
         user_serializer = serializer().from_elody_to_keycloak
         return self._keycloak_admin.create_user(user_serializer(user))
 
@@ -47,6 +58,8 @@ class KeycloakService(BaseIdpService):
         serialized_user = user_serializer(user, extra_attributes=extra_attributes)
         user_id = self._keycloak_admin.get_user_id(serialized_user["email"])
         if user_id:
+            payload = user_serializer(user, extra_attributes=extra_attributes)
+            payload.pop("username", None)
             self._keycloak_admin.update_user(user_id, serialized_user)
             return user_id
 
