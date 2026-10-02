@@ -29,6 +29,7 @@ def get_typesense_client():
         try:
             import typesense
 
+            port = getenv("TYPESENSE_SERVER_PORT", getenv("TYPESENSE_PORT", "8108"))
             _client = typesense.Client(
                 {
                     "api_key": api_key,
@@ -42,7 +43,7 @@ def get_typesense_client():
                                 "TYPESENSE_SERVER_PORT",
                                 getenv("TYPESENSE_PORT", "8108"),
                             ),
-                            "protocol": "http",
+                            "protocol": "http" if port == "8108" else "https",
                         }
                     ],
                     "connection_timeout_seconds": int(
