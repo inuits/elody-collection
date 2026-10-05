@@ -58,9 +58,15 @@ class KeycloakService(BaseIdpService):
         serialized_user = user_serializer(user, extra_attributes=extra_attributes)
         user_id = self._keycloak_admin.get_user_id(serialized_user["email"])
         if user_id:
+            # keycloak replaces the whole attribute map on a PUT, and the realm is
+            # shared across environments, so keep every attribute we do not own
+            if extra_attributes is None:
+                extra_attributes = (
+                    self._keycloak_admin.get_user(user_id).get("attributes") or {}
+                )
             payload = user_serializer(user, extra_attributes=extra_attributes)
             payload.pop("username", None)
-            self._keycloak_admin.update_user(user_id, serialized_user)
+            self._keycloak_admin.update_user(user_id, payload)
             return user_id
 
     def get_user(self, user: ElodyEntity, serializer: type[ToKeycloakSerializer]):
