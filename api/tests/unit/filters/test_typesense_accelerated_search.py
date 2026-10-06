@@ -2976,3 +2976,74 @@ class TestWildcardQueryBy:
             assert "properties_ref_uniform_titles_value:=T-1" in (
                 mock_ts.call_args.kwargs["filter_by"]
             )
+
+
+class TestOrderedDistinctGroups:
+    """A distinct_by on a non-faceted field ordered by another field lists groups.
+
+    Typesense cannot pick the first document per distinct value in a given
+    order, so the request goes straight to MongoDB. Unordered distinct_by
+    requests (filter dropdowns) keep their current route.
+    """
+
+    QUERY = [
+        {
+            "type": "text",
+            "key": ["vlacc:1|properties.participants.value"],
+            "value": "user-1",
+        },
+        {
+            "type": "text",
+            "key": ["vlacc:1|properties.category.value"],
+            "value": "*",
+            "distinct_by": "properties.category.value",
+        },
+        {"type": "type", "value": "comment"},
+    ]
+    CONFIG = {
+        "enabled": True,
+        "collection": "entities",
+        "search_fields": ["properties.participants.value"],
+        "facet_fields": ["type"],
+    }
+
+    def _run(self, flask_app, resource, url):
+        with flask_app.test_request_context(
+            url, method="POST", content_type="application/json"
+        ):
+            with (
+                patch.object(resource, "_relation_aware_search") as mock_ts,
+                patch.object(
+                    resource, "_execute_advanced_search_with_query_v2"
+                ) as mock_mongo,
+            ):
+                mock_ts.return_value = make_ts_result([], 0)
+                mock_mongo.return_value = {
+                    "results": [],
+                    "count": 0,
+                    "skip": 0,
+                    "limit": 20,
+                }
+                resource._execute_typesense_accelerated_search(
+                    self.QUERY, "entities", self.CONFIG
+                )
+                return mock_ts, mock_mongo
+
+    def test_ordered_distinct_by_runs_on_mongo(self, flask_app, resource):
+        mock_ts, mock_mongo = self._run(
+            flask_app,
+            resource,
+            "/entities/filter?limit=10&skip=0"
+            "&order_by=properties.last_activity_at.value&asc=0",
+        )
+
+        mock_mongo.assert_called_once_with(self.QUERY, "entities")
+        mock_ts.assert_not_called()
+
+    def test_unordered_distinct_by_keeps_typesense_route(self, flask_app, resource):
+        mock_ts, mock_mongo = self._run(
+            flask_app, resource, "/entities/filter?limit=10&skip=0"
+        )
+
+        mock_ts.assert_called_once()
+        mock_mongo.assert_not_called()

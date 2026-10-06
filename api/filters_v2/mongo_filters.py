@@ -163,7 +163,8 @@ class MongoFilters:
                 project = project_stage.build(facet=facet[-1]["$facet"])
                 pipeline = [*match, *facet, *project]
             else:
-                pipeline = [*match, *group, *sort, *skip, *limit]
+                pre_group_sort = sort if group else []
+                pipeline = [*match, *pre_group_sort, *group, *sort, *skip, *limit]
         if geo_bucket_filter := has_bucket_filter(filter_request_body):
             bucket_group, replace_root = get_bucket_stages(geo_bucket_filter)
             pipeline = [*match, *bucket_group, *replace_root]

@@ -577,6 +577,8 @@ class BaseFilterResource(BaseResource):
             return self._execute_typesense_distinct_options(
                 query, collection, typesense_config, distinct_by, skip, limit, asc
             )
+        if distinct_by and order_by:
+            return self._execute_advanced_search_with_query_v2(query, collection)
 
         text_filters, type_filter_values, exact_match_filters, remaining_filters = (
             self._classify_filters_for_typesense(query)
