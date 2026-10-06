@@ -18,6 +18,7 @@ from elody.util import (
     signal_mediafile_deleted,
 )
 from logging_elody.log import log
+from object_configurations.relation_mirroring import mirror_relation_type
 from migration.migrate import migrate
 from policy_factory import get_user_context
 from pymongo import ASCENDING, DESCENDING, MongoClient
@@ -246,28 +247,7 @@ class MongoStorageManager(GenericStorageManager):
                 )
 
     def _map_entity_relation(self, relation):
-        relations = {
-            "authored": "authoredBy",
-            "authoredBy": "authored",
-            "belongsTo": "hasMediafile",
-            "BelongsToParent": "hasChild",
-            "components": "parent",
-            "contains": "isIn",
-            "definedBy": "defines",
-            "defines": "definedBy",
-            "hasChild": "belongsToParent",
-            "hasMediafile": "belongsTo",
-        }
-        if mapped_relation := relations.get(relation):
-            return mapped_relation
-        match_is_for = re.match(r"^is(.*)For$", relation)
-        match_has = re.match(r"^has(.*)$", relation)
-        if match_is_for:
-            entity_type = match_is_for.group(1)
-            return f"has{entity_type}"
-        if match_has:
-            entity_type = match_has.group(1)
-            return f"is{entity_type}For"
+        return mirror_relation_type(relation)
 
     def _map_relation_to_collection(self, relation):
         return {
