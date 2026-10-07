@@ -111,6 +111,15 @@ def load_specs(app):
     return resource_rules
 
 
+def load_sparql_sources(app):
+    """The collections of the linked-data sources declared in SPARQL_SOURCES, if any."""
+    import sparql_sources
+
+    sources = sparql_sources.load()
+    if sources:
+        app.register_blueprint(sparql_sources.blueprint(sources))
+
+
 def load_app_resources():
     resource_rules = []
     apps = read_json_as_dict(getenv("APPS_MANIFEST"), None)
@@ -137,6 +146,7 @@ def init_app_and_api():
     app.wsgi_app = ProxyFix(app.wsgi_app, x_prefix=1)
     app.secret_key = getenv("SECRET_KEY", token_hex(16))
     load_apps(app, log)
+    load_sparql_sources(app)
     resource_rules = load_specs(app)
     resource_rules.extend(load_app_resources())
     __process_resource_rules(resource_rules)

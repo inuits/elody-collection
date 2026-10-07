@@ -46,6 +46,8 @@ Each subject it finds is handed to that configuration's serializer as
 RDF-to-entity mapping stays with the client that owns the vocabulary.
 """
 
+import base64
+import binascii
 import json
 import re
 from copy import deepcopy
@@ -107,6 +109,11 @@ class SparqlStorageManager(GenericStorageManager):
                 collection, config, skip, limit, identifiers, asc
             )
 
+        if self._is_query_driven(config):
+            return self._query_page(
+                collection, config, skip, limit, identifiers, self._requested_search(filters)
+            )
+
         count = self._count(config, identifiers)
         # Order is decided here and nowhere else: a CONSTRUCT returns a graph,
         # which is a set of triples with no order at all, so the sequence has
@@ -141,6 +148,16 @@ class SparqlStorageManager(GenericStorageManager):
 
         if self._is_graph_scoped(config):
             return self._graph_document(collection, config, str(id))
+
+        if self._is_query_driven(config):
+            # no class to check against: the resource is addressed by its IRI alone
+            if self._iri(config, str(id)) is None:
+                return {}
+            graph = self._construct(config, self._properties_query(config, [str(id)]))
+            if graph is None:
+                return {}
+            documents = self._to_documents(graph, collection, config, order=[str(id)])
+            return documents[0] if documents else {}
 
         graph = self._construct(config, self._item_query(config, str(id)))
         if graph is None:
@@ -316,9 +333,15 @@ class SparqlStorageManager(GenericStorageManager):
         IRI alone (`identifier_prefix`) and lives in the default graph, so the
         graph is optional and either way of addressing is enough.
         """
-        missing = [key for key in ("endpoint", "target_class") if not config.get(key)]
-        if not config.get("identifier_predicate") and not config.get("identifier_prefix"):
-            missing.append("identifier_predicate or identifier_prefix")
+        missing = [] if config.get("endpoint") else ["endpoint"]
+        if not config.get("target_class") and not config.get("select_query"):
+            missing.append("target_class or select_query")
+        if not (
+            config.get("identifier_predicate")
+            or config.get("identifier_prefix")
+            or config.get("identifier_encoding") == "iri"
+        ):
+            missing.append("identifier_predicate, identifier_prefix or identifier_encoding")
         if missing:
             log.debug(
                 f"Collection {collection} has no usable sparql configuration, "
@@ -334,6 +357,13 @@ class SparqlStorageManager(GenericStorageManager):
     @staticmethod
     def _unsafe_iri(iri) -> bool:
         return bool(re.search(r"[\s<>\"{}|\\^`]", str(iri)))
+
+    @staticmethod
+    def _requested_search(filters) -> str:
+        """The text the user typed, if the collection's filter serializer passed one on."""
+        if isinstance(filters, dict):
+            return str(filters.get("search") or "").strip()
+        return ""
 
     @staticmethod
     def _requested_identifiers(filters):
@@ -353,7 +383,7 @@ class SparqlStorageManager(GenericStorageManager):
 
     @staticmethod
     def _by_iri(config) -> bool:
-        return bool(config.get("identifier_prefix"))
+        return bool(config.get("identifier_prefix")) or config.get("identifier_encoding") == "iri"
 
     @staticmethod
     def _scope(config, pattern: str) -> str:
@@ -403,15 +433,32 @@ class SparqlStorageManager(GenericStorageManager):
             return ""
         return f"    VALUES ?p {{ {' '.join(f'<{p}>' for p in predicates)} }}\n"
 
-    def _iri(self, config, identifier: str) -> str:
+    def _iri(self, config, identifier: str) -> str | None:
+        """The IRI an identifier names, as a SPARQL term; None when it names none safely."""
+        if config.get("identifier_encoding") == "iri" and not config.get("identifier_prefix"):
+            try:
+                padded = identifier + "=" * (-len(identifier) % 4)
+                iri = base64.urlsafe_b64decode(padded.encode()).decode()
+            except (binascii.Error, UnicodeDecodeError, ValueError):
+                return None
+            return None if not iri or self._unsafe_iri(iri) else f"<{iri}>"
         return f"<{config['identifier_prefix']}{identifier}>"
+
+    def _identifier_of_iri(self, config, iri: str) -> str | None:
+        """The identifier of a resource named by its IRI; None when it is outside the source."""
+        if config.get("identifier_encoding") == "iri" and not config.get("identifier_prefix"):
+            return base64.urlsafe_b64encode(iri.encode()).decode().rstrip("=")
+        prefix = str(config.get("identifier_prefix") or "")
+        return iri[len(prefix):] if iri.startswith(prefix) and len(iri) > len(prefix) else None
+
+    def _iris(self, config, identifiers) -> str:
+        return " ".join(term for term in (self._iri(config, id) for id in identifiers) if term)
 
     def _values_clause(self, config, identifiers) -> str:
         if not identifiers:
             return ""
         if self._by_iri(config):
-            iris = " ".join(self._iri(config, id) for id in identifiers)
-            return f"    VALUES ?s {{ {iris} }}\n"
+            return f"    VALUES ?s {{ {self._iris(config, identifiers)} }}\n"
         literals = " ".join(f'"{id}"' for id in identifiers)
         return (
             f"    ?s <{config['identifier_predicate']}> ?requested .\n"
@@ -490,8 +537,7 @@ class SparqlStorageManager(GenericStorageManager):
         returned no properties, and so no row, for every such resource.
         """
         if self._by_iri(config):
-            iris = " ".join(self._iri(config, id) for id in identifiers)
-            pattern = f"    ?s ?p ?o .\n    VALUES ?s {{ {iris} }}\n"
+            pattern = f"    ?s ?p ?o .\n    VALUES ?s {{ {self._iris(config, identifiers)} }}\n"
         else:
             values = " ".join(f'"{id}"' for id in identifiers)
             pattern = (
@@ -1016,6 +1062,81 @@ class SparqlStorageManager(GenericStorageManager):
             log.warning(f"SPARQL count could not be read: {error}")
             return None
 
+    # -- query-driven sources ---------------------------------------------
+
+    @staticmethod
+    def _is_query_driven(config) -> bool:
+        """Members chosen by a query (sh:in [ sh:select ], a subclass tree) rather than a class."""
+        return bool(config.get("select_query")) and not config.get("target_class")
+
+    @staticmethod
+    def _literal(text: str) -> str:
+        """A string as a SPARQL literal that nothing in it can end early."""
+        escaped = (
+            text.replace("\\", "\\\\")
+            .replace('"', '\\"')
+            .replace("\n", "\\n")
+            .replace("\r", "\\r")
+            .replace("\t", "\\t")
+        )
+        return f'"{escaped}"'
+
+    def _bound(self, config, query: str, search: str) -> str:
+        """The query with $searchTerm and $uiLanguage pre-bound, as SHACL UI's search queries expect."""
+        language = str(config.get("language") or "en").strip()
+        if not re.match(r"^[A-Za-z-]{1,35}$", language):
+            language = "en"
+        query = re.sub(r"\$searchTerm\b", lambda _: self._literal(search), query)
+        return re.sub(r"\$uiLanguage\b", lambda _: self._literal(language), query)
+
+    def _query_values(self, config, search: str) -> list[str] | None:
+        """The identifiers the source's query returns, in its order, each once."""
+        query = config["select_query"]
+        if search and config.get("search_query"):
+            query = config["search_query"]
+        body = self._ask(config, self._bound(config, query, search), "application/sparql-results+json")
+        if body is None:
+            return None
+        try:
+            bindings = json.loads(body)["results"]["bindings"]
+        except Exception as error:
+            log.warning(f"SPARQL query result could not be read: {error}")
+            return None
+        found = []
+        for binding in bindings:
+            value = binding.get("value", {})
+            if value.get("type") != "uri" or self._unsafe_iri(value.get("value", "")):
+                continue
+            identifier = self._identifier_of_iri(config, value["value"])
+            if identifier and SAFE_IDENTIFIER.match(identifier) and identifier not in found:
+                found.append(identifier)
+        return found
+
+    def _query_page(self, collection, config, skip, limit, identifiers, search) -> dict:
+        empty = {"results": [], "count": 0, "limit": limit, "skip": skip}
+        values = identifiers if identifiers is not None else self._query_values(config, search)
+        if values is None:
+            return empty
+        page = values[int(skip) : int(skip) + int(limit)]
+        if not page:
+            return {**empty, "count": len(values)}
+        graph = self._construct(config, self._properties_query(config, page))
+        if graph is None:
+            return empty
+        # exactly the page: an endpoint may answer more subjects than were asked for, and a
+        # resource it names but says nothing about still becomes a row, by its IRI
+        subjects = [URIRef(term[1:-1]) for term in (self._iri(config, id) for id in page) if term]
+        scoped = Graph()
+        for subject in subjects:
+            triples = list(graph.triples((subject, None, None)))
+            for triple in triples:
+                scoped.add(triple)
+            if not triples:
+                scoped.add((subject, RDF.type, URIRef("http://www.w3.org/2000/01/rdf-schema#Resource")))
+        results = self._to_documents(scoped, collection, config, order=page)
+        results = [doc for doc in results if doc]
+        return {"results": results, "count": len(values), "limit": limit, "skip": skip}
+
     # -- mapping ----------------------------------------------------------
 
     def _to_documents(self, graph: Graph, collection, config, order=None) -> list[dict]:
@@ -1028,14 +1149,14 @@ class SparqlStorageManager(GenericStorageManager):
         identifier_predicate = (
             None if self._by_iri(config) else URIRef(config["identifier_predicate"])
         )
-        prefix = str(config.get("identifier_prefix") or "")
 
         def identifier_of(subject):
             if identifier_predicate is not None:
                 value = graph.value(subject, identifier_predicate)
                 return None if value is None else str(value)
-            iri = str(subject)
-            return iri[len(prefix):] if iri.startswith(prefix) and len(iri) > len(prefix) else None
+            if not isinstance(subject, URIRef):
+                return None
+            return self._identifier_of_iri(config, str(subject))
 
         present = set(graph.subjects())
         if order:

@@ -34,12 +34,20 @@ def init_mappers():
 
     try:
         mapper_module = import_module("apps.mappers")
+        import sparql_sources
+
+        # linked-data sources declared in SPARQL_SOURCES join the client's own types
+        sources = sparql_sources.load()
         _object_configuration_mapper = ObjectConfigurationMapper(
-            mapper_module.OBJECT_CONFIGURATION_MAPPER
+            sparql_sources.with_sources(mapper_module.OBJECT_CONFIGURATION_MAPPER, sources)
         )
         _route_mapper = mapper_module.ROUTE_MAPPER
         _collection_mapper = mapper_module.COLLECTION_MAPPER
         _storage_mapper = mapper_module.STORAGE_MAPPER
+        if sources and "sparql" not in _storage_mapper:
+            from storage.sparqlstore import SparqlStorageManager
+
+            _storage_mapper = {**_storage_mapper, "sparql": SparqlStorageManager}
         _features = mapper_module.FEATURES
     except ModuleNotFoundError as mapper_error:
         from logging_elody.log import log
