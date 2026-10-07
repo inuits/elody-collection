@@ -120,9 +120,19 @@ class TestAQueryDrivenSourceIsUsable:
 
 
 class TestListing:
-    def test_the_select_query_is_sent_as_it_is(self, store, serialized):
+    def test_the_select_query_is_sent_as_it_is_capped_at_max_results(self, store, serialized):
         _, queries = _list(store)
-        assert queries[0] == SELECT
+        assert queries[0] == SELECT + "\nLIMIT 500"
+
+    def test_the_cap_is_configurable_and_a_query_s_own_limit_is_kept(self, store, serialized):
+        config = dict(CONFIG, max_results=50)
+        with patch.object(store, "_sparql_config", return_value=config):
+            _, queries = _list(store)
+        assert queries[0].endswith("\nLIMIT 50")
+        config = dict(CONFIG, select_query=SELECT + " LIMIT 10")
+        with patch.object(store, "_sparql_config", return_value=config):
+            _, queries = _list(store)
+        assert queries[0] == SELECT + " LIMIT 10"
 
     def test_the_page_is_cut_from_the_values_it_returns_and_counted(self, store, serialized):
         page, queries = _list(store, skip=1, limit=1)
@@ -165,11 +175,11 @@ class TestSearching:
         config.pop("search_query")
         with patch.object(store, "_sparql_config", return_value=config):
             _, queries = _list(store, filters={"search": "neur"})
-        assert queries[0] == SELECT
+        assert queries[0].startswith(SELECT)
 
     def test_an_empty_term_lists_everything(self, store, serialized):
         _, queries = _list(store, filters={"search": "  "})
-        assert queries[0] == SELECT
+        assert queries[0].startswith(SELECT)
 
 
 class TestOneResource:

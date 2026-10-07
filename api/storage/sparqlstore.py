@@ -1089,12 +1089,29 @@ class SparqlStorageManager(GenericStorageManager):
         query = re.sub(r"\$searchTerm\b", lambda _: self._literal(search), query)
         return re.sub(r"\$uiLanguage\b", lambda _: self._literal(language), query)
 
+    @staticmethod
+    def _capped(config, query: str) -> str:
+        """At most max_results values (500 by default) unless the query sets its own LIMIT.
+
+        Paging happens on the values, so without a cap a source with tens of
+        thousands of members would be read whole for every page.
+        """
+        if re.search(r"\bLIMIT\s+\d+\s*$", query.strip(), re.IGNORECASE):
+            return query
+        try:
+            cap = max(1, int(config.get("max_results") or 500))
+        except (TypeError, ValueError):
+            cap = 500
+        return f"{query.rstrip()}\nLIMIT {cap}"
+
     def _query_values(self, config, search: str) -> list[str] | None:
         """The identifiers the source's query returns, in its order, each once."""
         query = config["select_query"]
         if search and config.get("search_query"):
             query = config["search_query"]
-        body = self._ask(config, self._bound(config, query, search), "application/sparql-results+json")
+        body = self._ask(
+            config, self._capped(config, self._bound(config, query, search)), "application/sparql-results+json"
+        )
         if body is None:
             return None
         try:
