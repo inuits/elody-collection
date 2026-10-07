@@ -148,7 +148,9 @@ class MongoFilters:
         tidy_up_match: bool,
     ):
         match = match_stage.build(filter_request_body, tidy_up_match)
-        group = group_stage.build(get_distinct_by(filter_request_body))
+        group = group_stage.build(
+            get_distinct_by(filter_request_body), unwind=bool(order_by)
+        )
         if options_requesting_filter:
             project = project_stage.build(
                 options_requesting_filter=options_requesting_filter, match=match

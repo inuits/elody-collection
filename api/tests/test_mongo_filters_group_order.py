@@ -24,8 +24,11 @@ LIMIT = [{"$limit": "limit"}]
 
 def _build(monkeypatch, *, distinct_by, order_by):
     monkeypatch.setattr(mod.match_stage, "build", lambda *a, **k: MATCH)
+    group_calls = []
     monkeypatch.setattr(
-        mod.group_stage, "build", lambda key: GROUP if key else []
+        mod.group_stage,
+        "build",
+        lambda key, unwind=False: group_calls.append(unwind) or (GROUP if key else []),
     )
     monkeypatch.setattr(
         mod.sort_stage, "build", lambda order_by, *a, **k: SORT if order_by else []
@@ -40,6 +43,7 @@ def _build(monkeypatch, *, distinct_by, order_by):
     pipeline, match, group = mf._MongoFilters__build_aggregation_query(
         [], 0, 20, order_by, False, {}, [], True
     )
+    _build.unwind_calls = group_calls
     return pipeline, match, group
 
 
@@ -69,6 +73,17 @@ class TestDistinctByGroupOrder:
         )
 
         assert pipeline == [*MATCH, *GROUP, *SKIP, *LIMIT]
+
+    def test_unwinds_list_values_only_for_ordered_groups(self, monkeypatch):
+        _build(
+            monkeypatch,
+            distinct_by="properties.tags.value",
+            order_by="properties.last_activity_at.value",
+        )
+        assert _build.unwind_calls == [True]
+
+        _build(monkeypatch, distinct_by="properties.tags.value", order_by="")
+        assert _build.unwind_calls == [False]
 
     def test_order_by_without_distinct_by_is_unchanged(self, monkeypatch):
         pipeline, _, _ = _build(
