@@ -102,6 +102,11 @@ class TestTheSerializer:
         to_sparql = configuration.serialization("elody_filter", "sparql_filter")
         assert to_sparql([{"type": "text", "key": "x", "value": ""}]) == {}
 
+    def test_the_wildcard_a_dropdown_opens_with_is_no_search(self, configuration):
+        to_sparql = configuration.serialization("elody_filter", "sparql_filter")
+        assert to_sparql([{"type": "text", "key": "x", "value": "*"}]) == {}
+        assert to_sparql([{"type": "text", "key": "x", "value": "*neur*"}]) == {"search": "neur"}
+
 
 class TestLoading:
     def test_no_file_means_no_sources(self):

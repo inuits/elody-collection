@@ -98,8 +98,10 @@ class SparqlSourceSerializer:
         for filter in filters or []:
             kind = filter.get("type")
             value = filter.get("value")
-            if kind == "text" and isinstance(value, str) and value.strip():
-                restrictions["search"] = value.strip()
+            # "*" is Elody's "anything" (a dropdown opens with it); wildcards around a term are not SPARQL
+            term = value.strip().strip("*").strip() if isinstance(value, str) else ""
+            if kind == "text" and term:
+                restrictions["search"] = term
             elif kind == "selection" and "identifiers" in str(filter.get("key", [])):
                 ids = [] if value is None else value if isinstance(value, list) else [value]
                 # an explicit selection of identifiers: an empty one matches nothing
