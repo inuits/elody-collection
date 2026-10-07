@@ -172,7 +172,7 @@ def __handle_schema_agnostic_filter(
     filter, filter_criteria, restricted_keys, matchers_per_schema
 ):
     filter_criterias = parse_optional_filters(filter_criteria)
-    key = filter_criterias[0].get("key", "type")
+    key = __restricted_key(filter_criterias[0])
     if key not in restricted_keys:
         restricted_keys.append(key)
 
@@ -195,7 +195,7 @@ def __handle_schema_specific_filter(
         filter_criteria_for_schema = deepcopy(filter_criteria)
         filter_criteria_for_schema["key"] = key
         filter_criterias_for_schema = parse_optional_filters(filter_criteria_for_schema)
-        key = filter_criterias_for_schema[0].get("key", "type")
+        key = __restricted_key(filter_criterias_for_schema[0])
         if key in restricted_keys:
             break
         else:
@@ -240,3 +240,7 @@ def __handle_schema_specific_filter(
                 matchers_per_schema.update({schema: matchers})
 
     return matchers_per_schema
+
+
+def __restricted_key(filter_criteria: dict) -> tuple[str, str]:
+    return (filter_criteria.get("key", "type"), filter_criteria.get("operator", "and"))
