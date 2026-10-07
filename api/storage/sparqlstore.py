@@ -1134,7 +1134,8 @@ class SparqlStorageManager(GenericStorageManager):
         values = identifiers if identifiers is not None else self._query_values(config, search)
         if values is None:
             return empty
-        page = values[int(skip) : int(skip) + int(limit)]
+        start = max(0, int(skip))
+        page = values[start : start + max(0, int(limit))]
         if not page:
             return {**empty, "count": len(values)}
         graph = self._construct(config, self._properties_query(config, page))

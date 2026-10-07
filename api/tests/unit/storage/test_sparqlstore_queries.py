@@ -142,6 +142,10 @@ class TestListing:
         assert f"VALUES ?s {{ <{OBO}CL_0000028> }}" in construct
         assert f"VALUES ?p {{ <{LABEL}> }}" in construct
 
+    def test_a_negative_skip_starts_at_the_first_value(self, store, serialized):
+        page, _ = _list(store, skip=-5, limit=2)
+        assert [item["_id"] for item in page["results"]] == ["CL_0000540", "CL_0000028"]
+
     def test_the_order_is_the_query_s(self, store, serialized):
         page, _ = _list(store)
         assert [item["_id"] for item in page["results"]] == ["CL_0000540", "CL_0000028", "CL_0000029"]
