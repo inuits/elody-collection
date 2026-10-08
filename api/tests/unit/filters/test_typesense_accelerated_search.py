@@ -2786,6 +2786,7 @@ class TestTypoToleranceAndTokenDropOptions:
             "search_fields": ["properties.isbn_group.value.isbn"],
             "no_typo_fields": ["properties.isbn_group.value.isbn"],
             "drop_tokens_threshold": 0,
+            "max_candidates": 50,
         }
         with patch("resources.base_filter_resource.typesense_ensure_collection"):
             *_, search_options = resource._build_typesense_query(
@@ -2794,6 +2795,7 @@ class TestTypoToleranceAndTokenDropOptions:
         assert search_options == {
             "no_typo_fields": ["properties.isbn_group.value.isbn"],
             "drop_tokens_threshold": 0,
+            "max_candidates": 50,
         }
 
     def test_build_query_passes_array_fields_to_ensure_collection(self, resource):
@@ -2835,11 +2837,13 @@ class TestTypoToleranceAndTokenDropOptions:
                 search_options={
                     "no_typo_fields": ["properties.isbn_group.value.isbn"],
                     "drop_tokens_threshold": 0,
+                    "max_candidates": 50,
                 },
             )
         kwargs = mock_ts.call_args.kwargs
         assert kwargs["no_typo_fields"] == ["properties.isbn_group.value.isbn"]
         assert kwargs["drop_tokens_threshold"] == 0
+        assert kwargs["max_candidates"] == 50
 
     def test_execute_forwards_options_to_search_all_ids(self, resource):
         with patch(
@@ -2854,11 +2858,12 @@ class TestTypoToleranceAndTokenDropOptions:
                 True,
                 0,
                 20,
-                search_options={"drop_tokens_threshold": 0},
+                search_options={"drop_tokens_threshold": 0, "max_candidates": 50},
             )
         kwargs = mock_ts.call_args.kwargs
         assert kwargs["drop_tokens_threshold"] == 0
         assert kwargs["no_typo_fields"] is None
+        assert kwargs["max_candidates"] == 50
 
     def test_accelerated_search_passes_options_end_to_end(self, flask_app, resource):
         with flask_app.test_request_context(
@@ -2880,11 +2885,13 @@ class TestTypoToleranceAndTokenDropOptions:
                         "search_fields": ["properties.isbn_group.value.isbn"],
                         "no_typo_fields": ["properties.isbn_group.value.isbn"],
                         "drop_tokens_threshold": 0,
+                        "max_candidates": 50,
                     },
                 )
             kwargs = mock_ts.call_args.kwargs
             assert kwargs["no_typo_fields"] == ["properties.isbn_group.value.isbn"]
             assert kwargs["drop_tokens_threshold"] == 0
+            assert kwargs["max_candidates"] == 50
 
 
 class TestWildcardQueryBy:

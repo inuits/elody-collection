@@ -1073,6 +1073,7 @@ class TestSearchTypoAndTokenDropOptions:
         params = _search_params(client)
         assert "num_typos" not in params
         assert "drop_tokens_threshold" not in params
+        assert "max_candidates" not in params
 
     def test_passes_num_typos_for_no_typo_fields(self):
         client = self._client([_make_search_result([], 0)])
@@ -1090,6 +1091,23 @@ class TestSearchTypoAndTokenDropOptions:
         with patch.object(tc, "get_typesense_client", return_value=client):
             search("entities", "mars venus", "name", drop_tokens_threshold=0)
         assert _search_params(client)["drop_tokens_threshold"] == 0
+
+    def test_passes_max_candidates(self):
+        client = self._client([_make_search_result([], 0)])
+        with patch.object(tc, "get_typesense_client", return_value=client):
+            search("entities", "huid", "name,title", max_candidates=50)
+        assert _search_params(client)["max_candidates"] == 50
+
+    def test_retry_without_missing_field_keeps_max_candidates(self):
+        client = self._client(
+            [
+                Exception("Could not find a field named `title` in the schema."),
+                _make_search_result(["a"], 1),
+            ]
+        )
+        with patch.object(tc, "get_typesense_client", return_value=client):
+            search("entities", "huid", "name,title", max_candidates=50)
+        assert _search_params(client, 1)["max_candidates"] == 50
 
     def test_retry_without_missing_field_realigns_num_typos(self):
         client = self._client(
@@ -1123,10 +1141,12 @@ class TestSearchTypoAndTokenDropOptions:
                 "identifiers,name",
                 no_typo_fields=["identifiers"],
                 drop_tokens_threshold=0,
+                max_candidates=50,
             )
         params = _search_params(client)
         assert params["num_typos"] == "0,2"
         assert params["drop_tokens_threshold"] == 0
+        assert params["max_candidates"] == 50
 
     def test_search_all_ids_retry_realigns_num_typos(self):
         client = self._client(
@@ -1137,11 +1157,16 @@ class TestSearchTypoAndTokenDropOptions:
         )
         with patch.object(tc, "get_typesense_client", return_value=client):
             search_all_ids(
-                "entities", "mars", "identifiers,name", no_typo_fields=["identifiers"]
+                "entities",
+                "mars",
+                "identifiers,name",
+                no_typo_fields=["identifiers"],
+                max_candidates=50,
             )
         retry = _search_params(client, 1)
         assert retry["query_by"] == "identifiers"
         assert retry["num_typos"] == "0"
+        assert retry["max_candidates"] == 50
 
 
 class TestGetCollectionFieldTypesRefresh:

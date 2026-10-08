@@ -309,13 +309,17 @@ def _build_num_typos_param(query_by, no_typo_fields):
     return ",".join(parts) if "0" in parts else None
 
 
-def _apply_search_options(search_params, query_by, no_typo_fields, drop_tokens_threshold):
-    """Add the optional typo / token-drop tuning to ``search_params`` in place."""
+def _apply_search_options(
+    search_params, query_by, no_typo_fields, drop_tokens_threshold, max_candidates=None
+):
+    """Add the optional typo / token-drop / candidate tuning to ``search_params`` in place."""
     num_typos = _build_num_typos_param(query_by, no_typo_fields)
     if num_typos:
         search_params["num_typos"] = num_typos
     if drop_tokens_threshold is not None:
         search_params["drop_tokens_threshold"] = drop_tokens_threshold
+    if max_candidates is not None:
+        search_params["max_candidates"] = max_candidates
 
 
 def search(
@@ -331,6 +335,7 @@ def search(
     infix_fields=None,
     no_typo_fields=None,
     drop_tokens_threshold=None,
+    max_candidates=None,
 ):
     client = get_typesense_client()
     if not client:
@@ -349,7 +354,11 @@ def search(
         if infix_param:
             search_params["infix"] = infix_param
         _apply_search_options(
-            search_params, query_by, no_typo_fields, drop_tokens_threshold
+            search_params,
+            query_by,
+            no_typo_fields,
+            drop_tokens_threshold,
+            max_candidates,
         )
         if offset is not None:
             search_params["offset"] = offset
@@ -403,6 +412,7 @@ def search(
                     infix_fields=infix_fields,
                     no_typo_fields=no_typo_fields,
                     drop_tokens_threshold=drop_tokens_threshold,
+                    max_candidates=max_candidates,
                 )
         log.warning(f"Typesense search failed, falling back to MongoDB: {e}")
         return None
@@ -417,6 +427,7 @@ def search_all_ids(
     infix_fields=None,
     no_typo_fields=None,
     drop_tokens_threshold=None,
+    max_candidates=None,
 ):
     """Fetch all matching IDs from Typesense by paginating through results."""
     client = get_typesense_client()
@@ -446,7 +457,11 @@ def search_all_ids(
             if infix_param:
                 search_params["infix"] = infix_param
             _apply_search_options(
-                search_params, query_by, no_typo_fields, drop_tokens_threshold
+                search_params,
+                query_by,
+                no_typo_fields,
+                drop_tokens_threshold,
+                max_candidates,
             )
             if filter_by:
                 search_params["filter_by"] = filter_by
@@ -500,6 +515,7 @@ def search_all_ids(
                     infix_fields=infix_fields,
                     no_typo_fields=no_typo_fields,
                     drop_tokens_threshold=drop_tokens_threshold,
+                    max_candidates=max_candidates,
                 )
         log.warning(f"Typesense search_all_ids failed, falling back to MongoDB: {e}")
         return None

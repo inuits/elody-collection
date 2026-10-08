@@ -410,6 +410,8 @@ class BaseFilterResource(BaseResource):
             options["no_typo_fields"] = typesense_config["no_typo_fields"]
         if typesense_config.get("drop_tokens_threshold") is not None:
             options["drop_tokens_threshold"] = typesense_config["drop_tokens_threshold"]
+        if typesense_config.get("max_candidates") is not None:
+            options["max_candidates"] = typesense_config["max_candidates"]
         return options
 
     def _execute_typesense_search(
@@ -431,6 +433,7 @@ class BaseFilterResource(BaseResource):
         tuning = {
             "no_typo_fields": search_options.get("no_typo_fields"),
             "drop_tokens_threshold": search_options.get("drop_tokens_threshold"),
+            "max_candidates": search_options.get("max_candidates"),
         }
         if has_remaining:
             return typesense_search_all_ids(
