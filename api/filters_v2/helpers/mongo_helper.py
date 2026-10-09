@@ -327,7 +327,7 @@ def get_bucket_stages(geo_filter: dict):
     step_size_y = step_size_x * correction_factor
 
     coordinates = f"${geo_filter['key']}.coordinates"
-    first_element = {"$arrayElemAt": [coordinates, 0]}t
+    first_element = {"$arrayElemAt": [coordinates, 0]}
     bucket_point = {
         "$addFields": {
             "_bucket_point": {
