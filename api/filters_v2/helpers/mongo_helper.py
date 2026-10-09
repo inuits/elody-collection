@@ -326,13 +326,23 @@ def get_bucket_stages(geo_filter: dict):
 
     step_size_y = step_size_x * correction_factor
 
+    coordinates = f"${geo_filter['key']}.coordinates"
+    first_element = {"$arrayElemAt": [coordinates, 0]}t
+    bucket_point = {
+        "$addFields": {
+            "_bucket_point": {
+                "$cond": [{"$isArray": first_element}, first_element, coordinates]
+            }
+        }
+    }
+
     group = {
         "$group": {
             "_id": {
                 "grid_x": {
                     "$floor": {
                         "$divide": [
-                            {"$arrayElemAt": ["$location.coordinates", 0]},
+                            {"$arrayElemAt": ["$_bucket_point", 0]},
                             step_size_x,
                         ]
                     }
@@ -340,7 +350,7 @@ def get_bucket_stages(geo_filter: dict):
                 "grid_y": {
                     "$floor": {
                         "$divide": [
-                            {"$arrayElemAt": ["$location.coordinates", 1]},
+                            {"$arrayElemAt": ["$_bucket_point", 1]},
                             step_size_y,
                         ]
                     }
@@ -348,8 +358,8 @@ def get_bucket_stages(geo_filter: dict):
             },
             "count": {"$sum": 1},
             # Visual center of the cluster
-            "avg_lng": {"$avg": {"$arrayElemAt": ["$location.coordinates", 0]}},
-            "avg_lat": {"$avg": {"$arrayElemAt": ["$location.coordinates", 1]}},
+            "avg_lng": {"$avg": {"$arrayElemAt": ["$_bucket_point", 0]}},
+            "avg_lat": {"$avg": {"$arrayElemAt": ["$_bucket_point", 1]}},
             # Keep the data of the first document found
             "first_doc": {"$first": "$$ROOT"},
         }
@@ -372,4 +382,4 @@ def get_bucket_stages(geo_filter: dict):
         }
     }
 
-    return [group], [replaceRoot]
+    return [bucket_point, group], [replaceRoot, {"$project": {"_bucket_point": 0}}]
