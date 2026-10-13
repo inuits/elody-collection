@@ -286,6 +286,7 @@ class BaseFilterResource(BaseResource):
             facet_fields=typesense_config.get("facet_fields", []),
             infix_fields=typesense_config.get("infix_fields", []),
             array_fields=typesense_config.get("array_fields", []),
+            sort_fields=typesense_config.get("sort_fields", []),
         )
         search_fields = typesense_config.get("search_fields", [])
         filter_keys = []
@@ -427,6 +428,7 @@ class BaseFilterResource(BaseResource):
         group_by=None,
         infix_fields=None,
         search_options=None,
+        sort_by=None,
     ):
         """Execute Typesense search with fallback. Returns None if unavailable."""
         search_options = search_options or {}
@@ -455,7 +457,24 @@ class BaseFilterResource(BaseResource):
             facet_by=facet_by,
             group_by=group_by,
             infix_fields=infix_fields,
+            sort_by=sort_by,
             **tuning,
+        )
+
+    @staticmethod
+    def _build_typesense_sort_by(order_by, asc, typesense_config):
+        """Translate ``order_by`` into a Typesense ``sort_by``, or ``None`` when a
+        key is not declared in ``sort_fields`` (Typesense cannot sort on it).
+
+        Documents without a value go last in both directions, so a descending
+        list never starts with empty rows."""
+        sort_fields = set(typesense_config.get("sort_fields", []))
+        keys = [key for key in order_by.split(",") if key]
+        if not keys or len(keys) > 3 or not all(key in sort_fields for key in keys):
+            return None
+        direction = "asc" if asc else "desc"
+        return ",".join(
+            f"{key.replace('.', '_')}(missing_values: last):{direction}" for key in keys
         )
 
     def _fetch_documents_from_mongo(self, matching_ids, collections):
@@ -631,6 +650,19 @@ class BaseFilterResource(BaseResource):
                     remaining_filters.append(f)
         text_filters = ts_text_filters
 
+        # A search term keeps Typesense's relevance order; a plain list follows
+        # the requested sort, or runs on Mongo when Typesense cannot sort on it.
+        sort_by = None
+        if sorted_options:
+            if distinct_by not in typesense_config.get("array_fields", []):
+                sort_by = self._build_typesense_sort_by(
+                    order_by, asc, typesense_config
+                )
+        elif order_by and not text_filters:
+            sort_by = self._build_typesense_sort_by(order_by, asc, typesense_config)
+            if sort_by is None and not remaining_filters:
+                return self._execute_advanced_search_with_query_v2(query, collection)
+
         ts_exact_match_filters = []
         for f in exact_match_filters:
             key = f.get("key", "")
@@ -696,7 +728,7 @@ class BaseFilterResource(BaseResource):
                 else None
             )
 
-            ts_result = self._execute_typesense_search(
+            search_args = (
                 ts_collection,
                 search_terms,
                 query_by,
@@ -704,11 +736,20 @@ class BaseFilterResource(BaseResource):
                 bool(remaining_filters),
                 skip,
                 limit,
-                facet_by=facet_by,
-                group_by=group_by,
-                infix_fields=infix_fields,
-                search_options=search_options,
             )
+            search_kwargs = {
+                "facet_by": facet_by,
+                "group_by": group_by,
+                "infix_fields": infix_fields,
+                "search_options": search_options,
+            }
+            ts_result = self._execute_typesense_search(
+                *search_args, **search_kwargs, sort_by=sort_by
+            )
+            if ts_result is None and sorted_options and sort_by:
+                ts_result = self._execute_typesense_search(
+                    *search_args, **search_kwargs, sort_by=None
+                )
         if ts_result is None:
             log.info("Typesense unavailable, falling back to MongoDB")
             return self._execute_advanced_search_with_query_v2(query, collection)

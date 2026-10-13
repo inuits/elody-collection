@@ -1440,3 +1440,110 @@ class TestResolveRelatedEntityIdsPaging:
 
         assert ids == ["a", "b"]
         assert client.collections.__getitem__.return_value.documents.search.call_count == 1
+
+
+class TestSortFields:
+    def test_search_passes_sort_by(self):
+        mock_client = MagicMock()
+        mock_client.collections.__getitem__.return_value.documents.search.return_value = _make_search_result(
+            [], 0
+        )
+
+        with patch.object(tc, "get_typesense_client", return_value=mock_client):
+            search(
+                "entities",
+                "*",
+                "",
+                sort_by="properties_original_headtitle_value:asc",
+            )
+
+        params = (
+            mock_client.collections.__getitem__.return_value.documents.search.call_args[
+                0
+            ][0]
+        )
+        assert params["sort_by"] == "properties_original_headtitle_value:asc"
+
+    def test_search_omits_sort_by_when_none(self):
+        mock_client = MagicMock()
+        mock_client.collections.__getitem__.return_value.documents.search.return_value = _make_search_result(
+            [], 0
+        )
+
+        with patch.object(tc, "get_typesense_client", return_value=mock_client):
+            search("entities", "*", "")
+
+        params = (
+            mock_client.collections.__getitem__.return_value.documents.search.call_args[
+                0
+            ][0]
+        )
+        assert "sort_by" not in params
+
+    def test_unsortable_field_returns_none_without_retrying(self):
+        mock_client = MagicMock()
+        search_mock = mock_client.collections.__getitem__.return_value.documents.search
+        search_mock.side_effect = Exception(
+            "Could not find a field named `properties_title_value` in the schema for sorting."
+        )
+
+        with patch.object(tc, "get_typesense_client", return_value=mock_client):
+            result = search(
+                "entities",
+                "*",
+                "type",
+                sort_by="properties_title_value:asc",
+            )
+
+        assert result is None
+        assert search_mock.call_count == 1
+
+    def test_prepare_document_indexes_sort_fields(self):
+        entity = {
+            "_id": "ent-1",
+            "type": "comment",
+            "properties": {"last_activity_at": {"value": "2026-10-13 09:00:00"}},
+        }
+        result = prepare_document_for_typesense(
+            entity, [], sort_fields=["properties.last_activity_at.value"]
+        )
+        assert result["properties_last_activity_at_value"] == "2026-10-13 09:00:00"
+
+    def test_ensure_collection_declares_sort_fields(self):
+        mock_client = MagicMock()
+        mock_client.collections.__getitem__.return_value.retrieve.side_effect = (
+            Exception("404")
+        )
+
+        tc._ensured_collections.discard("sort_col")
+
+        with patch.object(tc, "get_typesense_client", return_value=mock_client):
+            tc.ensure_collection(
+                "sort_col",
+                facet_fields=["type"],
+                sort_fields=["type", "audit.updated.at"],
+            )
+
+        mock_client.collections.create.assert_called_once_with(
+            {
+                "name": "sort_col",
+                "fields": [
+                    {"name": ".*", "type": "auto"},
+                    {
+                        "name": "type",
+                        "type": "string",
+                        "facet": True,
+                        "sort": True,
+                        "optional": True,
+                    },
+                    {
+                        "name": "audit_updated_at",
+                        "type": "string",
+                        "sort": True,
+                        "optional": True,
+                    },
+                ],
+            }
+        )
+
+        tc._ensured_collections.discard("sort_col")

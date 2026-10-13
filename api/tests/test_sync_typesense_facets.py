@@ -5,7 +5,13 @@ only cover build_change, which decides the in-place schema update that flips a
 field to a facet without losing its existing attributes.
 """
 
-from scripts.sync_typesense_facets import build_change
+from scripts.sync_typesense_facets import (
+    build_change,
+    build_collection_change,
+    field_is_up_to_date,
+    merge_field_flags,
+    wait_until_applied,
+)
 
 
 class TestBuildChange:
@@ -61,3 +67,170 @@ class TestBuildChange:
         current = {"name": "f", "type": "string", "facet": False, "num_documents": 5}
         readded = build_change("f", current)["fields"][1]
         assert "num_documents" not in readded
+
+
+class TestBuildChangeForSortFields:
+    def test_new_field_is_declared_optional_sortable_string(self):
+        change = build_change("audit_updated_at", None, {"sort": True})
+        assert change == {
+            "fields": [
+                {
+                    "name": "audit_updated_at",
+                    "type": "string",
+                    "sort": True,
+                    "optional": True,
+                }
+            ]
+        }
+
+    def test_existing_field_is_re_added_as_sortable_keeping_its_facet(self):
+        current = {
+            "name": "properties_title_value",
+            "type": "string",
+            "facet": True,
+            "sort": False,
+            "optional": True,
+        }
+        change = build_change("properties_title_value", current, {"sort": True})
+
+        assert change["fields"][0] == {"name": "properties_title_value", "drop": True}
+        readded = change["fields"][1]
+        assert readded["sort"] is True
+        assert readded["facet"] is True
+        assert readded["type"] == "string"
+
+    def test_array_field_cannot_be_made_sortable(self):
+        current = {"name": "f", "type": "string[]", "sort": False, "optional": True}
+        assert build_change("f", current, {"sort": True}) is None
+
+
+class TestFieldIsUpToDate:
+    def test_missing_flag_is_not_up_to_date(self):
+        assert not field_is_up_to_date({"facet": True, "sort": False}, {"sort": True})
+
+    def test_all_flags_present_is_up_to_date(self):
+        assert field_is_up_to_date(
+            {"facet": True, "sort": True}, {"facet": True, "sort": True}
+        )
+
+    def test_absent_field_is_not_up_to_date(self):
+        assert not field_is_up_to_date(None, {"sort": True})
+
+
+class TestMergeFieldFlags:
+    def test_facet_and_sort_fields_are_merged_per_collection(self):
+        configs = [
+            {
+                "enabled": True,
+                "collection": "entities",
+                "facet_fields": ["type"],
+                "sort_fields": ["type", "audit.updated.at"],
+            },
+            {"enabled": False, "collection": "entities", "sort_fields": ["x"]},
+            {
+                "enabled": True,
+                "collection": "entities",
+                "sort_fields": ["properties.title.value"],
+            },
+        ]
+        assert merge_field_flags(configs) == {
+            "entities": {
+                "type": {"facet": True, "sort": True},
+                "audit_updated_at": {"sort": True},
+                "properties_title_value": {"sort": True},
+            }
+        }
+
+
+class TestBuildCollectionChange:
+    """All fields of a collection go into one alter: Typesense walks every
+    document once per alter, so one alter per field multiplies the run time."""
+
+    def test_changes_are_combined_into_one_alter(self):
+        schema_fields = {
+            "audit_updated_at": {"name": "audit_updated_at", "type": "string"},
+            "properties_title_value": {
+                "name": "properties_title_value",
+                "type": "string",
+            },
+        }
+        change, report = build_collection_change(
+            schema_fields,
+            {
+                "audit_updated_at": {"sort": True},
+                "properties_title_value": {"sort": True},
+                "properties_last_activity_at_value": {"sort": True},
+            },
+        )
+
+        assert change["fields"] == [
+            {"name": "audit_updated_at", "drop": True},
+            {"name": "properties_title_value", "drop": True},
+            {"name": "audit_updated_at", "type": "string", "sort": True},
+            {
+                "name": "properties_last_activity_at_value",
+                "type": "string",
+                "sort": True,
+                "optional": True,
+            },
+            {"name": "properties_title_value", "type": "string", "sort": True},
+        ]
+        assert report == {
+            "change": [
+                "audit_updated_at",
+                "properties_last_activity_at_value",
+                "properties_title_value",
+            ],
+            "ok": [],
+            "skip": [],
+        }
+
+    def test_up_to_date_and_array_fields_are_left_out(self):
+        schema_fields = {
+            "type": {"name": "type", "type": "string", "facet": True},
+            "properties_isbn_value": {
+                "name": "properties_isbn_value",
+                "type": "string[]",
+            },
+        }
+        change, report = build_collection_change(
+            schema_fields,
+            {"type": {"facet": True}, "properties_isbn_value": {"sort": True}},
+        )
+
+        assert change is None
+        assert report == {"change": [], "ok": ["type"], "skip": ["properties_isbn_value"]}
+
+
+class TestWaitUntilApplied:
+    def _client(self, *schemas):
+        from unittest.mock import MagicMock
+
+        client = MagicMock()
+        client.collections.__getitem__.return_value.retrieve.side_effect = [
+            {"fields": fields} for fields in schemas
+        ]
+        return client
+
+    def test_polls_until_every_flag_is_present(self):
+        client = self._client(
+            [{"name": "f", "type": "string", "sort": False}],
+            [{"name": "f", "type": "string", "sort": True}],
+        )
+
+        pending = wait_until_applied(
+            client, "entities", {"f": {"sort": True}}, interval=0, attempts=5
+        )
+
+        assert pending == []
+
+    def test_reports_fields_still_pending_after_the_last_attempt(self):
+        client = self._client(
+            [{"name": "f", "type": "string"}], [{"name": "f", "type": "string"}]
+        )
+
+        pending = wait_until_applied(
+            client, "entities", {"f": {"sort": True}}, interval=0, attempts=2
+        )
+
+        assert pending == ["f"]

@@ -581,11 +581,13 @@ def sync_entity_to_typesense(message):
             facet_fields=ts_config.get("facet_fields", []),
             infix_fields=ts_config.get("infix_fields", []),
             array_fields=ts_config.get("array_fields", []),
+            sort_fields=ts_config.get("sort_fields", []),
         )
         doc = prepare_document_for_typesense(
             entity,
             ts_config.get("search_fields", []),
             facet_fields=ts_config.get("facet_fields", []),
+            sort_fields=ts_config.get("sort_fields", []),
             field_types=get_collection_field_types(ts_collection),
         )
         if not upsert_document(ts_collection, doc):

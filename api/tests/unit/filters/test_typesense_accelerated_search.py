@@ -2813,6 +2813,7 @@ class TestTypoToleranceAndTokenDropOptions:
             facet_fields=[],
             infix_fields=[],
             array_fields=["properties.isbn_group.value.isbn"],
+            sort_fields=[],
         )
 
     def test_build_query_search_options_empty_when_not_configured(self, resource):
@@ -3059,9 +3060,9 @@ class TestOrderedDistinctGroups:
 class TestDistinctOptionsOrderedByOwnField:
     """Filter-dropdown options are distinct values ordered by that same field.
 
-    Typesense groups on the field, so the options never need a Mongo $group
-    over the whole collection. Ordering groups by another field stays on
-    Mongo."""
+    Typesense groups on the field, sorting the groups on it when the field is
+    sortable, so the options never need a Mongo $group over the whole
+    collection. Ordering groups by another field stays on Mongo."""
 
     CONFIG = {
         "enabled": True,
@@ -3070,15 +3071,17 @@ class TestDistinctOptionsOrderedByOwnField:
             "properties.name.value",
             "properties.non_preferred_name.value",
         ],
+        "sort_fields": ["properties.name.value"],
+        "array_fields": ["properties.non_preferred_name.value"],
     }
 
-    def _query(self, value="*"):
+    def _query(self, value="*", distinct_by="properties.name.value"):
         return [
             {
                 "type": "text",
                 "key": ["vlacc:1|properties.name.value"],
                 "value": value,
-                "distinct_by": "properties.name.value",
+                "distinct_by": distinct_by,
                 "match_exact": False,
                 "operator": "or",
             },
@@ -3093,13 +3096,10 @@ class TestDistinctOptionsOrderedByOwnField:
             {"type": "type", "value": "person", "operator": "and"},
         ]
 
-    def _run(self, flask_app, resource, query, ts_down=False):
+    def _run(self, flask_app, resource, url, query, ts_down=False, config=None):
         with (
             flask_app.test_request_context(
-                "/entities/filter?limit=20&skip=0"
-                "&order_by=properties.name.value&asc=1",
-                method="POST",
-                content_type="application/json",
+                url, method="POST", content_type="application/json"
             ),
             patch("resources.base_filter_resource.typesense_search") as mock_ts,
             patch("resources.base_filter_resource.typesense_ensure_collection"),
@@ -3116,24 +3116,255 @@ class TestDistinctOptionsOrderedByOwnField:
                 "limit": 20,
             }
             resource._execute_typesense_accelerated_search(
+                query, "entities", config or self.CONFIG
+            )
+            return mock_ts, mock_mongo
+
+    def test_options_are_grouped_and_sorted_in_typesense(self, flask_app, resource):
+        mock_ts, mock_mongo = self._run(
+            flask_app,
+            resource,
+            "/entities/filter?limit=20&skip=0&order_by=properties.name.value&asc=1",
+            self._query(),
+        )
+
+        mock_mongo.assert_not_called()
+        kwargs = mock_ts.call_args.kwargs
+        assert kwargs["group_by"] == "properties_name_value"
+        assert kwargs["sort_by"] == "properties_name_value(missing_values: last):asc"
+
+    def test_typed_options_are_sorted_instead_of_by_relevance(
+        self, flask_app, resource
+    ):
+        mock_ts, mock_mongo = self._run(
+            flask_app,
+            resource,
+            "/entities/filter?limit=20&skip=0&order_by=properties.name.value&asc=0",
+            self._query("peeters"),
+        )
+
+        mock_mongo.assert_not_called()
+        assert (
+            mock_ts.call_args.kwargs["sort_by"]
+            == "properties_name_value(missing_values: last):desc"
+        )
+
+    def test_options_of_an_unsortable_field_are_grouped_unsorted(
+        self, flask_app, resource
+    ):
+        mock_ts, mock_mongo = self._run(
+            flask_app,
+            resource,
+            "/entities/filter?limit=20&skip=0&order_by=properties.name.value&asc=1",
+            self._query(),
+            config={**self.CONFIG, "sort_fields": []},
+        )
+
+        mock_mongo.assert_not_called()
+        kwargs = mock_ts.call_args.kwargs
+        assert kwargs["group_by"] == "properties_name_value"
+        assert kwargs["sort_by"] is None
+
+    def test_options_of_an_array_field_are_grouped_unsorted(
+        self, flask_app, resource
+    ):
+        mock_ts, mock_mongo = self._run(
+            flask_app,
+            resource,
+            "/entities/filter?limit=20&skip=0"
+            "&order_by=properties.non_preferred_name.value&asc=1",
+            self._query(distinct_by="properties.non_preferred_name.value"),
+            config={
+                **self.CONFIG,
+                "sort_fields": ["properties.non_preferred_name.value"],
+            },
+        )
+
+        mock_mongo.assert_not_called()
+        kwargs = mock_ts.call_args.kwargs
+        assert kwargs["group_by"] == "properties_non_preferred_name_value"
+        assert kwargs["sort_by"] is None
+
+    def test_rejected_sort_retries_the_grouping_unsorted(self, flask_app, resource):
+        with (
+            flask_app.test_request_context(
+                "/entities/filter?limit=20&skip=0"
+                "&order_by=properties.name.value&asc=1",
+                method="POST",
+                content_type="application/json",
+            ),
+            patch("resources.base_filter_resource.typesense_search") as mock_ts,
+            patch("resources.base_filter_resource.typesense_ensure_collection"),
+            patch.object(
+                resource, "_execute_advanced_search_with_query_v2"
+            ) as mock_mongo,
+            patch.object(resource, "_fetch_documents_from_mongo", return_value=[]),
+        ):
+            mock_ts.side_effect = [None, make_ts_result(["id1"], 1)]
+            resource._execute_typesense_accelerated_search(
+                self._query(), "entities", self.CONFIG
+            )
+
+        mock_mongo.assert_not_called()
+        first, retry = mock_ts.call_args_list
+        assert first.kwargs["sort_by"] is not None
+        assert retry.kwargs["sort_by"] is None
+        assert retry.kwargs["group_by"] == "properties_name_value"
+
+    def test_typesense_failure_falls_back_to_mongo(self, flask_app, resource):
+        query = self._query()
+        _, mock_mongo = self._run(
+            flask_app,
+            resource,
+            "/entities/filter?limit=20&skip=0&order_by=properties.name.value&asc=1",
+            query,
+            ts_down=True,
+        )
+
+        mock_mongo.assert_called_once_with(query, "entities")
+
+
+class TestTypesenseSorting:
+    """Lists without a search term are ordered by Typesense on a configured
+    sort field, documents without a value last in both directions; a search
+    term keeps relevance; an unsortable field goes to Mongo."""
+
+    EXACT_QUERY = [
+        {
+            "type": "selection",
+            "key": "type",
+            "value": ["work_word", "work_serial"],
+            "match_exact": True,
+        },
+        {
+            "type": "selection",
+            "key": ["vlacc:1|properties.ref_authors.value"],
+            "value": ["PERS-1"],
+            "match_exact": True,
+        },
+    ]
+    TEXT_QUERY = [
+        {"type": "type", "value": "work_word", "match_exact": True},
+        {
+            "type": "text",
+            "key": ["vlacc:1|properties.original_headtitle.value"],
+            "value": "gedichten",
+            "match_exact": False,
+        },
+    ]
+    CONFIG = {
+        "enabled": True,
+        "collection": "entities",
+        "search_fields": [
+            "properties.ref_authors.value",
+            "properties.original_headtitle.value",
+        ],
+        "sort_fields": [
+            "properties.original_headtitle.value",
+            "audit.updated.at",
+        ],
+    }
+
+    def _run(self, flask_app, resource, url, query):
+        with (
+            flask_app.test_request_context(
+                url, method="POST", content_type="application/json"
+            ),
+            patch("resources.base_filter_resource.typesense_search") as mock_ts,
+            patch("resources.base_filter_resource.typesense_ensure_collection"),
+            patch.object(
+                resource, "_execute_advanced_search_with_query_v2"
+            ) as mock_mongo,
+            patch.object(resource, "_fetch_documents_from_mongo", return_value=[]),
+        ):
+            mock_ts.return_value = make_ts_result(["id1"], 1)
+            mock_mongo.return_value = {
+                "results": [],
+                "count": 0,
+                "skip": 0,
+                "limit": 20,
+            }
+            resource._execute_typesense_accelerated_search(
                 query, "entities", self.CONFIG
             )
             return mock_ts, mock_mongo
 
-    def test_options_are_grouped_in_typesense(self, flask_app, resource):
-        mock_ts, mock_mongo = self._run(flask_app, resource, self._query())
+    def test_list_without_search_term_sorts_ascending_in_typesense(
+        self, flask_app, resource
+    ):
+        mock_ts, mock_mongo = self._run(
+            flask_app,
+            resource,
+            "/entities/filter?limit=20&skip=0"
+            "&order_by=properties.original_headtitle.value&asc=1",
+            self.EXACT_QUERY,
+        )
 
         mock_mongo.assert_not_called()
-        assert mock_ts.call_args.kwargs["group_by"] == "properties_name_value"
+        assert (
+            mock_ts.call_args.kwargs["sort_by"]
+            == "properties_original_headtitle_value(missing_values: last):asc"
+        )
 
-    def test_typed_options_are_grouped_in_typesense(self, flask_app, resource):
-        mock_ts, mock_mongo = self._run(flask_app, resource, self._query("peeters"))
+    def test_list_without_search_term_sorts_descending_in_typesense(
+        self, flask_app, resource
+    ):
+        mock_ts, _ = self._run(
+            flask_app,
+            resource,
+            "/entities/filter?limit=20&skip=0&order_by=audit.updated.at&asc=0",
+            self.EXACT_QUERY,
+        )
+
+        assert mock_ts.call_args.kwargs["sort_by"] == "audit_updated_at(missing_values: last):desc"
+
+    def test_search_term_keeps_relevance(self, flask_app, resource):
+        mock_ts, mock_mongo = self._run(
+            flask_app,
+            resource,
+            "/entities/filter?limit=20&skip=0"
+            "&order_by=properties.original_headtitle.value&asc=1",
+            self.TEXT_QUERY,
+        )
 
         mock_mongo.assert_not_called()
-        assert mock_ts.call_args.kwargs["group_by"] == "properties_name_value"
+        assert mock_ts.call_args.kwargs.get("sort_by") is None
 
-    def test_typesense_failure_falls_back_to_mongo(self, flask_app, resource):
-        query = self._query()
-        _, mock_mongo = self._run(flask_app, resource, query, ts_down=True)
+    def test_unsortable_field_without_search_term_runs_on_mongo(
+        self, flask_app, resource
+    ):
+        mock_ts, mock_mongo = self._run(
+            flask_app,
+            resource,
+            "/entities/filter?limit=20&skip=0&order_by=id&asc=1",
+            self.EXACT_QUERY,
+        )
 
-        mock_mongo.assert_called_once_with(query, "entities")
+        mock_ts.assert_not_called()
+        mock_mongo.assert_called_once_with(self.EXACT_QUERY, "entities")
+
+    def test_without_order_by_keeps_typesense_order(self, flask_app, resource):
+        mock_ts, mock_mongo = self._run(
+            flask_app,
+            resource,
+            "/entities/filter?limit=20&skip=0&order_by=&asc=1",
+            self.EXACT_QUERY,
+        )
+
+        mock_mongo.assert_not_called()
+        assert mock_ts.call_args.kwargs.get("sort_by") is None
+
+    def test_multiple_sortable_keys_are_combined(self, flask_app, resource):
+        mock_ts, _ = self._run(
+            flask_app,
+            resource,
+            "/entities/filter?limit=20&skip=0"
+            "&order_by=properties.original_headtitle.value,audit.updated.at&asc=1",
+            self.EXACT_QUERY,
+        )
+
+        assert (
+            mock_ts.call_args.kwargs["sort_by"]
+            == "properties_original_headtitle_value(missing_values: last):asc,"
+            "audit_updated_at(missing_values: last):asc"
+        )

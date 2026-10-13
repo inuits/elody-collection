@@ -58,7 +58,9 @@ def get_typesense_client():
     return _client
 
 
-def ensure_collection(collection, facet_fields=None, infix_fields=None, array_fields=None):
+def ensure_collection(
+    collection, facet_fields=None, infix_fields=None, array_fields=None, sort_fields=None
+):
     """Ensure a Typesense collection exists with auto schema detection."""
     if collection in _ensured_collections:
         return
@@ -80,11 +82,24 @@ def ensure_collection(collection, facet_fields=None, infix_fields=None, array_fi
                 flat_array = [
                     field_path.replace(".", "_") for field_path in array_fields or []
                 ]
+                flat_sort = {
+                    field_path.replace(".", "_") for field_path in sort_fields or []
+                } - set(flat_array)
                 flat_facet = set()
                 for field_path in facet_fields or []:
                     flat_key = field_path.replace(".", "_")
                     flat_facet.add(flat_key)
-                    if flat_key in flat_array:
+                    if flat_key in flat_sort:
+                        fields.append(
+                            {
+                                "name": flat_key,
+                                "type": "string",
+                                "facet": True,
+                                "sort": True,
+                                "optional": True,
+                            }
+                        )
+                    elif flat_key in flat_array:
                         fields.append(
                             {
                                 "name": flat_key,
@@ -99,11 +114,28 @@ def ensure_collection(collection, facet_fields=None, infix_fields=None, array_fi
                         )
                 for flat_key in flat_infix:
                     if flat_key not in flat_facet:
+                        field = {
+                            "name": flat_key,
+                            "type": "string[]" if flat_key in flat_array else "string",
+                            "infix": True,
+                            "optional": True,
+                        }
+                        if flat_key in flat_sort:
+                            field["sort"] = True
+                        fields.append(field)
+                for flat_key in dict.fromkeys(
+                    field_path.replace(".", "_") for field_path in sort_fields or []
+                ):
+                    if (
+                        flat_key in flat_sort
+                        and flat_key not in flat_facet
+                        and flat_key not in flat_infix
+                    ):
                         fields.append(
                             {
                                 "name": flat_key,
-                                "type": "string[]" if flat_key in flat_array else "string",
-                                "infix": True,
+                                "type": "string",
+                                "sort": True,
                                 "optional": True,
                             }
                         )
@@ -336,6 +368,7 @@ def search(
     no_typo_fields=None,
     drop_tokens_threshold=None,
     max_candidates=None,
+    sort_by=None,
 ):
     client = get_typesense_client()
     if not client:
@@ -346,6 +379,8 @@ def search(
             "q": query,
             "per_page": per_page,
         }
+        if sort_by:
+            search_params["sort_by"] = sort_by
         if query_by:
             search_params["query_by"] = query_by
         if query != "*":
@@ -395,7 +430,7 @@ def search(
         if "Could not find a field named" in str(e) and query_by:
             missing = str(e).split("`")[1] if "`" in str(e) else ""
             filtered = ",".join(f for f in query_by.split(",") if f != missing)
-            if filtered:
+            if filtered and filtered != query_by:
                 log.warning(
                     f"Retrying Typesense search without missing field '{missing}'"
                 )
@@ -413,6 +448,7 @@ def search(
                     no_typo_fields=no_typo_fields,
                     drop_tokens_threshold=drop_tokens_threshold,
                     max_candidates=max_candidates,
+                    sort_by=sort_by,
                 )
         log.warning(f"Typesense search failed, falling back to MongoDB: {e}")
         return None
@@ -502,7 +538,7 @@ def search_all_ids(
         if "Could not find a field named" in str(e) and query_by:
             missing = str(e).split("`")[1] if "`" in str(e) else ""
             filtered = ",".join(f for f in query_by.split(",") if f != missing)
-            if filtered:
+            if filtered and filtered != query_by:
                 log.warning(
                     f"Retrying search_all_ids without missing field '{missing}'"
                 )
@@ -771,7 +807,7 @@ def _coerce_value_to_field_type(value, field_type):
 
 
 def prepare_document_for_typesense(
-    entity, search_fields, facet_fields=None, field_types=None
+    entity, search_fields, facet_fields=None, field_types=None, sort_fields=None
 ):
     doc = {
         "id": entity["_id"],
@@ -781,6 +817,8 @@ def prepare_document_for_typesense(
     all_fields = set(search_fields)
     if facet_fields:
         all_fields.update(facet_fields)
+    if sort_fields:
+        all_fields.update(sort_fields)
     for field_path in all_fields:
         value = get_nested_value(entity, field_path)
         if value is None:
