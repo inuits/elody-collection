@@ -3054,3 +3054,86 @@ class TestOrderedDistinctGroups:
 
         mock_ts.assert_called_once()
         mock_mongo.assert_not_called()
+
+
+class TestDistinctOptionsOrderedByOwnField:
+    """Filter-dropdown options are distinct values ordered by that same field.
+
+    Typesense groups on the field, so the options never need a Mongo $group
+    over the whole collection. Ordering groups by another field stays on
+    Mongo."""
+
+    CONFIG = {
+        "enabled": True,
+        "collection": "entities",
+        "search_fields": [
+            "properties.name.value",
+            "properties.non_preferred_name.value",
+        ],
+    }
+
+    def _query(self, value="*"):
+        return [
+            {
+                "type": "text",
+                "key": ["vlacc:1|properties.name.value"],
+                "value": value,
+                "distinct_by": "properties.name.value",
+                "match_exact": False,
+                "operator": "or",
+            },
+            {
+                "type": "text",
+                "key": ["vlacc:1|properties.non_preferred_name.value"],
+                "value": value,
+                "distinct_by": "properties.non_preferred_name.value",
+                "match_exact": False,
+                "operator": "or",
+            },
+            {"type": "type", "value": "person", "operator": "and"},
+        ]
+
+    def _run(self, flask_app, resource, query, ts_down=False):
+        with (
+            flask_app.test_request_context(
+                "/entities/filter?limit=20&skip=0"
+                "&order_by=properties.name.value&asc=1",
+                method="POST",
+                content_type="application/json",
+            ),
+            patch("resources.base_filter_resource.typesense_search") as mock_ts,
+            patch("resources.base_filter_resource.typesense_ensure_collection"),
+            patch.object(
+                resource, "_execute_advanced_search_with_query_v2"
+            ) as mock_mongo,
+            patch.object(resource, "_fetch_documents_from_mongo", return_value=[]),
+        ):
+            mock_ts.return_value = None if ts_down else make_ts_result(["id1"], 1)
+            mock_mongo.return_value = {
+                "results": [],
+                "count": 0,
+                "skip": 0,
+                "limit": 20,
+            }
+            resource._execute_typesense_accelerated_search(
+                query, "entities", self.CONFIG
+            )
+            return mock_ts, mock_mongo
+
+    def test_options_are_grouped_in_typesense(self, flask_app, resource):
+        mock_ts, mock_mongo = self._run(flask_app, resource, self._query())
+
+        mock_mongo.assert_not_called()
+        assert mock_ts.call_args.kwargs["group_by"] == "properties_name_value"
+
+    def test_typed_options_are_grouped_in_typesense(self, flask_app, resource):
+        mock_ts, mock_mongo = self._run(flask_app, resource, self._query("peeters"))
+
+        mock_mongo.assert_not_called()
+        assert mock_ts.call_args.kwargs["group_by"] == "properties_name_value"
+
+    def test_typesense_failure_falls_back_to_mongo(self, flask_app, resource):
+        query = self._query()
+        _, mock_mongo = self._run(flask_app, resource, query, ts_down=True)
+
+        mock_mongo.assert_called_once_with(query, "entities")
