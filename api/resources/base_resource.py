@@ -4,10 +4,10 @@ import json
 import re
 from copy import deepcopy
 from datetime import UTC, datetime, timedelta
-from os import getenv
 from urllib.parse import quote
 
 import mappers
+from config_access import config
 from configuration import get_object_configuration_mapper, get_storage_mapper
 from elody.csv import CSVSingleObject
 from elody.error_codes import ErrorCode, get_error_code, get_read, get_write
@@ -51,15 +51,12 @@ class BaseResource(Resource):
 
     def __init__(self):
         self.storage = StorageManager().get_db_engine()
-        self.collection_api_url = getenv("COLLECTION_API_URL")
-        self.image_api_url_ext = getenv("IMAGE_API_URL_EXT")
-        self.storage_api_url = getenv("STORAGE_API_URL")
-        self.storage_api_url_ext = getenv("STORAGE_API_URL_EXT")
-        self.tenant_defining_types = getenv("TENANT_DEFINING_TYPES")
-        self.tenant_defining_types = (
-            self.tenant_defining_types.split(",") if self.tenant_defining_types else []
-        )
-        self.auto_create_tenants = getenv("AUTO_CREATE_TENANTS", False)
+        self.collection_api_url = config["COLLECTION_API_URL"]
+        self.image_api_url_ext = config["IMAGE_API_URL_EXT"]
+        self.storage_api_url = config["STORAGE_API_URL"]
+        self.storage_api_url_ext = config["STORAGE_API_URL_EXT"]
+        self.tenant_defining_types = config["TENANT_DEFINING_TYPES"]
+        self.auto_create_tenants = config["AUTO_CREATE_TENANTS"]
 
     @property
     def storage_api_url_for_caller(self):
@@ -199,11 +196,10 @@ class BaseResource(Resource):
                     ):
                         get_user_context().bag["item_being_processed"] = deepcopy(item)
                         return item
-            else:
-                abort(
-                    404,
-                    message=f"{get_error_code(ErrorCode.ITEM_NOT_FOUND, get_read())} | id:{id} - Item with id {id} does not exist.",
-                )
+            abort(
+                404,
+                message=f"{get_error_code(ErrorCode.ITEM_NOT_FOUND, get_read())} | id:{id} - Item with id {id} does not exist.",
+            )
 
     def _count_children_from_mediafile(self, parent_mediafile, count=0):
         relations = self.storage.get_collection_item_relations(
@@ -327,8 +323,8 @@ class BaseResource(Resource):
                     "value": (
                         datetime.now(tz=UTC)
                         + timedelta(
-                            seconds=int(getenv("TICKET_LIFESPAN", 3600))
-                            + int(getenv("TICKET_CLEANUP", 86400))
+                            seconds=int(config["TICKET_LIFESPAN"])
+                            + int(config["TICKET_CLEANUP"])
                         )
                     ).timestamp(),
                 }
@@ -343,8 +339,7 @@ class BaseResource(Resource):
             ticket["exp"] = exp
         else:
             ticket["exp"] = (
-                datetime.now(tz=UTC)
-                + timedelta(seconds=int(getenv("TICKET_LIFESPAN", 3600)))
+                datetime.now(tz=UTC) + timedelta(seconds=int(config["TICKET_LIFESPAN"]))
             ).timestamp()
         if mediafile_id:
             ticket["mediafile_id"] = mediafile_id
@@ -684,7 +679,7 @@ class BaseResource(Resource):
                 item_metadata.append(new_metadata)
 
     def _get_upload_bucket(self):
-        return getenv("MINIO_BUCKET")
+        return config["MINIO_BUCKET"]
 
     def _get_upload_location(self, filename):
         return filename

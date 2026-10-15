@@ -1,8 +1,9 @@
 from collections.abc import Mapping
+from logging import getLogger
 from os import environ
 from secrets import token_hex
 
-from logging_elody.log import log
+log = getLogger(__name__)
 
 
 def env_bool(
@@ -72,7 +73,7 @@ def load_config(env=environ) -> dict:
             env, "HEALTH_CHECK_EXTERNAL_SERVICES", True
         ),
         "LISTING_COUNT_CAP": env_int(env, "LISTING_COUNT_CAP", 0),
-        "LOG_LEVEL": env.get("LOG_LEVEL"),
+        "LOG_LEVEL": env.get("LOG_LEVEL", "info"),
         "LOKI_URL": env.get("LOKI_URL"),
         "NOMAD_GROUP_NAME": env.get("NOMAD_GROUP_NAME", "nomad_group_name"),
         "NOMAD_JOB_NAME": env_list(env, "NOMAD_JOB_NAME", ["env"], "-")[-1],

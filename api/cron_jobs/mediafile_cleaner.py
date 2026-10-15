@@ -1,6 +1,6 @@
 import logging
-from os import getenv
 
+from config_access import config
 from elody.util import get_raw_id, signal_mediafile_deleted
 from rabbit import get_rabbit
 from storage.storagemanager import StorageManager
@@ -8,7 +8,7 @@ from storage.storagemanager import StorageManager
 
 class MediafileCleaner:
     def __init__(self):
-        self.delete_empty_mediafiles: bool = getenv("DELETE_EMPTY_MEDIAFILES", True)
+        self.delete_empty_mediafiles: bool = config["DELETE_EMPTY_MEDIAFILES"]
         self.storage = StorageManager().get_db_engine()
 
     def __call__(self):

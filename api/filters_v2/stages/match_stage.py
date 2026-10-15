@@ -1,6 +1,6 @@
 from copy import deepcopy
-from os import getenv
 
+from config_access import config
 from filters_v2.helpers.base_helper import (
     has_or_filter,
     parse_optional_filters,
@@ -18,8 +18,9 @@ from filters_v2.types.filter_types import get_filter
 def build(filter_request_body: list[dict], tidy_up_match: bool) -> list[dict]:
     policy_signatured_request_body = []
     for filter_criteria in deepcopy(filter_request_body):
-        if getenv("STATIC_JWT") and filter_criteria.get("policy_signature") == getenv(
-            "STATIC_JWT"
+        if (
+            config["STATIC_JWT"]
+            and filter_criteria.get("policy_signature") == config["STATIC_JWT"]
         ):
             filter_request_body.remove(filter_criteria)
             policy_signatured_request_body.append(filter_criteria)

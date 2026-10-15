@@ -1,8 +1,8 @@
 import re
 import threading
-from os import getenv
 from time import sleep
 
+from config_access import config
 from logging_elody.log import log
 
 _client = None
@@ -22,32 +22,26 @@ def get_typesense_client():
             return _client
 
         _initialized = True
-        api_key = getenv("TYPESENSE_API_KEY")
+        api_key = config["TYPESENSE_API_KEY"]
         if not api_key:
             return None
 
         try:
             import typesense
 
-            port = getenv("TYPESENSE_SERVER_PORT", getenv("TYPESENSE_PORT", "8108"))
+            port = config["TYPESENSE_SERVER_PORT"]
             _client = typesense.Client(
                 {
                     "api_key": api_key,
                     "nodes": [
                         {
-                            "host": getenv(
-                                "TYPESENSE_SERVER_HOST",
-                                getenv("TYPESENSE_HOST", "typesense"),
-                            ),
-                            "port": getenv(
-                                "TYPESENSE_SERVER_PORT",
-                                getenv("TYPESENSE_PORT", "8108"),
-                            ),
+                            "host": config["TYPESENSE_SERVER_HOST",],
+                            "port": config["TYPESENSE_SERVER_PORT",],
                             "protocol": "http" if port == "8108" else "https",
                         }
                     ],
                     "connection_timeout_seconds": int(
-                        getenv("TYPESENSE_CONNECTION_TIMEOUT_SECONDS", 5)
+                        config["TYPESENSE_CONNECTION_TIMEOUT_SECONDS"]
                     ),
                 }
             )
@@ -59,7 +53,11 @@ def get_typesense_client():
 
 
 def ensure_collection(
-    collection, facet_fields=None, infix_fields=None, array_fields=None, sort_fields=None
+    collection,
+    facet_fields=None,
+    infix_fields=None,
+    array_fields=None,
+    sort_fields=None,
 ):
     """Ensure a Typesense collection exists with auto schema detection."""
     if collection in _ensured_collections:
@@ -109,9 +107,7 @@ def ensure_collection(
                             }
                         )
                     else:
-                        fields.append(
-                            {"name": flat_key, "type": "auto", "facet": True}
-                        )
+                        fields.append({"name": flat_key, "type": "auto", "facet": True})
                 for flat_key in flat_infix:
                     if flat_key not in flat_facet:
                         field = {

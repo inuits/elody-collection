@@ -1,6 +1,6 @@
 import inspect
 import logging
-from os import getenv
+from config_access import config
 
 from configuration import get_object_configuration_mapper
 from elody.util import flatten_dict
@@ -9,7 +9,7 @@ from logging_loki import JsonLokiLogger, LokiLogger
 
 class Logger:
     def __init__(self):
-        log_level = getenv("LOG_LEVEL", "info")
+        log_level = config["LOG_LEVEL"]
 
         match log_level.lower():
             case "info":
@@ -23,14 +23,14 @@ class Logger:
             case _:
                 log_level = logging.INFO
         logger = LokiLogger(
-            loki_url=getenv("LOKI_URL", None),
+            loki_url=config["LOKI_URL"] or None,
             default_loki_labels={
-                "service_name": getenv("NOMAD_GROUP_NAME", "nomad_group_name"),
-                "env": getenv("NOMAD_JOB_NAME", "nomad_job_name-env").split("-")[-1],
-                "service_type": getenv("SERVICE_TYPE", "api"),
-                "category": getenv("SERVICE_TYPE_CATEGORY", "collection"),
+                "service_name": config["NOMAD_GROUP_NAME"],
+                "env": config["NOMAD_JOB_NAME"],
+                "service_type": config["SERVICE_TYPE"],
+                "category": config["SERVICE_TYPE_CATEGORY"],
             },
-            headers={"X-Scope-OrgID": getenv("LOKI_TENANT_ID", "infra")},
+            headers={"X-Scope-OrgID": config["LOKI_TENANT_ID"]},
             log_level=log_level,
         )
         self.logger = JsonLokiLogger(logger)
@@ -104,10 +104,12 @@ class Logger:
         if not kwargs.get("only_log_message", False):
             if item is None:
                 item = {}
-            config = get_object_configuration_mapper().get(item.get("type", "_default"))
-            info = config.logging(
+            object_config = get_object_configuration_mapper().get(
+                item.get("type", "_default")
+            )
+            info = object_config.logging(
                 flatten_dict(
-                    config.document_info().get("object_lists", {}),
+                    object_config.document_info().get("object_lists", {}),
                     item,
                 ),
                 **kwargs,
@@ -121,7 +123,7 @@ class Logger:
             )
             if info_labels := kwargs.get("info_labels"):
                 extra_json_properties.update(info_labels)
-            if not getenv("LOKI_URL", None):
+            if not config["LOKI_URL"]:
                 extra_json_properties.update(tags)
 
         log = getattr(self.logger, severity)

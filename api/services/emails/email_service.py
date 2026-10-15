@@ -4,8 +4,8 @@ from email.message import EmailMessage
 from email.utils import formatdate, make_msgid
 from functools import cache
 from html import unescape
-from os import getenv
 
+from config_access import config
 from elody.util import get_boolean_env
 from jinja2 import Environment, FileSystemLoader
 from logging_elody.log import log
@@ -19,7 +19,7 @@ def _get_template_environment(template_dir: str) -> Environment:
 
 
 def _get_security_from_env() -> SmtpSecurity:
-    if security := getenv("SMTP_SECURITY"):
+    if security := config["SMTP_SECURITY"]:
         return SmtpSecurity(security.lower())
     # NOTE: SMTP_USE_TLS is kept for backwards compatibility, it always meant implicit TLS
     if get_boolean_env("SMTP_USE_TLS", False):
@@ -40,13 +40,13 @@ class BaseEmailService:
         smtp_password: str | None = None,
         security: SmtpSecurity | None = None,
     ):
-        self._smtp_server = smtp_server or getenv("SMTP_SERVER_HOST", "mailpit")
-        self._smtp_port = smtp_port or int(getenv("SMTP_SERVER_PORT", "1025"))
+        self._smtp_server = smtp_server or config["SMTP_SERVER_HOST"]
+        self._smtp_port = smtp_port or int(config["SMTP_SERVER_PORT"])
         self._sender_email = (
-            sender_email or getenv("SMTP_FROM_EMAIL") or self.default_sender_email
+            sender_email or config["SMTP_FROM_EMAIL"] or self.default_sender_email
         )
-        self._smtp_username = smtp_username or getenv("SMTP_USERNAME")
-        self._smtp_password = smtp_password or getenv("SMTP_PASSWORD")
+        self._smtp_username = smtp_username or config["SMTP_USERNAME"]
+        self._smtp_password = smtp_password or config["SMTP_PASSWORD"]
         self._security = security or _get_security_from_env()
 
     @staticmethod

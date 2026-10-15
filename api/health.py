@@ -1,5 +1,4 @@
-from os import getenv
-
+from config_access import config
 from configuration import get_route_mapper
 from healthcheck import HealthCheck
 
@@ -8,7 +7,7 @@ _health = HealthCheck()
 
 def init_health_check(app, database_available, rabbit_available):
     global _health
-    if getenv("HEALTH_CHECK_EXTERNAL_SERVICES", True) in ["True", "true", True]:
+    if config["HEALTH_CHECK_EXTERNAL_SERVICES"]:
         _health.add_check(database_available)
         _health.add_check(rabbit_available)
     app.add_url_rule(

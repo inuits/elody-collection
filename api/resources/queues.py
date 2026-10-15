@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
-from os import getenv
 from time import sleep
+from config_access import config
 
 from configuration import get_object_configuration_mapper
 from elody.job import handle_parent_job_finished
@@ -15,16 +15,16 @@ from logging_elody.log import log
 from rabbit import get_rabbit
 from storage.storagemanager import StorageManager
 
-queue_prefix = getenv("QUEUE_PREFIX", "dams")
-queue_type = getenv("QUEUE_TYPE")
-routing_key_prefix = getenv("ROUTING_KEY_PREFIX", "dams")
+queue_prefix = config["QUEUE_PREFIX"]
+queue_type = config["QUEUE_TYPE"]
+routing_key_prefix = config["ROUTING_KEY_PREFIX"]
 
 
 def __argument_wrapper(
     *, queue_name, routing_key, single_active_consumer=False, full_message_object=False
 ):
     arguments = {"routing_key": routing_key}
-    if getenv("AMQP_MANAGER", "amqpstorm_flask") == "amqpstorm_flask":
+    if config["AMQP_MANAGER"] == "amqpstorm_flask":
         arguments["queue_name"] = queue_name
         if full_message_object:
             arguments["full_message_object"] = full_message_object
@@ -179,8 +179,8 @@ def handle_job_change(routing_key, body, message_id):
 def update_job(routing_key, body, message_id):
     try:
         job_id = body["data"].get("id", body["data"].get("_id"))
-        config = get_object_configuration_mapper().get("job")
-        collection = config.crud()["collection"]
+        object_config = get_object_configuration_mapper().get("job")
+        collection = object_config.crud()["collection"]
 
         if job_id and collection:
             storage = StorageManager().get_db_engine()
@@ -293,8 +293,8 @@ def _check_parent_children_status(document) -> tuple[bool, dict[str, str]]:
 
 def _handle_parent_wrong_status(parent_job_id, collection):
     storage = StorageManager().get_db_engine()
-    config = get_object_configuration_mapper().get("job")
-    collection = config.crud()["collection"]
+    object_config = get_object_configuration_mapper().get("job")
+    collection = object_config.crud()["collection"]
     parent_job = storage.get_item_from_collection_by_id(
         collection=collection,
         id=parent_job_id,
@@ -308,13 +308,13 @@ def _handle_parent_wrong_status(parent_job_id, collection):
 
     if not finished:
         log.info(f"Moving parent job back to running: {parent_job_id}")
-        config.crud()["start_job"](parent_job_id, get_rabbit=get_rabbit)
+        object_config.crud()["start_job"](parent_job_id, get_rabbit=get_rabbit)
 
 
 def _attach_child(parent_job_id, collection):
     storage = StorageManager().get_db_engine()
-    config = get_object_configuration_mapper().get("job")
-    collection = config.crud()["collection"]
+    object_config = get_object_configuration_mapper().get("job")
+    collection = object_config.crud()["collection"]
     parent_job = storage.get_item_from_collection_by_id(
         collection=collection,
         id=parent_job_id,
@@ -339,8 +339,8 @@ def _attach_child(parent_job_id, collection):
 def create_job(routing_key, body, message_id):
     try:
         job = body["data"]
-        config = get_object_configuration_mapper().get("job")
-        collection = config.crud().get("collection", "jobs")
+        object_config = get_object_configuration_mapper().get("job")
+        collection = object_config.crud().get("collection", "jobs")
         storage = StorageManager().get_db_engine()
         storage.save_item_to_collection_v2(collection, job, run_post_crud_hook=False)
 
@@ -537,7 +537,7 @@ def handle_mediafile_deleted(routing_key, body, message_id):  # noqa: PLR0912
     auto_ack=False,
 )
 def sync_entity_to_typesense(message):
-    if getenv("AMQP_MANAGER", "amqpstorm_flask") != "amqpstorm_flask":
+    if config["AMQP_MANAGER"] != "amqpstorm_flask":
         return
     # Manual ack (auto_ack=False): the message is acknowledged only after the
     # entity is successfully indexed. This means a consumer disconnect mid-flight
@@ -562,13 +562,13 @@ def sync_entity_to_typesense(message):
         entity_id = data["location"].removeprefix("/entities/")
         entity_type = data.get("type", "")
 
-        config = get_object_configuration_mapper().get(entity_type or "entities")
-        ts_config = config.crud().get("typesense", {})
+        object_config = get_object_configuration_mapper().get(entity_type or "entities")
+        ts_config = object_config.crud().get("typesense", {})
         if not ts_config.get("enabled"):
             message.ack()
             return
 
-        collection = config.crud().get("collection", "entities")
+        collection = object_config.crud().get("collection", "entities")
         storage = StorageManager().get_db_engine()
         entity = storage.get_item_from_collection_by_id(collection, entity_id)
         if not entity:
@@ -617,7 +617,7 @@ def sync_entity_to_typesense(message):
     auto_ack=False,
 )
 def delete_entity_from_typesense(message):
-    if getenv("AMQP_MANAGER", "amqpstorm_flask") != "amqpstorm_flask":
+    if config["AMQP_MANAGER"] != "amqpstorm_flask":
         return
     # Manual ack, mirroring sync_entity_to_typesense: ack only after the delete
     # succeeds, so a dropped event no longer leaves a deleted entity lingering in
@@ -634,8 +634,8 @@ def delete_entity_from_typesense(message):
             message.ack()
             return
 
-        config = get_object_configuration_mapper().get(entity_type)
-        ts_config = config.crud().get("typesense", {})
+        object_config = get_object_configuration_mapper().get(entity_type)
+        ts_config = object_config.crud().get("typesense", {})
         if not ts_config.get("enabled"):
             message.ack()
             return
