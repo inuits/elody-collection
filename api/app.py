@@ -7,7 +7,6 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from config_access import config, init_config
 from configuration import get_features, get_route_mapper, init_mappers
 from elody.error_codes import ErrorCode, get_error_code, get_read
-from elody.exceptions import NotFoundException
 from elody.loader import load_apps, load_jobs
 from elody.util import CustomJSONEncoder, read_json_as_dict
 from flask import Flask, Response, g, jsonify, make_response, request
@@ -15,11 +14,12 @@ from flask.json.provider import DefaultJSONProvider
 from flask_swagger_ui import get_swaggerui_blueprint
 from health import init_health_check
 from logging_elody.log import log
+from observability import init_log_export, record_exception
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
 from policy_factory import get_user_context, init_policy_factory
 from rabbit import get_rabbit, init_rabbit
 from tracing import init_tracer
-from werkzeug.exceptions import Forbidden, HTTPException, NotFound, Unauthorized
+from werkzeug.exceptions import Forbidden, HTTPException, NotFound
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 SWAGGER_URL = "/api/docs"  # URL for exposing Swagger UI (without trailing '/')
@@ -52,31 +52,6 @@ def __process_resource_rules(rules):
         )
     for (resource, api), routes in grouped_rules.items():
         api.add_resource(resource, *routes)
-
-
-def load_sentry():
-    def before_send(event, hint):
-        if "exc_info" in hint:
-            _exc_type, exc_value, _tb = hint["exc_info"]
-            status_code = getattr(exc_value, "code", None)
-
-            if status_code:
-                if 400 <= status_code < 500:
-                    return None
-
-        return event
-
-    if config["GLITCH_TIP_ENABLED"]:
-        import sentry_sdk
-        from sentry_sdk.integrations.flask import FlaskIntegration
-
-        sentry_sdk.init(
-            dsn=config["GLITCH_TIP_DSN"],
-            integrations=[FlaskIntegration()],
-            ignore_errors=[NotFoundException, NotFound, Forbidden, Unauthorized],
-            environment=config["NOMAD_NAMESPACE"],
-            before_send=before_send,
-        )
 
 
 def load_specs(app):
@@ -182,7 +157,7 @@ def rabbit_available():
 
 
 init_mappers()
-load_sentry()
+init_log_export()
 tracer = init_tracer()
 app, api = init_app_and_api()
 FlaskInstrumentor().instrument_app(app)
@@ -216,6 +191,7 @@ def exception(exception):
             item = get_user_context().bag.get("item_being_processed")
     except Exception:
         pass
+    record_exception(exception)
     if exception.__class__ != NotFound:
         log.exception(
             f"{exception.__class__.__name__}: {exception}", item, exc_info=exception
