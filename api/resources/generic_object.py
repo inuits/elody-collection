@@ -301,8 +301,8 @@ class GenericObjectV2(BaseFilterResource, BaseResource):
         create = (
             get_object_configuration_mapper().get(content["type"]).crud()["creator"]
         )
-        item = create(content)
         try:
+            item = create(content)
             item = self.storage.save_item_to_collection_v2(collection, item)
         except NonUniqueException as ex:
             return ex.args[0], 409
