@@ -55,7 +55,9 @@ ignore = [
 
 [lint.flake8-tidy-imports.banned-api]
 "os.getenv".msg = "Directly getting environment variables is only allowed in the configuration logic"
+"getenv".msg = "Directly getting environment variables is only allowed in the configuration logic"
 "os.environ".msg = "Directly getting environment variables is only allowed in the configuration logic"
+"environ".msg = "Directly getting environment variables is only allowed in the configuration logic"
 
 [lint.per-file-ignores]
 "api/settings.py" = [
