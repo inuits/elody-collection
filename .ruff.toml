@@ -63,3 +63,6 @@ ignore = [
 "api/settings.py" = [
   "TID251",
 ] # The settings file has to import the environment variables of course
+"api/config_access.py" = [
+  "TID251",
+] # The settings file has to import the environment variables of course
