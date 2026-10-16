@@ -38,84 +38,105 @@ class Env(Mapping[str, str]):
 
 
 class BaseConfig(TypedDict):
-    DB_ENGINE: str
-    MONGODB_HOSTS: list[str]
-    STATIC_JWT: str | None
-    GLITCH_TIP_ENABLED: bool
-    GLITCH_TIP_DSN: str | None
-    NOMAD_NAMESPACE: str | None
-    APPS_MANIFEST: str
-    SECRET_KEY: str
-    LOAD_BACKGROUND_SCHEDULER: bool
-    ENABLE_METRICS: bool
-    DELETE_EMPTY_MEDIAFILES: bool
-    HARD_DELETE: bool
-    DELETE_MEDIAFILES: bool
-    HEALTH_CHECK_EXTERNAL_SERVICES: bool
-    LISTING_COUNT_CAP: int
-    LOG_LEVEL: str
-    LOKI_URL: str | None
-    NOMAD_GROUP_NAME: str
-    NOMAD_JOB_NAME: str
-    SERVICE_TYPE: str
-    SERVICE_TYPE_CATEGORY: str
-    LOKI_TENANT_ID: str
-    ELODY_LD_CONTEXT: str | None
-    ELODY_LD_BASE_URI: str | None
-    DAMS_FRONTEND_URL: str | None
-    AMQP_STORM_APSCHEDULER: int
+    # AMQP/RabbitMQ related envs
     AMQP_MANAGER: str
+    AMQP_STORM_APSCHEDULER: int
+    MQ_EXCHANGE: str
     AUTO_DELETE_EXCHANGE: bool
     DURABLE_EXCHANGE: bool
     PASSIVE_EXCHANGE: bool
+    QUEUE_PREFIX: str
+    QUEUE_TYPE: str | None
+    ROUTING_KEY_PREFIX: str
+
+    # LD related envs
+    ELODY_LD_BASE_URI: str | None
+    ELODY_LD_CONTEXT: str | None
+
+    # Arango related envs
+    ARANGO_DB_HOST: str | None
+    ARANGO_DB_NAME: str | None
+    ARANGO_DB_PASSWORD: str | None
+    ARANGO_DB_USERNAME: str | None
+    DEFAULT_GRAPH: str
+
+    # MongoDB related envs
+    MONGODB_ALLOW_DISK_USE: bool
+    MONGODB_AUTH_SOURCE: str | None
+    MONGODB_CONNECTION_STRING: str | None
+    MONGODB_DB_NAME: str
+    MONGODB_DIRECT: int
+    MONGODB_HOSTS: list[str]
+    MONGODB_PASSWORD: str | None
+    MONGODB_PORT: int
+    MONGODB_READ_PREFERENCE: str
+    MONGODB_REPLICA_SET: str | None
+    MONGODB_TLS: bool
+    MONGODB_USERNAME: str | None
+
+    # Service uri's
     COLLECTION_API_URL: str
     IMAGE_API_URL_EXT: str | None
     STORAGE_API_URL: str | None
     STORAGE_API_URL_EXT: str | None
-    TENANT_DEFINING_TYPES: list[str]
-    AUTO_CREATE_TENANTS: bool
-    TICKET_LIFESPAN: int
-    TICKET_CLEANUP: int
-    MINIO_BUCKET: str | None
-    ROUTING_KEY_PREFIX: str
-    QUEUE_PREFIX: str
-    QUEUE_TYPE: str | None
-    TYPESENSE_API_KEY: str | None
-    TYPESENSE_SERVER_PORT: str
-    TYPESENSE_SERVER_HOST: str
-    TYPESENSE_CONNECTION_TIMEOUT_SECONDS: int
-    SMTP_SECURITY: str | None
-    SMTP_USE_TLS: bool
-    SMTP_SERVER_HOST: str
-    SMTP_SERVER_PORT: int
-    SMTP_FROM_EMAIL: str | None
-    SMTP_USERNAME: str | None
-    SMTP_PASSWORD: str | None
-    SERVICE_CLIENT_ID: str
-    SERVICE_CLIENT_SECRET: str | None
+    DAMS_FRONTEND_URL: str | None
+
+    # Keycloak related envs
     KEYCLOAK_BASE_URL: str | None
     REALM_NAME: str | None
-    REDIRECT_URI: str | None
     OAUTH_CLIENT_ID: str | None
-    ARANGO_DB_NAME: str | None
-    DEFAULT_GRAPH: str
-    ARANGO_DB_HOST: str | None
-    ARANGO_DB_USERNAME: str | None
-    ARANGO_DB_PASSWORD: str | None
+    SERVICE_CLIENT_ID: str
+    SERVICE_CLIENT_SECRET: str | None
+
+    # Monitoring/O11y
+    ENABLE_METRICS: bool
+    GLITCH_TIP_DSN: str | None
+    GLITCH_TIP_ENABLED: bool
+    HEALTH_CHECK_EXTERNAL_SERVICES: bool
     INSTRUMENT_MONGODB: bool
-    MONGODB_DIRECT: int
-    MONGODB_DB_NAME: str
-    MONGODB_PORT: int
-    MONGODB_REPLICA_SET: str | None
-    MONGODB_USERNAME: str | None
-    MONGODB_PASSWORD: str | None
-    MONGODB_TLS: bool
-    MONGODB_AUTH_SOURCE: str | None
-    MONGODB_CONNECTION_STRING: str | None
-    MONGODB_ALLOW_DISK_USE: bool
-    MONGODB_READ_PREFERENCE: str
-    MQ_EXCHANGE: str
+    LOG_LEVEL: str
+    LOKI_TENANT_ID: str
+    LOKI_URL: str | None
+    NOMAD_GROUP_NAME: str
+    NOMAD_JOB_NAME: str
+    NOMAD_NAMESPACE: str | None
+    SERVICE_TYPE: str
+    SERVICE_TYPE_CATEGORY: str
+
+    # Email related envs
+    REDIRECT_URI: str | None
+    SMTP_FROM_EMAIL: str | None
+    SMTP_PASSWORD: str | None
+    SMTP_SECURITY: str | None
+    SMTP_SERVER_HOST: str
+    SMTP_SERVER_PORT: int
+    SMTP_USERNAME: str | None
+    SMTP_USE_TLS: bool
+
+    # app configuration envs
+    APPS_MANIFEST: str
+    DB_ENGINE: str
+    LOAD_BACKGROUND_SCHEDULER: bool
+    AUTO_CREATE_TENANTS: bool
+    DELETE_EMPTY_MEDIAFILES: bool
+    DELETE_MEDIAFILES: bool
+    HARD_DELETE: bool
+    LISTING_COUNT_CAP: int
+    SECRET_KEY: str
+    STATIC_JWT: str | None
     SUPER_ADMIN_ROLE: str
+    TENANT_DEFINING_TYPES: list[str]
+    TICKET_CLEANUP: int
+    TICKET_LIFESPAN: int
+
+    # S3
+    MINIO_BUCKET: str | None
+
+    # Typesense related envs
+    TYPESENSE_API_KEY: str | None
+    TYPESENSE_CONNECTION_TIMEOUT_SECONDS: int
+    TYPESENSE_SERVER_HOST: str
+    TYPESENSE_SERVER_PORT: str
 
 
 def load_config(env=environ) -> BaseConfig:
