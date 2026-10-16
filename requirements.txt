@@ -33,6 +33,7 @@ opentelemetry-api==1.44.0 # Tracked-by-renovate
 opentelemetry-exporter-otlp-proto-http==1.44.0 # Tracked-by-renovate
 opentelemetry-instrumentation-flask==0.65b0 # For some reason renovate does not pick this one up
 opentelemetry-instrumentation-pymongo==0.65b0 # For some reason renovate does not pick this one up
+opentelemetry-instrumentation-requests==0.65b0 # For some reason renovate does not pick this one up
 opentelemetry-sdk==1.44.0
 packaging==24.2
 pamqp==2.3.0
