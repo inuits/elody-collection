@@ -14,7 +14,7 @@ from flask.json.provider import DefaultJSONProvider
 from flask_swagger_ui import get_swaggerui_blueprint
 from health import init_health_check
 from logging_elody.log import log
-from observability import init_log_export, record_exception
+from observability import init_observability, record_exception
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
 from policy_factory import get_user_context, init_policy_factory
 from rabbit import get_rabbit, init_rabbit
@@ -157,10 +157,11 @@ def rabbit_available():
 
 
 init_mappers()
-init_log_export()
 tracer = init_tracer()
 app, api = init_app_and_api()
 FlaskInstrumentor().instrument_app(app)
+# metrics, logs and outgoing requests too, when a collector is configured
+init_observability(app)
 
 if scheduler := init_scheduler():
     load_jobs(scheduler, None)

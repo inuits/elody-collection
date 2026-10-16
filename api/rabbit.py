@@ -8,6 +8,7 @@ from config_access import config
 from elody.loader import load_queues
 from elody.util import CustomJSONEncoder, custom_json_dumps
 from logging_elody.log import log
+from observability import traced_rabbit
 
 _rabbit = None
 
@@ -24,12 +25,15 @@ def init_rabbit(app):
         if amqp_module.__name__ == "amqpstorm_flask"
         else amqp_module.ExchangeParams.ExchangeParams
     )
-    _rabbit = amqp_module.RabbitMQ(
-        exchange_params=ExchangeParams(
-            auto_delete=auto_delete_exchange,
-            durable=durable_exchange,
-            passive=passive_exchange,
-        ),
+    # before the queues are registered: their messages carry the trace
+    _rabbit = traced_rabbit(
+        amqp_module.RabbitMQ(
+            exchange_params=ExchangeParams(
+                auto_delete=auto_delete_exchange,
+                durable=durable_exchange,
+                passive=passive_exchange,
+            ),
+        )
     )
     # FIXME: This is a temporary solution. The default amount of workers for
     # the backgroundscheduler are 10, but currently for DAMS for example we are
