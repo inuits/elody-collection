@@ -7,6 +7,36 @@ from typing import TypedDict
 log = getLogger(__name__)
 
 
+class MissingConfigError(RuntimeError):
+    def __init__(self, keys: list[str]):
+        self.keys = keys
+        super().__init__(
+            "Missing required environment variables: " + ", ".join(sorted(keys))
+        )
+
+
+class Env(Mapping[str, str]):
+    def __init__(self, source: Mapping[str, str]):
+        self._source = source
+        self.missing: list[str] = []
+
+    def __getitem__(self, key):
+        return self._source[key]
+
+    def __iter__(self):
+        return iter(self._source)
+
+    def __len__(self):
+        return len(self._source)
+
+    def required(self, key: str) -> str:
+        value = self._source.get(key)
+        if value is None or value.strip() == "":
+            self.missing.append(key)
+            return ""
+        return value
+
+
 class BaseConfig(TypedDict):
     DB_ENGINE: str
     MONGODB_HOSTS: list[str]

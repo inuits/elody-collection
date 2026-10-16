@@ -3,7 +3,7 @@ from os import environ
 from typing import TYPE_CHECKING
 
 from elody.util import read_json_as_dict
-from settings import BaseConfig, load_config
+from settings import BaseConfig, Env, MissingConfigError, load_config
 
 _bound = None
 
@@ -33,6 +33,7 @@ def reset_config():  # for tests
 
 
 def build_config(env=environ) -> BaseConfig:
+    env = Env(env)
     config = load_config(env)
 
     apps = read_json_as_dict(env.get("APPS_MANIFEST"), None) or {}
@@ -46,6 +47,8 @@ def build_config(env=environ) -> BaseConfig:
             continue  # this client has no settings.py yet, which is fine
         config.update(module.load_config(env))
 
+    if env.missing:
+        raise MissingConfigError(env.missing)
     return config
 
 
