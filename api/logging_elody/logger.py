@@ -1,7 +1,7 @@
 import inspect
 import logging
-from config_access import config
 
+from config_access import config
 from configuration import get_object_configuration_mapper
 from elody.util import flatten_dict
 from logging_loki import JsonLokiLogger, LokiLogger

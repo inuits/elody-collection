@@ -1,6 +1,6 @@
 from time import monotonic
-from config_access import config
 
+from config_access import config
 from filters_v2.helpers.base_helper import (
     get_distinct_by,
     get_facets,
