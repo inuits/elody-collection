@@ -1,8 +1,9 @@
 from importlib import import_module
-from os import environ  # noqa: TID251 NOTE: This is to pass it in
+from os import environ
+from typing import TYPE_CHECKING
 
 from elody.util import read_json_as_dict
-from settings import load_config
+from settings import BaseConfig, load_config
 
 _bound = None
 
@@ -31,7 +32,7 @@ def reset_config():  # for tests
     _bound = None
 
 
-def build_config(env=environ) -> dict:
+def build_config(env=environ) -> BaseConfig:
     config = load_config(env)
 
     apps = read_json_as_dict(env.get("APPS_MANIFEST"), None) or {}
@@ -41,8 +42,8 @@ def build_config(env=environ) -> dict:
             module = import_module(module_name)
         except ModuleNotFoundError as error:
             if error.name != module_name:
-                raise  # the client's config.py exists but has a broken import
-            continue  # this client has no config.py yet, which is fine
+                raise  # the client's settings.py exists but has a broken import
+            continue  # this client has no settings.py yet, which is fine
         config.update(module.load_config(env))
 
     return config
@@ -59,4 +60,7 @@ class _ConfigProxy:
         return key in get_config()
 
 
-config = _ConfigProxy()
+if TYPE_CHECKING:
+    config: BaseConfig
+else:
+    config = _ConfigProxy()
