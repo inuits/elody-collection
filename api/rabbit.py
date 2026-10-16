@@ -8,7 +8,7 @@ from config_access import config
 from elody.loader import load_queues
 from elody.util import CustomJSONEncoder, custom_json_dumps
 from logging_elody.log import log
-from observability import traced_rabbit
+from elody.observability import traced_rabbit
 
 _rabbit = None
 
