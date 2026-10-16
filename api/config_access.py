@@ -3,7 +3,7 @@ from os import environ
 from typing import TYPE_CHECKING
 
 from elody.util import read_json_as_dict
-from settings import BaseConfig, Env, MissingConfigError, load_config
+from settings import BaseConfig, ConfigError, Env, load_config
 
 _bound = None
 
@@ -47,8 +47,8 @@ def build_config(env=environ) -> BaseConfig:
             continue  # this client has no settings.py yet, which is fine
         config.update(module.load_config(env))
 
-    if env.missing:
-        raise MissingConfigError(env.missing)
+    if env.missing or env.invalid:
+        raise ConfigError(env.missing, env.invalid)
     return config
 
 

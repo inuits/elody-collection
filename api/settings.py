@@ -7,18 +7,48 @@ from typing import TypedDict
 log = getLogger(__name__)
 
 
-class MissingConfigError(RuntimeError):
-    def __init__(self, keys: list[str]):
-        self.keys = keys
-        super().__init__(
-            "Missing required environment variables: " + ", ".join(sorted(keys))
-        )
+class ConfigError(RuntimeError):
+    """Raised when required environment variables are missing or invalid.
+
+    The message only contains variable names, never their values, so secrets
+    in a misnamed variable don't end up in logs.
+    """
+
+    def __init__(
+        self,
+        missing: list[str] | None = None,
+        invalid: list[tuple[str, str]] | None = None,
+    ):
+        self.missing = missing or []
+        self.invalid = invalid or []
+        lines = []
+        if self.missing:
+            lines.append(
+                "Missing required environment variables: "
+                + ", ".join(sorted(self.missing))
+            )
+        if self.invalid:
+            lines.append(
+                "Invalid environment variables: "
+                + ", ".join(
+                    f"{key} (expected {expected})"
+                    for key, expected in sorted(self.invalid)
+                )
+            )
+        super().__init__("\n".join(lines))
 
 
 class Env(Mapping[str, str]):
+    """Read-only view on the environment that collects missing and invalid keys.
+
+    build_config passes one Env to the base and every client load_config, then
+    raises a single ConfigError listing every problem.
+    """
+
     def __init__(self, source: Mapping[str, str]):
         self._source = source
         self.missing: list[str] = []
+        self.invalid: list[tuple[str, str]] = []
 
     def __getitem__(self, key):
         return self._source[key]
@@ -29,12 +59,14 @@ class Env(Mapping[str, str]):
     def __len__(self):
         return len(self._source)
 
-    def required(self, key: str) -> str:
-        value = self._source.get(key)
-        if value is None or value.strip() == "":
-            self.missing.append(key)
-            return ""
-        return value
+
+class _Required:
+    def __repr__(self):
+        return "REQUIRED"
+
+
+# Pass as the default of an env_* parser to mark a variable as required
+REQUIRED = _Required()
 
 
 class BaseConfig(TypedDict):
@@ -243,44 +275,106 @@ def load_config(env=environ) -> BaseConfig:
     }
 
 
+_TRUE_VALUES = {"true", "1", "yes", "y", "t"}
+_FALSE_VALUES = {"false", "0", "no", "n", "f"}
+
+
+def _report_missing(env: Mapping[str, str], key: str) -> None:
+    if isinstance(env, Env):
+        env.missing.append(key)
+    else:
+        raise ConfigError(missing=[key])
+
+
+def _report_invalid(env: Mapping[str, str], key: str, expected: str) -> None:
+    log.error(f"Environment variable {key} could not be parsed as {expected}")
+    if isinstance(env, Env):
+        env.invalid.append((key, expected))
+    else:
+        raise ConfigError(invalid=[(key, expected)])
+
+
+def _lookup(env: Mapping[str, str], key: str, default: object) -> str | None:
+    """Return the raw value, or None when the parser should use a fallback.
+
+    Optional variables only fall back when unset. Required variables also
+    count as missing when empty, and are reported.
+    """
+
+    val = env.get(key)
+    if not isinstance(default, _Required):
+        return val
+
+    if val is None or val.strip() == "":
+        _report_missing(env, key)
+        return None
+    return val
+
+
 def env_bool(
     env: Mapping[str, str],
     key: str,
-    default: bool = False,
+    default: bool | _Required = False,
 ) -> bool:
-    """Turn a boolean-like environment variable into an actual boolean."""
+    """Turn a boolean-like environment variable into an actual boolean.
 
-    val = env.get(key)
+    Required booleans are parsed strictly, so a typo like "ture" is reported
+    instead of silently becoming False.
+    """
 
+    val = _lookup(env, key, default)
     if val is None:
-        return default
+        return default if isinstance(default, bool) else False
 
-    return val.strip().lower() in {"true", "1", "yes", "y", "t"}
+    normalized = val.strip().lower()
+    if isinstance(default, _Required) and normalized not in (
+        _TRUE_VALUES | _FALSE_VALUES
+    ):
+        _report_invalid(env, key, "bool")
+        return False
+
+    return normalized in _TRUE_VALUES
 
 
 def env_int(
     env: Mapping[str, str],
     key: str,
-    default: int = 0,
+    default: int | _Required = 0,
 ) -> int:
     """Turn an int-like environment variable into an actual integer."""
 
-    val = env.get(key)
+    fallback = default if isinstance(default, int) else 0
+    val = _lookup(env, key, default)
     if val is None:
-        return default
+        return fallback
 
     try:
         return int(val)
     except ValueError:
-        log.error(
-            f"Environment variable {key} could not be narrowed to an int, found value was {val}"
-        )
-        raise
+        _report_invalid(env, key, "int")
+        return fallback
 
 
 def env_list(
-    env: Mapping[str, str], key: str, default: list | None = None, sep: str = ","
-):
+    env: Mapping[str, str],
+    key: str,
+    default: list[str] | _Required | None = None,
+    sep: str = ",",
+) -> list[str]:
+    """Split a separated environment variable into a list.
+
+    Required lists drop blank items, and count as missing when nothing is left.
+    """
+
+    if isinstance(default, _Required):
+        val = _lookup(env, key, default)
+        if val is None:
+            return []
+        items = [item.strip() for item in val.split(sep) if item.strip()]
+        if not items:
+            _report_missing(env, key)
+        return items
+
     if default is None:
         default = []
 
@@ -289,3 +383,19 @@ def env_list(
         return default
 
     return val.split(sep)
+
+
+def env_str(
+    env: Mapping[str, str],
+    key: str,
+    default: str | _Required,
+) -> str:
+    """Read a string environment variable that has a default or is required.
+
+    Optional strings without a default keep using env.get(key).
+    """
+
+    val = _lookup(env, key, default)
+    if val is None:
+        return default if isinstance(default, str) else ""
+    return val
