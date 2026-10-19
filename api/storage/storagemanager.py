@@ -1,12 +1,11 @@
-from os import getenv
-
+from config_access import config
 from configuration import get_storage_mapper
 from elody.util import Singleton
 
 
 class StorageManager(metaclass=Singleton):
     def __init__(self):
-        self.storage_engine = getenv("DB_ENGINE", "arango")
+        self.storage_engine = config["DB_ENGINE"]
         self._init_storage_managers()
 
     def _init_storage_managers(self):

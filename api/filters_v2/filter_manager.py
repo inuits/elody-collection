@@ -1,5 +1,4 @@
-from os import getenv
-
+from config_access import config
 from elody.util import Singleton
 from filters_v2.arango_wrapper import ArangoWrapper
 from filters_v2.mongo_filters import MongoFilters
@@ -11,7 +10,7 @@ class FilterManager(metaclass=Singleton):
 
     def __init_filter_engines(self):
         filter_engine = {"mongo": MongoFilters, "arango": ArangoWrapper}.get(
-            getenv("DB_ENGINE", "mongo"), None
+            config["DB_ENGINE"], None
         )
         if filter_engine:
             self.filter_engine = filter_engine()

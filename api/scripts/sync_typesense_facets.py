@@ -20,7 +20,7 @@ Run inside a collection-api container, from the api/ directory:
 
 import argparse
 import sys
-from os import environ
+from os import environ  # noqa: TID251
 from time import sleep
 
 # Field attributes worth carrying over when re-declaring a field.
@@ -202,7 +202,9 @@ def main(argv=None):
         for field in report["change"]:
             flags = ", ".join(config[collection][field])
             verb = "would get" if args.dry_run else "gets"
-            print(f"  [{'dry' if args.dry_run else 'set'}]  {collection}.{field} {verb} {flags}")
+            print(
+                f"  [{'dry' if args.dry_run else 'set'}]  {collection}.{field} {verb} {flags}"
+            )
         if change is None or args.dry_run:
             continue
         print(

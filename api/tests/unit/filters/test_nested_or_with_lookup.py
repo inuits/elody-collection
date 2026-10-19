@@ -61,7 +61,7 @@ def _filter_request_body(policy_signature):
 
 @pytest.fixture
 def static_jwt(monkeypatch):
-    monkeypatch.setitem(os.environ, "STATIC_JWT", "static-jwt")
+    monkeypatch.setitem(os.environ, "STATIC_JWT", "static-jwt")  # noqa: TID251
     return "static-jwt"
 
 

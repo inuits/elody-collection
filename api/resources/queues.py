@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
-from os import getenv
 from time import sleep
 
+from config_access import config
 from configuration import get_object_configuration_mapper
 from elody.job import handle_parent_job_finished
 from elody.object_configurations.job_configuration import Status
@@ -15,22 +15,18 @@ from logging_elody.log import log
 from rabbit import get_rabbit
 from storage.storagemanager import StorageManager
 
-queue_prefix = getenv("QUEUE_PREFIX", "dams")
-queue_type = getenv("QUEUE_TYPE")
-routing_key_prefix = getenv("ROUTING_KEY_PREFIX", "dams")
-
 
 def __argument_wrapper(
     *, queue_name, routing_key, single_active_consumer=False, full_message_object=False
 ):
     arguments = {"routing_key": routing_key}
-    if getenv("AMQP_MANAGER", "amqpstorm_flask") == "amqpstorm_flask":
+    if config["AMQP_MANAGER"] == "amqpstorm_flask":
         arguments["queue_name"] = queue_name
         if full_message_object:
             arguments["full_message_object"] = full_message_object
         queue_arguments = {}
-        if queue_type:
-            queue_arguments.update({"x-queue-type": queue_type})
+        if config["QUEUE_TYPE"]:
+            queue_arguments.update({"x-queue-type": config["QUEUE_TYPE"]})
         if single_active_consumer:
             queue_arguments.update({"x-single-active-consumer": True})
         if queue_arguments:
@@ -47,8 +43,8 @@ def __is_malformed_message(data, fields):
 
 @get_rabbit().queue(
     **__argument_wrapper(
-        queue_name=f"{queue_prefix}-update_parent_relation_values",
-        routing_key=f"{routing_key_prefix}.child_relation_changed",
+        queue_name=f"{config['QUEUE_PREFIX']}-update_parent_relation_values",
+        routing_key=f"{config['ROUTING_KEY_PREFIX']}.child_relation_changed",
     ),
 )
 def update_parent_relation_values(routing_key, body, message_id):
@@ -63,8 +59,8 @@ def update_parent_relation_values(routing_key, body, message_id):
 
 @get_rabbit().queue(
     **__argument_wrapper(
-        queue_name=f"{queue_prefix}-add_entity_to_history",
-        routing_key=f"{routing_key_prefix}.entity_changed",
+        queue_name=f"{config['QUEUE_PREFIX']}-add_entity_to_history",
+        routing_key=f"{config['ROUTING_KEY_PREFIX']}.entity_changed",
     ),
 )
 def add_entity_to_history(routing_key, body, message_id):
@@ -76,8 +72,8 @@ def add_entity_to_history(routing_key, body, message_id):
 
 @get_rabbit().queue(
     **__argument_wrapper(
-        queue_name=f"{queue_prefix}-add_mediafile_to_history",
-        routing_key=f"{routing_key_prefix}.mediafile_changed",
+        queue_name=f"{config['QUEUE_PREFIX']}-add_mediafile_to_history",
+        routing_key=f"{config['ROUTING_KEY_PREFIX']}.mediafile_changed",
     ),
 )
 def add_mediafile_to_history(routing_key, body, message_id):
@@ -94,7 +90,7 @@ def add_mediafile_to_history(routing_key, body, message_id):
 
 
 def add_item_to_history(
-    id,  # noqa: A002
+    id,
     data,
     unchanged_item=None,
     collection="entities",
@@ -105,7 +101,7 @@ def add_item_to_history(
         return
 
     item = storage.get_item_from_collection_by_id(collection, id)
-    relations = storage.get_collection_item_relations(collection, id, True)  # noqa: FBT003
+    relations = storage.get_collection_item_relations(collection, id, True)
     content = {
         "object": item,
         "timestamp": datetime.now(UTC),
@@ -130,8 +126,8 @@ def add_item_to_history(
 
 @get_rabbit().queue(
     **__argument_wrapper(
-        queue_name=f"{queue_prefix}-add_scan_info_to_mediafile",
-        routing_key=f"{routing_key_prefix}.file_scanned",
+        queue_name=f"{config['QUEUE_PREFIX']}-add_scan_info_to_mediafile",
+        routing_key=f"{config['ROUTING_KEY_PREFIX']}.file_scanned",
     ),
 )
 def add_scan_info_to_mediafile(routing_key, body, message_id):
@@ -161,10 +157,10 @@ def add_scan_info_to_mediafile(routing_key, body, message_id):
 
 @get_rabbit().queue(
     **__argument_wrapper(
-        queue_name=f"{queue_prefix}-update_job",
+        queue_name=f"{config['QUEUE_PREFIX']}-update_job",
         routing_key=[
-            f"{routing_key_prefix}.job_changed",
-            f"{routing_key_prefix}.job_created",
+            f"{config['ROUTING_KEY_PREFIX']}.job_changed",
+            f"{config['ROUTING_KEY_PREFIX']}.job_created",
         ],
         single_active_consumer=True,
     ),
@@ -179,8 +175,8 @@ def handle_job_change(routing_key, body, message_id):
 def update_job(routing_key, body, message_id):
     try:
         job_id = body["data"].get("id", body["data"].get("_id"))
-        config = get_object_configuration_mapper().get("job")
-        collection = config.crud()["collection"]
+        object_config = get_object_configuration_mapper().get("job")
+        collection = object_config.crud()["collection"]
 
         if job_id and collection:
             storage = StorageManager().get_db_engine()
@@ -293,8 +289,8 @@ def _check_parent_children_status(document) -> tuple[bool, dict[str, str]]:
 
 def _handle_parent_wrong_status(parent_job_id, collection):
     storage = StorageManager().get_db_engine()
-    config = get_object_configuration_mapper().get("job")
-    collection = config.crud()["collection"]
+    object_config = get_object_configuration_mapper().get("job")
+    collection = object_config.crud()["collection"]
     parent_job = storage.get_item_from_collection_by_id(
         collection=collection,
         id=parent_job_id,
@@ -308,13 +304,13 @@ def _handle_parent_wrong_status(parent_job_id, collection):
 
     if not finished:
         log.info(f"Moving parent job back to running: {parent_job_id}")
-        config.crud()["start_job"](parent_job_id, get_rabbit=get_rabbit)
+        object_config.crud()["start_job"](parent_job_id, get_rabbit=get_rabbit)
 
 
 def _attach_child(parent_job_id, collection):
     storage = StorageManager().get_db_engine()
-    config = get_object_configuration_mapper().get("job")
-    collection = config.crud()["collection"]
+    object_config = get_object_configuration_mapper().get("job")
+    collection = object_config.crud()["collection"]
     parent_job = storage.get_item_from_collection_by_id(
         collection=collection,
         id=parent_job_id,
@@ -339,8 +335,8 @@ def _attach_child(parent_job_id, collection):
 def create_job(routing_key, body, message_id):
     try:
         job = body["data"]
-        config = get_object_configuration_mapper().get("job")
-        collection = config.crud().get("collection", "jobs")
+        object_config = get_object_configuration_mapper().get("job")
+        collection = object_config.crud().get("collection", "jobs")
         storage = StorageManager().get_db_engine()
         storage.save_item_to_collection_v2(collection, job, run_post_crud_hook=False)
 
@@ -358,8 +354,8 @@ def create_job(routing_key, body, message_id):
 
 @get_rabbit().queue(
     **__argument_wrapper(
-        queue_name=f"{queue_prefix}-handle_mediafile_status_change",
-        routing_key=f"{routing_key_prefix}.mediafile_changed",
+        queue_name=f"{config['QUEUE_PREFIX']}-handle_mediafile_status_change",
+        routing_key=f"{config['ROUTING_KEY_PREFIX']}.mediafile_changed",
     ),
 )
 def handle_mediafile_status_change(routing_key, body, message_id):
@@ -385,8 +381,8 @@ def handle_mediafile_status_change(routing_key, body, message_id):
 
 @get_rabbit().queue(
     **__argument_wrapper(
-        queue_name=f"{queue_prefix}-handle_mediafiles_added_for_entity",
-        routing_key=f"{routing_key_prefix}.mediafiles_added_for_entity",
+        queue_name=f"{config['QUEUE_PREFIX']}-handle_mediafiles_added_for_entity",
+        routing_key=f"{config['ROUTING_KEY_PREFIX']}.mediafiles_added_for_entity",
     ),
 )
 def handle_mediafiles_added_for_entity(routing_key, body, message_id):
@@ -419,7 +415,7 @@ def process_mediafile(storage, mediafile, entity_id):
 
 def process_ocr(mediafiles_data, operation_relation):
     body = create_ocr_body(mediafiles_data, operation_relation)
-    get_rabbit().send(body, routing_key=f"{routing_key_prefix}.ocr_request")
+    get_rabbit().send(body, routing_key=f"{config['ROUTING_KEY_PREFIX']}.ocr_request")
 
 
 def add_relation(storage, collection, body, item_id):
@@ -459,11 +455,11 @@ def create_ocr_body(mediafiles_data, relation):
 
 @get_rabbit().queue(
     **__argument_wrapper(
-        queue_name=f"{queue_prefix}-handle_mediafile_deleted",
-        routing_key=f"{routing_key_prefix}.mediafile_deleted",
+        queue_name=f"{config['QUEUE_PREFIX']}-handle_mediafile_deleted",
+        routing_key=f"{config['ROUTING_KEY_PREFIX']}.mediafile_deleted",
     ),
 )
-def handle_mediafile_deleted(routing_key, body, message_id):  # noqa: PLR0912
+def handle_mediafile_deleted(routing_key, body, message_id):
     data = body["data"]
     deleted_mediafile = data["mediafile"]
     if __is_malformed_message(data, ["linked_entities", "mediafile"]):
@@ -501,7 +497,7 @@ def handle_mediafile_deleted(routing_key, body, message_id):  # noqa: PLR0912
                         pdf_relation.get("key"),
                     )
                     entity_mediafiles_ids = []
-                    for relation in entity_relations:  # noqa: PLW2901
+                    for relation in entity_relations:
                         if (
                             relation.get("type") == "hasMediafile"
                             and relation.get("label") == "hasMediafile"
@@ -530,14 +526,14 @@ def handle_mediafile_deleted(routing_key, body, message_id):  # noqa: PLR0912
 
 @get_rabbit().queue(
     **__argument_wrapper(
-        queue_name=f"{queue_prefix}-sync_entity_to_typesense",
-        routing_key=f"{routing_key_prefix}.entity_changed",
+        queue_name=f"{config['QUEUE_PREFIX']}-sync_entity_to_typesense",
+        routing_key=f"{config['ROUTING_KEY_PREFIX']}.entity_changed",
         full_message_object=True,
     ),
     auto_ack=False,
 )
 def sync_entity_to_typesense(message):
-    if getenv("AMQP_MANAGER", "amqpstorm_flask") != "amqpstorm_flask":
+    if config["AMQP_MANAGER"] != "amqpstorm_flask":
         return
     # Manual ack (auto_ack=False): the message is acknowledged only after the
     # entity is successfully indexed. This means a consumer disconnect mid-flight
@@ -545,7 +541,7 @@ def sync_entity_to_typesense(message):
     # indexing failure is retried once before being dropped to the reconcile job
     # as a last resort -- so a transient hiccup no longer silently drops an
     # entity from the search index.
-    from search.typesense_client import (  # noqa: PLC0415
+    from search.typesense_client import (
         ensure_collection,
         get_collection_field_types,
         prepare_document_for_typesense,
@@ -562,13 +558,13 @@ def sync_entity_to_typesense(message):
         entity_id = data["location"].removeprefix("/entities/")
         entity_type = data.get("type", "")
 
-        config = get_object_configuration_mapper().get(entity_type or "entities")
-        ts_config = config.crud().get("typesense", {})
+        object_config = get_object_configuration_mapper().get(entity_type or "entities")
+        ts_config = object_config.crud().get("typesense", {})
         if not ts_config.get("enabled"):
             message.ack()
             return
 
-        collection = config.crud().get("collection", "entities")
+        collection = object_config.crud().get("collection", "entities")
         storage = StorageManager().get_db_engine()
         entity = storage.get_item_from_collection_by_id(collection, entity_id)
         if not entity:
@@ -610,19 +606,19 @@ def sync_entity_to_typesense(message):
 
 @get_rabbit().queue(
     **__argument_wrapper(
-        queue_name=f"{queue_prefix}-delete_entity_from_typesense",
-        routing_key=f"{routing_key_prefix}.entity_deleted",
+        queue_name=f"{config['QUEUE_PREFIX']}-delete_entity_from_typesense",
+        routing_key=f"{config['ROUTING_KEY_PREFIX']}.entity_deleted",
         full_message_object=True,
     ),
     auto_ack=False,
 )
 def delete_entity_from_typesense(message):
-    if getenv("AMQP_MANAGER", "amqpstorm_flask") != "amqpstorm_flask":
+    if config["AMQP_MANAGER"] != "amqpstorm_flask":
         return
     # Manual ack, mirroring sync_entity_to_typesense: ack only after the delete
     # succeeds, so a dropped event no longer leaves a deleted entity lingering in
     # the search index. A missing document already counts as success (idempotent).
-    from search.typesense_client import delete_document  # noqa: PLC0415
+    from search.typesense_client import delete_document
 
     entity_id = None
     try:
@@ -634,8 +630,8 @@ def delete_entity_from_typesense(message):
             message.ack()
             return
 
-        config = get_object_configuration_mapper().get(entity_type)
-        ts_config = config.crud().get("typesense", {})
+        object_config = get_object_configuration_mapper().get(entity_type)
+        ts_config = object_config.crud().get("typesense", {})
         if not ts_config.get("enabled"):
             message.ack()
             return

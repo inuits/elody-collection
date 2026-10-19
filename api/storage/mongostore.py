@@ -1,12 +1,12 @@
 import re
 import time
 from copy import deepcopy
-from datetime import datetime, timedelta, timezone
-from os import getenv
+from datetime import UTC, datetime, timedelta
 from urllib.parse import quote_plus
 
 from app_context import request
 from bson.codec_options import CodecOptions
+from config_access import config
 from configuration import get_object_configuration_mapper
 from dateutil import parser
 from elody.error_codes import ErrorCode, get_error_code, get_write
@@ -34,33 +34,29 @@ class MongoStorageManager(GenericStorageManager):
     character_replace_map = {".": "="}
 
     def __init__(self, *, apply_default_entities_index=True):
-        if getenv("DB_ENGINE", "mongo") != "mongo":
+        if config["DB_ENGINE"] != "mongo":
             return
-        if bool(getenv("INSTRUMENT_MONGODB", False)):
+        if bool(config["INSTRUMENT_MONGODB"]):
             init_mongo_instrumentation()
-        self.mongo_direct = int(getenv("MONGODB_DIRECT", 0))
-        self.mongo_db_name = getenv("MONGODB_DB_NAME", "dams")
-        self.mongo_hosts = getenv("MONGODB_HOSTS", "mongo").split(",")
-        self.mongo_port = int(getenv("MONGODB_PORT", 27017))
-        self.mongo_replica_set = getenv("MONGODB_REPLICA_SET")
-        self.mongo_username = getenv("MONGODB_USERNAME")
-        self.mongo_password = getenv("MONGODB_PASSWORD")
-        self.mongo_tls = getenv("MONGODB_TLS", False) in [True, "true", "True"]
-        self.mongo_auth_source = getenv("MONGODB_AUTH_SOURCE", None)
-        self.mongo_existing_connection_string = getenv("MONGODB_CONNECTION_STRING")
-        self.allow_disk_use = getenv("MONGODB_ALLOW_DISK_USE", False) in [
-            "True",
-            "true",
-            True,
-        ]
-        self.read_preference = getenv("MONGODB_READ_PREFERENCE", "secondaryPreferred")
+        self.mongo_direct = config["MONGODB_DIRECT"]
+        self.mongo_db_name = config["MONGODB_DB_NAME"]
+        self.mongo_hosts = config["MONGODB_HOSTS"]
+        self.mongo_port = config["MONGODB_PORT"]
+        self.mongo_replica_set = config["MONGODB_REPLICA_SET"]
+        self.mongo_username = config["MONGODB_USERNAME"]
+        self.mongo_password = config["MONGODB_PASSWORD"]
+        self.mongo_tls = config["MONGODB_TLS"] in [True, "true", "True"]
+        self.mongo_auth_source = config["MONGODB_AUTH_SOURCE"]
+        self.mongo_existing_connection_string = config["MONGODB_CONNECTION_STRING"]
+        self.allow_disk_use = config["MONGODB_ALLOW_DISK_USE"]
+        self.read_preference = config["MONGODB_READ_PREFERENCE"]
 
         self.client = MongoClient(
             self.__create_mongo_connection_string(),
             directConnection=bool(self.mongo_direct),
         )
         self.db = self.client[self.mongo_db_name].with_options(
-            CodecOptions(tz_aware=True, tzinfo=timezone.utc),
+            CodecOptions(tz_aware=True, tzinfo=UTC),
         )
         if apply_default_entities_index:
             self.db.entities.create_index("identifiers", unique=True)
@@ -337,25 +333,23 @@ class MongoStorageManager(GenericStorageManager):
             id,
             [
                 {
-                    **{
-                        "key": mediafile_id,
-                        "label": "hasMediafile",
-                        "type": "hasMediafile",
-                        "is_primary": primary_mediafile,
-                        "is_primary_thumbnail": primary_thumbnail,
-                        "metadata": [
+                    "key": mediafile_id,
+                    "label": "hasMediafile",
+                    "type": "hasMediafile",
+                    "is_primary": primary_mediafile,
+                    "is_primary_thumbnail": primary_thumbnail,
+                    "metadata": [
+                        {
+                            "key": "order",
+                            "value": count + 1,
+                        },
+                    ],
+                    "sort": {
+                        "order": [
                             {
-                                "key": "order",
                                 "value": count + 1,
                             },
                         ],
-                        "sort": {
-                            "order": [
-                                {
-                                    "value": count + 1,
-                                },
-                            ],
-                        },
                     },
                     **relation_properties,
                 },
@@ -458,7 +452,7 @@ class MongoStorageManager(GenericStorageManager):
         config = get_object_configuration_mapper().get(item["type"])
         pre_crud_hook = config.crud()["pre_crud_hook"]
         post_crud_hook = config.crud()["post_crud_hook"]
-        timestamp = datetime.now(timezone.utc)
+        timestamp = datetime.now(UTC)
         try:
             item = pre_crud_hook(
                 crud="delete",
@@ -493,7 +487,7 @@ class MongoStorageManager(GenericStorageManager):
         object_lists = config.document_info().get("object_lists", {})
         pre_crud_hook = config.crud()["pre_crud_hook"]
         post_crud_hook = config.crud()["post_crud_hook"]
-        timestamp = datetime.now(timezone.utc)
+        timestamp = datetime.now(UTC)
         for key, value in content.items():
             if not scope or key in scope:
                 if key in object_lists:
@@ -642,7 +636,7 @@ class MongoStorageManager(GenericStorageManager):
         )
 
     def get_empty_mediafiles_with_no_relations(self, hours=24):
-        threshold_date = datetime.now(timezone.utc) - timedelta(hours=hours)
+        threshold_date = datetime.now(UTC) - timedelta(hours=hours)
         query = {
             "original_filename": {"$exists": False},
             "date_created": {"$lt": threshold_date},
@@ -937,7 +931,7 @@ class MongoStorageManager(GenericStorageManager):
         unpatched_item = deepcopy(item)
 
         try:
-            timestamp = datetime.now(timezone.utc)
+            timestamp = datetime.now(UTC)
             item = patched_item or patch_document_content(
                 document=item,
                 content=content,
@@ -1025,7 +1019,7 @@ class MongoStorageManager(GenericStorageManager):
         unpatched_item = deepcopy(item)
 
         try:
-            timestamp = datetime.now(timezone.utc)
+            timestamp = datetime.now(UTC)
             item = patched_item or patch_document_content(
                 document=item,
                 content=content,
@@ -1164,7 +1158,7 @@ class MongoStorageManager(GenericStorageManager):
                     self.__verify_uniqueness(item)
                 pre_crud_hook = config.crud()["pre_crud_hook"]
                 post_crud_hook = config.crud()["post_crud_hook"]
-                timestamp = datetime.now(timezone.utc)
+                timestamp = datetime.now(UTC)
                 if not is_history:
                     item = pre_crud_hook(
                         crud="create", timestamp=timestamp, document=item

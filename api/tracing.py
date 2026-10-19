@@ -1,7 +1,7 @@
 from contextlib import contextmanager
 from importlib import import_module
-from os import getenv
 
+from config_access import config
 from logging_elody.log import log
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
@@ -41,7 +41,7 @@ def get_tracer():
 
 
 def init_mongo_instrumentation():
-    if bool(getenv("INSTRUMENT_MONGODB", False)):
+    if config["INSTRUMENT_MONGODB"]:
         global _mongoInstrumentor
         try:
             instrumentation_library = import_module(

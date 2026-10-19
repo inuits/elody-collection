@@ -1,12 +1,11 @@
 import csv
 import io
 import json
-import os
 import re
 import uuid
-
 from urllib.parse import quote
 
+from config_access import config
 from elody.util import get_item_metadata_value
 from rdflib import Graph
 from serialization.serialize import serialize
@@ -371,14 +370,14 @@ def first_absolute_uri(*candidates):
 
 
 def get_linked_data_vocabulary():
-    return first_absolute_uri(os.getenv("ELODY_LD_CONTEXT"))
+    return first_absolute_uri(config["ELODY_LD_CONTEXT"])
 
 
 def get_linked_data_base_uri():
     return first_absolute_uri(
-        os.getenv("ELODY_LD_BASE_URI"),
-        os.getenv("DAMS_FRONTEND_URL"),
-        os.getenv("ELODY_LD_CONTEXT"),
+        config["ELODY_LD_BASE_URI"],
+        config["DAMS_FRONTEND_URL"],
+        config["ELODY_LD_CONTEXT"],
     ).rstrip("/")
 
 

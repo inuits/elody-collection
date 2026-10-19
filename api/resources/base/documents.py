@@ -1,6 +1,6 @@
-from os import getenv
 from urllib.parse import parse_qs
 
+from config_access import config
 from configuration import get_features, get_object_configuration_mapper
 from elody.job import add_document_to_job, fail_job, finish_job, init_job, start_job
 from elody.policies.helpers import get_flat_item_and_object_lists
@@ -183,7 +183,7 @@ class Documents(GenericObjectV2):
             request.args = ImmutableMultiDict(new_args)
             user_id = get_user_context().id
             new_headers = Headers(request.headers)
-            new_headers["Authorization"] = f"Bearer {getenv('STATIC_JWT')}"
+            new_headers["Authorization"] = f"Bearer {config['STATIC_JWT']}"
             new_headers.pop("X-User-Email", None)
             new_headers["X-User-Email"] = user_id
             request.headers = new_headers

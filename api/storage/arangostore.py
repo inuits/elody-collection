@@ -1,5 +1,4 @@
 from copy import deepcopy
-from os import getenv
 from time import sleep
 
 from arango import (
@@ -9,6 +8,7 @@ from arango import (
 )
 from arango.client import ArangoClient
 from arango.http import DefaultHTTPClient
+from config_access import config
 from configuration import get_object_configuration_mapper
 from elody.exceptions import NonUniqueException
 from elody.util import (
@@ -27,8 +27,8 @@ from storage.genericstore import GenericStorageManager
 class ArangoStorageManager(GenericStorageManager):
     def __init__(self):
         self.http_client = DefaultHTTPClient(pool_maxsize=100)
-        self.arango_db_name = getenv("ARANGO_DB_NAME")
-        self.default_graph_name = getenv("DEFAULT_GRAPH", "assets")
+        self.arango_db_name = config["ARANGO_DB_NAME"]
+        self.default_graph_name = config["DEFAULT_GRAPH"]
         self.collections = [
             "abstracts",
             "box_visits",
@@ -87,14 +87,14 @@ class ArangoStorageManager(GenericStorageManager):
         }
         self.edges = self.entity_relations
         self.client = ArangoClient(
-            hosts=getenv("ARANGO_DB_HOST"),
+            hosts=config["ARANGO_DB_HOST"],
             serializer=custom_json_dumps,
             http_client=self.http_client,
         )
         self.sys_db = self.client.db(
             "_system",
-            username=getenv("ARANGO_DB_USERNAME"),
-            password=getenv("ARANGO_DB_PASSWORD"),
+            username=config["ARANGO_DB_USERNAME"],
+            password=config["ARANGO_DB_PASSWORD"],
         )
         self.db = None
         self.id_cache = {}
@@ -105,8 +105,8 @@ class ArangoStorageManager(GenericStorageManager):
             self.sys_db.create_database(self.arango_db_name)
         self.db = self.client.db(
             self.arango_db_name,
-            username=getenv("ARANGO_DB_USERNAME"),
-            password=getenv("ARANGO_DB_PASSWORD"),
+            username=config["ARANGO_DB_USERNAME"],
+            password=config["ARANGO_DB_PASSWORD"],
         )
         for collection in self.collections:
             if not self.db.has_collection(collection):
@@ -567,7 +567,7 @@ class ArangoStorageManager(GenericStorageManager):
             relations = self.get_collection_item_relations(collection, id, entity=item)
             item["relations"] = relations
         if item.get("type") == "asset":
-            iiif_presentation = getenv("IMAGE_API_URL_EXT", "")
+            iiif_presentation = config["IMAGE_API_URL_EXT"]
             if iiif_presentation.find("/iiif/image") > -1 and item.get("object_id"):
                 iiif_presentation = iiif_presentation.replace(
                     "/iiif/image", f"/iiif/presentation/v2/manifest/{item['object_id']}"

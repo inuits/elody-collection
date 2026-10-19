@@ -1,6 +1,6 @@
 import logging
-import os
 
+from config_access import config
 from elody.util import get_raw_id, signal_mediafile_deleted
 from rabbit import get_rabbit
 from storage.storagemanager import StorageManager
@@ -8,8 +8,8 @@ from storage.storagemanager import StorageManager
 
 class TtlChecker:
     def __init__(self):
-        self.hard_delete: bool = os.getenv("HARD_DELETE", False)
-        self.delete_mediafiles: bool = os.getenv("DELETE_MEDIAFILES", False)
+        self.hard_delete: bool = config["HARD_DELETE"]
+        self.delete_mediafiles: bool = config["DELETE_MEDIAFILES"]
         self.storage = StorageManager().get_db_engine()
 
     def __call__(self):

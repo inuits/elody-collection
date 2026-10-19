@@ -1,11 +1,10 @@
 import json
 from collections import defaultdict
 from importlib import import_module
-from os import getenv
 from pathlib import Path
-from secrets import token_hex
 
 from apscheduler.schedulers.background import BackgroundScheduler
+from config_access import config, init_config
 from configuration import get_features, get_route_mapper, init_mappers
 from elody.error_codes import ErrorCode, get_error_code, get_read
 from elody.exceptions import NotFoundException
@@ -67,15 +66,15 @@ def load_sentry():
 
         return event
 
-    if getenv("GLITCH_TIP_ENABLED", False) in ["True", "true", True]:
+    if config["GLITCH_TIP_ENABLED"]:
         import sentry_sdk
         from sentry_sdk.integrations.flask import FlaskIntegration
 
         sentry_sdk.init(
-            dsn=getenv("GLITCH_TIP_DSN"),
+            dsn=config["GLITCH_TIP_DSN"],
             integrations=[FlaskIntegration()],
             ignore_errors=[NotFoundException, NotFound, Forbidden, Unauthorized],
-            environment=getenv("NOMAD_NAMESPACE"),
+            environment=config["NOMAD_NAMESPACE"],
             before_send=before_send,
         )
 
@@ -113,7 +112,7 @@ def load_specs(app):
 
 def load_app_resources():
     resource_rules = []
-    apps = read_json_as_dict(getenv("APPS_MANIFEST"), None)
+    apps = read_json_as_dict(config["APPS_MANIFEST"], None)
     for app in apps:
         for resource in apps[app].get("resources", []):
             module = import_module(f"apps.{app}.resources.{resource}")
@@ -132,10 +131,11 @@ def init_app_and_api():
     from init_api import init_api
 
     app = Flask(__name__)
+    init_config(app)
     app.config["RESTFUL_JSON"] = {"cls": CustomJSONEncoder}
     app.json = ElodyJSONProvider(app)
     app.wsgi_app = ProxyFix(app.wsgi_app, x_prefix=1)
-    app.secret_key = getenv("SECRET_KEY", token_hex(16))
+    app.secret_key = config["SECRET_KEY"]
     load_apps(app, log)
     resource_rules = load_specs(app)
     resource_rules.extend(load_app_resources())
@@ -149,7 +149,7 @@ def init_app_and_api():
 
 
 def init_scheduler():
-    load_background_scheduler = getenv("LOAD_BACKGROUND_SCHEDULER", False)
+    load_background_scheduler = config["LOAD_BACKGROUND_SCHEDULER"]
     if load_background_scheduler:
         scheduler = BackgroundScheduler()
         scheduler.start()
@@ -191,7 +191,7 @@ if scheduler := init_scheduler():
     load_jobs(scheduler, None)
 
 
-if getenv("ENABLE_METRICS", False) in ["True", "true", True]:
+if config["ENABLE_METRICS"]:
     register_exporter(app, api)
 
 try:

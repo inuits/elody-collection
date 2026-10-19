@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
-from os import getenv
 from re import escape
 
+from config_access import config
 from filters_v2.matchers.base_matchers import BaseMatchers
 from filters_v2.matchers.mongo_matchers import MongoMatchers
 
@@ -11,7 +11,7 @@ class BaseMatcher(ABC):
         self.matcher_engine: BaseMatchers = {
             "arango": MongoMatchers,
             "mongo": MongoMatchers,
-        }.get(getenv("DB_ENGINE", "mongo"))()  # type: ignore
+        }.get(config["DB_ENGINE"])()  # type: ignore
 
     @abstractmethod
     def match(self, key: str | list[str], value, **kwargs) -> dict | str | list | None:

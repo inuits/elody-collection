@@ -1,6 +1,6 @@
-from os import getenv
 from typing import Any, Protocol, cast
 
+from config_access import config
 from elody_types.base_entity_types import ElodyEntity
 from keycloak import KeycloakAdmin
 from keycloak.exceptions import KeycloakPostError
@@ -16,12 +16,12 @@ class ToKeycloakSerializer(Protocol):
 
 class KeycloakService(BaseIdpService):
     def __init__(self):
-        self._service_client_id = getenv("SERVICE_CLIENT_ID", "service_client")
-        self._service_client_secret = getenv("SERVICE_CLIENT_SECRET")
-        self._server_url = getenv("KEYCLOAK_BASE_URL")
-        self._realm_name = getenv("REALM_NAME")
-        self._redirect_uri = getenv("REDIRECT_URI") or getenv("DAMS_FRONTEND_URL")
-        self._client_id = getenv("OAUTH_CLIENT_ID", "podiumnet-dashboard-elody")
+        self._service_client_id = config["SERVICE_CLIENT_ID"]
+        self._service_client_secret = config["SERVICE_CLIENT_SECRET"]
+        self._server_url = config["KEYCLOAK_BASE_URL"]
+        self._realm_name = config["REALM_NAME"]
+        self._redirect_uri = config["REDIRECT_URI"] or config["DAMS_FRONTEND_URL"]
+        self._client_id = config["OAUTH_CLIENT_ID"]
         self._keycloak_admin = KeycloakAdmin(
             server_url=self._server_url,
             realm_name=self._realm_name,

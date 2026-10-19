@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
-from os import getenv
-from typing import Type
 
+from config_access import config
 from elody.error_codes import ErrorCode, get_error_code, get_read
 from filters.filter_matcher_mapping import FilterMatcherMapping
 from filters.matchers.matchers import BaseMatcher
@@ -46,8 +45,8 @@ class BaseFilterType(ABC):
         self.filter_type_engine: BaseFilterTypeQueryGenerator = {
             "arango": ArangoFilterTypeQueryGenerator,
             "mongo": MongoFilterTypeQueryGenerator,
-        }.get(getenv("DB_ENGINE", "arango"))()  # type: ignore
-        self.matchers: dict[str, Type[BaseMatcher]] = {}
+        }.get(config["DB_ENGINE"])()  # type: ignore
+        self.matchers: dict[str, type[BaseMatcher]] = {}
 
     @abstractmethod
     def generate_query(self, filter_criteria: dict) -> list | str:

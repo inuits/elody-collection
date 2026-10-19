@@ -8,6 +8,19 @@ import threading
 import pytest
 
 
+@pytest.fixture(autouse=True)
+def reset_config():
+    """
+    Drop the cached config before and after each test, so values set with
+    monkeypatch.setenv are picked up and don't leak into the next test.
+    """
+    from config_access import reset_config as reset
+
+    reset()
+    yield
+    reset()
+
+
 @pytest.fixture
 def flask_app():
     """

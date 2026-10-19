@@ -1,10 +1,10 @@
 from importlib import import_module
 from json import loads
-from os import getenv
 from typing import Any
 
 from apscheduler.executors.pool import ThreadPoolExecutor
 from apscheduler.schedulers.background import BackgroundScheduler
+from config_access import config
 from elody.loader import load_queues
 from elody.util import CustomJSONEncoder, custom_json_dumps
 from logging_elody.log import log
@@ -14,30 +14,11 @@ _rabbit = None
 
 def init_rabbit(app):
     global _rabbit
-    apscheduler_enabled = int(getenv("AMQP_STORM_APSCHEDULER", 1))
-    amqp_module = import_module(getenv("AMQP_MANAGER", "amqpstorm_flask"))
-    auto_delete_exchange = getenv("AUTO_DELETE_EXCHANGE", False) in [
-        1,
-        "1",
-        True,
-        "True",
-        "true",
-    ]
-    durable_exchange = getenv("DURABLE_EXCHANGE", True) in [
-        1,
-        "1",
-        True,
-        "True",
-        "true",
-    ]
-    passive_exchange = getenv("PASSIVE_EXCHANGE", False) in [
-        1,
-        "1",
-        True,
-        "True",
-        "true",
-    ]
-
+    apscheduler_enabled = config["AMQP_STORM_APSCHEDULER"]
+    amqp_module = import_module(config["AMQP_MANAGER"])
+    auto_delete_exchange = config["AUTO_DELETE_EXCHANGE"]
+    durable_exchange = config["DURABLE_EXCHANGE"]
+    passive_exchange = config["PASSIVE_EXCHANGE"]
     ExchangeParams = (
         amqp_module.ExchangeParams
         if amqp_module.__name__ == "amqpstorm_flask"
@@ -51,7 +32,7 @@ def init_rabbit(app):
         ),
     )
     # FIXME: This is a temporary solution. The default amount of workers for
-    # the backgroundscheduler are 10, but currently for DAMS for exapmle we are
+    # the backgroundscheduler are 10, but currently for DAMS for example we are
     # at 12 queues, which means some queues don't start getting consumed.
     if apscheduler_enabled == 1:
         _rabbit.scheduler = BackgroundScheduler(
