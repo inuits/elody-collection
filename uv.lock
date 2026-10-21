@@ -115,7 +115,7 @@ dependencies = [
     { name = "decorator" },
     { name = "deprecation" },
     { name = "dnspython" },
-    { name = "elody", extra = ["loader"] },
+    { name = "elody", extra = ["loader", "observability"] },
     { name = "flask" },
     { name = "flask-restful" },
     { name = "flask-swagger-ui" },
@@ -196,7 +196,7 @@ requires-dist = [
     { name = "decorator", specifier = "==5.3.1" },
     { name = "deprecation", specifier = "==2.1.0" },
     { name = "dnspython", specifier = "==2.8.0" },
-    { name = "elody", extras = ["loader"], specifier = "==0.0.267" },
+    { name = "elody", extras = ["loader", "observability"], specifier = "==0.0.270" },
     { name = "flask", specifier = "==3.1.3" },
     { name = "flask-restful", specifier = "==0.3.10" },
     { name = "flask-swagger-ui", specifier = "==4.11.1" },
@@ -488,7 +488,7 @@ wheels = [
 
 [[package]]
 name = "elody"
-version = "0.0.267"
+version = "0.0.270"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "certifi" },
@@ -497,9 +497,9 @@ dependencies = [
     { name = "requests" },
     { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/79/2a/d25cd0c328900761cd54d74736d272a54ce604cf8c3eaae309dde68d441c/elody-0.0.267.tar.gz", hash = "sha256:b798fc58faf455254593f690192647b204e42c95dc07258b955bcd788963cd7a", size = 54937, upload-time = "2026-08-10T11:19:43.625Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/21/8b/2c5332abb66780ce45794a1a656221996f7305f7afc2268bc73f5618923a/elody-0.0.270.tar.gz", hash = "sha256:99c38988a3816d3a9419351afa87ddc4b4d5b50404d029ab9306741d707bbc5c", size = 65468, upload-time = "2026-10-21T10:31:35.968Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/24/2e/3eadda20483994755cb3be32c09ec8b1d92dd69cbd4505a9def14e90d08e/elody-0.0.267-py3-none-any.whl", hash = "sha256:d5773fd035f8392ba513161774b65601b74014068d7f3b678be5e03c4073b244", size = 69546, upload-time = "2026-08-10T11:19:42.265Z" },
+    { url = "https://files.pythonhosted.org/packages/ee/8c/339fb4bbbd53594ec0bf9f3ddd92f7ebbf3bb2c9e4c81019f72b7e40ed9d/elody-0.0.270-py3-none-any.whl", hash = "sha256:c85acd1cfb44230bf1d34141c31487540c76179b04dc435af386fa0899ee892a", size = 76018, upload-time = "2026-10-21T10:31:34.616Z" },
 ]
 
 [package.optional-dependencies]
@@ -511,6 +511,14 @@ loader = [
     { name = "pytz" },
     { name = "six" },
     { name = "tzlocal" },
+]
+observability = [
+    { name = "flask" },
+    { name = "opentelemetry-api" },
+    { name = "opentelemetry-exporter-otlp-proto-http" },
+    { name = "opentelemetry-instrumentation-flask" },
+    { name = "opentelemetry-instrumentation-requests" },
+    { name = "opentelemetry-sdk" },
 ]
 
 [[package]]
@@ -874,6 +882,21 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/71/06/73315a138049c5894bafa18569fd5c9949cf4c9a972ed7151d16900af49d/opentelemetry_instrumentation_pymongo-0.65b0.tar.gz", hash = "sha256:8a43f368f7dd101622d2b5929b0c12c4099a0c4a072284b86d18b75dfee10007", size = 11312, upload-time = "2026-07-16T15:26:14.922Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/de/46/a4c918ac6b778adf967fd8b65b714a565d76c61a31be3e86a18fffd69b2c/opentelemetry_instrumentation_pymongo-0.65b0-py3-none-any.whl", hash = "sha256:c714006d3075b0d9cd1a5e8091dce139cb58ee1fbc5a23d5c8f8576e9ae14e53", size = 10638, upload-time = "2026-07-16T15:25:25.302Z" },
+]
+
+[[package]]
+name = "opentelemetry-instrumentation-requests"
+version = "0.65b0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "opentelemetry-api" },
+    { name = "opentelemetry-instrumentation" },
+    { name = "opentelemetry-semantic-conventions" },
+    { name = "opentelemetry-util-http" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/c8/84/f46bf7976a81827419b085c9ed14562410c7599e07509786e9f6eb3c5438/opentelemetry_instrumentation_requests-0.65b0.tar.gz", hash = "sha256:1d601548f89236d5ab373c7208a2e1e162a8d6462b5b972f9ad8fb0ed82d7438", size = 18107, upload-time = "2026-07-16T15:26:18.532Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/42/45/6201afe846263d775cd4fc8d6a87dc8c15eb7921cdade4dca1e1227b04b6/opentelemetry_instrumentation_requests-0.65b0-py3-none-any.whl", hash = "sha256:91688ec0d4d1fed75ea8d026ef2c66274ed9868c22b6be211ef85d832d16f957", size = 13386, upload-time = "2026-07-16T15:25:31.093Z" },
 ]
 
 [[package]]
