@@ -1,8 +1,7 @@
-from importlib import import_module
 from os import environ
 from typing import TYPE_CHECKING
 
-from elody.util import read_json_as_dict
+from plugins import configure_plugins, merged
 from settings import BaseConfig, ConfigError, Env, load_config
 
 _bound = None
@@ -36,16 +35,8 @@ def build_config(env=environ) -> BaseConfig:
     env = Env(env)
     config = load_config(env)
 
-    apps = read_json_as_dict(env.get("APPS_MANIFEST"), None) or {}
-    for app_name in apps:
-        module_name = f"apps.{app_name}.settings"
-        try:
-            module = import_module(module_name)
-        except ModuleNotFoundError as error:
-            if error.name != module_name:
-                raise  # the client's settings.py exists but has a broken import
-            continue  # this client has no settings.py yet, which is fine
-        config.update(module.load_config(env))
+    configure_plugins(env.get("APPS_MANIFEST"))
+    config.update(merged(lambda plugin: plugin.settings(env)))
 
     if env.missing or env.invalid:
         raise ConfigError(env.missing, env.invalid)

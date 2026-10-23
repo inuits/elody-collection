@@ -2,10 +2,11 @@ from __future__ import (
     annotations,  # NOTE: thought this wasn't required from 3.13, but apparently got pushed back to 3.14
 )
 
-from importlib import import_module
 from typing import TYPE_CHECKING
 
+from config_access import get_config
 from object_configurations.object_configuration_mapper import ObjectConfigurationMapper
+from plugins import merged
 
 if TYPE_CHECKING:
     from storage.genericstore import GenericStorageManager
@@ -14,7 +15,7 @@ _storage_mapper: dict[str, type[GenericStorageManager]] = {}
 _object_configuration_mapper = ObjectConfigurationMapper()
 _route_mapper: dict[str, str] = {}
 _collection_mapper: dict[str, str] = {}
-_features = {
+_DEFAULT_FEATURES = {
     "bulk_operations": {
         "delete": {},
         "edit": {},
@@ -23,6 +24,21 @@ _features = {
     },
     "specs": {"elody": {"mediafiles": {}}},
 }
+_features = _DEFAULT_FEATURES
+
+
+def _default_storage_mapper() -> dict[str, type[GenericStorageManager]]:
+    from storage.arangostore import ArangoStorageManager
+    from storage.httpstore import HttpStorageManager
+    from storage.memorystore import MemoryStorageManager
+    from storage.mongostore import MongoStorageManager
+
+    return {
+        "arango": ArangoStorageManager,
+        "memory": MemoryStorageManager,
+        "mongo": MongoStorageManager,
+        "http": HttpStorageManager,
+    }
 
 
 def init_mappers():
@@ -32,42 +48,20 @@ def init_mappers():
     global _storage_mapper
     global _features
 
-    try:
-        mapper_module = import_module("apps.mappers")
-        _object_configuration_mapper = ObjectConfigurationMapper(
-            mapper_module.OBJECT_CONFIGURATION_MAPPER
-        )
-        _route_mapper = mapper_module.ROUTE_MAPPER
-        _collection_mapper = mapper_module.COLLECTION_MAPPER
-        _storage_mapper = mapper_module.STORAGE_MAPPER
-        _features = mapper_module.FEATURES
-    except ModuleNotFoundError as mapper_error:
-        from logging_elody.log import log
-        from storage.arangostore import ArangoStorageManager
-        from storage.httpstore import HttpStorageManager
-        from storage.memorystore import MemoryStorageManager
-        from storage.mongostore import MongoStorageManager
+    # Scripts call this before anything else, building the config first makes
+    # sure the plugins know the apps manifest
+    get_config()
 
-        _object_configuration_mapper = ObjectConfigurationMapper()
-        _route_mapper = {}
-        _collection_mapper = {}
-        _storage_mapper = {
-            "arango": ArangoStorageManager,
-            "memory": MemoryStorageManager,
-            "mongo": MongoStorageManager,
-            "http": HttpStorageManager,
-        }
-
-        log.error(
-            f"Configuration: apps.mappers not found with error {mapper_error}, falling back to default config."
-        )
-    except Exception as unknown_error:
-        from logging_elody.log import log
-
-        log.error(
-            f"Configuration: Unexpected error when loading mappers: {unknown_error}"
-        )
-        raise unknown_error
+    _object_configuration_mapper = ObjectConfigurationMapper(
+        merged(lambda plugin: plugin.object_configurations())
+    )
+    _route_mapper = merged(lambda plugin: plugin.route_mapper())
+    _collection_mapper = merged(lambda plugin: plugin.collection_mapper())
+    _storage_mapper = {
+        **_default_storage_mapper(),
+        **merged(lambda plugin: plugin.storage_mapper()),
+    }
+    _features = merged(lambda plugin: plugin.features()) or _DEFAULT_FEATURES
 
 
 def get_object_configuration_mapper() -> ObjectConfigurationMapper:

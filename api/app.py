@@ -4,12 +4,13 @@ from importlib import import_module
 from pathlib import Path
 
 from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.cron import CronTrigger
 from config_access import config, init_config
 from configuration import get_features, get_route_mapper, init_mappers
 from elody.error_codes import ErrorCode, get_error_code, get_read
 from elody.exceptions import NotFoundException
-from elody.loader import load_apps, load_jobs
-from elody.util import CustomJSONEncoder, read_json_as_dict
+from elody.loader import load_jobs
+from elody.util import CustomJSONEncoder
 from flask import Flask, Response, g, jsonify, make_response, request
 from flask.json.provider import DefaultJSONProvider
 from flask_swagger_ui import get_swaggerui_blueprint
@@ -17,9 +18,11 @@ from health import init_health_check
 from logging_elody.log import log
 from elody.observability import init_observability, record_exception
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
+from plugins import concatenated, get_plugins
 from policy_factory import get_user_context, init_policy_factory
 from rabbit import get_rabbit, init_rabbit
 from tracing import init_tracer
+from validation.util import warm_up_validators
 from werkzeug.exceptions import Forbidden, HTTPException, NotFound, Unauthorized
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -111,21 +114,14 @@ def load_specs(app):
     return resource_rules
 
 
-def load_app_resources():
-    resource_rules = []
-    apps = read_json_as_dict(config["APPS_MANIFEST"], None)
-    for app in apps:
-        for resource in apps[app].get("resources", []):
-            module = import_module(f"apps.{app}.resources.{resource}")
-            try:
-                app.register_blueprint(module.blueprint)
-            except AttributeError:
-                try:
-                    rules = module.resource_rules()
-                    resource_rules.extend(rules)
-                except AttributeError:
-                    pass
-    return resource_rules
+def register_plugin_blueprints(app):
+    for blueprint in concatenated(lambda plugin: plugin.blueprints()):
+        app.register_blueprint(blueprint)
+
+
+def load_plugin_jobs(scheduler):
+    for job, expression in concatenated(lambda plugin: plugin.jobs()):
+        scheduler.add_job(job, CronTrigger.from_crontab(expression))
 
 
 def init_app_and_api():
@@ -137,15 +133,20 @@ def init_app_and_api():
     app.json = ElodyJSONProvider(app)
     app.wsgi_app = ProxyFix(app.wsgi_app, x_prefix=1)
     app.secret_key = config["SECRET_KEY"]
-    load_apps(app, log)
+    register_plugin_blueprints(app)
     resource_rules = load_specs(app)
-    resource_rules.extend(load_app_resources())
+    # Plugin rules come last, so they win over spec rules for the same route
+    resource_rules.extend(concatenated(lambda plugin: plugin.resource_rules()))
     __process_resource_rules(resource_rules)
     init_rabbit(app)
     register_swaggerui(app)
     init_health_check(app, database_available, rabbit_available)
     init_policy_factory()
     api = init_api(app)
+
+    log.info("Warming up validators")
+    warm_up_validators()
+    log.info("Finished warming up validators")
     return app, api
 
 
@@ -192,16 +193,14 @@ init_observability(app)
 
 if scheduler := init_scheduler():
     load_jobs(scheduler, None)
+    load_plugin_jobs(scheduler)
 
 
 if config["ENABLE_METRICS"]:
     register_exporter(app, api)
 
-try:
-    client_app = import_module("apps.client_app")
-    client_app.init(app, api)
-except (ModuleNotFoundError, AttributeError):
-    pass
+for plugin in get_plugins():
+    plugin.init_app(app, api)
 
 
 @app.before_request
