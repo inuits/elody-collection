@@ -1,25 +1,20 @@
-from importlib import import_module
-
 from app_context import g
 from inuits_policy_based_auth import PolicyFactory, RequestContext
 from inuits_policy_based_auth.exceptions import NoUserContextException
 from logging_elody.log import log
+from plugins import concatenated, merged
 
 
 def init_policy_factory():
     from elody.loader import load_policies
 
     global _policy_factory
-    try:
-        permissions_module = import_module("apps.permissions")
-        load_policies(
-            _policy_factory,
-            log,
-            permissions_module.PERMISSIONS,
-            permissions_module.PLACEHOLDERS,
-        )
-    except (ModuleNotFoundError, AttributeError):
-        load_policies(_policy_factory, None)
+    load_policies(
+        _policy_factory,
+        log,
+        merged(lambda plugin: plugin.permissions()),
+        concatenated(lambda plugin: plugin.permission_placeholders()),
+    )
 
 
 def apply_policies(request_context: RequestContext):
