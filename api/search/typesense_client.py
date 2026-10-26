@@ -35,8 +35,8 @@ def get_typesense_client():
                     "api_key": api_key,
                     "nodes": [
                         {
-                            "host": config["TYPESENSE_SERVER_HOST",],
-                            "port": config["TYPESENSE_SERVER_PORT",],
+                            "host": config["TYPESENSE_SERVER_HOST"],
+                            "port": config["TYPESENSE_SERVER_PORT"],
                             "protocol": "http" if port == "8108" else "https",
                         }
                     ],

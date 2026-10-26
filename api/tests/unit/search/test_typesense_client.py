@@ -1547,3 +1547,53 @@ class TestSortFields:
         )
 
         tc._ensured_collections.discard("sort_col")
+
+
+class TestGetTypesenseClient:
+    def _get_client(self, settings):
+        with (
+            patch.object(tc, "config", settings),
+            patch.object(tc, "_client", None),
+            patch.object(tc, "_initialized", False),
+            patch("typesense.Client") as client_cls,
+        ):
+            client = tc.get_typesense_client()
+        return client, client_cls
+
+    def test_builds_client_from_config(self):
+        client, client_cls = self._get_client(
+            {
+                "TYPESENSE_API_KEY": "key",
+                "TYPESENSE_SERVER_HOST": "typesense",
+                "TYPESENSE_SERVER_PORT": "8108",
+                "TYPESENSE_CONNECTION_TIMEOUT_SECONDS": 5,
+            }
+        )
+
+        assert client is client_cls.return_value
+        client_cls.assert_called_once_with(
+            {
+                "api_key": "key",
+                "nodes": [{"host": "typesense", "port": "8108", "protocol": "http"}],
+                "connection_timeout_seconds": 5,
+            }
+        )
+
+    def test_uses_https_for_non_default_port(self):
+        _, client_cls = self._get_client(
+            {
+                "TYPESENSE_API_KEY": "key",
+                "TYPESENSE_SERVER_HOST": "search.example.org",
+                "TYPESENSE_SERVER_PORT": "443",
+                "TYPESENSE_CONNECTION_TIMEOUT_SECONDS": 5,
+            }
+        )
+
+        node = client_cls.call_args.args[0]["nodes"][0]
+        assert node == {"host": "search.example.org", "port": "443", "protocol": "https"}
+
+    def test_returns_none_without_api_key(self):
+        client, client_cls = self._get_client({"TYPESENSE_API_KEY": None})
+
+        assert client is None
+        client_cls.assert_not_called()
