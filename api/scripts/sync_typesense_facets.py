@@ -1,13 +1,15 @@
 #!/usr/bin/env python
-"""Apply configured facet_fields, search_fields and sort_fields to existing Typesense collections in place.
+"""Apply configured facet_fields and sort_fields to existing Typesense collections in place.
 
 Avoids a full reindex: Typesense re-indexes ONLY the changed fields over the
 documents it already stores — no reimport from Mongo. Use this after adding
 fields to a config's ``typesense.facet_fields`` (distinct_by dropdowns served
-from facets instead of a Mongo $group scan), ``typesense.search_fields``
-(faceted so a distinct_by on them can group in Typesense) or
-``typesense.sort_fields`` (lists ordered by Typesense instead of losing their
-order).
+from facets instead of a Mongo $group scan) or ``typesense.sort_fields`` (lists
+ordered by Typesense instead of losing their order).
+
+Fields are altered in small batches (``--batch-size``): one alter re-indexes
+all its fields at once, and too many at a time runs Typesense out of memory.
+The run stops at the first batch that fails.
 
 Idempotent: skips fields that already carry their flags. Preserves each field's
 existing attributes (type, infix, optional, facet, sort, ...) and only flips the
@@ -46,11 +48,7 @@ def merge_field_flags(typesense_configs):
         if not typesense.get("enabled"):
             continue
         fields = collections.setdefault(typesense.get("collection", "entities"), {})
-        for flag, key in (
-            ("facet", "facet_fields"),
-            ("facet", "search_fields"),
-            ("sort", "sort_fields"),
-        ):
+        for flag, key in (("facet", "facet_fields"), ("sort", "sort_fields")):
             for field in typesense.get(key, []):
                 fields.setdefault(field.replace(".", "_"), {})[flag] = True
     return collections
@@ -67,25 +65,6 @@ def merge_array_fields(typesense_configs):
             field.replace(".", "_") for field in typesense.get("array_fields", [])
         )
     return collections
-
-
-def merge_search_only_fields(typesense_configs):
-    """Return {collection: {flat_field_name}} of search fields without facet/sort config."""
-    collections = {}
-    for typesense in typesense_configs:
-        if not typesense.get("enabled"):
-            continue
-        fields = collections.setdefault(typesense.get("collection", "entities"), set())
-        fields.update(
-            field.replace(".", "_") for field in typesense.get("search_fields", [])
-        )
-    configured = merge_field_flags(
-        [{**typesense, "search_fields": []} for typesense in typesense_configs]
-    )
-    return {
-        collection: fields - set(configured.get(collection, {}))
-        for collection, fields in collections.items()
-    }
 
 
 def collect_typesense_configs():
@@ -141,7 +120,6 @@ def build_collection_change(
     schema_fields,
     field_flags,
     array_fields=frozenset(),
-    search_only_fields=frozenset(),
 ):
     """One alter payload for every field of a collection that needs a flag.
 
@@ -150,14 +128,11 @@ def build_collection_change(
     report)``; ``change`` is ``None`` when nothing needs to change.
     """
     drops, adds = [], []
-    report = {"change": [], "ok": [], "skip": [], "absent": []}
+    report = {"change": [], "ok": [], "skip": []}
     for field, flags in sorted(field_flags.items()):
         current = schema_fields.get(field)
         if field_is_up_to_date(current, flags):
             report["ok"].append(field)
-            continue
-        if current is None and field in search_only_fields:
-            report["absent"].append(field)
             continue
         change = build_change(field, current, flags, array=field in array_fields)
         if change is None:
@@ -196,9 +171,12 @@ def wait_until_applied(client, collection, field_flags, interval=10, attempts=36
     """
     pending = sorted(field_flags)
     for attempt in range(attempts):
-        fields = {
-            f["name"]: f for f in client.collections[collection].retrieve()["fields"]
-        }
+        try:
+            schema = client.collections[collection].retrieve()
+        except Exception:
+            sleep(interval)
+            continue
+        fields = {f["name"]: f for f in schema["fields"]}
         pending = [
             field
             for field, flags in sorted(field_flags.items())
@@ -217,6 +195,12 @@ def main(argv=None):
         action="store_true",
         help="Show the fields that would change without changing anything.",
     )
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=5,
+        help="Fields per alter (default 5).",
+    )
     args = parser.parse_args(argv)
 
     # An alter walks every document of the collection and takes minutes; the
@@ -231,10 +215,9 @@ def main(argv=None):
     typesense_configs = collect_typesense_configs()
     config = merge_field_flags(typesense_configs)
     array_fields = merge_array_fields(typesense_configs)
-    search_only_fields = merge_search_only_fields(typesense_configs)
     if not config:
         sys.exit(
-            "No typesense.facet_fields, search_fields or sort_fields configured for any object "
+            "No typesense.facet_fields or sort_fields configured for any object "
             "configuration."
         )
 
@@ -250,17 +233,11 @@ def main(argv=None):
             fields,
             config[collection],
             array_fields.get(collection, set()),
-            search_only_fields.get(collection, set()),
         )
         for field in report["ok"]:
             print(f"  [ok]   {collection}.{field} already up to date")
         for field in report["skip"]:
             print(f"  [skip] {collection}.{field} is an array, cannot sort")
-        for field in report["absent"]:
-            print(
-                f"  [skip] {collection}.{field} is in no document yet, "
-                "faceted on a later run"
-            )
         for field in report["change"]:
             flags = ", ".join(config[collection][field])
             verb = "would get" if args.dry_run else "gets"
@@ -269,19 +246,30 @@ def main(argv=None):
             )
         if change is None or args.dry_run:
             continue
-        print(
-            f"  Altering {collection}: {len(report['change'])} field(s) in one pass...",
-            flush=True,
-        )
-        apply_change(client, collection, change)
-        pending = wait_until_applied(
-            client,
-            collection,
-            {field: config[collection][field] for field in report["change"]},
-        )
-        for field in pending:
-            print(f"  [err]  {collection}.{field} did not get its flags")
-        changed += len(report["change"]) - len(pending)
+        batches = [
+            report["change"][i : i + args.batch_size]
+            for i in range(0, len(report["change"]), args.batch_size)
+        ]
+        for number, batch in enumerate(batches, 1):
+            flags = {field: config[collection][field] for field in batch}
+            batch_change, _ = build_collection_change(
+                fields, flags, array_fields.get(collection, set())
+            )
+            print(
+                f"  Altering {collection} ({number}/{len(batches)}): "
+                f"{', '.join(batch)}...",
+                flush=True,
+            )
+            if not apply_change(client, collection, batch_change):
+                print(f"\nStopped after {changed} field(s) updated.")
+                sys.exit(1)
+            pending = wait_until_applied(client, collection, flags)
+            for field in pending:
+                print(f"  [err]  {collection}.{field} did not get its flags")
+            changed += len(batch) - len(pending)
+            if pending:
+                print(f"\nStopped after {changed} field(s) updated.")
+                sys.exit(1)
 
     if not args.dry_run:
         print(

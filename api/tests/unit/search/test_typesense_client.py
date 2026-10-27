@@ -870,23 +870,10 @@ class TestEnsureCollection:
         tc._ensured_collections.discard(name)
         return mock_client.collections.create.call_args.args[0]["fields"]
 
-    def test_search_fields_are_faceted_so_distinct_by_can_group_on_them(self):
-        fields = self._create(
-            "search_col",
-            facet_fields=["type"],
-            search_fields=["properties.name.value", "type"],
-        )
-
-        assert fields == [
-            {"name": ".*", "type": "auto"},
-            {"name": "type", "type": "auto", "facet": True},
-            {"name": "properties_name_value", "type": "auto", "facet": True},
-        ]
-
-    def test_faceted_search_fields_keep_their_sort_array_and_infix_flags(self):
+    def test_facet_fields_keep_their_sort_array_and_infix_flags(self):
         fields = self._create(
             "flags_col",
-            search_fields=[
+            facet_fields=[
                 "properties.name.value",
                 "properties.isbn_group.value.isbn",
                 "properties.title.value",

@@ -2814,7 +2814,6 @@ class TestTypoToleranceAndTokenDropOptions:
             infix_fields=[],
             array_fields=["properties.isbn_group.value.isbn"],
             sort_fields=[],
-            search_fields=["properties.isbn_group.value.isbn"],
         )
 
     def test_build_query_search_options_empty_when_not_configured(self, resource):
