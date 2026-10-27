@@ -1,11 +1,13 @@
 #!/usr/bin/env python
-"""Apply configured facet_fields and sort_fields to existing Typesense collections in place.
+"""Apply configured facet_fields, search_fields and sort_fields to existing Typesense collections in place.
 
 Avoids a full reindex: Typesense re-indexes ONLY the changed fields over the
 documents it already stores — no reimport from Mongo. Use this after adding
 fields to a config's ``typesense.facet_fields`` (distinct_by dropdowns served
-from facets instead of a Mongo $group scan) or ``typesense.sort_fields`` (lists
-ordered by Typesense instead of losing their order).
+from facets instead of a Mongo $group scan), ``typesense.search_fields``
+(faceted so a distinct_by on them can group in Typesense) or
+``typesense.sort_fields`` (lists ordered by Typesense instead of losing their
+order).
 
 Idempotent: skips fields that already carry their flags. Preserves each field's
 existing attributes (type, infix, optional, facet, sort, ...) and only flips the
@@ -44,14 +46,50 @@ def merge_field_flags(typesense_configs):
         if not typesense.get("enabled"):
             continue
         fields = collections.setdefault(typesense.get("collection", "entities"), {})
-        for flag, key in (("facet", "facet_fields"), ("sort", "sort_fields")):
+        for flag, key in (
+            ("facet", "facet_fields"),
+            ("facet", "search_fields"),
+            ("sort", "sort_fields"),
+        ):
             for field in typesense.get(key, []):
                 fields.setdefault(field.replace(".", "_"), {})[flag] = True
     return collections
 
 
-def collect_field_config():
-    """Return {collection: {flat_field_name: flags}} from every enabled typesense config."""
+def merge_array_fields(typesense_configs):
+    """Return {collection: {flat_field_name}} of the array fields of enabled configs."""
+    collections = {}
+    for typesense in typesense_configs:
+        if not typesense.get("enabled"):
+            continue
+        fields = collections.setdefault(typesense.get("collection", "entities"), set())
+        fields.update(
+            field.replace(".", "_") for field in typesense.get("array_fields", [])
+        )
+    return collections
+
+
+def merge_search_only_fields(typesense_configs):
+    """Return {collection: {flat_field_name}} of search fields without facet/sort config."""
+    collections = {}
+    for typesense in typesense_configs:
+        if not typesense.get("enabled"):
+            continue
+        fields = collections.setdefault(typesense.get("collection", "entities"), set())
+        fields.update(
+            field.replace(".", "_") for field in typesense.get("search_fields", [])
+        )
+    configured = merge_field_flags(
+        [{**typesense, "search_fields": []} for typesense in typesense_configs]
+    )
+    return {
+        collection: fields - set(configured.get(collection, {}))
+        for collection, fields in collections.items()
+    }
+
+
+def collect_typesense_configs():
+    """Return the typesense config of every registered object configuration."""
     from configuration import get_object_configuration_mapper, init_mappers
 
     init_mappers()
@@ -68,7 +106,7 @@ def collect_field_config():
             typesense_configs.append(ConfigClass().crud().get("typesense") or {})
         except Exception:
             continue
-    return merge_field_flags(typesense_configs)
+    return typesense_configs
 
 
 def field_is_up_to_date(current, flags):
@@ -76,7 +114,7 @@ def field_is_up_to_date(current, flags):
     return current is not None and all(current.get(flag) for flag in flags)
 
 
-def build_change(field, current, flags=None):
+def build_change(field, current, flags=None, array=False):
     """Schema-update payload that sets ``flags`` on ``field``, preserving its attrs.
 
     Returns ``None`` when the change is impossible: Typesense cannot sort on an
@@ -85,7 +123,10 @@ def build_change(field, current, flags=None):
     flags = flags or {"facet": True}
     if current is None:
         # Field not in the schema yet (no document carries it) — declare fresh.
-        new = {"name": field, "type": "string", **flags, "optional": True}
+        if array and flags.get("sort"):
+            return None
+        field_type = "string[]" if array else "string"
+        new = {"name": field, "type": field_type, **flags, "optional": True}
         return {"fields": [new]}
     if flags.get("sort") and current.get("type", "").endswith("[]"):
         return None
@@ -96,7 +137,12 @@ def build_change(field, current, flags=None):
     return {"fields": [{"name": field, "drop": True}, new]}
 
 
-def build_collection_change(schema_fields, field_flags):
+def build_collection_change(
+    schema_fields,
+    field_flags,
+    array_fields=frozenset(),
+    search_only_fields=frozenset(),
+):
     """One alter payload for every field of a collection that needs a flag.
 
     Typesense walks every document once per alter, so the fields are combined
@@ -104,13 +150,16 @@ def build_collection_change(schema_fields, field_flags):
     report)``; ``change`` is ``None`` when nothing needs to change.
     """
     drops, adds = [], []
-    report = {"change": [], "ok": [], "skip": []}
+    report = {"change": [], "ok": [], "skip": [], "absent": []}
     for field, flags in sorted(field_flags.items()):
         current = schema_fields.get(field)
         if field_is_up_to_date(current, flags):
             report["ok"].append(field)
             continue
-        change = build_change(field, current, flags)
+        if current is None and field in search_only_fields:
+            report["absent"].append(field)
+            continue
+        change = build_change(field, current, flags, array=field in array_fields)
         if change is None:
             report["skip"].append(field)
             continue
@@ -179,10 +228,13 @@ def main(argv=None):
     if not client:
         sys.exit("No Typesense client available (TYPESENSE_API_KEY set?).")
 
-    config = collect_field_config()
+    typesense_configs = collect_typesense_configs()
+    config = merge_field_flags(typesense_configs)
+    array_fields = merge_array_fields(typesense_configs)
+    search_only_fields = merge_search_only_fields(typesense_configs)
     if not config:
         sys.exit(
-            "No typesense.facet_fields or sort_fields configured for any object "
+            "No typesense.facet_fields, search_fields or sort_fields configured for any object "
             "configuration."
         )
 
@@ -194,11 +246,21 @@ def main(argv=None):
             print(f"  {collection}: cannot retrieve schema ({error}) — skipped")
             continue
         fields = {f["name"]: f for f in schema["fields"]}
-        change, report = build_collection_change(fields, config[collection])
+        change, report = build_collection_change(
+            fields,
+            config[collection],
+            array_fields.get(collection, set()),
+            search_only_fields.get(collection, set()),
+        )
         for field in report["ok"]:
             print(f"  [ok]   {collection}.{field} already up to date")
         for field in report["skip"]:
             print(f"  [skip] {collection}.{field} is an array, cannot sort")
+        for field in report["absent"]:
+            print(
+                f"  [skip] {collection}.{field} is in no document yet, "
+                "faceted on a later run"
+            )
         for field in report["change"]:
             flags = ", ".join(config[collection][field])
             verb = "would get" if args.dry_run else "gets"

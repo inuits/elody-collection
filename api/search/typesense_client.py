@@ -58,6 +58,7 @@ def ensure_collection(
     infix_fields=None,
     array_fields=None,
     sort_fields=None,
+    search_fields=None,
 ):
     """Ensure a Typesense collection exists with auto schema detection."""
     if collection in _ensured_collections:
@@ -84,30 +85,31 @@ def ensure_collection(
                     field_path.replace(".", "_") for field_path in sort_fields or []
                 } - set(flat_array)
                 flat_facet = set()
-                for field_path in facet_fields or []:
+                for field_path in dict.fromkeys(
+                    [*(facet_fields or []), *(search_fields or [])]
+                ):
                     flat_key = field_path.replace(".", "_")
+                    if flat_key in flat_facet:
+                        continue
                     flat_facet.add(flat_key)
-                    if flat_key in flat_sort:
-                        fields.append(
-                            {
-                                "name": flat_key,
-                                "type": "string",
-                                "facet": True,
-                                "sort": True,
-                                "optional": True,
-                            }
-                        )
-                    elif flat_key in flat_array:
-                        fields.append(
-                            {
-                                "name": flat_key,
-                                "type": "string[]",
-                                "facet": True,
-                                "optional": True,
-                            }
-                        )
-                    else:
+                    if not (
+                        flat_key in flat_sort
+                        or flat_key in flat_array
+                        or flat_key in flat_infix
+                    ):
                         fields.append({"name": flat_key, "type": "auto", "facet": True})
+                        continue
+                    field = {
+                        "name": flat_key,
+                        "type": "string[]" if flat_key in flat_array else "string",
+                        "facet": True,
+                    }
+                    if flat_key in flat_sort:
+                        field["sort"] = True
+                    if flat_key in flat_infix:
+                        field["infix"] = True
+                    field["optional"] = True
+                    fields.append(field)
                 for flat_key in flat_infix:
                     if flat_key not in flat_facet:
                         field = {

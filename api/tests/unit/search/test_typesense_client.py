@@ -859,6 +859,67 @@ class TestEnsureCollection:
 
         tc._ensured_collections.discard("array_flags_col")
 
+    def _create(self, name, **kwargs):
+        mock_client = MagicMock()
+        mock_client.collections.__getitem__.return_value.retrieve.side_effect = (
+            Exception("404")
+        )
+        tc._ensured_collections.discard(name)
+        with patch.object(tc, "get_typesense_client", return_value=mock_client):
+            tc.ensure_collection(name, **kwargs)
+        tc._ensured_collections.discard(name)
+        return mock_client.collections.create.call_args.args[0]["fields"]
+
+    def test_search_fields_are_faceted_so_distinct_by_can_group_on_them(self):
+        fields = self._create(
+            "search_col",
+            facet_fields=["type"],
+            search_fields=["properties.name.value", "type"],
+        )
+
+        assert fields == [
+            {"name": ".*", "type": "auto"},
+            {"name": "type", "type": "auto", "facet": True},
+            {"name": "properties_name_value", "type": "auto", "facet": True},
+        ]
+
+    def test_faceted_search_fields_keep_their_sort_array_and_infix_flags(self):
+        fields = self._create(
+            "flags_col",
+            search_fields=[
+                "properties.name.value",
+                "properties.isbn_group.value.isbn",
+                "properties.title.value",
+            ],
+            infix_fields=["properties.title.value"],
+            array_fields=["properties.isbn_group.value.isbn"],
+            sort_fields=["properties.name.value"],
+        )
+
+        assert fields == [
+            {"name": ".*", "type": "auto"},
+            {
+                "name": "properties_name_value",
+                "type": "string",
+                "facet": True,
+                "sort": True,
+                "optional": True,
+            },
+            {
+                "name": "properties_isbn_group_value_isbn",
+                "type": "string[]",
+                "facet": True,
+                "optional": True,
+            },
+            {
+                "name": "properties_title_value",
+                "type": "string",
+                "facet": True,
+                "infix": True,
+                "optional": True,
+            },
+        ]
+
     def test_skips_when_already_exists(self):
         mock_client = MagicMock()
 

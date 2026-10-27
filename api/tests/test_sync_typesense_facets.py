@@ -9,7 +9,9 @@ from scripts.sync_typesense_facets import (
     build_change,
     build_collection_change,
     field_is_up_to_date,
+    merge_array_fields,
     merge_field_flags,
+    merge_search_only_fields,
     wait_until_applied,
 )
 
@@ -141,6 +143,115 @@ class TestMergeFieldFlags:
             }
         }
 
+    def test_search_fields_become_facets_for_distinct_by_grouping(self):
+        configs = [
+            {
+                "enabled": True,
+                "collection": "entities",
+                "facet_fields": ["type"],
+                "search_fields": ["properties.name.value", "type"],
+                "sort_fields": ["properties.name.value"],
+            }
+        ]
+        assert merge_field_flags(configs) == {
+            "entities": {
+                "type": {"facet": True},
+                "properties_name_value": {"facet": True, "sort": True},
+            }
+        }
+
+
+class TestMergeArrayFields:
+    def test_array_fields_are_merged_per_collection(self):
+        configs = [
+            {
+                "enabled": True,
+                "collection": "entities",
+                "array_fields": ["properties.isbn_group.value.isbn"],
+            },
+            {"enabled": False, "collection": "entities", "array_fields": ["x"]},
+            {"enabled": True, "array_fields": ["properties.ean_group.value.ean"]},
+        ]
+        assert merge_array_fields(configs) == {
+            "entities": {
+                "properties_isbn_group_value_isbn",
+                "properties_ean_group_value_ean",
+            }
+        }
+
+
+class TestBuildChangeArrayField:
+    def test_new_array_field_is_declared_as_string_array_facet(self):
+        change = build_change("properties_isbn_value", None, array=True)
+        assert change == {
+            "fields": [
+                {
+                    "name": "properties_isbn_value",
+                    "type": "string[]",
+                    "facet": True,
+                    "optional": True,
+                }
+            ]
+        }
+
+    def test_new_array_field_cannot_be_made_sortable(self):
+        assert (
+            build_change("properties_isbn_value", None, {"sort": True}, array=True)
+            is None
+        )
+
+    def test_collection_change_declares_absent_array_fields_as_arrays(self):
+        change, _ = build_collection_change(
+            {},
+            {"properties_isbn_value": {"facet": True}},
+            array_fields={"properties_isbn_value"},
+        )
+        assert change["fields"] == [
+            {
+                "name": "properties_isbn_value",
+                "type": "string[]",
+                "facet": True,
+                "optional": True,
+            }
+        ]
+
+
+class TestSearchOnlyFields:
+    """A search field that no document carries yet has an unknown cardinality:
+    declaring it as a string would reject later documents that hold a list. It
+    is left to Typesense's auto detection and gets its facet on a later run."""
+
+    def test_search_fields_without_facet_or_sort_config(self):
+        configs = [
+            {
+                "enabled": True,
+                "collection": "entities",
+                "facet_fields": ["type"],
+                "search_fields": ["type", "author_names", "properties.name.value"],
+                "sort_fields": ["properties.name.value"],
+            }
+        ]
+        assert merge_search_only_fields(configs) == {"entities": {"author_names"}}
+
+    def test_absent_search_only_field_is_skipped(self):
+        change, report = build_collection_change(
+            {
+                "properties_title_value": {
+                    "name": "properties_title_value",
+                    "type": "string",
+                }
+            },
+            {
+                "author_names": {"facet": True},
+                "properties_title_value": {"facet": True},
+            },
+            search_only_fields={"author_names", "properties_title_value"},
+        )
+
+        assert change["fields"][-1]["name"] == "properties_title_value"
+        assert report["absent"] == ["author_names"]
+        assert report["change"] == ["properties_title_value"]
+
 
 class TestBuildCollectionChange:
     """All fields of a collection go into one alter: Typesense walks every
@@ -183,6 +294,7 @@ class TestBuildCollectionChange:
             ],
             "ok": [],
             "skip": [],
+            "absent": [],
         }
 
     def test_up_to_date_and_array_fields_are_left_out(self):
@@ -199,7 +311,12 @@ class TestBuildCollectionChange:
         )
 
         assert change is None
-        assert report == {"change": [], "ok": ["type"], "skip": ["properties_isbn_value"]}
+        assert report == {
+            "change": [],
+            "ok": ["type"],
+            "skip": ["properties_isbn_value"],
+            "absent": [],
+        }
 
 
 class TestWaitUntilApplied:

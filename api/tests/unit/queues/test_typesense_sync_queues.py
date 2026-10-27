@@ -117,6 +117,7 @@ class TestSyncEntityToTypesense:
             infix_fields=[],
             array_fields=["properties.isbn_group.value.isbn"],
             sort_fields=[],
+            search_fields=["properties.name.value"],
         )
 
     def test_passes_sort_fields_to_ensure_collection_and_document(
