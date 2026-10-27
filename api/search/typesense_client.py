@@ -174,13 +174,25 @@ def _group_has_value(group_key) -> bool:
     return any(value is not None and str(value).strip() != "" for value in values)
 
 
-def _ids_from_grouped_hits(result) -> tuple[list, int]:
+def _group_label(group_key):
+    label = group_key[0] if isinstance(group_key, list) else group_key
+    return tuple(label) if isinstance(label, list) else label
+
+
+def _ids_from_grouped_hits(result, seen_labels=None) -> tuple[list, int]:
     ids, skipped = [], 0
+    seen_labels = set() if seen_labels is None else seen_labels
     for group in result.get("grouped_hits", []):
         hits = group.get("hits") or []
-        if not hits or not _group_has_value(group.get("group_key")):
+        group_key = group.get("group_key")
+        if not hits or not _group_has_value(group_key):
             skipped += 1
             continue
+        label = _group_label(group_key)
+        if label in seen_labels:
+            skipped += 1
+            continue
+        seen_labels.add(label)
         ids.append(hits[0]["document"]["_id"])
     return ids, skipped
 
@@ -473,6 +485,7 @@ def search_all_ids(
         total = None
         seen = 0
         skipped_groups = 0
+        seen_labels = set()
         infix_param = _build_infix_param(query_by, infix_fields)
 
         while True:
@@ -505,7 +518,7 @@ def search_all_ids(
                 total = result["found"]
 
             if group_by and "grouped_hits" in result:
-                ids, skipped = _ids_from_grouped_hits(result)
+                ids, skipped = _ids_from_grouped_hits(result, seen_labels)
                 skipped_groups += skipped
                 page_size = len(result["grouped_hits"])
             else:

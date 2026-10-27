@@ -583,6 +583,61 @@ class TestSearchGroupBy:
         assert set(result["highlights"]) == set(["a", "b"])
 
 
+class TestSearchGroupByMultipleFields:
+    """Options over several distinct_by fields (name for a person, title for a
+    nomen) group on all of them. Typesense leaves the fields a document lacks
+    out of the group key, so its first entry is the first non-empty field: the
+    option's label. Groups that only differ in a later field share that label
+    and yield one option."""
+
+    GROUP_BY = "properties_name_value,properties_title_value"
+
+    def _search(self, groups, found):
+        mock_client = MagicMock()
+        mock_client.collections.__getitem__.return_value.documents.search.return_value = _make_grouped_result(
+            groups, found
+        )
+        with patch.object(tc, "get_typesense_client", return_value=mock_client):
+            return search("entities", "heelal", "q", group_by=self.GROUP_BY)
+
+    def test_keeps_groups_whose_value_is_in_a_later_field(self):
+        result = self._search(
+            [(["Peeters, Jan"], ["person"]), (["Heelal in de kunst"], ["nomen"])], 2
+        )
+
+        assert result["ids"] == ["person", "nomen"]
+        assert result["count"] == 2
+
+    def test_groups_sharing_their_label_yield_one_option(self):
+        result = self._search(
+            [
+                (["Heelal", ["Kosmos", "Ruimte"]], ["nomen1"]),
+                (["Heelal", ["Kosmologie"]], ["nomen2"]),
+                (["Heelal in de kunst"], ["nomen3"]),
+            ],
+            3,
+        )
+
+        assert result["ids"] == ["nomen1", "nomen3"]
+        assert result["count"] == 2
+
+    def test_search_all_ids_dedupes_labels_across_pages(self):
+        mock_client = MagicMock()
+        page1 = [([f"label{i}"], [f"id{i}"]) for i in range(250)]
+        page2 = [(["label0", ["other"]], ["dup"]), (["label250"], ["id250"])]
+        mock_client.collections.__getitem__.return_value.documents.search.side_effect = [
+            _make_grouped_result(page1, 252),
+            _make_grouped_result(page2, 252),
+        ]
+
+        with patch.object(tc, "get_typesense_client", return_value=mock_client):
+            result = search_all_ids("entities", "*", "q", group_by=self.GROUP_BY)
+
+        assert "dup" not in result["ids"]
+        assert len(result["ids"]) == 251
+        assert result["count"] == 251
+
+
 class TestSearchAllIdsGroupBy:
     def test_skips_group_of_documents_without_a_value(self):
         mock_client = MagicMock()

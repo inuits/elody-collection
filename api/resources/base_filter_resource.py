@@ -313,7 +313,10 @@ class BaseFilterResource(BaseResource):
         else:
             query_by = ",".join(field.replace(".", "_") for field in search_fields)
         filter_by = build_filter_by(type_filter_values, exact_match_filters or [])
-        group_by = distinct_keys[0].replace(".", "_") if distinct_keys else None
+        group_by = (
+            ",".join(dict.fromkeys(key.replace(".", "_") for key in distinct_keys))
+            or None
+        )
         infix_fields = typesense_config.get("infix_fields", [])
         search_options = self._build_search_options(typesense_config)
         return (

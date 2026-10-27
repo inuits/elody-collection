@@ -3130,7 +3130,10 @@ class TestDistinctOptionsOrderedByOwnField:
 
         mock_mongo.assert_not_called()
         kwargs = mock_ts.call_args.kwargs
-        assert kwargs["group_by"] == "properties_name_value"
+        assert (
+            kwargs["group_by"]
+            == "properties_name_value,properties_non_preferred_name_value"
+        )
         assert kwargs["sort_by"] == "properties_name_value(missing_values: last):asc"
 
     def test_typed_options_are_sorted_instead_of_by_relevance(
@@ -3162,7 +3165,10 @@ class TestDistinctOptionsOrderedByOwnField:
 
         mock_mongo.assert_not_called()
         kwargs = mock_ts.call_args.kwargs
-        assert kwargs["group_by"] == "properties_name_value"
+        assert (
+            kwargs["group_by"]
+            == "properties_name_value,properties_non_preferred_name_value"
+        )
         assert kwargs["sort_by"] is None
 
     def test_options_of_an_array_field_are_grouped_unsorted(
@@ -3209,7 +3215,10 @@ class TestDistinctOptionsOrderedByOwnField:
         first, retry = mock_ts.call_args_list
         assert first.kwargs["sort_by"] is not None
         assert retry.kwargs["sort_by"] is None
-        assert retry.kwargs["group_by"] == "properties_name_value"
+        assert (
+            retry.kwargs["group_by"]
+            == "properties_name_value,properties_non_preferred_name_value"
+        )
 
     def test_typesense_failure_falls_back_to_mongo(self, flask_app, resource):
         query = self._query()
@@ -3222,6 +3231,37 @@ class TestDistinctOptionsOrderedByOwnField:
         )
 
         mock_mongo.assert_called_once_with(query, "entities")
+
+    def test_options_group_on_every_distinct_by_key(self, flask_app, resource):
+        query = [
+            {
+                "type": "text",
+                "key": [f"vlacc:1|properties.{key}.value"],
+                "value": "heelal",
+                "distinct_by": f"properties.{key}.value",
+                "match_exact": False,
+                "operator": "or",
+            }
+            for key in ["name", "title", "name"]
+        ] + [{"type": "type", "value": "nomen", "operator": "and"}]
+        config = {
+            **self.CONFIG,
+            "search_fields": ["properties.name.value", "properties.title.value"],
+        }
+
+        mock_ts, mock_mongo = self._run(
+            flask_app,
+            resource,
+            "/entities/filter?limit=20&skip=0&order_by=&asc=0",
+            query,
+            config=config,
+        )
+
+        mock_mongo.assert_not_called()
+        assert (
+            mock_ts.call_args.kwargs["group_by"]
+            == "properties_name_value,properties_title_value"
+        )
 
 
 class TestTypesenseSorting:

@@ -35,7 +35,9 @@ def _build(monkeypatch, *, distinct_by, order_by):
     )
     monkeypatch.setattr(mod.skip_stage, "build", lambda *a, **k: SKIP)
     monkeypatch.setattr(mod.limit_stage, "build", lambda *a, **k: LIMIT)
-    monkeypatch.setattr(mod, "get_distinct_by", lambda body: distinct_by)
+    monkeypatch.setattr(
+        mod, "get_distinct_by_keys", lambda body: [distinct_by] if distinct_by else []
+    )
     monkeypatch.setattr(mod, "has_bucket_filter", lambda body: None)
 
     mf = MongoFilters.__new__(MongoFilters)

@@ -2,7 +2,7 @@ from time import monotonic
 
 from config_access import config
 from filters_v2.helpers.base_helper import (
-    get_distinct_by,
+    get_distinct_by_keys,
     get_facets,
     get_options_requesting_filter,
     get_selection_type_filter_value,
@@ -149,7 +149,7 @@ class MongoFilters:
     ):
         match = match_stage.build(filter_request_body, tidy_up_match)
         group = group_stage.build(
-            get_distinct_by(filter_request_body), unwind=bool(order_by)
+            get_distinct_by_keys(filter_request_body), unwind=bool(order_by)
         )
         if options_requesting_filter:
             project = project_stage.build(
