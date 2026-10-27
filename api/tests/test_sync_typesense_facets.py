@@ -9,8 +9,6 @@ from scripts.sync_typesense_facets import (
     build_change,
     build_collection_change,
     field_is_up_to_date,
-    main,
-    merge_array_fields,
     merge_field_flags,
     wait_until_applied,
 )
@@ -143,72 +141,6 @@ class TestMergeFieldFlags:
             }
         }
 
-    def test_search_fields_are_not_faceted(self):
-        configs = [
-            {
-                "enabled": True,
-                "collection": "entities",
-                "facet_fields": ["type"],
-                "search_fields": ["properties.body.value", "type"],
-            }
-        ]
-        assert merge_field_flags(configs) == {"entities": {"type": {"facet": True}}}
-
-
-class TestMergeArrayFields:
-    def test_array_fields_are_merged_per_collection(self):
-        configs = [
-            {
-                "enabled": True,
-                "collection": "entities",
-                "array_fields": ["properties.isbn_group.value.isbn"],
-            },
-            {"enabled": False, "collection": "entities", "array_fields": ["x"]},
-            {"enabled": True, "array_fields": ["properties.ean_group.value.ean"]},
-        ]
-        assert merge_array_fields(configs) == {
-            "entities": {
-                "properties_isbn_group_value_isbn",
-                "properties_ean_group_value_ean",
-            }
-        }
-
-
-class TestBuildChangeArrayField:
-    def test_new_array_field_is_declared_as_string_array_facet(self):
-        change = build_change("properties_isbn_value", None, array=True)
-        assert change == {
-            "fields": [
-                {
-                    "name": "properties_isbn_value",
-                    "type": "string[]",
-                    "facet": True,
-                    "optional": True,
-                }
-            ]
-        }
-
-    def test_new_array_field_cannot_be_made_sortable(self):
-        assert (
-            build_change("properties_isbn_value", None, {"sort": True}, array=True)
-            is None
-        )
-
-    def test_collection_change_declares_absent_array_fields_as_arrays(self):
-        change, _ = build_collection_change(
-            {},
-            {"properties_isbn_value": {"facet": True}},
-            array_fields={"properties_isbn_value"},
-        )
-        assert change["fields"] == [
-            {
-                "name": "properties_isbn_value",
-                "type": "string[]",
-                "facet": True,
-                "optional": True,
-            }
-        ]
-
 
 class TestBuildCollectionChange:
     """All fields of a collection go into one alter: Typesense walks every
@@ -267,11 +199,7 @@ class TestBuildCollectionChange:
         )
 
         assert change is None
-        assert report == {
-            "change": [],
-            "ok": ["type"],
-            "skip": ["properties_isbn_value"],
-        }
+        assert report == {"change": [], "ok": ["type"], "skip": ["properties_isbn_value"]}
 
 
 class TestWaitUntilApplied:
@@ -306,79 +234,3 @@ class TestWaitUntilApplied:
         )
 
         assert pending == ["f"]
-
-    def test_keeps_polling_while_typesense_is_unreachable(self):
-        client = self._client([{"name": "f", "type": "string", "sort": True}])
-        retrieve = client.collections.__getitem__.return_value.retrieve
-        retrieve.side_effect = [
-            ConnectionError("Connection reset by peer"),
-            {"fields": [{"name": "f", "type": "string", "sort": True}]},
-        ]
-
-        pending = wait_until_applied(
-            client, "entities", {"f": {"sort": True}}, interval=0, attempts=5
-        )
-
-        assert pending == []
-
-
-class TestMainAltersInBatches:
-    """One alter over many fields re-indexes them all at once and can run
-    Typesense out of memory, so the fields go in small batches and the run stops
-    at the first batch that fails."""
-
-    FIELDS = ("a", "b", "c", "d", "e")
-
-    def _run(self, monkeypatch, update_side_effect=None, argv=()):
-        from unittest.mock import MagicMock
-
-        import scripts.sync_typesense_facets as sync
-        from search import typesense_client
-
-        schema = {"fields": [{"name": f, "type": "string"} for f in self.FIELDS]}
-        applied = {"fields": [{**f, "facet": True} for f in schema["fields"]]}
-        collection = MagicMock()
-        collection.update.side_effect = update_side_effect
-        collection.retrieve.side_effect = lambda: (
-            applied if collection.update.call_count else schema
-        )
-        client = MagicMock()
-        client.collections.__getitem__.return_value = collection
-        monkeypatch.setattr(typesense_client, "get_typesense_client", lambda: client)
-        monkeypatch.setattr(sync, "sleep", lambda _: None)
-        monkeypatch.setattr(
-            sync,
-            "collect_typesense_configs",
-            lambda: [{"enabled": True, "facet_fields": self.FIELDS}],
-        )
-        try:
-            main(["--batch-size", "2", *argv])
-        except SystemExit as error:
-            return collection, error.code
-        return collection, 0
-
-    def _altered(self, collection):
-        return [
-            [field["name"] for field in call.args[0]["fields"] if "drop" not in field]
-            for call in collection.update.call_args_list
-        ]
-
-    def test_fields_are_altered_in_batches(self, monkeypatch):
-        collection, code = self._run(monkeypatch)
-
-        assert code == 0
-        assert self._altered(collection) == [["a", "b"], ["c", "d"], ["e"]]
-
-    def test_stops_after_a_failed_batch(self, monkeypatch):
-        collection, code = self._run(
-            monkeypatch, update_side_effect=ConnectionError("Connection reset")
-        )
-
-        assert code == 1
-        assert self._altered(collection) == [["a", "b"]]
-
-    def test_dry_run_alters_nothing(self, monkeypatch):
-        collection, code = self._run(monkeypatch, argv=["--dry-run"])
-
-        assert code == 0
-        collection.update.assert_not_called()
