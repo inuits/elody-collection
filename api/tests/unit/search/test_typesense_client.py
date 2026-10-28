@@ -962,6 +962,37 @@ class TestEnsureCollection:
             },
         ]
 
+    def test_group_fields_are_faceted_with_their_flags(self):
+        fields = self._create(
+            "group_col",
+            facet_fields=["type"],
+            group_fields=[
+                "properties.name.value",
+                "properties.isbn_group.value.isbn",
+                "type",
+            ],
+            array_fields=["properties.isbn_group.value.isbn"],
+            sort_fields=["properties.name.value"],
+        )
+
+        assert fields == [
+            {"name": ".*", "type": "auto"},
+            {"name": "type", "type": "auto", "facet": True},
+            {
+                "name": "properties_name_value",
+                "type": "string",
+                "facet": True,
+                "sort": True,
+                "optional": True,
+            },
+            {
+                "name": "properties_isbn_group_value_isbn",
+                "type": "string[]",
+                "facet": True,
+                "optional": True,
+            },
+        ]
+
     def test_skips_when_already_exists(self):
         mock_client = MagicMock()
 

@@ -2803,6 +2803,7 @@ class TestTypoToleranceAndTokenDropOptions:
             "collection": "entities",
             "search_fields": ["properties.isbn_group.value.isbn"],
             "array_fields": ["properties.isbn_group.value.isbn"],
+            "group_fields": ["properties.isbn_group.value.isbn"],
         }
         with patch(
             "resources.base_filter_resource.typesense_ensure_collection"
@@ -2814,6 +2815,7 @@ class TestTypoToleranceAndTokenDropOptions:
             infix_fields=[],
             array_fields=["properties.isbn_group.value.isbn"],
             sort_fields=[],
+            group_fields=["properties.isbn_group.value.isbn"],
         )
 
     def test_build_query_search_options_empty_when_not_configured(self, resource):

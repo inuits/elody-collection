@@ -58,6 +58,7 @@ def ensure_collection(
     infix_fields=None,
     array_fields=None,
     sort_fields=None,
+    group_fields=None,
 ):
     """Ensure a Typesense collection exists with auto schema detection."""
     if collection in _ensured_collections:
@@ -84,7 +85,7 @@ def ensure_collection(
                     field_path.replace(".", "_") for field_path in sort_fields or []
                 } - set(flat_array)
                 flat_facet = set()
-                for field_path in facet_fields or []:
+                for field_path in [*(facet_fields or []), *(group_fields or [])]:
                     flat_key = field_path.replace(".", "_")
                     if flat_key in flat_facet:
                         continue
