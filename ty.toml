@@ -2,3 +2,6 @@
 [environment]
 root = ["./api"]
 extra-paths = ["./stubs"]
+
+[analysis]
+return-type-inference = "always"
