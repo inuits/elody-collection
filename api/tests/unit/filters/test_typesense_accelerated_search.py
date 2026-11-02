@@ -1235,6 +1235,58 @@ class TestTypesenseRemainingFilters:
                 assert id_filter is not None
                 assert id_filter["value"] == ["id1", "id2", "id3"]
 
+    @pytest.mark.parametrize(
+        "type_filter",
+        [
+            {"type": "type", "value": "comment"},
+            {"type": "selection", "key": "type", "value": ["comment"]},
+        ],
+    )
+    def test_remaining_filters_keep_type_filter_for_sorting(
+        self, flask_app, resource, mock_filter_engine, type_filter
+    ):
+        with flask_app.test_request_context(
+            "/entities/filter?limit=20&skip=0"
+            "&order_by=properties.last_activity_at.value&asc=0",
+            method="POST",
+            content_type="application/json",
+        ):
+            query = [
+                type_filter,
+                {
+                    "type": "selection",
+                    "key": ["vlacc:1|properties.status.value"],
+                    "value": ["open", "resolved"],
+                    "match_exact": True,
+                },
+                {
+                    "type": "text",
+                    "key": ["vlacc:1|properties.participants.value"],
+                    "value": "U-1",
+                },
+            ]
+
+            with patch(
+                "resources.base_filter_resource.typesense_search_all_ids"
+            ) as mock_ts_all:
+                mock_ts_all.return_value = make_ts_result(["id1", "id2"], 2)
+
+                resource._execute_typesense_accelerated_search(
+                    query,
+                    "entities",
+                    {
+                        "enabled": True,
+                        "collection": "entities",
+                        "search_fields": ["properties.status.value"],
+                        "sort_fields": ["properties.last_activity_at.value"],
+                    },
+                )
+
+                filters, _, _, _, order_by, asc = mock_filter_engine.filter.call_args[0]
+                assert type_filter in filters
+                assert order_by == "properties.last_activity_at.value"
+                assert asc is False
+
 
 class TestTypesenseCrossCollectionFiltering:
     """Test that types from other MongoDB collections are excluded from Typesense query."""

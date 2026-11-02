@@ -466,6 +466,15 @@ class BaseFilterResource(BaseResource):
         )
 
     @staticmethod
+    def _type_filters(query):
+        return [
+            f
+            for f in query
+            if f.get("type") == "type"
+            or (f.get("type") == "selection" and f.get("key") == "type")
+        ]
+
+    @staticmethod
     def _build_typesense_sort_by(order_by, asc, typesense_config):
         """Translate ``order_by`` into a Typesense ``sort_by``, or ``None`` when a
         key is not declared in ``sort_fields`` (Typesense cannot sort on it).
@@ -685,13 +694,7 @@ class BaseFilterResource(BaseResource):
 
         if not text_filters and not ts_exact_match_filters:
             if has_resolved_lookups:
-                type_filters = [
-                    f
-                    for f in query
-                    if f.get("type") == "type"
-                    or (f.get("type") == "selection" and f.get("key") == "type")
-                ]
-                resolved_query = type_filters + remaining_filters
+                resolved_query = self._type_filters(query) + remaining_filters
                 mongo_collections = self._resolve_mongo_collections(
                     type_filter_values, collection
                 )
@@ -774,7 +777,7 @@ class BaseFilterResource(BaseResource):
                 }
             )
             items = self.filter_engine_v2.filter(
-                remaining_filters,
+                self._type_filters(query) + remaining_filters,
                 skip,
                 limit,
                 collection,
