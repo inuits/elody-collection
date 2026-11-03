@@ -1,49 +1,65 @@
+# ---
+#
+# # --------------------------------------------------------------
+# # Includes
+# # --------------------------------------------------------------
+# include:
+#   - project: 'inuits/gitlab-ci/pipeline-templates'
+#     ref: 'v4.20.0'
+#     file:
+#       - 'pipelines/customers/deploy.yml'
+#       - 'jobs/docker/build-pip.yml'
+#
+#
+# # --------------------------------------------------------------
+# # Variables
+# # --------------------------------------------------------------
+# variables:
+#   CUSTOMER: inuits
+#   PROJECT: dams
+#   APPLICATION: collection
+#
+#   SKIP_DEPLOY: 'true'
+#
+#   HARBOR_PROJECT_DEV: elody-dams-dev
+#   TARGET_CLUSTER_DEV: inuits-prod
+#
+#
+# # --------------------------------------------------------------
+# # Template overrides
+# # --------------------------------------------------------------
+#
+
 ---
+stages:
+  - build
+  - deliver
 
-# --------------------------------------------------------------
-# Includes
-# --------------------------------------------------------------
-include:
-  - project: 'inuits/gitlab-ci/pipeline-templates'
-    ref: 'v4.20.0'
-    file:
-      - 'pipelines/customers/deploy.yml'
-      - 'jobs/docker/build-pip.yml'
-
-
-# --------------------------------------------------------------
-# Variables
-# --------------------------------------------------------------
 variables:
-  CUSTOMER: inuits
-  PROJECT: dams
-  APPLICATION: collection
+  IMAGE_NAME: dams-collection
+  HARBOR_PROJECT_PREFIX: elody-dams-dev
+  BUILD_REGISTRY: ${HARBOR_URL}/build/${HARBOR_PROJECT_PREFIX}
+  DESTINATION_REGISTRY: ${HARBOR_URL}/${HARBOR_PROJECT_PREFIX}/inuits
 
-  SKIP_DEPLOY: 'true'
+include:
+  - component: $CI_SERVER_FQDN/components/containers/build@v0.10.3
+    inputs:
+      image_name: ${IMAGE_NAME}
+      destination_registry: ${BUILD_REGISTRY}
 
-  HARBOR_PROJECT_DEV: elody-dams-dev
-  TARGET_CLUSTER_DEV: inuits-prod
-
-
-# --------------------------------------------------------------
-# Template overrides
-# --------------------------------------------------------------
+  - component: $CI_SERVER_FQDN/components/containers/deliver@v0.10.3
+    inputs:
+      image_name: ${IMAGE_NAME}
+      source_registry: ${BUILD_REGISTRY}
+      destination_registries:
+        - ${DESTINATION_REGISTRY}
+      rules:
+        - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
 # Only run pipeline for default branch, otherwise require manual approval
 build:
   rules:
-    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
       when: always
-    - if: '$CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH'
+    - if: "$CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH"
       when: manual
-
-
-# Disable uat, not needed
-uat:
-  rules:
-    - when: never
-
-# Disable prod, not needed
-prod:
-  rules:
-    - when: never
