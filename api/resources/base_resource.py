@@ -56,7 +56,6 @@ class BaseResource(Resource):
         self.storage_api_url = config["STORAGE_API_URL"]
         self.storage_api_url_ext = config["STORAGE_API_URL_EXT"]
         self.tenant_defining_types = config["TENANT_DEFINING_TYPES"]
-        self.auto_create_tenants = config["AUTO_CREATE_TENANTS"]
 
     @property
     def storage_api_url_for_caller(self):
@@ -287,30 +286,6 @@ class BaseResource(Resource):
                     )
             case _:
                 return response_data, status_code
-
-    def _create_tenant(self, entity):
-        if not parse_string_to_bool(self.auto_create_tenants):
-            return
-        if self.tenant_defining_types and entity["type"] in self.tenant_defining_types:
-            tenant_id = f"tenant:{entity.get('_id', entity.get('id'))}"
-            if not (tenant_label := self._get_tenant_label(entity)):
-                tenant_label = entity.get("_id", entity.get("id"))
-            tenant = self.storage.save_item_to_collection(
-                "entities",
-                {
-                    "_id": tenant_id,
-                    "type": "tenant",
-                    "identifiers": [tenant_id],
-                    "metadata": [{"key": "label", "value": tenant_label}],
-                },
-            )
-            self.__link_tenant_to_defining_entity(tenant["_id"], entity["_id"])
-        elif entity["type"] not in ["role", "tenant", "user"]:
-            if tenant_id := get_user_context().x_tenant.id:
-                try:
-                    self._link_entity_to_tenant(entity["_id"], tenant_id)
-                except Exception as ex:
-                    abort(400, message=str(ex))
 
     def _create_ticket(self, filename, mediafile_id=None, exp=None, **kwargs):
         ticket = {

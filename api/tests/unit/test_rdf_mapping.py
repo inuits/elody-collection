@@ -133,7 +133,12 @@ def test_relations_point_at_the_related_entity_uri():
 
 
 def test_two_entities_link_to_each_other():
-    agency = {"id": "ORG-JQGB344X", "type": "organization", "metadata": [], "relations": []}
+    agency = {
+        "id": "ORG-JQGB344X",
+        "type": "organization",
+        "metadata": [],
+        "relations": [],
+    }
     graph = graph_for([PRODUCTION, agency])
     subject = URIRef(f"{BASE}/PR-6V8VLIHP0")
     target = URIRef(f"{BASE}/ORG-JQGB344X")

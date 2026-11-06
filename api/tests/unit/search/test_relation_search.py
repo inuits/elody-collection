@@ -72,9 +72,7 @@ class TestUsableFields:
         ) == ["properties_title_value"]
 
     def test_keeps_the_configured_order_and_deduplicates(self):
-        assert usable_fields(
-            ["a.b", "c.d", "a.b"], {"a_b", "c_d"}
-        ) == ["a_b", "c_d"]
+        assert usable_fields(["a.b", "c.d", "a.b"], {"a_b", "c_d"}) == ["a_b", "c_d"]
 
 
 class TestTokenClause:
@@ -197,7 +195,10 @@ def _resolver(mapping):
 class TestBuildRelationSearchParams:
     def test_one_token_matches_own_metadata_or_a_relation(self):
         params = build_relation_search_params(
-            "rowling", TEXT_KEYS, RELATION_KEYS, AVAILABLE,
+            "rowling",
+            TEXT_KEYS,
+            RELATION_KEYS,
+            AVAILABLE,
             _resolver({"rowling": ["PERS-1"]}),
         )
 
@@ -210,7 +211,10 @@ class TestBuildRelationSearchParams:
 
     def test_tokens_are_anded(self):
         params = build_relation_search_params(
-            "oorlogsliteratuur oekraine", TEXT_KEYS, RELATION_KEYS, AVAILABLE,
+            "oorlogsliteratuur oekraine",
+            TEXT_KEYS,
+            RELATION_KEYS,
+            AVAILABLE,
             _resolver({"oorlogsliteratuur": ["G-1"], "oekraine": ["N-1"]}),
         )
 
@@ -220,7 +224,10 @@ class TestBuildRelationSearchParams:
 
     def test_ranks_own_metadata_matches_first(self):
         params = build_relation_search_params(
-            "rowling", TEXT_KEYS, RELATION_KEYS, AVAILABLE,
+            "rowling",
+            TEXT_KEYS,
+            RELATION_KEYS,
+            AVAILABLE,
             _resolver({"rowling": ["PERS-1"]}),
         )
 
@@ -231,15 +238,23 @@ class TestBuildRelationSearchParams:
 
     def test_a_base_filter_is_kept(self):
         params = build_relation_search_params(
-            "rowling", TEXT_KEYS, RELATION_KEYS, AVAILABLE,
-            _resolver({}), base_filter="type:[work_word]",
+            "rowling",
+            TEXT_KEYS,
+            RELATION_KEYS,
+            AVAILABLE,
+            _resolver({}),
+            base_filter="type:[work_word]",
         )
 
         assert params["filter_by"].startswith("type:[work_word] && ")
 
     def test_an_unresolved_token_stays_text_only(self):
         params = build_relation_search_params(
-            "zzz", TEXT_KEYS, RELATION_KEYS, AVAILABLE, _resolver({}),
+            "zzz",
+            TEXT_KEYS,
+            RELATION_KEYS,
+            AVAILABLE,
+            _resolver({}),
         )
 
         assert "ref_authors" not in params["filter_by"]
@@ -248,20 +263,28 @@ class TestBuildRelationSearchParams:
         params = build_relation_search_params(
             "rowling",
             TEXT_KEYS + ["vlacc:1|properties.ghost.value"],
-            RELATION_KEYS, AVAILABLE, _resolver({}),
+            RELATION_KEYS,
+            AVAILABLE,
+            _resolver({}),
         )
 
         assert "ghost" not in params["filter_by"]
 
     def test_an_empty_query_cannot_be_served(self):
-        assert build_relation_search_params(
-            "  ", TEXT_KEYS, RELATION_KEYS, AVAILABLE, _resolver({})
-        ) is None
+        assert (
+            build_relation_search_params(
+                "  ", TEXT_KEYS, RELATION_KEYS, AVAILABLE, _resolver({})
+            )
+            is None
+        )
 
     def test_no_usable_field_cannot_be_served(self):
-        assert build_relation_search_params(
-            "rowling", TEXT_KEYS, RELATION_KEYS, set(), _resolver({})
-        ) is None
+        assert (
+            build_relation_search_params(
+                "rowling", TEXT_KEYS, RELATION_KEYS, set(), _resolver({})
+            )
+            is None
+        )
 
     def test_exceeding_the_operation_budget_cannot_be_served(self):
         # The caller must fall back to the q-based search rather than send a
@@ -269,13 +292,18 @@ class TestBuildRelationSearchParams:
         many = [f"vlacc:1|properties.f{i}.value" for i in range(40)]
         available = {f"properties_f{i}_value" for i in range(40)}
 
-        assert build_relation_search_params(
-            "one two", many, [], available, _resolver({})
-        ) is None
+        assert (
+            build_relation_search_params("one two", many, [], available, _resolver({}))
+            is None
+        )
 
     def test_query_by_is_required_even_though_q_is_a_wildcard(self):
         params = build_relation_search_params(
-            "rowling", TEXT_KEYS, RELATION_KEYS, AVAILABLE, _resolver({}),
+            "rowling",
+            TEXT_KEYS,
+            RELATION_KEYS,
+            AVAILABLE,
+            _resolver({}),
         )
 
         assert params["query_by"]
@@ -289,7 +317,10 @@ class TestCappedTokens:
 
     def test_a_capped_token_drops_out_of_the_and(self):
         params = build_relation_search_params(
-            "radcliffe daniel", TEXT_KEYS, RELATION_KEYS, AVAILABLE,
+            "radcliffe daniel",
+            TEXT_KEYS,
+            RELATION_KEYS,
+            AVAILABLE,
             _resolver({"radcliffe": ["PERS-1"], "daniel": None}),
         )
 
@@ -298,7 +329,10 @@ class TestCappedTokens:
 
     def test_the_remaining_token_still_constrains(self):
         params = build_relation_search_params(
-            "radcliffe daniel", TEXT_KEYS, RELATION_KEYS, AVAILABLE,
+            "radcliffe daniel",
+            TEXT_KEYS,
+            RELATION_KEYS,
+            AVAILABLE,
             _resolver({"radcliffe": ["PERS-1"], "daniel": None}),
         )
 
@@ -309,7 +343,10 @@ class TestCappedTokens:
         # Distinct from a capped token: a rare word should still be searched on
         # the entity's own fields.
         params = build_relation_search_params(
-            "zzznotexist", TEXT_KEYS, RELATION_KEYS, AVAILABLE,
+            "zzznotexist",
+            TEXT_KEYS,
+            RELATION_KEYS,
+            AVAILABLE,
             _resolver({"zzznotexist": []}),
         )
 
@@ -319,14 +356,23 @@ class TestCappedTokens:
     def test_every_token_capped_cannot_be_served(self):
         # Nothing would constrain the query, so the caller falls back to the
         # ordinary q search instead of returning the whole collection.
-        assert build_relation_search_params(
-            "de het een", TEXT_KEYS, RELATION_KEYS, AVAILABLE,
-            _resolver({"de": None, "het": None, "een": None}),
-        ) is None
+        assert (
+            build_relation_search_params(
+                "de het een",
+                TEXT_KEYS,
+                RELATION_KEYS,
+                AVAILABLE,
+                _resolver({"de": None, "het": None, "een": None}),
+            )
+            is None
+        )
 
     def test_a_capped_token_is_left_out_of_the_ranking(self):
         params = build_relation_search_params(
-            "radcliffe daniel", TEXT_KEYS, RELATION_KEYS, AVAILABLE,
+            "radcliffe daniel",
+            TEXT_KEYS,
+            RELATION_KEYS,
+            AVAILABLE,
             _resolver({"radcliffe": ["PERS-1"], "daniel": None}),
         )
 
@@ -338,6 +384,13 @@ class TestCappedTokens:
         many = [f"vlacc:1|properties.f{i}.value" for i in range(40)]
         available = {f"properties_f{i}_value" for i in range(40)}
 
-        assert build_relation_search_params(
-            "one two", many, [], available, _resolver({"two": None}),
-        ) is not None
+        assert (
+            build_relation_search_params(
+                "one two",
+                many,
+                [],
+                available,
+                _resolver({"two": None}),
+            )
+            is not None
+        )

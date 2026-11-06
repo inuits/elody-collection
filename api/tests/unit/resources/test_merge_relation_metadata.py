@@ -40,7 +40,9 @@ def test_a_key_the_request_does_mention_wins():
 
 
 def test_an_explicitly_emptied_key_is_not_refilled():
-    relations = merge_relation_metadata(STORED, [relation("ORG-1", [item("roles", [])])])
+    relations = merge_relation_metadata(
+        STORED, [relation("ORG-1", [item("roles", [])])]
+    )
 
     assert metadata_of(relations[0], "roles") == []
 

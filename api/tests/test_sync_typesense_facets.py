@@ -199,7 +199,11 @@ class TestBuildCollectionChange:
         )
 
         assert change is None
-        assert report == {"change": [], "ok": ["type"], "skip": ["properties_isbn_value"]}
+        assert report == {
+            "change": [],
+            "ok": ["type"],
+            "skip": ["properties_isbn_value"],
+        }
 
 
 class TestWaitUntilApplied:

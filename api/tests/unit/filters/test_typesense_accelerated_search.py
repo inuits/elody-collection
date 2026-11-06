@@ -2977,7 +2977,10 @@ class TestWildcardQueryBy:
             [],
             [
                 (
-                    ["properties_ref_series_value", "properties_ref_uniform_titles_value"],
+                    [
+                        "properties_ref_series_value",
+                        "properties_ref_uniform_titles_value",
+                    ],
                     ["T-1"],
                 )
             ],
@@ -3035,8 +3038,9 @@ class TestWildcardQueryBy:
 
             assert mock_ts.call_args[0][1] == "*"
             assert mock_ts.call_args[0][2] == ""
-            assert "properties_ref_uniform_titles_value:=T-1" in (
-                mock_ts.call_args.kwargs["filter_by"]
+            assert (
+                "properties_ref_uniform_titles_value:=T-1"
+                in (mock_ts.call_args.kwargs["filter_by"])
             )
 
 
@@ -3225,9 +3229,7 @@ class TestDistinctOptionsOrderedByOwnField:
         )
         assert kwargs["sort_by"] is None
 
-    def test_options_of_an_array_field_are_grouped_unsorted(
-        self, flask_app, resource
-    ):
+    def test_options_of_an_array_field_are_grouped_unsorted(self, flask_app, resource):
         mock_ts, mock_mongo = self._run(
             flask_app,
             resource,
@@ -3248,8 +3250,7 @@ class TestDistinctOptionsOrderedByOwnField:
     def test_rejected_sort_retries_the_grouping_unsorted(self, flask_app, resource):
         with (
             flask_app.test_request_context(
-                "/entities/filter?limit=20&skip=0"
-                "&order_by=properties.name.value&asc=1",
+                "/entities/filter?limit=20&skip=0&order_by=properties.name.value&asc=1",
                 method="POST",
                 content_type="application/json",
             ),
@@ -3410,7 +3411,10 @@ class TestTypesenseSorting:
             self.EXACT_QUERY,
         )
 
-        assert mock_ts.call_args.kwargs["sort_by"] == "audit_updated_at(missing_values: last):desc"
+        assert (
+            mock_ts.call_args.kwargs["sort_by"]
+            == "audit_updated_at(missing_values: last):desc"
+        )
 
     def test_search_term_keeps_relevance(self, flask_app, resource):
         mock_ts, mock_mongo = self._run(

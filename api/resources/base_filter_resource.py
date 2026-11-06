@@ -360,7 +360,9 @@ class BaseFilterResource(BaseResource):
 
         ts_collection = typesense_config.get("collection", "entities")
         related_entity_types = typesense_config.get("related_entity_types") or []
-        related_entity_fields = typesense_config.get("related_entity_label_fields") or []
+        related_entity_fields = (
+            typesense_config.get("related_entity_label_fields") or []
+        )
         if not related_entity_types or not related_entity_fields:
             return None
 
@@ -668,9 +670,7 @@ class BaseFilterResource(BaseResource):
         sort_by = None
         if sorted_options:
             if distinct_by not in typesense_config.get("array_fields", []):
-                sort_by = self._build_typesense_sort_by(
-                    order_by, asc, typesense_config
-                )
+                sort_by = self._build_typesense_sort_by(order_by, asc, typesense_config)
         elif order_by and not text_filters:
             sort_by = self._build_typesense_sort_by(order_by, asc, typesense_config)
             if sort_by is None and not remaining_filters:

@@ -308,7 +308,6 @@ class TestSearch:
         with patch.object(tc, "get_typesense_client", return_value=mock_client):
             assert search("entities", "mars", "name") is None
 
-
     def test_omits_highlight_fields_for_wildcard_query(self):
         mock_client = MagicMock()
         mock_client.collections.__getitem__.return_value.documents.search.return_value = _make_search_result(
@@ -340,7 +339,6 @@ class TestSearch:
             ][0]
         )
         assert params["highlight_fields"] == "name,title"
-
 
     def test_omits_query_by_and_derived_params_when_query_by_is_empty(self):
         mock_client = MagicMock()
@@ -442,7 +440,6 @@ class TestSearchAllIds:
         with patch.object(tc, "get_typesense_client", return_value=mock_client):
             assert search_all_ids("entities", "mars", "name") is None
 
-
     def test_omits_highlight_fields_for_wildcard_query(self):
         mock_client = MagicMock()
         mock_client.collections.__getitem__.return_value.documents.search.return_value = _make_search_result(
@@ -474,7 +471,6 @@ class TestSearchAllIds:
             ][0]
         )
         assert params["highlight_fields"] == "name,title"
-
 
     def test_omits_query_by_and_derived_params_when_query_by_is_empty(self):
         mock_client = MagicMock()
@@ -1180,10 +1176,15 @@ class TestBuildNumTyposParam:
         )
 
     def test_none_when_no_query_field_is_listed(self):
-        assert tc._build_num_typos_param("properties_title_value", ["identifiers"]) is None
+        assert (
+            tc._build_num_typos_param("properties_title_value", ["identifiers"]) is None
+        )
 
     def test_every_query_field_listed(self):
-        assert tc._build_num_typos_param("identifiers,_id", ["identifiers", "_id"]) == "0,0"
+        assert (
+            tc._build_num_typos_param("identifiers,_id", ["identifiers", "_id"])
+            == "0,0"
+        )
 
 
 def _search_params(mock_client, call_index=0):
@@ -1195,9 +1196,7 @@ def _search_params(mock_client, call_index=0):
 class TestSearchTypoAndTokenDropOptions:
     def _client(self, results):
         mock_client = MagicMock()
-        mock_client.collections.__getitem__.return_value.documents.search.side_effect = (
-            results
-        )
+        mock_client.collections.__getitem__.return_value.documents.search.side_effect = results
         return mock_client
 
     def test_omits_options_when_not_configured(self):
@@ -1317,7 +1316,10 @@ class TestGetCollectionFieldTypesRefresh:
         with patch.object(tc, "get_typesense_client", return_value=client):
             first = tc.get_collection_field_types("c")
             client.collections.__getitem__.return_value.retrieve.return_value = {
-                "fields": [{"name": "a", "type": "string"}, {"name": "b", "type": "string[]"}]
+                "fields": [
+                    {"name": "a", "type": "string"},
+                    {"name": "b", "type": "string[]"},
+                ]
             }
             second = tc.get_collection_field_types("c")
         assert first == second == {"a": "string"}
@@ -1328,7 +1330,10 @@ class TestGetCollectionFieldTypesRefresh:
         with patch.object(tc, "get_typesense_client", return_value=client):
             tc.get_collection_field_types("c")
             client.collections.__getitem__.return_value.retrieve.return_value = {
-                "fields": [{"name": "a", "type": "string"}, {"name": "b", "type": "string[]"}]
+                "fields": [
+                    {"name": "a", "type": "string"},
+                    {"name": "b", "type": "string[]"},
+                ]
             }
             refreshed = tc.get_collection_field_types("c", refresh=True)
             cached_after = tc.get_collection_field_types("c")
@@ -1474,7 +1479,10 @@ class TestMultiSearchAllIds:
 
     def test_pages_until_every_id_is_collected(self):
         pages = [
-            {"found": 3, "hits": [{"document": {"_id": "a"}}, {"document": {"_id": "b"}}]},
+            {
+                "found": 3,
+                "hits": [{"document": {"_id": "a"}}, {"document": {"_id": "b"}}],
+            },
             {"found": 3, "hits": [{"document": {"_id": "c"}}]},
         ]
         with patch.object(tc, "multi_search_one", side_effect=pages) as one:
@@ -1525,8 +1533,12 @@ class TestResolveRelatedEntityIdsPaging:
         client = self._client_paging(3, [["a", "b"], ["c"]])
         with patch.object(tc, "get_typesense_client", return_value=client):
             ids = tc.resolve_related_entity_ids(
-                "entities", "charlotte", "properties_name_value", ["person"],
-                cap=1000, per_page=2,
+                "entities",
+                "charlotte",
+                "properties_name_value",
+                ["person"],
+                cap=1000,
+                per_page=2,
             )
 
         assert ids == ["a", "b", "c"]
@@ -1535,11 +1547,17 @@ class TestResolveRelatedEntityIdsPaging:
         client = self._client_paging(3, [["a", "b"], ["c"]])
         with patch.object(tc, "get_typesense_client", return_value=client):
             tc.resolve_related_entity_ids(
-                "entities", "charlotte", "properties_name_value", ["person"],
-                cap=1000, per_page=2,
+                "entities",
+                "charlotte",
+                "properties_name_value",
+                ["person"],
+                cap=1000,
+                per_page=2,
             )
 
-        calls = client.collections.__getitem__.return_value.documents.search.call_args_list
+        calls = (
+            client.collections.__getitem__.return_value.documents.search.call_args_list
+        )
         assert [c[0][0]["page"] for c in calls] == [1, 2]
 
     def test_paging_is_bounded_by_the_cap(self):
@@ -1548,8 +1566,12 @@ class TestResolveRelatedEntityIdsPaging:
         client = self._client_paging(6, [["a", "b"], ["c", "d"], ["e", "f"]])
         with patch.object(tc, "get_typesense_client", return_value=client):
             ids = tc.resolve_related_entity_ids(
-                "entities", "charlotte", "properties_name_value", ["person"],
-                cap=6, per_page=2,
+                "entities",
+                "charlotte",
+                "properties_name_value",
+                ["person"],
+                cap=6,
+                per_page=2,
             )
 
         assert ids == ["a", "b", "c", "d", "e", "f"]
@@ -1560,20 +1582,29 @@ class TestResolveRelatedEntityIdsPaging:
     def test_a_token_over_the_cap_is_undiscriminating(self):
         client = self._client_paging(5000, [[]])
         with patch.object(tc, "get_typesense_client", return_value=client):
-            assert tc.resolve_related_entity_ids(
-                "entities", "de", "properties_name_value", ["person"], cap=1000
-            ) is None
+            assert (
+                tc.resolve_related_entity_ids(
+                    "entities", "de", "properties_name_value", ["person"], cap=1000
+                )
+                is None
+            )
 
     def test_a_single_page_of_results_needs_one_request(self):
         client = self._client_paging(2, [["a", "b"]])
         with patch.object(tc, "get_typesense_client", return_value=client):
             ids = tc.resolve_related_entity_ids(
-                "entities", "shoesmith", "properties_name_value", ["person"],
-                cap=1000, per_page=250,
+                "entities",
+                "shoesmith",
+                "properties_name_value",
+                ["person"],
+                cap=1000,
+                per_page=250,
             )
 
         assert ids == ["a", "b"]
-        assert client.collections.__getitem__.return_value.documents.search.call_count == 1
+        assert (
+            client.collections.__getitem__.return_value.documents.search.call_count == 1
+        )
 
 
 class TestSortFields:
@@ -1724,7 +1755,11 @@ class TestGetTypesenseClient:
         )
 
         node = client_cls.call_args.args[0]["nodes"][0]
-        assert node == {"host": "search.example.org", "port": "443", "protocol": "https"}
+        assert node == {
+            "host": "search.example.org",
+            "port": "443",
+            "protocol": "https",
+        }
 
     def test_returns_none_without_api_key(self):
         client, client_cls = self._get_client({"TYPESENSE_API_KEY": None})

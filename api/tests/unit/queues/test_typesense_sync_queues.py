@@ -106,7 +106,9 @@ class TestSyncEntityToTypesense:
                 "search.typesense_client.prepare_document_for_typesense",
                 return_value={"id": "ent-1"},
             ),
-            patch("search.typesense_client.get_collection_field_types", return_value={}),
+            patch(
+                "search.typesense_client.get_collection_field_types", return_value={}
+            ),
             patch("search.typesense_client.ensure_collection") as mock_ensure,
         ):
             self._call({"data": {"location": "/entities/ent-1", "type": "work_word"}})
@@ -134,7 +136,9 @@ class TestSyncEntityToTypesense:
                 "search.typesense_client.prepare_document_for_typesense",
                 return_value={"id": "ent-1"},
             ),
-            patch("search.typesense_client.get_collection_field_types", return_value={}),
+            patch(
+                "search.typesense_client.get_collection_field_types", return_value={}
+            ),
             patch("search.typesense_client.ensure_collection") as mock_ensure,
         ):
             self._call({"data": {"location": "/entities/ent-1", "type": "work_word"}})
@@ -156,7 +160,9 @@ class TestSyncEntityToTypesense:
                 "search.typesense_client.prepare_document_for_typesense",
                 return_value={"id": "ent-1"},
             ) as mock_prepare,
-            patch("search.typesense_client.get_collection_field_types", return_value={}),
+            patch(
+                "search.typesense_client.get_collection_field_types", return_value={}
+            ),
             patch("search.typesense_client.ensure_collection") as mock_ensure,
         ):
             self._call({"data": {"location": "/entities/ent-1", "type": "work_word"}})

@@ -167,9 +167,10 @@ class TestEvaluateIdentifierIntegrity:
     def test_only_a_valid_document_scores(self, configuration):
         configuration(creation_preparer=nomen_preparer)
 
-        assert evaluate_identifier_integrity(nomen(CANONICAL, "digitalisering"))[
-            "score"
-        ] > evaluate_identifier_integrity(nomen(STALE, "Digitalisering"))["score"]
+        assert (
+            evaluate_identifier_integrity(nomen(CANONICAL, "digitalisering"))["score"]
+            > evaluate_identifier_integrity(nomen(STALE, "Digitalisering"))["score"]
+        )
 
     def test_an_unknown_verdict_does_not_score(self, configuration):
         configuration(creation_preparer=unseeded_preparer)
@@ -279,7 +280,9 @@ class TestAttachMergeEvaluation:
 
         with pytest.raises(BadRequest, match="nonsense"):
             attach_merge_evaluation(
-                {"id": STALE, "type": "nomen"}, nomen(STALE, "Digitalisering"), "nonsense"
+                {"id": STALE, "type": "nomen"},
+                nomen(STALE, "Digitalisering"),
+                "nonsense",
             )
 
 

@@ -163,8 +163,7 @@ def build_relation_search_params(
         return None
 
     clauses = [
-        token_clause(token, text_fields, relation_fields, ids)
-        for token, ids in active
+        token_clause(token, text_fields, relation_fields, ids) for token, ids in active
     ]
     text_clauses = [
         f"{field}:{escape_filter_value(token)}"

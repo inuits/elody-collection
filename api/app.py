@@ -253,9 +253,13 @@ def intercept_403(response: Response):
 @app.after_request
 def intercept_401(response: Response):
     if response.status_code == 401:
+        message = (
+            (response.get_json() or {}).get("message")
+            or "The access token provided is expired, revoked, malformed, or invalid for other reasons."
+        )
         return make_response(
             jsonify(
-                message=f"{get_error_code(ErrorCode.INVALID_TOKEN, get_read())} - The access token provided is expired, revoked, malformed, or invalid for other reasons."
+                message=f"{get_error_code(ErrorCode.INVALID_TOKEN, get_read())} - {message}"
             ),
             401,
         )
