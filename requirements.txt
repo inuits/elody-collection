@@ -22,7 +22,7 @@ flask-swagger-ui==4.11.1
 gunicorn==23.0.0
 idna==3.18 # Tracked-by-renovate
 importlib-metadata==8.9.0
-inuits-policy-based-auth==10.1.1 # Tracked-by-renovate
+inuits-policy-based-auth==10.2.0 # Tracked-by-renovate
 inuits-python-logging-loki==1.4.1
 itsdangerous==2.2.0
 Jinja2==3.1.6

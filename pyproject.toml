@@ -29,7 +29,7 @@ dependencies = [
   "python-keycloak==7.1.1",
   "idna==3.18",
   "importlib-metadata==8.9.0",
-  "inuits-policy-based-auth==10.1.1",
+  "inuits-policy-based-auth==10.2.0",
   "inuits-python-logging-loki==1.4.1",
   "itsdangerous==2.2.0",
   "jinja2==3.1.6",

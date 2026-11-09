@@ -204,7 +204,7 @@ requires-dist = [
     { name = "gunicorn", specifier = "==23.0.0" },
     { name = "idna", specifier = "==3.18" },
     { name = "importlib-metadata", specifier = "==8.9.0" },
-    { name = "inuits-policy-based-auth", specifier = "==10.1.1" },
+    { name = "inuits-policy-based-auth", specifier = "==10.2.0" },
     { name = "inuits-python-logging-loki", specifier = "==1.4.1" },
     { name = "itsdangerous", specifier = "==2.2.0" },
     { name = "jinja2", specifier = "==3.1.6" },
@@ -669,7 +669,7 @@ wheels = [
 
 [[package]]
 name = "inuits-policy-based-auth"
-version = "10.1.1"
+version = "10.2.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "authlib" },
@@ -677,9 +677,9 @@ dependencies = [
     { name = "requests" },
     { name = "werkzeug" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/38/42/0d1c5ed16d9c308eb335fea868e17a3c6063d807b93a8e9da2752e70d7ad/inuits_policy_based_auth-10.1.1.tar.gz", hash = "sha256:18a8f6403c28754a751696097fd47e051958cd67877029139d4abce2d64102f9", size = 40695, upload-time = "2026-08-07T11:43:05.071Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/8f/ae/fe4d8ae32d2d6ea22d4f66b2fbc9462c134ed0bc0f6c1ff5449d72f4dc3b/inuits_policy_based_auth-10.2.0.tar.gz", hash = "sha256:6508373ce59b2e5666307dc935c29dce44ceebf1668b93cda2f8e50463de371d", size = 43835, upload-time = "2026-11-09T11:57:09.073Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/68/49/24f86ef9ecc5220fca6aa24202c071c1aa0f7ed58d098c89775b49dbeb07/inuits_policy_based_auth-10.1.1-py3-none-any.whl", hash = "sha256:d79d8937341025a97f5214ef9b03a3272361bb346ce294511c39dc48c8181cbd", size = 52899, upload-time = "2026-08-07T11:43:03.866Z" },
+    { url = "https://files.pythonhosted.org/packages/18/c8/0fd6407b8e1f064308dd750a5d01fa910002cffc05835a694c17dc6ac7a9/inuits_policy_based_auth-10.2.0-py3-none-any.whl", hash = "sha256:d8393a9812cd20baee68b0b25b5b99e7bd2537a3cbc0a3620a6f969901dfd7d1", size = 54713, upload-time = "2026-11-09T11:57:07.898Z" },
 ]
 
 [[package]]
