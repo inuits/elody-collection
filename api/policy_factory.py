@@ -1,4 +1,5 @@
 from app_context import g
+from flask import has_request_context
 from inuits_policy_based_auth import PolicyFactory, RequestContext
 from inuits_policy_based_auth.exceptions import NoUserContextException
 from logging_elody.log import log
@@ -17,14 +18,14 @@ def init_policy_factory():
     )
 
 
-def apply_policies(request_context: RequestContext):
+def apply_policies(request_context: RequestContext, user_context_getter=None):
     global _policy_factory
-    return _policy_factory.apply_policies(request_context)
+    return _policy_factory.apply_policies(request_context, user_context_getter)
 
 
-def authenticate(request_context: RequestContext):
+def authenticate(request_context: RequestContext, user_context_getter=None):
     global _policy_factory
-    return _policy_factory.authenticate(request_context)
+    return _policy_factory.authenticate(request_context, user_context_getter)
 
 
 def get_user_context():
@@ -36,6 +37,13 @@ def get_user_context():
         raise exception
 
     return user_context
+
+
+def get_user_context_for_current_request():
+    if not has_request_context():
+        return None
+
+    return g.get("user_context")
 
 
 def user_context_setter(user_context):

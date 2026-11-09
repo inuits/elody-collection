@@ -1,7 +1,7 @@
 from configuration import get_object_configuration_mapper
 from flask import g, make_response, request
 from inuits_policy_based_auth import RequestContext
-from policy_factory import authenticate
+from policy_factory import authenticate, get_user_context_for_current_request
 from resources.generic_object import GenericObjectDetailV2
 from util import encode_content_type_header
 
@@ -25,7 +25,10 @@ class Document(GenericObjectDetailV2):
             collection=None, id=id, spec=spec, content=g.get("content", {})
         )
 
-    @authenticate(RequestContext(request))
+    @authenticate(
+        RequestContext(request),
+        user_context_getter=get_user_context_for_current_request,
+    )
     def patch(self, *, id, spec):
         self.__set_request(id, "PATCH")
         g.enable_parsers = True

@@ -14,7 +14,12 @@ from elody.util import (
 from flask import after_this_request, request
 from flask_restful import abort
 from inuits_policy_based_auth import RequestContext
-from policy_factory import apply_policies, authenticate, get_user_context
+from policy_factory import (
+    apply_policies,
+    authenticate,
+    get_user_context,
+    get_user_context_for_current_request,
+)
 from rabbit import get_rabbit
 from resources.base_filter_resource import BaseFilterResource
 from resources.base_resource import BaseResource
@@ -284,7 +289,10 @@ class GenericObjectV2(BaseFilterResource, BaseResource):
             spec=spec,
         )
 
-    @apply_policies(RequestContext(request))
+    @apply_policies(
+        RequestContext(request),
+        user_context_getter=get_user_context_for_current_request,
+    )
     @validate("post", request)
     def post(
         self,
@@ -518,7 +526,10 @@ class GenericObjectDetailV2(BaseResource):
             spec=spec,
         )
 
-    @apply_policies(RequestContext(request))
+    @apply_policies(
+        RequestContext(request),
+        user_context_getter=get_user_context_for_current_request,
+    )
     @validate("patch", request)
     def patch(
         self,
