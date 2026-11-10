@@ -295,3 +295,8 @@ class TestLegacyAppsPlugin:
         LegacyAppsPlugin(None).init_app("app", "api")
 
         assert calls == [("app", "api")]
+
+    def test_init_app_skips_a_client_app_without_init(self, fake_modules):
+        fake_modules("apps.client_app")
+
+        assert LegacyAppsPlugin(None).init_app("app", "api") is None

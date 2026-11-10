@@ -266,5 +266,7 @@ class LegacyAppsPlugin(CollectionApiPlugin):
             _optional_import(f"apps.{app}.resources.queues")
 
     def init_app(self, app, api):
-        if client_app := _optional_import("apps.client_app"):
-            client_app.init(app, api)
+        # Another client's bind mount can leave an empty client_app.py behind.
+        client_app = _optional_import("apps.client_app")
+        if init := getattr(client_app, "init", None):
+            init(app, api)
