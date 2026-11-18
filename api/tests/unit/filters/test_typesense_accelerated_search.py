@@ -1439,6 +1439,68 @@ class TestTypesenseCrossCollectionFiltering:
             assert result["count"] == 25
             assert len(result["results"]) == 20
 
+    def test_cross_collection_types_with_remaining_filters_query_every_collection(
+        self, flask_app, resource, mock_filter_engine
+    ):
+        """A permission filter must not confine a mixed-type search to the first type's collection."""
+        with flask_app.test_request_context(
+            "/entities/filter?limit=2&skip=0",
+            method="POST",
+            content_type="application/json",
+        ):
+            query = [
+                {
+                    "type": "selection",
+                    "key": "type",
+                    "value": ["work_word", "person"],
+                    "match_exact": True,
+                },
+                {
+                    "type": "text",
+                    "key": ["vlacc:1|properties.name.value"],
+                    "value": "mars",
+                    "match_exact": False,
+                },
+                {
+                    "type": "selection",
+                    "key": "status",
+                    "value": ["active"],
+                    "match_exact": True,
+                },
+            ]
+            docs_per_collection = {
+                "bibliographic_entities_actual": [make_mongo_doc("id3")],
+                "entities_actual": [
+                    make_mongo_doc("id1", "person"),
+                    make_mongo_doc("id2", "person"),
+                ],
+            }
+            mock_filter_engine.filter.side_effect = (
+                lambda _query, _skip, _limit, collection, *_args, **_kwargs: {
+                    "results": docs_per_collection[collection],
+                    "count": len(docs_per_collection[collection]),
+                }
+            )
+
+            with patch(
+                "resources.base_filter_resource.typesense_search_all_ids"
+            ) as mock_ts_all:
+                mock_ts_all.return_value = make_ts_result(["id1", "id3", "id2"], 3)
+                result = resource._execute_typesense_accelerated_search(
+                    query,
+                    "bibliographic_entities_actual",
+                    {
+                        "enabled": True,
+                        "collection": "entities",
+                        "search_fields": ["properties.name.value"],
+                    },
+                )
+
+            queried = {call[0][3] for call in mock_filter_engine.filter.call_args_list}
+            assert queried == {"bibliographic_entities_actual", "entities_actual"}
+            assert [doc["_id"] for doc in result["results"]] == ["id1", "id3"]
+            assert result["count"] == 3
+
     def test_page2_with_cross_collection_types(self, flask_app, resource):
         """Page 2 should return results even when cross-collection types are in the query."""
         with flask_app.test_request_context(

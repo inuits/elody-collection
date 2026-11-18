@@ -73,6 +73,23 @@ class BaseFilterResource(BaseResource):
                 remaining_filters.append(f)
         return text_filters, type_filter_values, exact_match_filters, remaining_filters
 
+    def _filter_ids_across_collections(
+        self, filters, matching_ids, mongo_collections, skip, limit
+    ):
+        results = []
+        for mongo_collection in mongo_collections:
+            results += self.filter_engine_v2.filter(
+                filters, 0, len(matching_ids), mongo_collection
+            )["results"]
+        rank = {doc_id: index for index, doc_id in enumerate(matching_ids)}
+        results.sort(key=lambda doc: rank.get(doc.get("_id"), len(rank)))
+        return {
+            "results": results[skip : skip + limit],
+            "count": len(results),
+            "skip": skip,
+            "limit": limit,
+        }
+
     def _resolve_mongo_collections(self, type_filter_values, default_collection):
         """Map entity types to their MongoDB collections."""
         collections = set()
@@ -776,15 +793,27 @@ class BaseFilterResource(BaseResource):
                     "match_exact": True,
                 }
             )
-            items = self.filter_engine_v2.filter(
-                self._type_filters(query) + remaining_filters,
-                skip,
-                limit,
-                collection,
-                order_by,
-                asc,
-                exact_count=exact_count,
+            mongo_collections = self._resolve_mongo_collections(
+                type_filter_values, collection
             )
+            if len(mongo_collections) > 1:
+                items = self._filter_ids_across_collections(
+                    self._type_filters(query) + remaining_filters,
+                    matching_ids,
+                    mongo_collections,
+                    skip,
+                    limit,
+                )
+            else:
+                items = self.filter_engine_v2.filter(
+                    self._type_filters(query) + remaining_filters,
+                    skip,
+                    limit,
+                    collection,
+                    order_by,
+                    asc,
+                    exact_count=exact_count,
+                )
             if highlights:
                 items["highlights"] = highlights
         else:
