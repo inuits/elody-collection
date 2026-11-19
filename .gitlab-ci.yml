@@ -32,9 +32,9 @@
 
 ---
 stages:
+  - security
   - build
   - deliver
-  - security
 
 .security:
   stage: security
