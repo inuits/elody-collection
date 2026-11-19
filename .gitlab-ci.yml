@@ -4,25 +4,25 @@ stages:
   - security
   - deliver
 
-.security:
-  stage: security
-  needs: []
+# .security:
+#   stage: security
+#   needs: []
 deliver:
   needs:
-    - security:gitleaks
+    # - security:gitleaks
     - build
 
-security:gitleaks:
-  extends: .security
-  image:
-    name: zricethezav/gitleaks:v8.30.1
-    entrypoint: [""]
-  script: gitleaks detect --source . --config .gitleaks.toml --verbose --report-format junit --report-path gl-gitleaks-junit.xml
-  artifacts:
-    when: always
-    reports:
-      junit: gl-gitleaks-junit.xml
-    expire_in: 7 days
+# security:gitleaks:
+#   extends: .security
+#   image:
+#     name: zricethezav/gitleaks:v8.30.1
+#     entrypoint: [""]
+#   script: gitleaks detect --source . --config .gitleaks.toml --verbose --report-format junit --report-path gl-gitleaks-junit.xml
+#   artifacts:
+#     when: always
+#     reports:
+#       junit: gl-gitleaks-junit.xml
+#     expire_in: 7 days
 
 variables:
   IMAGE_NAME: dams-collection
@@ -52,6 +52,8 @@ include:
         - ${DESTINATION_REGISTRY}
       rules:
         - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+  - component: $CI_SERVER_FQDN/rnd/inuits/dams/ci-components@v0.0.1
 
 # Only run pipeline for default branch, otherwise require manual approval
 build:
