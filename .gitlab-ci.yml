@@ -1,7 +1,7 @@
 ---
 stages:
-  - security
   - build
+  - security
   - deliver
 
 .security:
