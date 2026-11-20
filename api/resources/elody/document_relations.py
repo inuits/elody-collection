@@ -5,6 +5,7 @@ from resources.base.document import Document
 from resources.base.relations import merge_relation_metadata
 from resources.base_resource import BaseResource
 from resources.elody._blueprint import api
+from serialization.case_converter import camel_to_snake
 from serialization.serialize import serialize
 
 
@@ -25,7 +26,9 @@ class ElodyDocumentRelations(BaseResource):
                 content_relation
                 for content_relation in g.get("content", [])
                 if document_relation["key"] == content_relation["key"]
-                and document_relation["type"] == content_relation["type"]
+                # serializer clients read snake_case types but accept camelCase on write
+                and camel_to_snake(document_relation["type"])
+                == camel_to_snake(content_relation["type"])
             )
         ]
         return self.put(id=id, spec=spec, document=document)

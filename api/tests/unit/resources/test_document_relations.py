@@ -147,3 +147,31 @@ def test_patch_with_empty_existing_adds_incoming(resource, flask_app):
     assert len(relations) == 1
     assert relations[0]["key"] == "VE-001"
     resource.resource.put.assert_called_once()
+
+
+def test_post_treats_camel_and_snake_case_types_as_the_same_relation(
+    resource, flask_app
+):
+    raw = {
+        "_id": "IN-001",
+        "type": "inscription",
+        "relations": [
+            {"type": "ref_mediafiles", "key": "M-1"},
+            {"type": "ref_mediafiles", "key": "M-2"},
+        ],
+    }
+    with (
+        patch.object(
+            resource, "_check_if_collection_and_item_exists", return_value=raw
+        ),
+        patch("resources.elody.document_relations.serialize", return_value=raw),
+        flask_app.test_request_context(
+            "/", method="POST", json=[{"type": "refMediafiles", "key": "M-1"}]
+        ),
+    ):
+        resource.post(id="IN-001", spec="elody")
+        from flask import g
+
+        relations = g.content["relations"]
+
+    assert sorted(r["key"] for r in relations) == ["M-1", "M-2"]
