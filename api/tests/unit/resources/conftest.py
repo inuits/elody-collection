@@ -19,7 +19,7 @@ patch("storage.storagemanager.StorageManager", return_value=_mock_sm_instance).s
 
 
 # Patch policy_factory so decorators are pass-through at definition AND runtime
-def _passthrough_decorator(request_context):
+def _passthrough_decorator(request_context, **_kwargs):
     def decorator(f):
         @wraps(f)
         def wrapper(*args, **kwargs):
