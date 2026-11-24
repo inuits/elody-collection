@@ -197,7 +197,7 @@ requires-dist = [
     { name = "decorator", specifier = "==5.3.1" },
     { name = "deprecation", specifier = "==2.1.0" },
     { name = "dnspython", specifier = "==2.9.0" },
-    { name = "elody", extras = ["loader", "observability"], specifier = "==0.0.271" },
+    { name = "elody", extras = ["loader", "observability"], specifier = "==0.0.273" },
     { name = "flask", specifier = "==3.1.3" },
     { name = "flask-restful", specifier = "==0.3.10" },
     { name = "flask-swagger-ui", specifier = "==4.11.1" },
@@ -490,7 +490,7 @@ wheels = [
 
 [[package]]
 name = "elody"
-version = "0.0.271"
+version = "0.0.273"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "certifi" },
@@ -499,9 +499,9 @@ dependencies = [
     { name = "requests" },
     { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/5b/22/d079f0edc86c3c563bf76da81edd21f4e34819c03760e392512705b178c0/elody-0.0.271.tar.gz", hash = "sha256:763aed50d55134c13c797a68dd303879298d06cbbc34d52048d2aabcf3d0db7b", size = 65515, upload-time = "2026-11-09T10:10:41.571Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/3f/20/ccf9ad5c42da3fddfc9f8f8ab2c44c89cd8a16d8036bf43c60b3a8eeb956/elody-0.0.273.tar.gz", hash = "sha256:bb47916b6e5520371280795dd4a1b977d24a75586b37605ceee7a7e51c7d7582", size = 64169, upload-time = "2026-11-24T14:49:25.545Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d8/39/95ef841960d20888385ee30b523dfdd977cf3be7f9e400d3d1ca6a111d40/elody-0.0.271-py3-none-any.whl", hash = "sha256:3f219edf04f01c83889609663b1272e7be27953ff23babdf88ebbc527b7d29f7", size = 76049, upload-time = "2026-11-09T10:10:40.225Z" },
+    { url = "https://files.pythonhosted.org/packages/41/fb/d4f66f1a59cef1c3e9d8d431c62471f4aea65c761aa99ac247e5d2907142/elody-0.0.273-py3-none-any.whl", hash = "sha256:7b0f90a3fec8bc203ac224cfe56a913039c8e1debd32bbde20b10de9dd763d9c", size = 74076, upload-time = "2026-11-24T14:49:24.345Z" },
 ]
 
 [package.optional-dependencies]
