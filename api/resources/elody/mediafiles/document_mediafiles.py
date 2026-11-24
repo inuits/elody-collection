@@ -112,18 +112,6 @@ class ElodyDocumentMediafiles(BaseResource):
                 },
             ]
 
-        if "_id" in mediafile:
-            existing = self._check_if_collection_and_item_exists(None, mediafile["_id"])
-            existing_id = existing.get("id") or existing["_id"]
-            owner, related = (
-                (existing_id, id)
-                if store_relations_on_mediafile
-                else (id, existing_id)
-            )
-            g.content = get_relations(related)
-            self.document_relations_resource.post(id=owner, **kwargs)
-            return {"_id": existing["_id"]}, 201
-
         if store_relations_on_mediafile:
             mediafile["relations"] = get_relations(id)
 
