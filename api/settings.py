@@ -112,6 +112,7 @@ class BaseConfig(TypedDict):
     STORAGE_API_URL: str | None
     STORAGE_API_URL_EXT: str | None
     DAMS_FRONTEND_URL: str | None
+    CORS_ALLOWED_ORIGINS: list[str]
 
     # Keycloak related envs
     KEYCLOAK_BASE_URL: str | None
@@ -213,6 +214,7 @@ def load_config(env=environ) -> BaseConfig:
         "STORAGE_API_URL": env.get("STORAGE_API_URL"),
         "STORAGE_API_URL_EXT": env.get("STORAGE_API_URL_EXT"),
         "DAMS_FRONTEND_URL": env.get("DAMS_FRONTEND_URL"),
+        "CORS_ALLOWED_ORIGINS": env_list(env, "CORS_ALLOWED_ORIGINS", []),
         # Keycloak related envs
         "KEYCLOAK_BASE_URL": env.get("KEYCLOAK_BASE_URL"),
         "REALM_NAME": env.get("REALM_NAME"),

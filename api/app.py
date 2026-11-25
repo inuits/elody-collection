@@ -7,6 +7,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from config_access import config, init_config
 from configuration import get_features, get_route_mapper, init_mappers
+from cors import add_cors_headers
 from elody.error_codes import ErrorCode, get_error_code, get_read
 from elody.exceptions import NotFoundException
 from elody.loader import load_jobs
@@ -226,6 +227,13 @@ def exception(exception):
     if isinstance(exception, HTTPException):
         return jsonify(message=exception.description), exception.code or 500
     return jsonify(message=f"{exception.__class__.__name__}: {exception}"), 500
+
+
+# Registered before the intercepts: Flask runs after_request hooks in reverse,
+# so this runs last and also covers the responses they replace.
+@app.after_request
+def cors(response: Response):
+    return add_cors_headers(request, response, config["CORS_ALLOWED_ORIGINS"])
 
 
 @app.after_request
