@@ -91,7 +91,9 @@ def has_selection_filter_with_multiple_values(filter_request_body: list[dict]) -
     selection_filters_with_multiple_values = [
         filter_criteria
         for filter_criteria in filter_request_body
-        if filter_criteria["type"] == "selection" and len(filter_criteria["value"]) > 1
+        if filter_criteria["type"] == "selection"
+        and isinstance(filter_criteria["value"], (list, str))
+        and len(filter_criteria["value"]) > 1
     ]
     return len(selection_filters_with_multiple_values) > 0
 
