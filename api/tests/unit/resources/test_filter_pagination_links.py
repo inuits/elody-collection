@@ -73,3 +73,33 @@ class TestAddPaginationLinksCappedCount:
             _items(1200, 20), 1180, 20, self.collection
         )
         assert "next" not in items
+
+
+class TestAddPaginationLinksInRequest:
+    """Inside a request the links follow the called route, not the storage
+    collection name, and keep the other query parameters."""
+
+    def test_links_use_the_request_path_and_keep_query_args(self, resource):
+        from flask import Flask
+
+        with Flask(__name__).test_request_context(
+            "/entities/filter?limit=20&skip=40&order_by=properties.title.value&asc=0"
+        ):
+            items = resource._add_pagination_links(
+                _items(640, 20), 40, 20, "organizations_actual"
+            )
+        assert items["next"] == (
+            "/entities/filter?limit=20&skip=60&order_by=properties.title.value&asc=0"
+        )
+        assert items["previous"] == (
+            "/entities/filter?limit=20&skip=20&order_by=properties.title.value&asc=0"
+        )
+
+    def test_missing_skip_and_limit_are_added(self, resource):
+        from flask import Flask
+
+        with Flask(__name__).test_request_context("/entities/filter"):
+            items = resource._add_pagination_links(
+                _items(640, 20), 0, 20, "organizations_actual"
+            )
+        assert items["next"] == "/entities/filter?skip=20&limit=20"

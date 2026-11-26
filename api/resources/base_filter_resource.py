@@ -2,7 +2,7 @@ from configuration import get_object_configuration_mapper
 from filters_v2.filter_manager import FilterManager as FilterManagerV2
 from filters_v2.helpers.base_helper import get_distinct_by
 from filters_v2.mongo_filters import LISTING_COUNT_CAP
-from flask import after_this_request, request
+from flask import after_this_request, has_request_context, request
 from flask_restful import abort
 from logging_elody.log import log
 from resources.base_resource import BaseResource
@@ -23,6 +23,7 @@ from search.typesense_client import (
 )
 from storage.storagemanager import StorageManager
 from tracing import get_tracer
+from urllib.parse import urlencode
 
 tracer = get_tracer()
 
@@ -538,11 +539,9 @@ class BaseFilterResource(BaseResource):
             count_is_capped and len(items.get("results", [])) == limit
         )
         if has_next:
-            items["next"] = f"/{collection}/filter?skip={skip + limit}&limit={limit}"
+            items["next"] = self._page_link(collection, skip + limit, limit)
         if skip > 0:
-            items["previous"] = (
-                f"/{collection}/filter?skip={max(0, skip - limit)}&limit={limit}"
-            )
+            items["previous"] = self._page_link(collection, max(0, skip - limit), limit)
         if collection in [
             "entities",
             "mediafiles",
@@ -551,6 +550,12 @@ class BaseFilterResource(BaseResource):
         ]:
             items["results"] = self._inject_api_urls_into_entities(items["results"])
         return items
+
+    def _page_link(self, collection, skip, limit):
+        if not has_request_context():
+            return f"/{collection}/filter?skip={skip}&limit={limit}"
+        args = {**request.args.to_dict(), "skip": skip, "limit": limit}
+        return f"{request.path}?{urlencode(args)}"
 
     def _add_cors_headers(self):
         if request:
