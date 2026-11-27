@@ -1,5 +1,5 @@
 from configuration import get_object_configuration_mapper
-from flask import request
+from flask import g, request
 from rabbit import get_rabbit
 from resources.base_resource import BaseResource
 from resources.elody._blueprint import api
@@ -21,7 +21,7 @@ class ElodyMediafilesGenerateTranscode(BaseResource):
             return "good", 200
 
         request.view_args = request.view_args or {}
-        identifiers = request.get_json()["identifiers"]
+        identifiers = (g.get("content") or request.get_json())["identifiers"]
         if not identifiers:
             return 400
 
