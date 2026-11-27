@@ -17,6 +17,7 @@ from flask.json.provider import DefaultJSONProvider
 from flask_swagger_ui import get_swaggerui_blueprint
 from health import init_health_check
 from logging_elody.log import log
+from maintenance import block_writes
 from elody.observability import init_observability, record_exception
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
 from plugins import concatenated, get_plugins
@@ -202,6 +203,11 @@ if config["ENABLE_METRICS"]:
 
 for plugin in get_plugins():
     plugin.init_app(app, api)
+
+
+@app.before_request
+def maintenance():
+    return block_writes(request, config["MAINTENANCE_MODE"])
 
 
 @app.before_request

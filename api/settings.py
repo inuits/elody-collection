@@ -155,6 +155,7 @@ class BaseConfig(TypedDict):
     DELETE_MEDIAFILES: bool
     HARD_DELETE: bool
     LISTING_COUNT_CAP: int
+    MAINTENANCE_MODE: bool
     SECRET_KEY: str
     STATIC_JWT: str | None
     SUPER_ADMIN_ROLE: str
@@ -255,6 +256,7 @@ def load_config(env=environ) -> BaseConfig:
         "DELETE_MEDIAFILES": env_bool(env, "DELETE_MEDIAFILES", False),
         "HARD_DELETE": env_bool(env, "HARD_DELETE", False),
         "LISTING_COUNT_CAP": env_int(env, "LISTING_COUNT_CAP", 0),
+        "MAINTENANCE_MODE": env_bool(env, "MAINTENANCE_MODE", False),
         "SECRET_KEY": env.get("SECRET_KEY", token_hex(16)),
         "STATIC_JWT": env.get("STATIC_JWT"),
         "SUPER_ADMIN_ROLE": env.get("SUPER_ADMIN_ROLE", "super_admin"),
