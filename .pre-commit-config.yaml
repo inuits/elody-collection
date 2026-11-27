@@ -23,3 +23,8 @@ repos:
         # args: [--fix] # This would apply "safe" fixes automatically, but can be a bit confusing since it modifies your files on commit
       # Formatter (replaces Black)
       - id: ruff-format
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.24.2
+    hooks:
+      - id: gitleaks
